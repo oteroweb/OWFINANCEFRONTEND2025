@@ -1,12 +1,18 @@
-type Role = 'admin' | 'user'
+import { defineStore } from 'pinia'
+import { api } from 'boot/axios'
 
 interface User {
+  id: number
   name: string
-  role: Role
   email: string
+  role_id: number
+  role: {
+    id: number
+    name: string
+    slug: string
+  }
 }
 
-import { defineStore } from 'pinia'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -15,55 +21,53 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     isLoggedIn: (state) => !!state.token,
-    role: (state) => state.user?.role || null
+    role: (state) => state.user?.role.slug || null
   },
   actions: {
-    login(email: string, password: string) {
-      const users: Record<string, { password: string; user: User }> = {
-        'admin@example.com': {
-          password: 'admin123',
-          user: {
-            name: 'Admin',
-            email: 'admin@example.com',
-            role: 'admin'
-          }
-        },
-        'user@example.com': {
-          password: 'user123',
-          user: {
-            name: 'Usuario',
-            email: 'user@example.com',
-            role: 'user'
-          }
+    async login(email: string, password: string) {
+      try {
+        const response = await api.post('/login', {
+          email,
+          password,
+          device_name: 'quasar-spa'
+        })
+
+        this.token = response.data.token
+        this.user = response.data.user // depende cómo venga en tu API
+
+        // Guarda en localStorage
+        localStorage.setItem('token', this.token || '')
+        localStorage.setItem('user', JSON.stringify(this.user))
+
+        // Establece el token en axios para futuras peticiones
+        api.defaults.headers.common.Authorization = `Bearer ${this.token}`
+      } catch (error: unknown) {
+        interface AxiosError {
+          response?: {
+            data?: {
+              message?: string;
+            };
+          };
         }
+        const err = error as AxiosError;
+        throw new Error(err.response?.data?.message || 'Error de inicio de sesión');
       }
-
-      const found = users[email]
-
-      if (!found || found.password !== password) {
-        throw new Error('Credenciales inválidas')
-      }
-
-      this.token = 'simulated-token'
-      this.user = found.user
-      localStorage.setItem('token', this.token)
-      localStorage.setItem('user', JSON.stringify(this.user))
     },
-
     logout() {
       this.token = null
       this.user = null
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      delete api.defaults.headers.common.Authorization
     },
 
     loadFromStorage() {
       const token = localStorage.getItem('token')
       const user = localStorage.getItem('user')
-
       if (token && user) {
         this.token = token
         this.user = JSON.parse(user)
+        api.defaults.headers.common.Authorization = `Bearer ${this.token}`
       }
     }
   }

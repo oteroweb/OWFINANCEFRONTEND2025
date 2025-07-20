@@ -28,11 +28,23 @@ const router = useRouter();
 const auth = useAuthStore();
 
 async function submit() {
-  auth.login(email.value, password.value);
-  if (auth.role === 'admin') {
-    await router.push('/admin');
-  } else {
-    await router.push('/user');
+  try {
+    await auth.login(email.value, password.value);
+
+    // 👇 Espera a que auth.role esté disponible
+    if (auth.role === 'admin') {
+      void router.push('/admin');
+    } else if (auth.role === 'user') {
+      void router.push('/user');
+    } else {
+      alert('Rol desconocido');
+    }
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      alert(error.message || 'Error al iniciar sesión');
+    } else {
+      alert('Error al iniciar sesión');
+    }
   }
 }
 </script>
