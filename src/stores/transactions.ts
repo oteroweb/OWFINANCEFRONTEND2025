@@ -23,19 +23,48 @@ export interface Transaction {
   created_at?: string
   updated_at?: string
 }
+// Raw API transaction uses strings for amount fields
+interface RawTransaction extends Omit<Transaction, 'amount' | 'amount_tax'> {
+  amount: string
+  amount_tax: string
+}
 
 export const useTransactionsStore = defineStore('transactions', {
   state: () => ({
     transactions: [] as Transaction[],
+    total: 0 as number,
     loading: false as boolean
   }),
   actions: {
-    async fetchTransactions() {
+    async fetchTransactions(params: Record<string, unknown> = {}) {
       this.loading = true
       try {
-        const response = await api.get('/transactions')
-        // Assuming API returns array directly or under data
-        this.transactions = response.data.data || response.data
+        const response = await api.get('/transactions', { params })
+        // Laravel paginator returns wrapper with data array and total count
+        const payload = response.data
+        // Determine where the data array lives: direct array or nested paginator object
+        let rawList: RawTransaction[] = []
+        let totalCount: number | undefined = undefined
+        const dat = payload.data
+        if (Array.isArray(dat)) {
+          rawList = dat as RawTransaction[]
+          totalCount = payload.total
+        }
+        else if (dat && typeof dat === 'object' && Array.isArray(dat.data)) {
+          rawList = dat.data as RawTransaction[]
+          totalCount = typeof dat.total === 'number' ? dat.total : payload.total
+        }
+        else {
+          console.error('fetchTransactions could not find array in payload.data', dat)
+        }
+        // Map RawTransaction to Transaction numbers
+        this.transactions = rawList.map((tx): Transaction => ({
+          ...tx,
+          amount: Number(tx.amount),
+          amount_tax: Number(tx.amount_tax)
+        }))
+        // capture total count from paginator
+        this.total = typeof totalCount === 'number' ? totalCount : this.transactions.length
       } catch (error) {
         console.error('Error fetching transactions', error)
       } finally {
