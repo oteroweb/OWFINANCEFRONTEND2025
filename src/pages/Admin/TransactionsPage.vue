@@ -151,8 +151,7 @@
         </q-tr>
       </template>
     </q-table>
-
-    <q-dialog v-model="showDialog" persistent>
+    <q-dialog v-model="showDialog" @keydown.escape="showDialog = false">
       <q-card style="min-width: 400px">
         <q-card-section>
           <div class="text-h6">{{ editing ? 'Editar' : 'Nueva' }} Transacción</div>
@@ -187,11 +186,29 @@
             />
             <q-date v-model="form.date" label="Fecha" filled dense class="q-mt-sm" />
             <q-checkbox v-model="form.active" label="Activo" class="q-mt-sm" />
+            <!-- Usuario: cargar todos y preselección de sesión -->
+            <q-select
+              v-model="form.user_id"
+              :options="filteredUserOptions"
+              option-value="id"
+              option-label="name"
+              emit-value
+              map-options
+              label="Usuario"
+              dense
+              use-input
+              clearable
+              input-debounce="300"
+              @filter="filterUser"
+              class="q-mt-sm"
+            />
             <q-select
               v-model="form.provider_id"
               :options="providerOptions"
               option-value="id"
               option-label="name"
+              emit-value
+              map-options
               label="Proveedor"
               use-input
               fill-input
@@ -204,7 +221,20 @@
               :options="rateOptions"
               option-value="id"
               option-label="name"
+              emit-value
+              map-options
               label="Tarifa"
+              class="q-mt-sm"
+              dense
+            />
+            <q-select
+              v-model="form.account_id"
+              :options="accountOptions"
+              option-value="id"
+              option-label="name"
+              emit-value
+              map-options
+              label="Cuenta"
               class="q-mt-sm"
               dense
             />
@@ -228,6 +258,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { useTransactionsStore } from 'stores/transactions';
+import { useAuthStore } from 'stores/auth';
 import type { Transaction } from 'stores/transactions';
 import type { QTableColumn } from 'quasar';
 import { useRouter, useRoute } from 'vue-router';
@@ -262,6 +293,7 @@ const pagination = ref({
 });
 const selected = ref([]);
 const columnSelection = ref([
+  'id',
   'name',
   'provider',
   'rate',
@@ -276,6 +308,7 @@ const columnSelection = ref([
 
 // Transactions store
 const tsStore = useTransactionsStore();
+const authStore = useAuthStore();
 const transactions = computed(() => tsStore.transactions);
 // Transaction type filter refs deben inicializarse antes del watch
 const transactionTypeOptions = ref<{ id: string; name: string }[]>([]);
@@ -314,6 +347,7 @@ const rateOptions = ref<{ id: number; name: string }[]>([
 ]);
 
 const columns: QTableColumn<Transaction>[] = [
+  { name: 'id', label: 'ID', field: 'id', align: 'left', sortable: true },
   { name: 'name', label: 'Nombre', field: 'name', align: 'left', sortable: true },
   { name: 'amount', label: 'Cantidad', field: 'amount', align: 'right', sortable: true },
   { name: 'amount_tax', label: 'Impuesto', field: 'amount_tax', align: 'right', sortable: true },
@@ -478,7 +512,11 @@ function exportCSV() {
 
 function openDialog() {
   editing.value = false;
-  form.value = {};
+  form.value = {} as Partial<Transaction>;
+  // Preseleccionar usuario actual de sesión
+  form.value.user_id = authStore.user?.id || null;
+  // Fecha por defecto: hoy
+  form.value.date = new Date().toISOString().slice(0, 10);
   showDialog.value = true;
 }
 
@@ -495,14 +533,69 @@ async function remove(row: Transaction) {
 
 async function save() {
   const data = { ...form.value } as Transaction;
-  if (editing.value && data.id) {
-    await tsStore.updateTransaction(data);
-    $q.notify({ type: 'positive', message: 'Transacción actualizada' });
-  } else {
-    await tsStore.addTransaction(data);
-    $q.notify({ type: 'positive', message: 'Transacción creada' });
+  let title = '';
+  let message = '';
+  // Validaciones por campo en orden descendente
+  if (!form.value.name) {
+    $q.notify({ type: 'warning', message: 'Nombre es requerido.' });
+    return;
   }
-  showDialog.value = false;
+  if (form.value.amount == null) {
+    $q.notify({ type: 'warning', message: 'Cantidad es requerida.' });
+    return;
+  }
+  if (!form.value.date) {
+    $q.notify({ type: 'warning', message: 'Fecha es requerida.' });
+    return;
+  }
+  if (!form.value.user_id) {
+    $q.notify({ type: 'warning', message: 'Usuario es requerido.' });
+    return;
+  }
+  if (!form.value.provider_id) {
+    $q.notify({ type: 'warning', message: 'Proveedor es requerido.' });
+    return;
+  }
+  if (!form.value.rate_id) {
+    $q.notify({ type: 'warning', message: 'Tarifa es requerida.' });
+    return;
+  }
+  if (!form.value.account_id) {
+    $q.notify({ type: 'warning', message: 'Cuenta es requerida.' });
+    return;
+  }
+  // Ejecutar acción y capturar respuesta
+  let response;
+  try {
+    if (editing.value && data.id) {
+      response = await tsStore.updateTransaction(data);
+      title = '¡Actualizada!';
+      message = 'Transacción actualizada con éxito.';
+    } else {
+      response = await tsStore.addTransaction(data);
+      title = '¡Creada!';
+      message = 'Transacción creada con éxito.';
+    }
+    // Si la respuesta fue exitosa (2xx), cerrar diálogo, limpiar y notificar
+    if (response && response.status >= 200 && response.status < 300) {
+      showDialog.value = false;
+      form.value = {} as Partial<Transaction>;
+      $q.notify({ type: 'positive', message: `${title} ${message}` });
+      refresh();
+    }
+  } catch (error: any) {
+    console.error('Error al guardar transacción:', error);
+    // Si es error de validación 400, mostrar detalles sin cerrar el diálogo
+    const status = error.response?.status;
+    const validation = error.response?.data?.data;
+    if (status === 400 && validation) {
+      const messages = Object.values(validation).flat().join(' ');
+      $q.notify({ type: 'negative', message: messages });
+    } else {
+      $q.notify({ type: 'negative', message: 'No se pudo guardar la transacción.' });
+      // opcional: cerrar en otros errores
+    }
+  }
 }
 
 // Simple filter function for provider QSelect

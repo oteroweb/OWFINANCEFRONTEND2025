@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import type { AxiosResponse } from 'axios'
 import { api } from 'boot/axios'
 
 export interface Transaction {
@@ -71,23 +72,29 @@ export const useTransactionsStore = defineStore('transactions', {
         this.loading = false
       }
     },
-    async addTransaction(tx: Omit<Transaction, 'id'>) {
+    async addTransaction(tx: Omit<Transaction, 'id'>): Promise<AxiosResponse> {
       try {
-        const response = await api.post('/transactions', tx)
+        const response: AxiosResponse = await api.post('/transactions', tx)
         const newTx = response.data.data || response.data
         this.transactions.push(newTx)
+        return response
       } catch (error) {
         console.error('Error adding transaction', error)
+        // Rethrow so calling component can handle validation errors
+        throw error
       }
     },
-    async updateTransaction(tx: Transaction) {
+    async updateTransaction(tx: Transaction): Promise<AxiosResponse> {
       try {
-        const response = await api.put(`/transactions/${tx.id}`, tx)
+        const response: AxiosResponse = await api.put(`/transactions/${tx.id}`, tx)
         const updated = response.data.data || response.data
         const idx = this.transactions.findIndex(t => t.id === updated.id)
         if (idx !== -1) this.transactions.splice(idx, 1, updated)
+        return response
       } catch (error) {
         console.error('Error updating transaction', error)
+        // Rethrow so calling component can handle validation errors
+        throw error
       }
     },
     async deleteTransaction(id: number) {
