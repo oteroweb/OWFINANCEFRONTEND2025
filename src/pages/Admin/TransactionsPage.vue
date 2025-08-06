@@ -32,11 +32,15 @@
           <q-select
             class="full-width"
             v-model="providerFilter"
-            :options="providerOptions"
+            :options="filteredProviderOptions"
             option-value="id"
             option-label="name"
             dense
             filled
+            use-input
+            clearable
+            input-debounce="300"
+            @filter="filterProvider"
           />
         </div>
         <div class="col-4">
@@ -44,11 +48,15 @@
           <q-select
             class="full-width"
             v-model="userFilter"
-            :options="userOptions"
+            :options="filteredUserOptions"
             option-value="id"
             option-label="name"
             dense
             filled
+            use-input
+            clearable
+            input-debounce="300"
+            @filter="filterUser"
           />
         </div>
       </div>
@@ -58,14 +66,34 @@
           <q-select
             class="full-width"
             v-model="accountFilter"
-            :options="accountOptions"
+            :options="filteredAccountOptions"
             option-value="id"
             option-label="name"
             dense
             filled
+            clearable
+            use-input
+            input-debounce="300"
+            @filter="filterAccount"
           />
         </div>
-        <div class="col-8 row items-center q-gutter-sm justify-end">
+        <div class="col-4">
+          <div class="text-caption q-mb-xs">Tipo de Transacción</div>
+          <q-select
+            class="full-width"
+            v-model="transactionTypeFilter"
+            :options="filteredTransactionTypeOptions"
+            option-value="id"
+            option-label="name"
+            dense
+            filled
+            clearable
+            use-input
+            input-debounce="300"
+            @filter="filterTransactionType"
+          />
+        </div>
+        <div class="col-4 row items-center q-gutter-sm justify-end">
           <q-btn
             icon="brush"
             flat
@@ -168,7 +196,6 @@
               use-input
               fill-input
               new-value-mode="add"
-              @new-value="addProvider"
               class="q-mt-sm"
               dense
             />
@@ -210,6 +237,7 @@ const providerFilter = ref<number | null>(null);
 const userFilter = ref<number | null>(null);
 const accountFilter = ref<number | null>(null);
 const rateFilter = ref<number | null>(null);
+const transactionTypeFilter = ref<string | null>(null);
 
 // Router for syncing search query
 const router = useRouter();
@@ -249,6 +277,21 @@ const columnSelection = ref([
 // Transactions store
 const tsStore = useTransactionsStore();
 const transactions = computed(() => tsStore.transactions);
+// Transaction type filter refs deben inicializarse antes del watch
+const transactionTypeOptions = ref<{ id: string; name: string }[]>([]);
+const filteredTransactionTypeOptions = ref<{ id: string; name: string }[]>([]);
+// Actualiza dinámicamente los tipos de transacción a partir de los datos cargados
+watch(
+  transactions,
+  (list) => {
+    const types = Array.from(
+      new Set(list.map((t) => t.transaction_type).filter((v): v is string => !!v))
+    );
+    transactionTypeOptions.value = types.map((type) => ({ id: type, name: type }));
+    filteredTransactionTypeOptions.value = transactionTypeOptions.value;
+  },
+  { immediate: true }
+);
 const loading = computed(() => tsStore.loading);
 // update total records count for pagination
 watch(
@@ -260,8 +303,11 @@ watch(
 );
 
 const providerOptions = ref<{ id: number; name: string }[]>([]);
+const filteredProviderOptions = ref<{ id: number; name: string }[]>([]);
 const userOptions = ref<{ id: number; name: string }[]>([]);
+const filteredUserOptions = ref<{ id: number; name: string }[]>([]);
 const accountOptions = ref<{ id: number; name: string }[]>([]);
+const filteredAccountOptions = ref<{ id: number; name: string }[]>([]);
 const rateOptions = ref<{ id: number; name: string }[]>([
   { id: 1, name: 'Tarifa A' },
   { id: 2, name: 'Tarifa B' },
@@ -391,6 +437,7 @@ function onRequest(props: QTableRequestProps) {
   if (rateFilter.value != null) params['rate_id'] = rateFilter.value;
   if (userFilter.value != null) params['user_id'] = userFilter.value;
   if (accountFilter.value != null) params['account_id'] = accountFilter.value;
+  if (transactionTypeFilter.value) params['transaction_type'] = transactionTypeFilter.value;
   void tsStore.fetchTransactions(params);
 }
 
@@ -405,6 +452,7 @@ const clearFilters = () => {
   rateFilter.value = null;
   userFilter.value = null;
   accountFilter.value = null;
+  transactionTypeFilter.value = null;
   // reset to first page
   pagination.value.page = 1;
   onRequest({ pagination: pagination.value });
@@ -457,12 +505,69 @@ async function save() {
   showDialog.value = false;
 }
 
-function addProvider(val: string) {
-  const newId = providerOptions.value.length + 1;
-  const newProv = { id: newId, name: val };
-  providerOptions.value.push(newProv);
-  form.value.provider_id = newId;
-}
+// Simple filter function for provider QSelect
+const filterProvider = (val: string, update: (callback: () => void) => void) => {
+  if (val === '') {
+    update(() => {
+      filteredProviderOptions.value = providerOptions.value;
+    });
+    return;
+  }
+  update(() => {
+    const needle = val.toLowerCase();
+    filteredProviderOptions.value = providerOptions.value.filter(
+      (v) => v.name.toLowerCase().indexOf(needle) > -1
+    );
+  });
+};
+
+// Simple filter for user QSelect
+const filterUser = (val: string, update: (callback: () => void) => void) => {
+  if (val === '') {
+    update(() => {
+      filteredUserOptions.value = userOptions.value;
+    });
+    return;
+  }
+  update(() => {
+    const needle = val.toLowerCase();
+    filteredUserOptions.value = userOptions.value.filter(
+      (v) => v.name.toLowerCase().indexOf(needle) > -1
+    );
+  });
+};
+
+// Simple filter for account QSelect
+const filterAccount = (val: string, update: (callback: () => void) => void) => {
+  if (val === '') {
+    update(() => {
+      filteredAccountOptions.value = accountOptions.value;
+    });
+    return;
+  }
+  update(() => {
+    const needle = val.toLowerCase();
+    filteredAccountOptions.value = accountOptions.value.filter(
+      (v) => v.name.toLowerCase().indexOf(needle) > -1
+    );
+  });
+};
+
+// Simple filter for transaction type QSelect
+const filterTransactionType = (val: string, update: (callback: () => void) => void) => {
+  if (val === '') {
+    update(() => {
+      filteredTransactionTypeOptions.value = transactionTypeOptions.value;
+    });
+    return;
+  }
+  update(() => {
+    const needle = val.toLowerCase();
+    filteredTransactionTypeOptions.value = transactionTypeOptions.value.filter(
+      (v) => v.name.toLowerCase().indexOf(needle) > -1
+    );
+  });
+};
 // Fetch on mount
 onMounted(async () => {
   // fetch transactions and filter lists
@@ -473,19 +578,31 @@ onMounted(async () => {
       api.get('/users'),
       api.get('/accounts'),
     ]);
-    providerOptions.value = pRes.data.data || pRes.data;
+    const allProviders = pRes.data.data || pRes.data;
+    providerOptions.value = allProviders;
+    filteredProviderOptions.value = allProviders;
     userOptions.value = uRes.data.data || uRes.data;
+    filteredUserOptions.value = userOptions.value;
     accountOptions.value = aRes.data.data || aRes.data;
+    filteredAccountOptions.value = accountOptions.value;
+    // Initialize transaction type options from fetched transactions
+    transactionTypeOptions.value = Array.from(
+      new Set(tsStore.transactions.map((t) => t.transaction_type).filter((v): v is string => !!v))
+    ).map((type) => ({ id: type, name: type }));
+    filteredTransactionTypeOptions.value = transactionTypeOptions.value;
   } catch (e) {
     console.error('Error fetching filter lists', e);
   }
 });
 // Watch filters and trigger server request on change
 // Watch filters including rateFilter and trigger server request on change
-watch([filter, providerFilter, rateFilter, userFilter, accountFilter], () => {
-  pagination.value.page = 1;
-  onRequest({ pagination: pagination.value });
-});
+watch(
+  [filter, providerFilter, rateFilter, userFilter, accountFilter, transactionTypeFilter],
+  () => {
+    pagination.value.page = 1;
+    onRequest({ pagination: pagination.value });
+  }
+);
 
 // Watch search filter to update URL
 watch(filter, (val) => {
