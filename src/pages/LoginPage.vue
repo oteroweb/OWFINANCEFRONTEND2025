@@ -5,14 +5,16 @@
         <div class="text-h6">Login</div>
       </q-card-section>
 
-      <q-card-section>
-        <q-input v-model="email" label="Email" />
-        <q-input v-model="password" label="Password" type="password" class="q-mt-sm" />
-      </q-card-section>
+      <form @submit.prevent="submit">
+        <q-card-section>
+          <q-input v-model="email" label="Email" type="text" />
+          <q-input v-model="password" label="Password" type="password" class="q-mt-sm" />
+        </q-card-section>
 
-      <q-card-actions align="right">
-        <q-btn label="Login" color="primary" @click="submit" />
-      </q-card-actions>
+        <q-card-actions align="right">
+          <q-btn label="Login" color="primary" type="submit" />
+        </q-card-actions>
+      </form>
     </q-card>
   </q-page>
 </template>
