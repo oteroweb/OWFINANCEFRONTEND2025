@@ -5,5 +5,25 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": ["source.fixAll.eslint"],
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "vue"],
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#f8cdef",
+    "activityBar.background": "#f8cdef",
+    "activityBar.foreground": "#15202b",
+    "activityBar.inactiveForeground": "#15202b99",
+    "activityBarBadge.background": "#738c14",
+    "activityBarBadge.foreground": "#e7e7e7",
+    "commandCenter.border": "#15202b99",
+    "sash.hoverBorder": "#f8cdef",
+    "statusBar.background": "#f1a1e0",
+    "statusBar.foreground": "#15202b",
+    "statusBarItem.hoverBackground": "#ea75d1",
+    "statusBarItem.remoteBackground": "#f1a1e0",
+    "statusBarItem.remoteForeground": "#15202b",
+    "titleBar.activeBackground": "#f1a1e0",
+    "titleBar.activeForeground": "#15202b",
+    "titleBar.inactiveBackground": "#f1a1e099",
+    "titleBar.inactiveForeground": "#15202b99"
+  },
+  "peacock.color": "#f1a1e0"
 }

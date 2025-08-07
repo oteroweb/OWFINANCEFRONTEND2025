@@ -288,23 +288,11 @@ const pagination = ref({
   page: 1,
   rowsPerPage: 10,
   sortBy: 'date',
-  descending: true,
+  descending: true, // más reciente a más antigua
   rowsNumber: 0, // total records from server
 });
 const selected = ref([]);
-const columnSelection = ref([
-  'id',
-  'name',
-  'provider',
-  'rate',
-  'transaction_type',
-  'amount',
-  'amount_tax',
-  'date',
-  'active',
-  'user',
-  'account',
-]);
+const columnSelection = ref(['name', 'amount', 'date', 'account']);
 
 // Transactions store
 const tsStore = useTransactionsStore();
@@ -351,7 +339,26 @@ const columns: QTableColumn<Transaction>[] = [
   { name: 'name', label: 'Nombre', field: 'name', align: 'left', sortable: true },
   { name: 'amount', label: 'Cantidad', field: 'amount', align: 'right', sortable: true },
   { name: 'amount_tax', label: 'Impuesto', field: 'amount_tax', align: 'right', sortable: true },
-  { name: 'date', label: 'Fecha', field: 'date', align: 'left', sortable: true },
+  {
+    name: 'date',
+    label: 'Fecha',
+    field: 'date',
+    align: 'left',
+    sortable: true,
+    format: (val: string) => {
+      if (!val) return '';
+      const d = new Date(val);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      let hours = d.getHours();
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // 0 => 12
+      return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+    },
+  },
   { name: 'active', label: 'Activo', field: 'active', align: 'center', sortable: true },
   {
     name: 'user',
@@ -417,8 +424,15 @@ function customSort(
 ): readonly Transaction[] {
   return [...rows].sort((a, b) => {
     const key = sortBy as keyof Transaction;
-    const valA = a[key];
-    const valB = b[key];
+    let valA = a[key];
+    let valB = b[key];
+    // Si la columna es fecha, comparar como fecha
+    if (sortBy === 'date') {
+      const dateA = valA && typeof valA === 'string' ? new Date(valA) : new Date(0);
+      const dateB = valB && typeof valB === 'string' ? new Date(valB) : new Date(0);
+      // Si descending es true: más reciente a más antigua, si es false: más antigua a más reciente
+      return descending ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime();
+    }
     // Determine comparable strings: primitives or related names
     const textA =
       typeof valA === 'string'
