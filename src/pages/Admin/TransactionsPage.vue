@@ -120,6 +120,7 @@
         </div>
       </div>
     </div>
+    <!-- :sort-method="customSort" -->
     <q-table
       server
       :columns="visibleColumns"
@@ -130,7 +131,6 @@
       bordered
       class="shadow-1"
       v-model:pagination="pagination"
-      :sort-method="customSort"
       selection="multiple"
       v-model:selected="selected"
       @request="onRequest"
@@ -184,7 +184,28 @@
               dense
               class="q-mt-sm"
             />
-            <q-date v-model="form.date" label="Fecha" filled dense class="q-mt-sm" />
+            <div class="row q-col-gutter-md q-mt-sm">
+              <div class="col-6">
+                <q-date
+                  v-model="form.date"
+                  label="Fecha"
+                  filled
+                  dense
+                  class="full-width"
+                  mask="YYYY-MM-DD"
+                />
+              </div>
+              <div class="col-auto q-ml-lg">
+                <q-input
+                  v-model="form.time"
+                  label="Hora"
+                  type="time"
+                  filled
+                  dense
+                  style="max-width: 120px"
+                />
+              </div>
+            </div>
             <q-checkbox v-model="form.active" label="Activo" class="q-mt-sm" />
             <!-- Usuario: cargar todos y preselección de sesión -->
             <q-select
@@ -283,12 +304,48 @@ filter.value = (route.query.search as string) || '';
 
 const showDialog = ref(false);
 const editing = ref(false);
-const form = ref<Partial<Transaction>>({});
+// Mejor tipado para el formulario de transacción
+interface TransactionForm {
+  id?: number;
+  name: string;
+  amount: number | null;
+  amount_tax: number | null;
+  description: string;
+  date: string;
+  time: string;
+  active: boolean;
+  user_id: number | null;
+  provider_id: number | null;
+  rate_id: number | null;
+  account_id: number | null;
+  url_file: string;
+}
+
+// Declarar authStore antes de usarlo
+const authStore = useAuthStore();
+
+// Inicializar form después de authStore
+const initialForm = (): TransactionForm => ({
+  name: '',
+  amount: null,
+  amount_tax: null,
+  description: '',
+  // default to current date and time
+  date: new Date().toISOString().slice(0, 10),
+  time: new Date().toTimeString().slice(0, 5),
+  active: true,
+  user_id: authStore.user?.id ?? null,
+  provider_id: null,
+  rate_id: null,
+  account_id: null,
+  url_file: '',
+});
+const form = ref<TransactionForm>(initialForm());
 const pagination = ref({
   page: 1,
   rowsPerPage: 10,
   sortBy: 'date',
-  descending: true, // más reciente a más antigua
+  descending: true, // más reciente a más antigua por defecto
   rowsNumber: 0, // total records from server
 });
 const selected = ref([]);
@@ -296,7 +353,6 @@ const columnSelection = ref(['name', 'amount', 'date', 'account']);
 
 // Transactions store
 const tsStore = useTransactionsStore();
-const authStore = useAuthStore();
 const transactions = computed(() => tsStore.transactions);
 // Transaction type filter refs deben inicializarse antes del watch
 const transactionTypeOptions = ref<{ id: string; name: string }[]>([]);
@@ -526,17 +582,39 @@ function exportCSV() {
 
 function openDialog() {
   editing.value = false;
-  form.value = {} as Partial<Transaction>;
-  // Preseleccionar usuario actual de sesión
-  form.value.user_id = authStore.user?.id || null;
-  // Fecha por defecto: hoy
-  form.value.date = new Date().toISOString().slice(0, 10);
+  form.value = initialForm();
   showDialog.value = true;
 }
 
 function edit(row: Transaction) {
   editing.value = true;
-  form.value = { ...row };
+  const parts = row.date.split(' ');
+  const datePart = parts[0] || '';
+  const timePart = parts[1];
+  let time = '';
+  if (timePart) {
+    const [h, m] = timePart.split(':');
+    let hour = parseInt(h ?? '0', 10);
+    const minute = m ?? '00';
+    if (hour === 0) hour = 12;
+    else if (hour > 12) hour -= 12;
+    time = `${hour.toString().padStart(2, '0')}:${minute}`;
+  }
+  form.value = {
+    id: row.id,
+    name: row.name,
+    amount: row.amount,
+    amount_tax: row.amount_tax,
+    description: row.description || '',
+    date: datePart,
+    time,
+    active: row.active,
+    user_id: row.user_id ?? row.user?.id ?? null,
+    provider_id: row.provider_id ?? null,
+    rate_id: row.rate_id ?? null,
+    account_id: row.account_id ?? null,
+    url_file: row.url_file || '',
+  };
   showDialog.value = true;
 }
 
@@ -546,15 +624,12 @@ async function remove(row: Transaction) {
 }
 
 async function save() {
-  const data = { ...form.value } as Transaction;
-  let title = '';
-  let message = '';
-  // Validaciones por campo en orden descendente
+  // Validaciones
   if (!form.value.name) {
     $q.notify({ type: 'warning', message: 'Nombre es requerido.' });
     return;
   }
-  if (form.value.amount == null) {
+  if (form.value.amount === undefined) {
     $q.notify({ type: 'warning', message: 'Cantidad es requerida.' });
     return;
   }
@@ -562,53 +637,38 @@ async function save() {
     $q.notify({ type: 'warning', message: 'Fecha es requerida.' });
     return;
   }
-  if (!form.value.user_id) {
-    $q.notify({ type: 'warning', message: 'Usuario es requerido.' });
+  if (!form.value.time) {
+    $q.notify({ type: 'warning', message: 'Hora es requerida.' });
     return;
   }
-  if (!form.value.provider_id) {
-    $q.notify({ type: 'warning', message: 'Proveedor es requerido.' });
-    return;
-  }
-  if (!form.value.rate_id) {
-    $q.notify({ type: 'warning', message: 'Tarifa es requerida.' });
-    return;
-  }
-  if (!form.value.account_id) {
-    $q.notify({ type: 'warning', message: 'Cuenta es requerida.' });
-    return;
-  }
-  // Ejecutar acción y capturar respuesta
+  // Unir fecha y hora para el backend
+  const dateTime = `${form.value.date} ${form.value.time}:00`;
+
+  // Preparar payload sin tipar para evitar conflictos de TS
+  const payload = {
+    ...form.value,
+    date: dateTime,
+    time: form.value.time,
+  };
   let response;
   try {
-    if (editing.value && data.id) {
-      response = await tsStore.updateTransaction(data);
-      title = '¡Actualizada!';
-      message = 'Transacción actualizada con éxito.';
+    if (editing.value && form.value.id) {
+      response = await tsStore.updateTransaction(payload as any);
     } else {
-      response = await tsStore.addTransaction(data);
-      title = '¡Creada!';
-      message = 'Transacción creada con éxito.';
+      response = await tsStore.addTransaction(payload as any);
     }
-    // Si la respuesta fue exitosa (2xx), cerrar diálogo, limpiar y notificar
-    if (response && response.status >= 200 && response.status < 300) {
+    if (response.status >= 200 && response.status < 300) {
+      $q.notify({ type: 'positive', message: 'Transacción guardada correctamente.' });
       showDialog.value = false;
-      form.value = {} as Partial<Transaction>;
-      $q.notify({ type: 'positive', message: `${title} ${message}` });
-      refresh();
+      form.value = initialForm();
+      onRequest({ pagination: pagination.value });
+    } else {
+      $q.notify({ type: 'negative', message: 'Error al guardar la transacción.' });
     }
   } catch (error: any) {
-    console.error('Error al guardar transacción:', error);
-    // Si es error de validación 400, mostrar detalles sin cerrar el diálogo
-    const status = error.response?.status;
-    const validation = error.response?.data?.data;
-    if (status === 400 && validation) {
-      const messages = Object.values(validation).flat().join(' ');
-      $q.notify({ type: 'negative', message: messages });
-    } else {
-      $q.notify({ type: 'negative', message: 'No se pudo guardar la transacción.' });
-      // opcional: cerrar en otros errores
-    }
+    // manejar errores de validación u otros
+    const msg = error?.response?.data?.message || 'No se pudo guardar la transacción.';
+    $q.notify({ type: 'negative', message: msg });
   }
 }
 
@@ -675,10 +735,9 @@ const filterTransactionType = (val: string, update: (callback: () => void) => vo
     );
   });
 };
-// Fetch on mount
+
 onMounted(async () => {
-  // fetch transactions and filter lists
-  await tsStore.fetchTransactions();
+  onRequest({ pagination: pagination.value });
   try {
     const [pRes, uRes, aRes] = await Promise.all([
       api.get('/providers'),
@@ -701,8 +760,6 @@ onMounted(async () => {
     console.error('Error fetching filter lists', e);
   }
 });
-// Watch filters and trigger server request on change
-// Watch filters including rateFilter and trigger server request on change
 watch(
   [filter, providerFilter, rateFilter, userFilter, accountFilter, transactionTypeFilter],
   () => {
