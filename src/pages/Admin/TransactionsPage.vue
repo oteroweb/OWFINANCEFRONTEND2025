@@ -83,8 +83,10 @@
             class="full-width"
             v-model="transactionTypeFilter"
             :options="filteredTransactionTypeOptions"
-            option-value="id"
+            option-value="name"
             option-label="name"
+            emit-value
+            map-options
             dense
             filled
             clearable
@@ -132,9 +134,11 @@
       class="shadow-1"
       v-model:pagination="pagination"
       selection="multiple"
-      v-model:selected="selected"
+      :selected="selected"
+      @update:selected="updateSelected"
       @request="onRequest"
       sort-desc-first
+      :max-sort-rounds="2"
     >
       <template v-slot:body-cell-actions="props">
         <q-td align="right">
@@ -350,9 +354,12 @@ const pagination = ref({
   rowsNumber: 0,
 });
 // Filas seleccionadas de la tabla
-const selected = ref<Transaction[]>();
-// Track last sorted column to force first click descending
-const lastSortBy = ref(pagination.value.sortBy);
+const selected = ref<Transaction[]>([]);
+// Handle QTable selection updates (readonly to mutable)
+function updateSelected(val: readonly Transaction[]) {
+  selected.value = [...val];
+}
+// Rely on sort-desc-first prop to toggle ordering automatically
 
 // Transactions store
 const tsStore = useTransactionsStore();
@@ -525,16 +532,12 @@ type QTableRequestProps = {
 };
 function onRequest(props: QTableRequestProps) {
   if (props.pagination) {
-    const newSortBy = props.pagination.sortBy;
-    // If sorting a new column, default to descending
-    const descending = newSortBy !== lastSortBy.value ? true : props.pagination.descending;
-    lastSortBy.value = newSortBy;
     pagination.value = {
       ...pagination.value,
       page: props.pagination.page,
       rowsPerPage: props.pagination.rowsPerPage,
-      sortBy: newSortBy,
-      descending,
+      sortBy: props.pagination.sortBy,
+      descending: props.pagination.descending,
     };
   }
   // fetch from server with params
