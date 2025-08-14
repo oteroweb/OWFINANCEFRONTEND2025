@@ -33,7 +33,8 @@ const routes = [
     children: [
   { path: '', component: () => import('src/pages/admin/AdminDashboard.vue') },
   { path: 'transactions-old', component: () => import('src/pages/admin/old/TransactionsPage.vue') },
-  { path: 'transactions', component: () => import('src/pages/admin/transactions/index.vue') }
+  { path: 'transactions', component: () => import('src/pages/admin/transactions/index.vue') },
+  { path: 'currencies', component: () => import('src/pages/admin/currencies/index.vue') }
     ]
   },
   {
@@ -41,7 +42,7 @@ const routes = [
     component: () => import('layouts/UserLayout.vue'),
     meta: { requiresAuth: true, role: 'user' },
     children: [
-      { path: '', component: () => import('src/pages/User/UserHome.vue') }
+  { path: '', component: () => import('src/pages/user/UserHome.vue') }
     ]
   },
   {
