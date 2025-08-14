@@ -283,6 +283,7 @@ function fieldProps(field: CrudField): Partial<QSelectProps & QInputProps> {
     }) as QSelectProps['onFilter'];
   }
   if (field.type === 'date') Object.assign(propsObj, { type: 'date' as const });
+  if (field.type === 'datetime') Object.assign(propsObj, { type: 'datetime-local' as const });
   if (isTextarea) Object.assign(propsObj, { type: 'textarea' as const });
   if (isTime) Object.assign(propsObj, { type: 'time' as const });
   return propsObj as Partial<QSelectProps & QInputProps>;
@@ -555,12 +556,30 @@ onMounted(async () => {
   for (const f of dictionary.forms_filter) {
     (filters as Record<string, FilterValue>)[f.vmodel] = (f.value as FilterValue) ?? '';
   }
+  // aplicar valores de la URL a filtros (si existen en query)
+  for (const f of dictionary.forms_filter) {
+    const key = f.vmodel_api || f.vmodel;
+    const raw = route.query[key];
+    if (raw == null) continue;
+    let v: FilterValue = Array.isArray(raw) ? raw[0] : raw;
+    if (f.type === 'checkbox') {
+      const s = String(v).toLowerCase();
+      v = s === 'true' || s === '1';
+    } else if (f.type === 'select') {
+      // intentar convertir ID numérico
+      const n = Number(v);
+      v = Number.isFinite(n) ? n : (v as string);
+    } else {
+      v = v as string;
+    }
+    (filters as Record<string, FilterValue>)[f.vmodel] = v;
+  }
   // helper para ordenar y setear opciones (alfabéticamente por select_label/name)
   const setOptions = (field: CrudField, list: Array<Record<string, unknown>>) => {
     const labelKey = field.select_label || 'name';
     const sorted = [...list].sort((a, b) => {
-  const la = toStringLabel(a[labelKey]).toLowerCase();
-  const lb = toStringLabel(b[labelKey]).toLowerCase();
+      const la = toStringLabel(a[labelKey]).toLowerCase();
+      const lb = toStringLabel(b[labelKey]).toLowerCase();
       return la.localeCompare(lb, undefined, { numeric: true });
     });
     selectOptionsAll[field.vmodel] = sorted;
@@ -597,27 +616,27 @@ onMounted(async () => {
   await onRequest({ pagination: pagination.value });
 });
 
-// Re-fetch cuando cambian filtros o el buscador
+// Re-fetch y sincronizar filtros (incluye search) con la URL
 watch(
   () => ({ ...filters }),
-  () => {
+  (vals) => {
+    // actualizar ruta con filtros no vacíos
+    const nextQuery: Record<string, string> = {};
+    if (vals.search) nextQuery.search = String(vals.search);
+    for (const f of dictionary.forms_filter) {
+      const val = (vals as Record<string, FilterValue>)[f.vmodel];
+      if (val !== undefined && val !== null && val !== '') {
+        const key = f.vmodel_api || f.vmodel;
+        nextQuery[key] = String(val);
+      }
+    }
+    void router.replace({ query: nextQuery });
+
+    // refrescar tabla
     pagination.value.page = 1;
     void onRequest({ pagination: pagination.value });
   },
   { deep: true }
-);
-
-// Sincronizar el buscador con la URL (como en TransactionsPage)
-watch(
-  () => filters.search,
-  (val) => {
-    const query: Record<string, string | null | undefined> = { ...route.query } as Record<
-      string,
-      string | null | undefined
-    >;
-    query.search = val || undefined;
-    void router.replace({ query: query as Record<string, string | (string | null)[]> });
-  }
 );
 
 function clearFilters(): void {

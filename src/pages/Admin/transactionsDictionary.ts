@@ -25,8 +25,8 @@ export const dictionary = {
     { id: 1, col: 4, vmodel: 'user_id', vmodel_api: 'user_id', vmodel_url: 'users', type: 'select', label: 'Usuario', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 2, col: 4, vmodel: 'account_id', vmodel_api: 'account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
   { id: 3, col: 4, vmodel: 'transaction_type_id', vmodel_api: 'transaction_type_id', vmodel_url: 'transaction_types', type: 'select', label: 'Tipo de Transacción', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-  { id: 4, col: 3, vmodel: 'date_from', vmodel_api: 'date_from', type: 'date', label: 'Fecha desde', placeholder: 'YYYY-MM-DD', value: '' },
-  { id: 5, col: 3, vmodel: 'date_to', vmodel_api: 'date_to', type: 'date', label: 'Fecha hasta', placeholder: 'YYYY-MM-DD', value: '' }
+  { id: 4, col: 3, vmodel: 'date_from', vmodel_api: 'date_from', type: 'datetime', label: 'Fecha y hora desde', placeholder: 'YYYY-MM-DDTHH:mm', value: '' },
+  { id: 5, col: 3, vmodel: 'date_to', vmodel_api: 'date_to', type: 'datetime', label: 'Fecha y hora hasta', placeholder: 'YYYY-MM-DDTHH:mm', value: '' }
   ],
 
   // Columnas de la tabla
