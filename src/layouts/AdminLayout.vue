@@ -20,6 +20,9 @@
         <q-item clickable v-ripple to="/admin/clients">
           <q-item-section>Clientes</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/users">
+          <q-item-section>Usuarios</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>
