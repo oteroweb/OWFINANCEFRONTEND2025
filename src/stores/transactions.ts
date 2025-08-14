@@ -13,7 +13,7 @@ export interface Transaction {
   provider_id: number
   rate_id: number
   url_file?: string | null
-  transaction_type?: string | null
+  transaction_type_id?: string | null
   user_id?: number | null
   account_id?: number | null
   // Relaciones
@@ -21,6 +21,7 @@ export interface Transaction {
   account?: { id: number; name: string } | null
   provider?: { id: number; name: string } | null
   rate?: { id: number; name: string; value: string } | null
+  transaction_type?: { id: number; name: string } | null
   created_at?: string
   updated_at?: string
 }

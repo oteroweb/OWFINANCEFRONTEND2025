@@ -83,7 +83,7 @@
             class="full-width"
             v-model="transactionTypeFilter"
             :options="filteredTransactionTypeOptions"
-            option-value="name"
+            option-value="id"
             option-label="name"
             emit-value
             map-options
@@ -243,17 +243,6 @@
               dense
             />
             <q-select
-              v-model="form.rate_id"
-              :options="rateOptions"
-              option-value="id"
-              option-label="name"
-              emit-value
-              map-options
-              label="Tarifa"
-              class="q-mt-sm"
-              dense
-            />
-            <q-select
               v-model="form.account_id"
               :options="accountOptions"
               option-value="id"
@@ -261,6 +250,17 @@
               emit-value
               map-options
               label="Cuenta"
+              class="q-mt-sm"
+              dense
+            />
+            <q-select
+              v-model="form.transaction_type_id"
+              :options="transactionTypeOptions"
+              option-value="id"
+              option-label="name"
+              emit-value
+              map-options
+              label="Tipo de Transacción"
               class="q-mt-sm"
               dense
             />
@@ -284,6 +284,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { useTransactionsStore } from 'stores/transactions';
+import { useTransactionTypesStore } from 'stores/transactionTypes';
 import { useAuthStore } from 'stores/auth';
 import type { Transaction } from 'stores/transactions';
 import type { QTableColumn } from 'quasar';
@@ -324,6 +325,7 @@ interface TransactionForm {
   rate_id: number | null;
   account_id: number | null;
   url_file: string;
+  transaction_type_id: string | null;
 }
 
 // Declarar authStore antes de usarlo
@@ -344,6 +346,7 @@ const initialForm = (): TransactionForm => ({
   rate_id: null,
   account_id: null,
   url_file: '',
+  transaction_type_id: null,
 });
 const form = ref<TransactionForm>(initialForm());
 const pagination = ref({
@@ -364,18 +367,14 @@ function updateSelected(val: readonly Transaction[]) {
 // Transactions store
 const tsStore = useTransactionsStore();
 const transactions = computed(() => tsStore.transactions);
-// Transaction type filter refs deben inicializarse antes del watch
-const transactionTypeOptions = ref<{ id: string; name: string }[]>([]);
+// Transaction types store for filter
+const ttStore = useTransactionTypesStore();
 const filteredTransactionTypeOptions = ref<{ id: string; name: string }[]>([]);
-// Actualiza dinámicamente los tipos de transacción a partir de los datos cargados
+// Update options when store changes
 watch(
-  transactions,
-  (list) => {
-    const types = Array.from(
-      new Set(list.map((t) => t.transaction_type).filter((v): v is string => !!v))
-    );
-    transactionTypeOptions.value = types.map((type) => ({ id: type, name: type }));
-    filteredTransactionTypeOptions.value = transactionTypeOptions.value;
+  () => ttStore.types,
+  (types) => {
+    filteredTransactionTypeOptions.value = types;
   },
   { immediate: true }
 );
@@ -395,10 +394,11 @@ const userOptions = ref<{ id: number; name: string }[]>([]);
 const filteredUserOptions = ref<{ id: number; name: string }[]>([]);
 const accountOptions = ref<{ id: number; name: string }[]>([]);
 const filteredAccountOptions = ref<{ id: number; name: string }[]>([]);
-const rateOptions = ref<{ id: number; name: string }[]>([
-  { id: 1, name: 'Tarifa A' },
-  { id: 2, name: 'Tarifa B' },
-]);
+const transactionTypeOptions = ref<{ id: string; name: string }[]>([]);
+// const rateOptions = ref<{ id: number; name: string }[]>([
+//   { id: 1, name: 'Tarifa A' },
+//   { id: 2, name: 'Tarifa B' },
+// ]);
 
 const columns: QTableColumn<Transaction>[] = [
   { name: 'id', label: 'ID', field: 'id', align: 'left', sortable: true },
@@ -427,13 +427,6 @@ const columns: QTableColumn<Transaction>[] = [
   },
   { name: 'active', label: 'Activo', field: 'active', align: 'center', sortable: true },
   {
-    name: 'user',
-    label: 'Usuario',
-    field: (row: Transaction) => row.user?.name,
-    align: 'left',
-    sortable: true,
-  },
-  {
     name: 'provider',
     label: 'Proveedor',
     field: (row: Transaction) => row.provider?.name,
@@ -441,16 +434,9 @@ const columns: QTableColumn<Transaction>[] = [
     sortable: true,
   },
   {
-    name: 'rate',
-    label: 'Tarifa',
-    field: (row: Transaction) => row.rate?.value,
-    align: 'left',
-    sortable: true,
-  },
-  {
-    name: 'transaction_type',
-    label: 'Tipo',
-    field: 'transaction_type',
+    name: 'type_transaction',
+    label: 'Tipo de Transacción',
+    field: (row: Transaction) => row.transaction_type?.name,
     align: 'left',
     sortable: true,
   },
@@ -552,7 +538,7 @@ function onRequest(props: QTableRequestProps) {
   if (rateFilter.value != null) params['rate_id'] = rateFilter.value;
   if (userFilter.value != null) params['user_id'] = userFilter.value;
   if (accountFilter.value != null) params['account_id'] = accountFilter.value;
-  if (transactionTypeFilter.value) params['transaction_type'] = transactionTypeFilter.value;
+  if (transactionTypeFilter.value) params['transaction_type_id'] = transactionTypeFilter.value;
   void tsStore.fetchTransactions(params);
 }
 
@@ -625,6 +611,7 @@ function edit(row: Transaction) {
     rate_id: row.rate_id ?? null,
     account_id: row.account_id ?? null,
     url_file: row.url_file || '',
+    transaction_type_id: (row as any).transaction_type_id ?? null,
   };
   showDialog.value = true;
 }
@@ -735,14 +722,14 @@ const filterAccount = (val: string, update: (callback: () => void) => void) => {
 const filterTransactionType = (val: string, update: (callback: () => void) => void) => {
   if (val === '') {
     update(() => {
-      filteredTransactionTypeOptions.value = transactionTypeOptions.value;
+      filteredTransactionTypeOptions.value = ttStore.types;
     });
     return;
   }
   update(() => {
     const needle = val.toLowerCase();
-    filteredTransactionTypeOptions.value = transactionTypeOptions.value.filter(
-      (v) => v.name.toLowerCase().indexOf(needle) > -1
+    filteredTransactionTypeOptions.value = ttStore.types.filter((t) =>
+      t.name.toLowerCase().includes(needle)
     );
   });
 };
@@ -750,10 +737,11 @@ const filterTransactionType = (val: string, update: (callback: () => void) => vo
 onMounted(async () => {
   onRequest({ pagination: pagination.value });
   try {
-    const [pRes, uRes, aRes] = await Promise.all([
+    const [pRes, uRes, aRes, ttRes] = await Promise.all([
       api.get('/providers'),
       api.get('/users'),
       api.get('/accounts'),
+      api.get('/transaction_types'),
     ]);
     const allProviders = pRes.data.data || pRes.data;
     providerOptions.value = allProviders;
@@ -762,11 +750,10 @@ onMounted(async () => {
     filteredUserOptions.value = userOptions.value;
     accountOptions.value = aRes.data.data || aRes.data;
     filteredAccountOptions.value = accountOptions.value;
-    // Initialize transaction type options from fetched transactions
-    transactionTypeOptions.value = Array.from(
-      new Set(tsStore.transactions.map((t) => t.transaction_type).filter((v): v is string => !!v))
-    ).map((type) => ({ id: type, name: type }));
+    transactionTypeOptions.value = ttRes.data.data || ttRes.data;
     filteredTransactionTypeOptions.value = transactionTypeOptions.value;
+    // Fetch transaction types list
+    await ttStore.fetchTransactionTypes();
   } catch (e) {
     console.error('Error fetching filter lists', e);
   }
