@@ -41,7 +41,8 @@ const routes = [
   { path: 'accounts', component: () => import('src/pages/admin/accounts/index.vue') },
   { path: 'taxes', component: () => import('src/pages/admin/taxes/index.vue') },
   { path: 'item_categories', component: () => import('src/pages/admin/item_categories/index.vue') },
-  { path: 'items', component: () => import('src/pages/admin/items/index.vue') }
+  { path: 'items', component: () => import('src/pages/admin/items/index.vue') },
+  { path: 'jars', component: () => import('src/pages/admin/jars/index.vue') }
     ]
   },
   {

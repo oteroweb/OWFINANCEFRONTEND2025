@@ -38,6 +38,9 @@
         <q-item clickable v-ripple to="/admin/items">
           <q-item-section>Ítems</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/jars">
+          <q-item-section>Jarras</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>
