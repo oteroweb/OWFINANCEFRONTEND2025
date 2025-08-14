@@ -102,7 +102,7 @@
 import { ref, reactive, onMounted, watch } from 'vue';
 import { useQuasar, QInput, QSelect, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
-import type { QSelectProps, QInputProps, QTableColumn } from 'quasar';
+import type { QSelectProps, QInputProps } from 'quasar';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 
@@ -186,13 +186,47 @@ function getByPath(obj: unknown, path: string): unknown {
     return undefined;
   }, obj);
 }
-const columns: QTableColumn[] = dictionary.columns.map((col) => ({
+const columns = dictionary.columns.map((col) => ({
   name: col.key === 'actions' ? 'actions' : col.key,
   label: col.name,
   field: col.key.includes('.') ? (row: Row) => getByPath(row, col.key) : col.key,
   align: col.type === 'boolean' ? ('center' as const) : ('left' as const),
   sortable: col.key !== 'actions',
-  ...(col.type === 'boolean' ? { format: (val: unknown) => (val === true ? 'Sí' : 'No') } : {}),
+  ...(col.type === 'boolean'
+    ? { format: (val: unknown, row: Row) => (val === true || val === 1 ? 'Sí' : 'No') }
+    : {}),
+  // Custom format for time column to display AM/PM
+  ...(col.key === 'time'
+    ? {
+        format: (val: unknown, row: Row) => {
+          const s = typeof val === 'string' ? val : String(val);
+          const parts = s.split(':');
+          const h = parts[0] ?? '0';
+          const m = parts[1] ?? '00';
+          const hourNum = Number(h);
+          const ampm = hourNum >= 12 ? 'PM' : 'AM';
+          const hour12 = hourNum % 12 || 12;
+          return `${hour12.toString().padStart(2, '0')}:${m.padStart(2, '0')} ${ampm}`;
+        },
+      }
+    : {}),
+  ...(col.key === 'date'
+    ? {
+        format: (val: unknown, row: Row) => {
+          const s = typeof val === 'string' ? val : String(val);
+          const iso = s.includes('T') ? s : s.replace(' ', 'T');
+          const dt = new Date(iso);
+          return dt.toLocaleString(undefined, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          });
+        },
+      }
+    : {}),
 }));
 
 const loading = ref(false);
@@ -308,31 +342,25 @@ function loadRowIntoForm(row: Row): void {
   Object.keys(form).forEach((k) => delete form[k]);
   for (const field of dictionary.forms_update) {
     const apiKey = field.vmodel_api || field.vmodel;
-    const fromApi = (row as Record<string, unknown>)[apiKey];
-    const fromVModel = (row as Record<string, unknown>)[field.vmodel];
-    let val: unknown = fromApi ?? fromVModel;
-    // Si el campo es fecha/hora y viene combinado, separarlo
     const raw = (row as Record<string, unknown>)[apiKey];
-    if (field.vmodel === 'date' && typeof raw === 'string') {
-      const parts = raw.split(' ');
-      val = parts[0] || '';
-      // si el formulario tiene time, setearlo también
-      const hasTime = dictionary.forms_update.some((f) => f.vmodel === 'time');
-      if (hasTime) {
-        const timePart = parts[1];
-        let time = '';
-        if (timePart) {
-          const [h, m] = timePart.split(':');
-          let hour = parseInt(h ?? '0', 10);
-          const minute = m ?? '00';
-          if (hour === 0) hour = 12;
-          else if (hour > 12) hour -= 12;
-          time = `${hour.toString().padStart(2, '0')}:${minute}`;
-        }
-        form['time'] = time;
-      }
+    // Handle datetime-local fields: parse 'YYYY-MM-DD HH:mm:ss' into 'YYYY-MM-DDTHH:mm'
+    if (field.type === 'datetime' && typeof raw === 'string') {
+      const [datePart, timePart = ''] = raw.split(' ');
+      const hhmm = timePart.slice(0, 5);
+      form[field.vmodel] = (datePart && hhmm ? `${datePart}T${hhmm}` : datePart) as FormValue;
+      continue;
     }
-    form[field.vmodel] = (val as FormValue) ?? (field.type === 'checkbox' ? false : '');
+    // Handle checkbox: map 1/0 or boolean to true/false
+    if (field.type === 'checkbox') {
+      // raw may be 1, 0, or boolean
+      form[field.vmodel] = raw === 1 || raw === true;
+      continue;
+    }
+    // Default mapping
+    const fromApi = raw;
+    const fromVModel = (row as Record<string, unknown>)[field.vmodel];
+    const val: unknown = fromApi ?? fromVModel;
+    form[field.vmodel] = (val as FormValue) ?? '';
   }
   const maybeId = (row as Record<string, unknown>)['id'];
   currentRowId.value = typeof maybeId === 'number' ? maybeId : null;
@@ -357,16 +385,25 @@ function buildPayload(): Record<string, unknown> {
     const apiKey = field.vmodel_api || field.vmodel;
     payload[apiKey] = form[field.vmodel];
   }
-  // Unir fecha y hora si existen en el formulario
-  if (Object.prototype.hasOwnProperty.call(payload, 'date') && form['time']) {
-    const rawDate = payload['date'];
-    const rawTime = form['time'];
-    const dateStr =
-      typeof rawDate === 'string' || typeof rawDate === 'number' ? String(rawDate) : '';
-    const timeStr =
-      typeof rawTime === 'string' || typeof rawTime === 'number' ? String(rawTime) : '';
-    payload['date'] = `${dateStr} ${timeStr}:00`;
-    payload['time'] = timeStr;
+  // Convert checkbox boolean values to numeric 1 or 0
+  for (const field of fields) {
+    if (field.type === 'checkbox') {
+      const apiKey = field.vmodel_api || field.vmodel;
+      const val = payload[apiKey];
+      if (typeof val === 'boolean') {
+        payload[apiKey] = val ? 1 : 0;
+      }
+    }
+  }
+  // Add seconds to datetime-local values for datetime fields
+  for (const field of fields) {
+    if (field.type === 'datetime') {
+      const apiKey = field.vmodel_api || field.vmodel;
+      const val = payload[apiKey];
+      if (typeof val === 'string' && !val.endsWith(':00')) {
+        payload[apiKey] = `${val}:00`;
+      }
+    }
   }
   // incluir id en actualizaciones si existe
   if (editing.value && currentRowId.value) {
@@ -390,7 +427,7 @@ async function remove(row: unknown): Promise<void> {
       $q.notify({ type: 'warning', message: 'ID no válido' });
       return;
     }
-    await api.delete(`/${dictionary.url_api}/${id}`);
+    await api.delete(`/${dictionary.url_apis}/${id}`);
     $q.notify({ type: 'negative', message: 'Registro eliminado' });
     await onRequest({ pagination: pagination.value });
   } catch (err) {
@@ -418,10 +455,10 @@ async function save(): Promise<void> {
     const payload = buildPayload();
     let res;
     if (editing.value && currentRowId.value) {
-      res = await api.put(`/${dictionary.url_api}/${currentRowId.value}`, payload);
+      res = await api.put(`/${dictionary.url_apis}/${currentRowId.value}`, payload);
       $q.notify({ type: 'positive', message: 'Actualizado correctamente' });
     } else {
-      res = await api.post(`/${dictionary.url_api}`, payload);
+      res = await api.post(`/${dictionary.url_apis}`, payload);
       $q.notify({ type: 'positive', message: 'Creado correctamente' });
     }
     showDialog.value = false;
