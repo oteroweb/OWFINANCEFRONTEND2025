@@ -17,6 +17,9 @@
         <q-item clickable v-ripple to="/admin/transactions">
           <q-item-section>Transacciones</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/transactions-crud">
+          <q-item-section>Transacciones CRUD</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>
