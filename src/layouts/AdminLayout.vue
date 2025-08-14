@@ -17,6 +17,9 @@
         <q-item clickable v-ripple to="/admin/currencies">
           <q-item-section>Monedas</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/clients">
+          <q-item-section>Clientes</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>
