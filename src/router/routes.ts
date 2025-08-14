@@ -31,9 +31,9 @@ const routes = [
     component: () => import('layouts/AdminLayout.vue'),
     meta: { requiresAuth: true, role: 'admin' },
     children: [
-  { path: '', component: () => import('src/pages/Admin/AdminDashboard.vue') },
-  { path: 'transactions', component: () => import('src/pages/Admin/TransactionsPage.vue') },
-  { path: 'transactions-crud', component: () => import('src/pages/Admin/TransactionsCrudPage.vue') }
+  { path: '', component: () => import('src/pages/admin/AdminDashboard.vue') },
+  { path: 'transactions-old', component: () => import('src/pages/admin/old/TransactionsPage.vue') },
+  { path: 'transactions', component: () => import('src/pages/admin/transactions/index.vue') }
     ]
   },
   {
