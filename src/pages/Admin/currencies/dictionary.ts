@@ -22,9 +22,6 @@ export const dictionary = {
 
   // Filtros de búsqueda
   forms_filter: [
-    { id: 0, col: 4, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
-    { id: 1, col: 4, vmodel: 'symbol', vmodel_api: 'symbol', type: 'input', label: 'Símbolo', placeholder: 'Símbolo', value: '' },
-    { id: 2, col: 4, vmodel: 'code', vmodel_api: 'code', type: 'input', label: 'Código', placeholder: 'Código', value: '' }
   ],
 
   // Columnas de la tabla
