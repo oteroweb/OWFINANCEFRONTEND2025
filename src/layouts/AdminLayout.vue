@@ -14,6 +14,9 @@
         <q-item clickable v-ripple to="/admin/account_type">
           <q-item-section>Tipos de Cuenta</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/accounts">
+          <q-item-section>Cuentas</q-item-section>
+        </q-item>
         <q-item clickable v-ripple to="/admin/transactions">
           <q-item-section>Transacciones</q-item-section>
         </q-item>
