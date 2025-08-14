@@ -277,6 +277,20 @@ function toStringLabel(val: unknown): string {
 
 function fieldProps(field: CrudField): Partial<QSelectProps & QInputProps> {
   const isSelect = field.type === 'select';
+  // Exceptional case: select with no vmodel_api, use static items list
+  if (isSelect && !field.vmodel_api) {
+    return {
+      dense: true,
+      filled: true,
+      label: field.label,
+      options: field.items as Array<Record<string, unknown>>,
+      optionValue: 'value',
+      optionLabel: 'label',
+      emitValue: true,
+      mapOptions: true,
+      clearable: true,
+    } as Partial<QSelectProps>;
+  }
   const isTextarea = field.type === 'textarea';
   const isTime = field.type === 'time';
   const propsObj: Record<string, unknown> = {
@@ -352,8 +366,17 @@ function loadRowIntoForm(row: Row): void {
     }
     // Handle checkbox: map 1/0 or boolean to true/false
     if (field.type === 'checkbox') {
-      // raw may be 1, 0, or boolean
       form[field.vmodel] = raw === 1 || raw === true;
+      continue;
+    }
+    // Exceptional select with no vmodel_api: parse JSON string to get its 'value'
+    if (field.type === 'select' && !field.vmodel_api && typeof raw === 'string') {
+      try {
+        const obj = JSON.parse(raw);
+        form[field.vmodel] = (obj.value as FormValue) ?? '';
+      } catch {
+        form[field.vmodel] = '';
+      }
       continue;
     }
     // Default mapping
@@ -393,6 +416,24 @@ function buildPayload(): Record<string, unknown> {
       if (typeof val === 'boolean') {
         payload[apiKey] = val ? 1 : 0;
       }
+    }
+  }
+  // Exceptional select: parse object values to raw value for selects with no vmodel_api
+  for (const field of fields) {
+    if (field.type === 'select' && !field.vmodel_api) {
+      const apiKey = field.vmodel_api || field.vmodel;
+      const v = payload[apiKey];
+      if (v && typeof v === 'object' && 'value' in (v as Record<string, unknown>)) {
+        payload[apiKey] = (v as Record<string, unknown>).value;
+      }
+    }
+  }
+  // Special case: ensure 'align' is primitive value
+  if ('align' in payload && typeof payload.align === 'object' && payload.align != null) {
+    try {
+      payload.align = (payload.align as Record<string, unknown>).value;
+    } catch {
+      // ignore
     }
   }
   // Add seconds to datetime-local values for datetime fields

@@ -52,9 +52,8 @@ export const dictionary = {
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
   { id: 1, vmodel: 'symbol', vmodel_api: 'symbol', type: 'input', label: 'Símbolo', placeholder: 'Símbolo', value: '' },
   { id: 2, vmodel: 'code', vmodel_api: 'code', type: 'input', label: 'Código', placeholder: 'Código', value: '' },
-  { id: 3, vmodel: 'align', vmodel_api: 'align', type: 'select', label: 'Alineación', select_label: 'label', placeholder: '', value: '', items: [
+  { id: 3, vmodel: 'align', vmodel_api: '', type: 'select', label: 'Alineación', select_label: 'label', placeholder: '', value: '', items: [
         { value: 'left', label: 'Izquierda' },
-        { value: 'center', label: 'Centro' },
         { value: 'right', label: 'Derecha' }
       ]
     },
@@ -71,7 +70,6 @@ export const dictionary = {
   { id: 2, vmodel: 'code', vmodel_api: 'code', type: 'input', label: 'Código', placeholder: 'Código', value: '' },
   { id: 3, vmodel: 'align', vmodel_api: 'align', type: 'select', label: 'Alineación', select_label: 'label', placeholder: '', value: '', items: [
         { value: 'left', label: 'Izquierda' },
-        { value: 'center', label: 'Centro' },
         { value: 'right', label: 'Derecha' }
       ]
     },
