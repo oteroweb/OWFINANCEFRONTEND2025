@@ -40,7 +40,8 @@ const routes = [
   { path: 'account_type', component: () => import('src/pages/admin/account_type/index.vue') },
   { path: 'accounts', component: () => import('src/pages/admin/accounts/index.vue') },
   { path: 'taxes', component: () => import('src/pages/admin/taxes/index.vue') },
-  { path: 'item_categories', component: () => import('src/pages/admin/item_categories/index.vue') }
+  { path: 'item_categories', component: () => import('src/pages/admin/item_categories/index.vue') },
+  { path: 'items', component: () => import('src/pages/admin/items/index.vue') }
     ]
   },
   {

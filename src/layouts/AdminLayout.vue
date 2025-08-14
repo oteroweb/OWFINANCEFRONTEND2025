@@ -35,6 +35,9 @@
         <q-item clickable v-ripple to="/admin/item_categories">
           <q-item-section>Categorías Ítem</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/items">
+          <q-item-section>Ítems</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>
