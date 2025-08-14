@@ -32,6 +32,9 @@
         <q-item clickable v-ripple to="/admin/taxes">
           <q-item-section>Impuestos</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/item_categories">
+          <q-item-section>Categorías Ítem</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>
