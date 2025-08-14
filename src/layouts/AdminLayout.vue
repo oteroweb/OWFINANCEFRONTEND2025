@@ -11,6 +11,9 @@
         <q-item clickable v-ripple to="/admin/users">
           <q-item-section>Usuarios</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/account_type">
+          <q-item-section>Tipos de Cuenta</q-item-section>
+        </q-item>
         <q-item clickable v-ripple to="/admin/transactions">
           <q-item-section>Transacciones</q-item-section>
         </q-item>

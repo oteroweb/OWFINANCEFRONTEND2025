@@ -36,7 +36,8 @@ const routes = [
   { path: 'transactions', component: () => import('src/pages/admin/transactions/index.vue') },
   { path: 'currencies', component: () => import('src/pages/admin/currencies/index.vue') },
   { path: 'clients', component: () => import('src/pages/admin/clients/index.vue') },
-  { path: 'users', component: () => import('src/pages/admin/users/index.vue') }
+  { path: 'users', component: () => import('src/pages/admin/users/index.vue') },
+  { path: 'account_type', component: () => import('src/pages/admin/account_type/index.vue') }
     ]
   },
   {
