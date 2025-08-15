@@ -47,6 +47,9 @@
         <q-item clickable v-ripple to="/admin/rates">
           <q-item-section>Tasas</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/providers">
+          <q-item-section>Proveedores</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>
