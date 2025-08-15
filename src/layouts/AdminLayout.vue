@@ -44,6 +44,9 @@
         <q-item clickable v-ripple to="/admin/categories">
           <q-item-section>Categorías</q-item-section>
         </q-item>
+        <q-item clickable v-ripple to="/admin/rates">
+          <q-item-section>Tasas</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>
