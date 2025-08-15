@@ -5,7 +5,6 @@ export const dictionary = {
   buttonNewLabel: 'Nuevo Item',
   finderLabel: 'Buscar Nombre',
 
-  // Rutas de la API
   url_api: 'items',
   capitalize_api: 'Item',
   capitalize_apis: 'Items',

@@ -2,6 +2,7 @@
   <CrudPage :dictionary="dictionary" />
 </template>
 
+
 <script setup lang="ts">
 // Componente de lista de tasas
 defineOptions({ name: 'RatesIndex' });

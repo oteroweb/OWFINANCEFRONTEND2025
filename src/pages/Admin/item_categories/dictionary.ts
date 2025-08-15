@@ -32,12 +32,14 @@ export const dictionary = {
   // Columnas de la tabla
   columns: [
     { name: 'ID', key: 'id' },
-    { name: 'Nombre', key: 'name' },
+  { name: 'Nombre', key: 'name' },
+  { name: 'Categoría Padre', key: 'parent.name' },
     { name: 'Activo', key: 'active', type: 'boolean' },
     { name: 'Fecha', key: 'date' },
     { name: 'Eliminado', key: 'deleted_at' },
     { name: 'Acciones', key: 'actions' }
   ],
+
 
   // Botones de acción
   buttons: [
@@ -51,8 +53,9 @@ export const dictionary = {
   save_description: '¿Estás seguro de crear esta categoría?',
   forms_save: [
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
-    { id: 1, vmodel: 'date', vmodel_api: 'date', type: 'date', label: 'Fecha', placeholder: 'YYYY-MM-DD', value: '' },
-    { id: 2, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 1, vmodel: 'parent_id', vmodel_api: 'parent_id', vmodel_url: 'item_categories', type: 'select', label: 'Categoría Padre', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 2, vmodel: 'date', vmodel_api: 'date', type: 'date', label: 'Fecha', placeholder: 'YYYY-MM-DD', value: '' },
+    { id: 3, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ],
 
   // Edición de categoría de ítem
@@ -61,7 +64,8 @@ export const dictionary = {
   update_description: '¿Estás seguro de actualizar esta categoría?',
   forms_update: [
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
-    { id: 1, vmodel: 'date', vmodel_api: 'date', type: 'date', label: 'Fecha', placeholder: 'YYYY-MM-DD', value: '' },
-    { id: 2, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 1, vmodel: 'parent_id', vmodel_api: 'parent_id', vmodel_url: 'item_categories', type: 'select', label: 'Categoría Padre', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 2, vmodel: 'date', vmodel_api: 'date', type: 'date', label: 'Fecha', placeholder: 'YYYY-MM-DD', value: '' },
+    { id: 3, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ]
 } as const;
