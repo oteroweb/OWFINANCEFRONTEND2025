@@ -10,11 +10,11 @@ declare module 'vue' {
 }
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, 
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // withCredentials: true, // allow sending cookies for Sanctum
   headers: {
     Accept: 'application/json',
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${import.meta.env.VITE_API_KEY}` 
+    'Content-Type': 'application/json'
   }
 })
 
