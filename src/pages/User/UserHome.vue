@@ -14,7 +14,7 @@
       />
     </div>
     <!-- Dialog for transaction form -->
-  <q-dialog v-model="showDialog">
+    <q-dialog v-model="showDialog">
       <q-card style="min-width: 400px">
         <q-card-section>
           <div class="text-h6">Nueva Transacción</div>
@@ -82,7 +82,7 @@
                 </q-item>
               </template>
             </q-select>
-            
+
             <q-input
               v-model.number="form.amount"
               label="Importe"
@@ -156,12 +156,38 @@
             class="q-mt-sm"
           />
           <q-select
+            v-model="newAccountCurrency"
+            :options="currencyOptions"
+            :onFilter="onCurrencyFilter"
+            option-value="id"
+            option-label="nameLabel"
+            emit-value
+            map-options
+            label="Moneda"
+            filled
+            dense
+            use-input
+            clearable
+            input-debounce="300"
+            class="q-mt-sm"
+            @focus="ensureCurrenciesLoaded"
+          />
+          <q-select
             v-model="newAccountType"
             :options="accountTypeOptions"
+            :onFilter="onAccountTypeFilter"
+            option-value="id"
+            option-label="name"
+            emit-value
+            map-options
             label="Tipo de Cuenta"
             filled
             dense
+            use-input
+            clearable
+            input-debounce="300"
             class="q-mt-sm"
+            @focus="ensureAccountTypesLoaded"
           />
         </q-card-section>
         <q-card-actions align="right">
@@ -180,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
 import type { Transaction } from 'stores/transactions';
@@ -195,17 +221,24 @@ const showDialog = ref(false);
 const showAddProviderDialog = ref(false);
 // Diálogo de nueva cuenta
 const showAddAccountDialog = ref(false);
-const accountTypeOptions = ref([
-  { label: 'Ahorro', value: 'savings' },
-  { label: 'Corriente', value: 'checking' },
-  { label: 'Inversión', value: 'investment' },
-]);
+// Opciones de tipos de cuenta y monedas (desde API)
+type OptionBasic = { id: number; name: string };
+type CurrencyOption = OptionBasic & {
+  symbol?: string | undefined;
+  code?: string | undefined;
+  nameLabel: string;
+};
+const accountTypeOptions = ref<OptionBasic[]>([]);
+const allAccountTypes = ref<OptionBasic[]>([]);
+const currencyOptions = ref<CurrencyOption[]>([]);
+const allCurrencies = ref<CurrencyOption[]>([]);
 // Guardar el texto ingresado cuando no hay opción
 const lastAccountName = ref('');
 // Campos para el diálogo inline de cuenta
 const newAccountName = ref('');
 const newAccountInitial = ref<number | null>(null);
-const newAccountType = ref('');
+const newAccountType = ref<number | null>(null);
+const newAccountCurrency = ref<number | null>(null);
 
 // Transaction form state
 interface TransactionForm {
@@ -312,6 +345,8 @@ function onAccountFilter(val: string, doneFn: (callback: () => void) => void) {
 // Flags y funciones para evitar recargas innecesarias
 let providersLoaded = false;
 let accountsLoaded = false;
+let accountTypesLoaded = false;
+let currenciesLoaded = false;
 
 async function ensureProvidersLoaded() {
   if (!providersLoaded) {
@@ -365,6 +400,83 @@ async function ensureAccountsLoaded() {
       console.error('loadAccountOptions error', err);
     }
   }
+}
+
+// Cargar tipos de cuenta desde API
+async function ensureAccountTypesLoaded() {
+  if (!accountTypesLoaded) {
+    try {
+      const res = await api.get('/account_types', {
+        params: { order_by: 'name', order_dir: 'asc' },
+      });
+      const data = (res.data.data || res.data) as OptionBasic[];
+      allAccountTypes.value = data || [];
+      accountTypeOptions.value = data || [];
+      accountTypesLoaded = true;
+    } catch (err) {
+      $q.notify({ type: 'negative', message: 'Error cargando tipos de cuenta' });
+      allAccountTypes.value = [];
+      accountTypeOptions.value = [];
+      accountTypesLoaded = false;
+      console.error('ensureAccountTypesLoaded error', err);
+    }
+  }
+}
+
+// Cargar monedas desde API
+async function ensureCurrenciesLoaded() {
+  if (!currenciesLoaded) {
+    try {
+      const res = await api.get('/currencies', { params: { order_by: 'name', order_dir: 'asc' } });
+      const raw = (res.data.data || res.data) as Array<{
+        id: number;
+        name: string;
+        symbol?: string;
+        code?: string;
+      }>;
+      const mapped: CurrencyOption[] = (raw || []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        symbol: c.symbol,
+        code: c.code,
+        nameLabel: c.symbol ? `${c.name} (${c.symbol})` : c.name,
+      }));
+      allCurrencies.value = mapped;
+      currencyOptions.value = mapped;
+      currenciesLoaded = true;
+    } catch (err) {
+      $q.notify({ type: 'negative', message: 'Error cargando monedas' });
+      allCurrencies.value = [] as CurrencyOption[];
+      currencyOptions.value = [] as CurrencyOption[];
+      currenciesLoaded = false;
+      console.error('ensureCurrenciesLoaded error', err);
+    }
+  }
+}
+
+// Filtros para selects del diálogo de cuenta
+function onAccountTypeFilter(val: string, doneFn: (cb: () => void) => void) {
+  const needle = String(val || '').toLowerCase();
+  doneFn(() => {
+    if (!needle) accountTypeOptions.value = allAccountTypes.value;
+    else
+      accountTypeOptions.value = allAccountTypes.value.filter((o) =>
+        (o.name || '').toLowerCase().includes(needle)
+      );
+  });
+}
+function onCurrencyFilter(val: string, doneFn: (cb: () => void) => void) {
+  const needle = String(val || '').toLowerCase();
+  doneFn(() => {
+    if (!needle) currencyOptions.value = allCurrencies.value;
+    else
+      currencyOptions.value = allCurrencies.value.filter((o) => {
+        const name = (o.name || '').toLowerCase();
+        const symbol = (o.symbol || '').toLowerCase();
+        const code = (o.code || '').toLowerCase();
+        return name.includes(needle) || symbol.includes(needle) || code.includes(needle);
+      });
+  });
 }
 
 // Ya no se usa onShowDialog ni optionsLoaded, la carga es por focus en el select
@@ -438,11 +550,16 @@ function triggerAddAccountDialog(val: string) {
 // Crear nueva cuenta desde el diálogo inline
 async function addAccountInline() {
   try {
+    if (!newAccountCurrency.value || !newAccountType.value) {
+      $q.notify({ type: 'warning', message: 'Selecciona moneda y tipo de cuenta' });
+      return;
+    }
     const resp = await api.post('/accounts', {
       name: (newAccountName.value && newAccountName.value.trim()) || lastAccountName.value,
       initial: newAccountInitial.value ?? 0,
       user_id: auth.user?.id,
-      // type: newAccountType.value, // habilitar si backend lo soporta
+      currency_id: newAccountCurrency.value,
+      account_type_id: newAccountType.value,
     });
     const newAcc = resp.data?.data ?? resp.data;
     form.value.account_id = newAcc.id;
@@ -458,11 +575,22 @@ async function addAccountInline() {
     lastAccountName.value = '';
     newAccountName.value = '';
     newAccountInitial.value = null;
-    newAccountType.value = '';
+    newAccountType.value = null;
+    newAccountCurrency.value = null;
   }
 }
 
 // (limpieza) fin de helpers de cuentas
+
+// Pre-cargar listas cuando se abre el diálogo de cuenta
+watch(
+  () => showAddAccountDialog.value,
+  async (open) => {
+    if (open) {
+      await Promise.allSettled([ensureCurrenciesLoaded(), ensureAccountTypesLoaded()]);
+    }
+  }
+);
 </script>
 
 <!-- contenido original de UserHome -->

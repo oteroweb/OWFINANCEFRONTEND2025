@@ -77,31 +77,17 @@
           <div>
             <template v-if="col.ownerKey && col.pivotKey">
               <span
-                v-for="(item, idx) in props.row[col.key]
-                  ? props.row[col.key].filter(
-                      (u) => u[col.pivotKey] && u[col.pivotKey][col.ownerKey]
-                    )
-                  : []"
-                :key="item.id"
+                v-for="(item, idx) in getOwnedItems(props.row, col)"
+                :key="getItemKey(item, idx)"
               >
-                {{ item[col.labelKey || 'name'] }}
+                {{ getItemLabel(item, col.labelKey) }}
                 <q-badge color="primary" class="q-ml-xs">Owner</q-badge>
-                <span
-                  v-if="
-                    idx <
-                    (props.row[col.key]
-                      ? props.row[col.key].filter(
-                          (u) => u[col.pivotKey] && u[col.pivotKey][col.ownerKey]
-                        ).length - 1
-                      : 0)
-                  "
-                  >,
-                </span>
+                <span v-if="idx < getOwnedItems(props.row, col).length - 1">, </span>
               </span>
             </template>
             <template v-else>
-              <span v-for="(item, idx) in props.row[col.key] || []" :key="item.id">
-                {{ item[col.labelKey || 'name'] }}
+              <span v-for="(item, idx) in props.row[col.key] || []" :key="getItemKey(item, idx)">
+                {{ getItemLabel(item, col.labelKey) }}
                 <span v-if="idx < props.row[col.key]?.length - 1">, </span>
               </span>
             </template>
@@ -763,6 +749,39 @@ watch(
 );
 
 const manyToManyColumns = computed(() => dictionary.columns.filter((col) => col.manyToMany));
+
+// Helpers for many-to-many rendering with type guards
+type AnyRecord = Record<string, unknown>;
+function isRecord(v: unknown): v is AnyRecord {
+  return !!v && typeof v === 'object';
+}
+function asArray(v: unknown): AnyRecord[] {
+  return Array.isArray(v) ? (v as AnyRecord[]) : [];
+}
+function getItemLabel(item: AnyRecord, labelKey?: string): string {
+  const key = labelKey || 'name';
+  const val = isRecord(item) ? item[key] : undefined;
+  return toStringLabel(val);
+}
+function getOwnedItems(row: Row, col: CrudColumn): AnyRecord[] {
+  const list = asArray((row as AnyRecord)[col.key]);
+  if (!col.pivotKey || !col.ownerKey) return list;
+  const pk = col.pivotKey;
+  const ok = col.ownerKey;
+  return list.filter((u: AnyRecord) => {
+    if (!isRecord(u)) return false;
+    const pv = u[pk];
+    if (!isRecord(pv)) return false;
+    const piv = pv as Record<string, unknown>;
+    return Boolean(piv[ok]);
+  });
+}
+
+function getItemKey(item: AnyRecord, idx: number): string | number {
+  const id = isRecord(item) ? item['id'] : undefined;
+  if (typeof id === 'string' || typeof id === 'number') return id;
+  return idx;
+}
 
 function clearFilters(): void {
   // limpiar buscador y filtros select
