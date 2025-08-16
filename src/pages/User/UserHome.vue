@@ -14,7 +14,7 @@
       />
     </div>
     <!-- Dialog for transaction form -->
-    <q-dialog v-model="showDialog" @update:model-value="onShowDialog">
+  <q-dialog v-model="showDialog">
       <q-card style="min-width: 400px">
         <q-card-section>
           <div class="text-h6">Nueva Transacción</div>
@@ -61,7 +61,9 @@
               :options="accountOptions"
               :onFilter="onAccountFilter"
               option-value="id"
-              option-label="name"
+              :option-label="accountLabel"
+              emit-value
+              map-options
               label="Cuenta"
               filled
               dense
@@ -80,27 +82,7 @@
                 </q-item>
               </template>
             </q-select>
-            <!-- Dialog for adding new account -->
-            <q-dialog v-model="showAddAccountDialog">
-              <q-card style="min-width: 300px">
-                <q-card-section>
-                  <div class="text-h6">Nueva Cuenta</div>
-                </q-card-section>
-                <q-card-section>
-                  <q-input v-model="newAccountName" label="Nombre de la Cuenta" filled dense />
-                </q-card-section>
-                <q-card-actions align="right">
-                  <q-btn
-                    flat
-                    label="Cancelar"
-                    color="secondary"
-                    v-close-popup
-                    @click="showAddAccountDialog = false"
-                  />
-                  <q-btn flat label="Agregar" color="primary" @click="addAccount()" />
-                </q-card-actions>
-              </q-card>
-            </q-dialog>
+            
             <q-input
               v-model.number="form.amount"
               label="Importe"
@@ -109,6 +91,14 @@
               dense
               class="q-mt-sm"
             />
+            <div class="row items-center q-pt-sm">
+              <div class="col">
+                Saldo actual: {{ currencySymbol }}{{ Number(currentBalance).toFixed(2) }}
+              </div>
+              <div class="col text-right">
+                Saldo después: {{ currencySymbol }}{{ Number(newBalance).toFixed(2) }}
+              </div>
+            </div>
             <q-checkbox v-model="form.amount_tax" label="Incluir Impuesto" class="q-mt-sm" />
             <q-input v-model="form.url_file" label="Archivo (URL)" filled dense class="q-mt-sm" />
           </q-form>
@@ -148,27 +138,74 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Dialog for adding new account (inline) -->
+    <q-dialog v-model="showAddAccountDialog">
+      <q-card style="min-width: 300px">
+        <q-card-section>
+          <div class="text-h6">Nueva Cuenta</div>
+        </q-card-section>
+        <q-card-section>
+          <q-input v-model="newAccountName" label="Nombre de la Cuenta" filled dense />
+          <q-input
+            v-model.number="newAccountInitial"
+            label="Monto Inicial"
+            type="number"
+            filled
+            dense
+            class="q-mt-sm"
+          />
+          <q-select
+            v-model="newAccountType"
+            :options="accountTypeOptions"
+            label="Tipo de Cuenta"
+            filled
+            dense
+            class="q-mt-sm"
+          />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            label="Cancelar"
+            color="secondary"
+            v-close-popup
+            @click="showAddAccountDialog = false"
+          />
+          <q-btn flat label="Agregar" color="primary" @click="addAccountInline()" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
-function providerLabel(p: { name?: string; address?: string }) {
-  if (!p) return '';
-  if (p.name && p.address) return `${p.name} (${p.address})`;
-  return p.name || '';
-}
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
 import type { Transaction } from 'stores/transactions';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+// inline account dialog instead of external component
 
 const auth = useAuthStore();
 const tsStore = useTransactionsStore();
 const $q = useQuasar();
 const showDialog = ref(false);
 const showAddProviderDialog = ref(false);
+// Diálogo de nueva cuenta
+const showAddAccountDialog = ref(false);
+const accountTypeOptions = ref([
+  { label: 'Ahorro', value: 'savings' },
+  { label: 'Corriente', value: 'checking' },
+  { label: 'Inversión', value: 'investment' },
+]);
+// Guardar el texto ingresado cuando no hay opción
+const lastAccountName = ref('');
+// Campos para el diálogo inline de cuenta
+const newAccountName = ref('');
+const newAccountInitial = ref<number | null>(null);
+const newAccountType = ref('');
 
 // Transaction form state
 interface TransactionForm {
@@ -212,56 +249,51 @@ function onProviderFilter(val: string, doneFn: (callback: () => void) => void) {
   });
 }
 
-// Options
-const providerOptions = ref<Array<{ id: number; name: string; user_id?: number | null }>>([]);
-const allProviders = ref<typeof providerOptions.value>([]);
-const accountOptions = ref<Array<{ id: number; name: string; user_id?: number | null }>>([]);
-const allAccounts = ref<typeof accountOptions.value>([]);
-// Lógica para agregar cuenta
-const showAddAccountDialog = ref(false);
-const newAccountName = ref('');
-async function addAccount() {
-  try {
-    const resp = await api.post('/accounts', {
-      name: newAccountName.value,
-      user_id: auth.user?.id,
-    });
-    const newAcc = resp.data.data || resp.data;
-    form.value.account_id = newAcc.id;
-    accountsLoaded = false;
-    await ensureAccountsLoaded();
-    return newAcc;
-  } catch {
-    $q.notify({ type: 'negative', message: 'Error al crear cuenta' });
-  } finally {
-    showAddAccountDialog.value = false;
-    newAccountName.value = '';
-  }
-}
-function triggerAddAccountDialog(val: string) {
-  newAccountName.value = val;
-  showAddAccountDialog.value = true;
+// Opciones de proveedores y cuentas
+type ProviderOption = { id: number; name: string; address?: string; user_id?: number | null };
+const providerOptions = ref<ProviderOption[]>([]);
+const allProviders = ref<ProviderOption[]>([]);
+
+// Tipo para opciones de cuenta con balance
+// Tipo para opciones de cuenta con balance, código y símbolo de moneda
+type AccountOption = {
+  id: number;
+  name: string;
+  balance?: number;
+  user_id?: number | null;
+  currencyCode?: string;
+  currencySymbol?: string;
+};
+const allAccounts = ref<AccountOption[]>([]);
+const accountOptions = ref<AccountOption[]>([]);
+
+// Función para renderizar label de proveedor
+function providerLabel(p: { name?: string; address?: string }) {
+  if (!p) return '';
+  if (p.name && p.address) return `${p.name} (${p.address})`;
+  return p.name || '';
 }
 
-// Function to load providers and accounts
-async function loadProviderOptions() {
-  try {
-    const [pRes] = await Promise.all([
-      api.get('/providers', { params: { user_id: auth.user?.id } }),
-    ]);
-    type Provider = { id: number; name: string; user_id?: number | null };
-    const fetchedProviders = (pRes.data.data || pRes.data) as Provider[];
-    allProviders.value = fetchedProviders || [];
-    providerOptions.value = fetchedProviders || [];
-  } catch (err) {
-    $q.notify({ type: 'negative', message: 'Error cargando proveedores o cuentas' });
-    allProviders.value = [];
-    providerOptions.value = [];
-    allAccounts.value = [];
-    accountOptions.value = [];
-    console.error('loadProviderOptions error', err);
-  }
+// Función para renderizar label de cuenta con balance
+// Formatea el label de cuenta incluyendo balance y código de moneda
+function accountLabel(a: AccountOption) {
+  if (!a) return '';
+  const bal = a.balance ?? 0;
+  const code = a.currencyCode ? ` ${a.currencyCode}` : '';
+  return `${a.name} (${bal}${code})`;
 }
+
+// Saldo actual y después de transacción (se resta monto)
+const currentBalance = computed<number>(() => {
+  const acc = allAccounts.value.find((a) => a.id === form.value.account_id!);
+  return acc?.balance ?? 0;
+});
+const newBalance = computed<number>(() => currentBalance.value - (form.value.amount || 0));
+// Símbolo de moneda actual para saldos
+const currencySymbol = computed<string>(() => {
+  const acc = allAccounts.value.find((a) => a.id === form.value.account_id!);
+  return acc?.currencySymbol ?? '';
+});
 
 // Filtro tipo CrudPage para el q-select de cuentas
 function onAccountFilter(val: string, doneFn: (callback: () => void) => void) {
@@ -304,10 +336,26 @@ async function ensureAccountsLoaded() {
   if (!accountsLoaded) {
     try {
       const aRes = await api.get('/accounts', { params: { user_id: auth.user?.id } });
-      type Account = { id: number; name: string; user_id?: number | null };
-      const fetched = (aRes.data.data || aRes.data) as Account[];
-      allAccounts.value = fetched || [];
-      accountOptions.value = fetched || [];
+      // Mapear initial a balance para que aparezca en el label
+      interface ApiAccount {
+        id: number;
+        name: string;
+        initial?: number;
+        user_id?: number | null;
+        currency: { code: string; symbol: string };
+      }
+      const fetched = (aRes.data.data || aRes.data) as ApiAccount[];
+      const mapped = fetched.map((item) => ({
+        id: item.id,
+        name: item.name,
+        balance: item.initial ?? 0,
+        // Garantizar que user_id sea number o null, no undefined
+        user_id: item.user_id ?? null,
+        currencyCode: item.currency.code,
+        currencySymbol: item.currency.symbol,
+      }));
+      allAccounts.value = mapped;
+      accountOptions.value = mapped;
       accountsLoaded = true;
     } catch (err) {
       $q.notify({ type: 'negative', message: 'Error cargando cuentas' });
@@ -332,10 +380,13 @@ function saveTransaction() {
   if (dateStr && dateStr.length === 16) {
     dateStr += ':00';
   }
-  const payload = { ...form.value, date: dateStr };
-  delete payload.datetime;
+  // Preparar payload sin la propiedad datetime
+  // Extraer valores excepto datetime
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { datetime: _datetime, ...rest } = form.value;
+  const payload = { ...rest, date: dateStr } as unknown as Omit<Transaction, 'id'>;
   tsStore
-    .addTransaction(payload as unknown as Omit<Transaction, 'id'>)
+    .addTransaction(payload)
     .then(() => {
       $q.notify({ type: 'positive', message: 'Transacción creada' });
     })
@@ -358,7 +409,8 @@ async function addProvider() {
     // set as selected
     form.value.provider_id = newProv.id;
     // reload options to include new provider persistently
-    await loadProviderOptions();
+    // Recargar lista de proveedores
+    await ensureProvidersLoaded();
     return newProv;
   } catch {
     $q.notify({ type: 'negative', message: 'Error al crear proveedor' });
@@ -375,6 +427,42 @@ function triggerAddProviderDialog(val: string) {
   newProviderAddress.value = '';
   showAddProviderDialog.value = true;
 }
+
+// Abrir el diálogo de cuenta desde el no-option del select de cuentas
+function triggerAddAccountDialog(val: string) {
+  lastAccountName.value = val || '';
+  newAccountName.value = val || '';
+  showAddAccountDialog.value = true;
+}
+
+// Crear nueva cuenta desde el diálogo inline
+async function addAccountInline() {
+  try {
+    const resp = await api.post('/accounts', {
+      name: (newAccountName.value && newAccountName.value.trim()) || lastAccountName.value,
+      initial: newAccountInitial.value ?? 0,
+      user_id: auth.user?.id,
+      // type: newAccountType.value, // habilitar si backend lo soporta
+    });
+    const newAcc = resp.data?.data ?? resp.data;
+    form.value.account_id = newAcc.id;
+    // Recargar opciones para incluir la cuenta nueva con saldo/moneda
+    accountsLoaded = false;
+    await ensureAccountsLoaded();
+    $q.notify({ type: 'positive', message: 'Cuenta creada' });
+  } catch (e) {
+    $q.notify({ type: 'negative', message: 'Error al crear cuenta' });
+    console.error('addAccountInline error', e);
+  } finally {
+    showAddAccountDialog.value = false;
+    lastAccountName.value = '';
+    newAccountName.value = '';
+    newAccountInitial.value = null;
+    newAccountType.value = '';
+  }
+}
+
+// (limpieza) fin de helpers de cuentas
 </script>
 
 <!-- contenido original de UserHome -->
