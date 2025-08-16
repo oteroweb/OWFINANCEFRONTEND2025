@@ -35,6 +35,7 @@ export const dictionary = {
     { name: 'Nombre', key: 'name' },
     { name: 'Moneda', key: 'currency.name' },
     { name: 'Inicial', key: 'initial' },
+    { name: 'Balance', key: 'balance' },
     { name: 'Tipo', key: 'account_type.name' },
     { name: 'Usuarios', key: 'users', manyToMany: true, pivotKey: 'pivot', labelKey: 'name' },
     { name: 'Activo', key: 'active', type: 'boolean' },
