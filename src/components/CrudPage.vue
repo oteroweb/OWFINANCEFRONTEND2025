@@ -68,6 +68,46 @@
           <q-btn flat round icon="delete" color="negative" @click="remove(props.row)" />
         </q-td>
       </template>
+      <template
+        v-for="col in manyToManyColumns"
+        :key="col.key"
+        v-slot:[`body-cell-${col.key}`]="props"
+      >
+        <q-td>
+          <div>
+            <template v-if="col.ownerKey && col.pivotKey">
+              <span
+                v-for="(item, idx) in props.row[col.key]
+                  ? props.row[col.key].filter(
+                      (u) => u[col.pivotKey] && u[col.pivotKey][col.ownerKey]
+                    )
+                  : []"
+                :key="item.id"
+              >
+                {{ item[col.labelKey || 'name'] }}
+                <q-badge color="primary" class="q-ml-xs">Owner</q-badge>
+                <span
+                  v-if="
+                    idx <
+                    (props.row[col.key]
+                      ? props.row[col.key].filter(
+                          (u) => u[col.pivotKey] && u[col.pivotKey][col.ownerKey]
+                        ).length - 1
+                      : 0)
+                  "
+                  >,
+                </span>
+              </span>
+            </template>
+            <template v-else>
+              <span v-for="(item, idx) in props.row[col.key] || []" :key="item.id">
+                {{ item[col.labelKey || 'name'] }}
+                <span v-if="idx < props.row[col.key]?.length - 1">, </span>
+              </span>
+            </template>
+          </div>
+        </q-td>
+      </template>
     </q-table>
 
     <!-- Diálogo de creación/edición -->
@@ -99,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useQuasar, QInput, QSelect, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
 import type { QSelectProps, QInputProps } from 'quasar';
@@ -122,6 +162,16 @@ interface CrudField {
   order_by?: string;
   order_dir?: 'asc' | 'desc';
 }
+interface CrudColumn {
+  name: string;
+  key: string;
+  type?: string;
+  items?: ReadonlyArray<unknown>;
+  manyToMany?: boolean;
+  pivotKey?: string;
+  ownerKey?: string;
+  labelKey?: string;
+}
 interface CrudDictionary {
   title: string;
   description: string;
@@ -138,12 +188,7 @@ interface CrudDictionary {
     search: string;
   };
   forms_filter: ReadonlyArray<CrudField>;
-  columns: ReadonlyArray<{
-    name: string;
-    key: string;
-    type?: string;
-    items?: ReadonlyArray<unknown>;
-  }>;
+  columns: ReadonlyArray<CrudColumn>;
   buttons: ReadonlyArray<{
     icon: string;
     type_button: string;
@@ -716,6 +761,8 @@ watch(
   },
   { deep: true }
 );
+
+const manyToManyColumns = computed(() => dictionary.columns.filter((col) => col.manyToMany));
 
 function clearFilters(): void {
   // limpiar buscador y filtros select

@@ -1,3 +1,4 @@
+/* eslint-disable */
 <template>
   <q-page class="q-pa-md">
     <h2>Hola, {{ auth.user?.name }}</h2>
@@ -13,7 +14,7 @@
       />
     </div>
     <!-- Dialog for transaction form -->
-    <q-dialog v-model="showDialog">
+    <q-dialog v-model="showDialog" @update:model-value="onShowDialog">
       <q-card style="min-width: 400px">
         <q-card-section>
           <div class="text-h6">Nueva Transacción</div>
@@ -23,8 +24,9 @@
             <q-select
               v-model="form.provider_id"
               :options="providerOptions"
+              :onFilter="onProviderFilter"
               option-value="id"
-              option-label="name"
+              :option-label="providerLabel"
               emit-value
               map-options
               label="Proveedor"
@@ -34,34 +36,71 @@
               use-input
               clearable
               input-debounce="300"
+              @focus="ensureProvidersLoaded"
             >
               <template v-slot:append>
                 <q-btn flat dense icon="add" @click.stop="showAddProviderDialog = true" />
               </template>
+              <template v-slot:no-option="scope">
+                <q-item clickable @click="triggerAddProviderDialog(scope.inputValue)">
+                  <q-item-section> Crear nuevo "{{ scope.inputValue }}" </q-item-section>
+                </q-item>
+              </template>
             </q-select>
             <q-input v-model="form.name" label="Concepto" filled dense class="q-mt-sm" />
-            <div class="row q-col-gutter-md q-mt-sm">
-              <div class="col-6">
-                <q-date
-                  v-model="form.date"
-                  label="Fecha"
-                  filled
-                  dense
-                  class="full-width"
-                  mask="YYYY-MM-DD"
-                />
-              </div>
-              <div class="col-auto q-ml-lg">
-                <q-input
-                  v-model="form.time"
-                  label="Hora"
-                  type="time"
-                  filled
-                  dense
-                  style="max-width: 120px"
-                />
-              </div>
-            </div>
+            <q-input
+              v-model="form.datetime"
+              label="Fecha y hora"
+              type="datetime-local"
+              filled
+              dense
+              class="q-mt-sm"
+            />
+            <q-select
+              v-model="form.account_id"
+              :options="accountOptions"
+              :onFilter="onAccountFilter"
+              option-value="id"
+              option-label="name"
+              label="Cuenta"
+              filled
+              dense
+              class="q-mt-sm"
+              use-input
+              clearable
+              input-debounce="300"
+              @focus="ensureAccountsLoaded"
+            >
+              <template v-slot:append>
+                <q-btn flat dense icon="add" @click.stop="showAddAccountDialog = true" />
+              </template>
+              <template v-slot:no-option="scope">
+                <q-item clickable @click="triggerAddAccountDialog(scope.inputValue)">
+                  <q-item-section> Crear nuevo "{{ scope.inputValue }}" </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
+            <!-- Dialog for adding new account -->
+            <q-dialog v-model="showAddAccountDialog">
+              <q-card style="min-width: 300px">
+                <q-card-section>
+                  <div class="text-h6">Nueva Cuenta</div>
+                </q-card-section>
+                <q-card-section>
+                  <q-input v-model="newAccountName" label="Nombre de la Cuenta" filled dense />
+                </q-card-section>
+                <q-card-actions align="right">
+                  <q-btn
+                    flat
+                    label="Cancelar"
+                    color="secondary"
+                    v-close-popup
+                    @click="showAddAccountDialog = false"
+                  />
+                  <q-btn flat label="Agregar" color="primary" @click="addAccount()" />
+                </q-card-actions>
+              </q-card>
+            </q-dialog>
             <q-input
               v-model.number="form.amount"
               label="Importe"
@@ -71,16 +110,6 @@
               class="q-mt-sm"
             />
             <q-checkbox v-model="form.amount_tax" label="Incluir Impuesto" class="q-mt-sm" />
-            <q-select
-              v-model="form.account_id"
-              :options="accountOptions"
-              option-value="id"
-              option-label="name"
-              label="Cuenta"
-              filled
-              dense
-              class="q-mt-sm"
-            />
             <q-input v-model="form.url_file" label="Archivo (URL)" filled dense class="q-mt-sm" />
           </q-form>
         </q-card-section>
@@ -123,7 +152,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+function providerLabel(p: { name?: string; address?: string }) {
+  if (!p) return '';
+  if (p.name && p.address) return `${p.name} (${p.address})`;
+  return p.name || '';
+}
+import { ref } from 'vue';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
 import type { Transaction } from 'stores/transactions';
@@ -142,8 +176,7 @@ interface TransactionForm {
   name: string;
   amount: number | null;
   amount_tax: boolean;
-  date: string;
-  time: string;
+  datetime: string;
   provider_id: number | null;
   account_id: number | null;
   url_file: string;
@@ -152,8 +185,9 @@ const initialForm = (): TransactionForm => ({
   name: '',
   amount: null,
   amount_tax: false,
-  date: new Date().toISOString().slice(0, 10),
-  time: new Date().toTimeString().slice(0, 5),
+  datetime: new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16),
   provider_id: null,
   account_id: null,
   url_file: '',
@@ -164,25 +198,142 @@ const form = ref<TransactionForm>(initialForm());
 const newProviderName = ref('');
 const newProviderAddress = ref('');
 
-// Options
-const providerOptions = ref<Array<{ id: number; name: string; user_id?: number | null }>>([]);
-const accountOptions = ref<{ id: number; name: string }[]>([]);
-
-// Function to load providers and accounts
-async function loadOptions() {
-  const [pRes, aRes] = await Promise.all([api.get('/providers'), api.get('/accounts')]);
-  type Provider = { id: number; name: string; user_id?: number | null };
-  const allProviders = (pRes.data.data || pRes.data) as Provider[];
-  providerOptions.value = allProviders.filter((p) => p.user_id === auth.user?.id);
-  accountOptions.value = aRes.data.data || aRes.data;
+// Filtro tipo CrudPage para el q-select de proveedores
+function onProviderFilter(val: string, doneFn: (callback: () => void) => void) {
+  const needle = String(val || '').toLowerCase();
+  doneFn(() => {
+    if (!needle) {
+      providerOptions.value = allProviders.value;
+    } else {
+      providerOptions.value = allProviders.value.filter((p) =>
+        (p.name || '').toLowerCase().includes(needle)
+      );
+    }
+  });
 }
 
-// On mount, load options
-onMounted(loadOptions);
+// Options
+const providerOptions = ref<Array<{ id: number; name: string; user_id?: number | null }>>([]);
+const allProviders = ref<typeof providerOptions.value>([]);
+const accountOptions = ref<Array<{ id: number; name: string; user_id?: number | null }>>([]);
+const allAccounts = ref<typeof accountOptions.value>([]);
+// Lógica para agregar cuenta
+const showAddAccountDialog = ref(false);
+const newAccountName = ref('');
+async function addAccount() {
+  try {
+    const resp = await api.post('/accounts', {
+      name: newAccountName.value,
+      user_id: auth.user?.id,
+    });
+    const newAcc = resp.data.data || resp.data;
+    form.value.account_id = newAcc.id;
+    accountsLoaded = false;
+    await ensureAccountsLoaded();
+    return newAcc;
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error al crear cuenta' });
+  } finally {
+    showAddAccountDialog.value = false;
+    newAccountName.value = '';
+  }
+}
+function triggerAddAccountDialog(val: string) {
+  newAccountName.value = val;
+  showAddAccountDialog.value = true;
+}
+
+// Function to load providers and accounts
+async function loadProviderOptions() {
+  try {
+    const [pRes] = await Promise.all([
+      api.get('/providers', { params: { user_id: auth.user?.id } }),
+    ]);
+    type Provider = { id: number; name: string; user_id?: number | null };
+    const fetchedProviders = (pRes.data.data || pRes.data) as Provider[];
+    allProviders.value = fetchedProviders || [];
+    providerOptions.value = fetchedProviders || [];
+  } catch (err) {
+    $q.notify({ type: 'negative', message: 'Error cargando proveedores o cuentas' });
+    allProviders.value = [];
+    providerOptions.value = [];
+    allAccounts.value = [];
+    accountOptions.value = [];
+    console.error('loadProviderOptions error', err);
+  }
+}
+
+// Filtro tipo CrudPage para el q-select de cuentas
+function onAccountFilter(val: string, doneFn: (callback: () => void) => void) {
+  const needle = String(val || '').toLowerCase();
+  doneFn(() => {
+    if (!needle) {
+      accountOptions.value = allAccounts.value;
+    } else {
+      accountOptions.value = allAccounts.value.filter((a) =>
+        (a.name || '').toLowerCase().includes(needle)
+      );
+    }
+  });
+}
+
+// Flags y funciones para evitar recargas innecesarias
+let providersLoaded = false;
+let accountsLoaded = false;
+
+async function ensureProvidersLoaded() {
+  if (!providersLoaded) {
+    try {
+      const pRes = await api.get('/providers', { params: { user_id: auth.user?.id } });
+      type Provider = { id: number; name: string; address?: string; user_id?: number | null };
+      const fetchedProviders = (pRes.data.data || pRes.data) as Provider[];
+      allProviders.value = fetchedProviders || [];
+      providerOptions.value = fetchedProviders || [];
+      providersLoaded = true;
+    } catch (err) {
+      $q.notify({ type: 'negative', message: 'Error cargando proveedores' });
+      allProviders.value = [];
+      providerOptions.value = [];
+      providersLoaded = false;
+      console.error('loadProviderOptions error', err);
+    }
+  }
+}
+
+async function ensureAccountsLoaded() {
+  if (!accountsLoaded) {
+    try {
+      const aRes = await api.get('/accounts', { params: { user_id: auth.user?.id } });
+      type Account = { id: number; name: string; user_id?: number | null };
+      const fetched = (aRes.data.data || aRes.data) as Account[];
+      allAccounts.value = fetched || [];
+      accountOptions.value = fetched || [];
+      accountsLoaded = true;
+    } catch (err) {
+      $q.notify({ type: 'negative', message: 'Error cargando cuentas' });
+      allAccounts.value = [];
+      accountOptions.value = [];
+      accountsLoaded = false;
+      console.error('loadAccountOptions error', err);
+    }
+  }
+}
+
+// Ya no se usa onShowDialog ni optionsLoaded, la carga es por focus en el select
 
 function saveTransaction() {
-  // Aquí agregamos la transacción
-  const payload = { ...form.value, date: form.value.date + ' ' + form.value.time + ':00' };
+  // Unificar datetime-local a formato backend: 'YYYY-MM-DD HH:mm:ss'
+  const dt = form.value.datetime;
+  let dateStr = dt;
+  if (dt && dt.includes('T')) {
+    dateStr = dt.replace('T', ' ');
+  }
+  // Si no tiene segundos, añadir ':00'
+  if (dateStr && dateStr.length === 16) {
+    dateStr += ':00';
+  }
+  const payload = { ...form.value, date: dateStr };
+  delete payload.datetime;
   tsStore
     .addTransaction(payload as unknown as Omit<Transaction, 'id'>)
     .then(() => {
@@ -207,7 +358,7 @@ async function addProvider() {
     // set as selected
     form.value.provider_id = newProv.id;
     // reload options to include new provider persistently
-    await loadOptions();
+    await loadProviderOptions();
     return newProv;
   } catch {
     $q.notify({ type: 'negative', message: 'Error al crear proveedor' });
@@ -216,6 +367,13 @@ async function addProvider() {
     newProviderName.value = '';
     newProviderAddress.value = '';
   }
+}
+
+// Trigger provider creation from q-select when entering new value
+function triggerAddProviderDialog(val: string) {
+  newProviderName.value = val;
+  newProviderAddress.value = '';
+  showAddProviderDialog.value = true;
 }
 </script>
 

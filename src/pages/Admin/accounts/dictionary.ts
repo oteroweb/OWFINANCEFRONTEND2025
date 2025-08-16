@@ -22,9 +22,11 @@ export const dictionary = {
 
   // Filtros de búsqueda
   forms_filter: [
-    { id: 0, col: 4, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
-    { id: 1, col: 4, vmodel: 'currency_id', vmodel_api: 'id_currency', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 2, col: 4, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_type', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' }
+  { id: 0, col: 4, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
+  { id: 1, col: 4, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+  { id: 2, col: 4, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_types', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+  { id: 3, col: 4, vmodel: 'user_id', vmodel_api: 'user_id', vmodel_url: 'users', type: 'select', label: 'Usuario', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+  { id: 4, col: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ],
 
   // Columnas de la tabla
@@ -34,6 +36,7 @@ export const dictionary = {
     { name: 'Moneda', key: 'currency.name' },
     { name: 'Inicial', key: 'initial' },
     { name: 'Tipo', key: 'account_type.name' },
+    { name: 'Usuarios', key: 'users', manyToMany: true, pivotKey: 'pivot', labelKey: 'name' },
     { name: 'Activo', key: 'active', type: 'boolean' },
     { name: 'Eliminado', key: 'deleted_at' },
     { name: 'Acciones', key: 'actions' }
@@ -51,9 +54,9 @@ export const dictionary = {
   save_description: '¿Estás seguro de crear esta cuenta?',
   forms_save: [
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
-    { id: 1, vmodel: 'id_currency', vmodel_api: 'id_currency', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 2, vmodel: 'initial', vmodel_api: 'initial', type: 'input', label: 'Inicial', placeholder: '0.00', value: '' },
-    { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_type', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 1, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 2, vmodel: 'initial', vmodel_api: 'initial', type: 'number', label: 'Inicial', placeholder: '0.00', value: '' },
+    { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_types', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ],
 
@@ -63,9 +66,9 @@ export const dictionary = {
   update_description: '¿Estás seguro de actualizar esta cuenta?',
   forms_update: [
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
-    { id: 1, vmodel: 'id_currency', vmodel_api: 'id_currency', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 2, vmodel: 'initial', vmodel_api: 'initial', type: 'input', label: 'Inicial', placeholder: '0.00', value: '' },
-    { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_type', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 1, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 2, vmodel: 'initial', vmodel_api: 'initial', type: 'number', label: 'Inicial', placeholder: '0.00', value: '' },
+    { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_types', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ]
 } as const;
