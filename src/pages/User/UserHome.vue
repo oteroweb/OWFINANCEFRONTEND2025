@@ -96,7 +96,12 @@
                   Saldo actual: {{ currencySymbol }}{{ Number(currentBalance).toFixed(2) }}
                 </div>
                 <div class="col text-right">
-                  Saldo después: {{ currencySymbol }}{{ Number(newBalance).toFixed(2) }}
+                  <template v-if="needsRateForAccountBalance">
+                    Saldo después: requiere tasa para calcular
+                  </template>
+                  <template v-else>
+                    Saldo después: {{ currencySymbol }}{{ Number(newBalance).toFixed(2) }}
+                  </template>
                 </div>
               </div>
             </div>
@@ -163,8 +168,13 @@
                   }}{{ Number(destCurrentBalance).toFixed(2) }}
                 </div>
                 <div class="col text-right">
-                  Destino - Saldo después: {{ destCurrencySymbol
-                  }}{{ Number(destNewBalance).toFixed(2) }}
+                  <template v-if="needsRateForDestBalance">
+                    Destino - Saldo después: requiere tasa para calcular
+                  </template>
+                  <template v-else>
+                    Destino - Saldo después: {{ destCurrencySymbol
+                    }}{{ Number(destNewBalance).toFixed(2) }}
+                  </template>
                 </div>
               </div>
               <div v-if="form.account_to_id" class="text-right text-caption q-pr-xs text-grey-7">
@@ -187,19 +197,134 @@
             </div>
 
             <div class="row q-col-gutter-sm q-mt-sm">
-              <div class="col-12 col-sm-6">
-                <q-input v-model.number="form.amount" label="Importe" type="number" filled dense />
-              </div>
-              <div class="col-12 col-sm-6" v-if="showRateInput">
-                <q-input
-                  v-model.number="form.rate"
-                  :label="rateLabel"
-                  type="number"
-                  step="0.0001"
-                  filled
-                  dense
+              <div class="col-12">
+                <q-toggle
+                  v-model="isAdvancedAmount"
+                  color="primary"
+                  label="Importe avanzado (factura)"
                 />
               </div>
+              <template v-if="!isAdvancedAmount">
+                <div class="col-12 col-sm-6">
+                  <q-input
+                    v-model.number="form.amount"
+                    label="Importe"
+                    type="number"
+                    filled
+                    dense
+                  />
+                </div>
+                <div class="col-12 col-sm-6" v-if="showRateInput">
+                  <q-input
+                    v-model.number="form.rate"
+                    :label="rateLabel"
+                    type="number"
+                    step="0.0001"
+                    filled
+                    dense
+                  />
+                </div>
+              </template>
+              <template v-else>
+                <div class="col-12">
+                  <div class="q-pa-sm bg-grey-2 rounded-borders">
+                    <div class="row text-caption text-grey-7 q-pb-xs">
+                      <div class="col-6 col-sm-6">Ítem</div>
+                      <div class="col-2 col-sm-2 text-right">Cant.</div>
+                      <div class="col-2 col-sm-2 text-right">Precio</div>
+                      <div class="col-2 col-sm-2 text-right">Total</div>
+                    </div>
+                    <div
+                      class="row items-center q-gutter-y-xs"
+                      v-for="(row, idx) in invoiceItems"
+                      :key="idx"
+                    >
+                      <div class="col-6 col-sm-6">
+                        <q-input
+                          v-model="row.item"
+                          dense
+                          filled
+                          placeholder="Descripción del ítem"
+                        />
+                      </div>
+                      <div class="col-2 col-sm-2">
+                        <q-input
+                          v-model.number="row.quantity"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          dense
+                          filled
+                          class="text-right"
+                        />
+                      </div>
+                      <div class="col-2 col-sm-2">
+                        <q-input
+                          v-model.number="row.unitPrice"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          dense
+                          filled
+                          class="text-right"
+                        />
+                      </div>
+                      <div class="col-2 col-sm-2 flex items-center justify-between">
+                        <div class="q-pr-sm text-right" style="width: 100%">
+                          {{ lineTotal(row).toFixed(2) }}
+                        </div>
+                        <q-btn
+                          dense
+                          flat
+                          round
+                          icon="delete"
+                          color="negative"
+                          @click="removeInvoiceRow(idx)"
+                        />
+                      </div>
+                    </div>
+                    <div class="q-mt-sm">
+                      <q-btn
+                        dense
+                        flat
+                        color="primary"
+                        icon="add"
+                        label="Agregar línea"
+                        @click="addInvoiceRow"
+                      />
+                    </div>
+                    <div class="q-mt-md">
+                      <div class="row items-center">
+                        <div class="col text-right text-subtitle2">Importe (subtotal):</div>
+                        <div class="col-auto text-right">
+                          {{ currencySymbol }}{{ invoiceSubtotal.toFixed(2) }}
+                        </div>
+                      </div>
+                      <div class="row items-center q-mt-xs">
+                        <div class="col text-right text-subtitle2">
+                          Resultado total
+                          <span v-if="applyRateToTotal" class="text-caption text-grey-7"
+                            >(aplicando tasa)</span
+                          >:
+                        </div>
+                        <div class="col-auto text-right">
+                          {{ resultCurrencySymbol }}{{ resultTotal.toFixed(2) }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-sm-6" v-if="showRateInput">
+                  <q-input
+                    v-model.number="form.rate"
+                    :label="rateLabel"
+                    type="number"
+                    step="0.0001"
+                    filled
+                    dense
+                  />
+                </div>
+              </template>
             </div>
 
             <q-checkbox v-model="form.amount_tax" label="Incluir Impuesto" class="q-mt-sm" />
@@ -376,6 +501,84 @@ const initialForm = (): TransactionForm => ({
   url_file: '',
 });
 const form = ref<TransactionForm>(initialForm());
+// Modo de importe avanzado (factura)
+type InvoiceRow = { item: string; quantity: number; unitPrice: number };
+const isAdvancedAmount = ref(false);
+const invoiceItems = ref<InvoiceRow[]>([{ item: '', quantity: 1, unitPrice: 0 }]);
+function addInvoiceRow() {
+  invoiceItems.value.push({ item: '', quantity: 1, unitPrice: 0 });
+}
+function removeInvoiceRow(idx: number) {
+  invoiceItems.value.splice(idx, 1);
+  if (invoiceItems.value.length === 0)
+    invoiceItems.value.push({ item: '', quantity: 1, unitPrice: 0 });
+}
+function lineTotal(row: InvoiceRow): number {
+  const q = Number(row.quantity || 0);
+  const u = Number(row.unitPrice || 0);
+  return Number.isFinite(q) && Number.isFinite(u) ? q * u : 0;
+}
+const invoiceSubtotal = computed<number>(() =>
+  invoiceItems.value.reduce((sum, r) => sum + lineTotal(r), 0)
+);
+// Sincroniza el subtotal con form.amount cuando está activo el modo avanzado
+watch(
+  () => invoiceSubtotal.value,
+  (sub) => {
+    if (isAdvancedAmount.value) {
+      // Mantener signo según tipo (egreso/ingreso/transfer)
+      const ty = ttypes.types.find((t) => t.id === form.value.transaction_type_id);
+      const slug = (ty?.slug || '').toLowerCase();
+      if (slug === 'expense') form.value.amount = sub > 0 ? -Math.abs(sub) : 0;
+      else form.value.amount = Math.abs(sub);
+    }
+  }
+);
+// Si se apaga el modo avanzado, no alteramos items, pero dejamos amount tal como esté.
+watch(
+  () => isAdvancedAmount.value,
+  (on) => {
+    if (on) {
+      // Forzar cálculo inicial
+      const sub = invoiceSubtotal.value;
+      const ty = ttypes.types.find((t) => t.id === form.value.transaction_type_id);
+      const slug = (ty?.slug || '').toLowerCase();
+      if (slug === 'expense') form.value.amount = sub > 0 ? -Math.abs(sub) : 0;
+      else form.value.amount = Math.abs(sub);
+    }
+  }
+);
+// Resultado total mostrado (aplica tasa cuando corresponda)
+const applyRateToTotal = computed<boolean>(
+  () => showRateInput.value && !!form.value.rate && Number(form.value.rate) > 0
+);
+const resultCurrencySymbol = computed<string>(() => {
+  // Si aplica tasa, mostramos símbolo del destino (transfer) o de la cuenta seleccionada (no transfer)
+  if (isTransfer.value) {
+    return destCurrencySymbol.value || currencySymbol.value || '';
+  }
+  // No transferencia: al aplicar tasa, la conversión es Usuario -> Cuenta. Mostramos símbolo de la cuenta.
+  return currencySymbol.value || '';
+});
+const resultTotal = computed<number>(() => {
+  const base = Math.abs(form.value.amount || 0);
+  if (!applyRateToTotal.value) return base;
+  const r = Number(form.value.rate || 0);
+  if (!Number.isFinite(r) || r <= 0) return base;
+  // Para transferencias la tasa ya se entiende Origen->Destino; para no transfer, Usuario->Cuenta
+  return base * r;
+});
+
+// Flags para UI: cuando se necesita tasa pero no es válida, no mostrar saldo después numérico
+const needsRateForAccountBalance = computed<boolean>(() => {
+  // Caso NO transferencia: se requiere tasa si showRateInput es true
+  if (isTransfer.value) return false;
+  return showRateInput.value && !(Number(form.value.rate || 0) > 0);
+});
+const needsRateForDestBalance = computed<boolean>(() => {
+  // Caso transferencia: destino requiere tasa si hay cruce de monedas y la tasa no es válida
+  return isTransfer.value && isCrossCurrency.value && !(Number(form.value.rate || 0) > 0);
+});
 
 // New provider name
 const newProviderName = ref('');
@@ -436,7 +639,30 @@ const currentBalance = computed<number>(() => {
   const acc = allAccounts.value.find((a) => a.id === accId);
   return acc?.balance ?? 0;
 });
-const newBalance = computed<number>(() => currentBalance.value - (form.value.amount || 0));
+// Importe convertido a la moneda de la cuenta (solo para NO transferencias)
+const amountForAccountCurrency = computed<number>(() => {
+  if (isTransfer.value) return Number(form.value.amount || 0);
+  const amt = Number(form.value.amount || 0);
+  if (showRateInput.value) {
+    const r = Number(form.value.rate || 0);
+    if (Number.isFinite(r) && r > 0) return amt * r; // Usuario → Cuenta
+  }
+  return amt;
+});
+const newBalance = computed<number>(() => {
+  const base = Number(currentBalance.value) || 0;
+  if (isTransfer.value) {
+    // En la cuenta de origen, el egreso es en su misma moneda
+    return base - (Number(form.value.amount || 0) || 0);
+  }
+  const ty = ttypes.types.find((t) => t.id === form.value.transaction_type_id);
+  const slug = (ty?.slug || '').toLowerCase();
+  const amtAcc = Number(amountForAccountCurrency.value) || 0;
+  if (slug === 'expense') return base - Math.abs(amtAcc);
+  if (slug === 'income') return base + Math.abs(amtAcc);
+  // Si no hay tipo definido, usar el signo que haya escrito el usuario
+  return base + amtAcc;
+});
 const currencySymbol = computed<string>(() => {
   const accId = isTransfer.value ? form.value.account_from_id! : form.value.account_id!;
   const acc = allAccounts.value.find((a) => a.id === accId);
@@ -472,7 +698,7 @@ const destNewBalance = computed<number>(() => {
   if (!isTransfer.value) return Number(destCurrentBalance.value) || 0; // no aplica
   const baseNum = Number(destCurrentBalance.value);
   const base = Number.isFinite(baseNum) ? baseNum : 0;
-  const amount = Number.isFinite(amt) ? amt : 0;
+  const amount = Number.isFinite(amt) ? Math.abs(amt) : 0; // destino siempre suma
   if (!isCrossCurrency.value) return base + amount;
   const rateNum = Number(form.value.rate || 0);
   if (Number.isFinite(rateNum) && rateNum > 0) return base + amount * rateNum;
@@ -802,6 +1028,9 @@ function saveTransaction() {
     });
   showDialog.value = false;
   form.value = initialForm();
+  // Resetear modo avanzado e items de factura
+  isAdvancedAmount.value = false;
+  invoiceItems.value = [{ item: '', quantity: 1, unitPrice: 0 }];
 }
 
 // Create new provider on the fly
@@ -924,24 +1153,17 @@ watch(
       if (val < 0) form.value.amount = Math.abs(val);
       return;
     }
-    // If user already picked a type, enforce sign live
-    if (currentSlug === 'expense' && val > 0) {
-      form.value.amount = -Math.abs(val);
-      return;
-    }
-    if (currentSlug === 'income' && val < 0) {
-      form.value.amount = Math.abs(val);
-      return;
-    }
-    if (val < 0) {
-      const expense =
-        ttypes.types.find((t) => (t.slug || '').toLowerCase() === 'expense') ||
-        ttypes.types.find(
-          (t) => t.name.toLowerCase().includes('egreso') || t.name.toLowerCase().includes('expense')
-        );
-      if (expense && form.value.transaction_type_id !== expense.id) {
-        form.value.transaction_type_id = expense.id;
-      }
+    // Auto-selección de tipo según el signo del importe
+    const findIncome =
+      ttypes.types.find((t) => (t.slug || '').toLowerCase() === 'income') ||
+      ttypes.types.find((t) => t.name.toLowerCase().includes('ingreso') || t.name.toLowerCase().includes('income'));
+    const findExpense =
+      ttypes.types.find((t) => (t.slug || '').toLowerCase() === 'expense') ||
+      ttypes.types.find((t) => t.name.toLowerCase().includes('egreso') || t.name.toLowerCase().includes('expense'));
+    if (val < 0 && findExpense && form.value.transaction_type_id !== findExpense.id) {
+      form.value.transaction_type_id = findExpense.id;
+    } else if (val > 0 && findIncome && form.value.transaction_type_id !== findIncome.id) {
+      form.value.transaction_type_id = findIncome.id;
     }
   }
 );
@@ -949,13 +1171,20 @@ watch(
 watch(
   () => form.value.transaction_type_id,
   (id) => {
-    if (!id || form.value.amount == null) return;
+    if (!id) return;
     const ty = ttypes.types.find((t) => t.id === id);
     const slug = (ty?.slug || '').toLowerCase();
+    // Transfer: mantener positivo
+    if (slug === 'transfer') {
+      if (form.value.amount != null && form.value.amount < 0) {
+        form.value.amount = Math.abs(form.value.amount);
+      }
+      return;
+    }
+    if (form.value.amount == null) return;
     if (slug === 'expense' && form.value.amount > 0) {
       form.value.amount = -Math.abs(form.value.amount);
-    }
-    if (slug === 'income' && form.value.amount < 0) {
+    } else if (slug === 'income' && form.value.amount < 0) {
       form.value.amount = Math.abs(form.value.amount);
     }
   }
