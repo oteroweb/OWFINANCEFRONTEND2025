@@ -4,6 +4,7 @@ import { api } from 'boot/axios'
 export interface TransactionType {
   id: string
   name: string
+  slug?: string | undefined
 }
 
 export const useTransactionTypesStore = defineStore('transactionTypes', {
@@ -12,12 +13,12 @@ export const useTransactionTypesStore = defineStore('transactionTypes', {
     loading: false as boolean
   }),
   actions: {
-    async fetchTransactionTypes() {
+  async fetchTransactionTypes() {
       this.loading = true
       try {
         const res = await api.get('/transaction_types')
-        const raw = (res.data.data || res.data) as Array<{ id: number; name: string }>
-        this.types = raw.map(t => ({ id: t.id.toString(), name: t.name }))
+        const raw = (res.data.data || res.data) as Array<{ id: number; name: string; slug?: string }>
+        this.types = raw.map(t => ({ id: t.id.toString(), name: t.name, slug: t.slug }))
       }
       catch (error) {
         console.error('Error fetching transaction types', error)
