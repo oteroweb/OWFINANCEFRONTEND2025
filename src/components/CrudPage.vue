@@ -166,6 +166,8 @@ interface CrudDictionary {
   // Endpoints de la API
   url_api: string;
   url_apis: string;
+  // Optional: when present, queries and saves will include current user's id under this param (e.g., 'user_id')
+  user_scoped_param?: string;
   pagination_params?: {
     page: string;
     per_page: string;
@@ -525,6 +527,13 @@ async function save(): Promise<void> {
       return;
     }
     const payload = buildPayload();
+    // Ensure user scoping in payload if requested by dictionary
+    if (dictionary.user_scoped_param) {
+      const key = dictionary.user_scoped_param;
+      if (authStore.user?.id && (payload[key] == null || payload[key] === '')) {
+        payload[key] = authStore.user.id;
+      }
+    }
     let res;
     if (editing.value && currentRowId.value) {
       res = await api.put(`/${dictionary.url_apis}/${currentRowId.value}`, payload);
@@ -573,6 +582,10 @@ function buildQueryParams(): Record<string, unknown> {
     [pmap.descending]: pagination.value.descending,
   };
   if (filters.search) params[pmap.search] = filters.search;
+  // Apply user scoping if configured
+  if (dictionary.user_scoped_param && authStore.user?.id) {
+    params[dictionary.user_scoped_param] = authStore.user.id;
+  }
 
   // Añadir filtros mapeando vmodel -> vmodel_api
   for (const f of dictionary.forms_filter) {
@@ -707,6 +720,10 @@ onMounted(async () => {
         if (field.order_by) {
           params.order_by = field.order_by;
           params.order_dir = field.order_dir || 'asc';
+        }
+        // Apply user scoping to select options if configured
+        if (dictionary.user_scoped_param && authStore.user?.id) {
+          params[dictionary.user_scoped_param] = authStore.user.id;
         }
         const r = await api.get(`/${field.vmodel_url}`, { params });
         const list = (r.data?.data || r.data || []) as Array<Record<string, unknown>>;

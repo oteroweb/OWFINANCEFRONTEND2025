@@ -43,7 +43,14 @@ const routes = [
     path: '/user',
     component: () => import('layouts/UserLayout.vue'),
     meta: { requiresAuth: true, role: 'user' },
-    children: [{ path: '', component: () => import('src/pages/user/UserHome.vue') }],
+    children: [
+      { path: '', redirect: '/user/transactions' },
+      { path: 'home', component: () => import('src/pages/user/UserHome.vue') },
+      { path: 'transactions', component: () => import('src/pages/user/transactions/index.vue') },
+      { path: 'accounts', component: () => import('src/pages/user/accounts/index.vue') },
+      { path: 'categories', component: () => import('src/pages/user/categories/index.vue') },
+      { path: 'taxes', component: () => import('src/pages/user/taxes/index.vue') },
+    ],
   },
   {
     path: '/',
