@@ -438,7 +438,6 @@ import { ref, computed, watch } from 'vue';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
 import { useTransactionTypesStore } from 'stores/transactionTypes';
-import type { Transaction } from 'stores/transactions';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 // inline account dialog instead of external component
@@ -502,7 +501,7 @@ const initialForm = (): TransactionForm => ({
 });
 const form = ref<TransactionForm>(initialForm());
 // Modo de importe avanzado (factura)
-type InvoiceRow = { item: string; quantity: number; unitPrice: number };
+type InvoiceRow = { item: string; quantity: number; unitPrice: number; categoryId?: number | null };
 const isAdvancedAmount = ref(false);
 const invoiceItems = ref<InvoiceRow[]>([{ item: '', quantity: 1, unitPrice: 0 }]);
 function addInvoiceRow() {
@@ -998,6 +997,13 @@ function saveTransaction() {
       }
     }
   }
+  // Validar Income/Egreso: cuenta requerida
+  if (slug === 'income' || slug === 'expense') {
+    if (!form.value.account_id) {
+      $q.notify({ type: 'warning', message: 'Selecciona una cuenta' });
+      return;
+    }
+  }
   // Unificar datetime-local a formato backend: 'YYYY-MM-DD HH:mm:ss'
   const dt = form.value.datetime;
   let dateStr = dt;
@@ -1014,23 +1020,105 @@ function saveTransaction() {
     return;
   }
   // Preparar payload sin la propiedad datetime
-  // Extraer valores excepto datetime
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { datetime: _datetime, ...rest } = form.value;
-  const payload = { ...rest, date: dateStr } as unknown as Omit<Transaction, 'id'>;
+  const isTrans = slug === 'transfer';
+  let payload: Record<string, unknown>;
+  if (!isTrans) {
+    // Construir items de la transacción
+    type ItemPayload = {
+      name: string;
+      amount: number;
+      category_id?: number | null;
+    };
+    let items: ItemPayload[] = [];
+    if (isAdvancedAmount.value) {
+      const valid = invoiceItems.value
+        .map((r) => ({
+          name: r.item || 'Item',
+          qty: Number(r.quantity || 0),
+          price: Number(r.unitPrice || 0),
+          category_id: r.categoryId ?? null,
+        }))
+        .filter((r) => r.qty > 0 && r.price >= 0);
+      if (valid.length === 0) {
+        $q.notify({ type: 'warning', message: 'Agrega al menos una línea válida en la factura' });
+        return;
+      }
+      items = valid.map((r) => ({
+        name: r.name,
+        amount: r.qty * r.price,
+        category_id: r.category_id,
+      }));
+    } else {
+      const amtAbs = Math.abs(Number(form.value.amount || 0));
+      items = [
+        {
+          name: form.value.name || 'Item',
+          amount: amtAbs,
+          category_id: null,
+        },
+      ];
+    }
+    // Ingreso/Egreso: usar account_id solamente y convertir amount_tax a número
+    payload = {
+      name: form.value.name,
+      amount: form.value.amount ?? 0,
+      amount_tax: Number(form.value.amount_tax ? 1 : 0),
+      date: dateStr,
+      provider_id: form.value.provider_id,
+      account_id: form.value.account_id,
+      transaction_type_id: form.value.transaction_type_id,
+      url_file: form.value.url_file || null,
+      // Si hay conversión con tasa, la enviamos (si backend la usa)
+      rate: showRateInput.value ? form.value.rate : null,
+      items,
+    };
+  } else {
+    // Transferencia: mantener campos de origen/destino y tasa (si aplica)
+    payload = {
+      name: form.value.name,
+      amount: form.value.amount ?? 0,
+      amount_tax: Number(form.value.amount_tax ? 1 : 0),
+      date: dateStr,
+      provider_id: form.value.provider_id,
+      account_from_id: form.value.account_from_id,
+      account_to_id: form.value.account_to_id,
+      transaction_type_id: form.value.transaction_type_id,
+      url_file: form.value.url_file || null,
+      rate: form.value.rate ?? null,
+    };
+  }
   tsStore
     .addTransaction(payload)
     .then(() => {
       $q.notify({ type: 'positive', message: 'Transacción creada' });
+      showDialog.value = false;
+      form.value = initialForm();
+      // Resetear modo avanzado e items de factura
+      isAdvancedAmount.value = false;
+      invoiceItems.value = [{ item: '', quantity: 1, unitPrice: 0 }];
     })
-    .catch(() => {
-      $q.notify({ type: 'negative', message: 'Error al crear transacción' });
+    .catch((err: unknown) => {
+      const e = err as {
+        isApiError?: boolean;
+        api?: { message?: string; errors?: Record<string, string[]> };
+      };
+      let message = 'Error al crear transacción';
+      if (e?.isApiError) {
+        if (e.api?.message) message = e.api.message;
+        // Mostrar errores de validación si existen
+        const fieldErrors = e.api?.errors || {};
+        const list: string[] = [];
+        Object.keys(fieldErrors || {}).forEach((k) => {
+          const arr = (fieldErrors as Record<string, unknown>)[k];
+          if (Array.isArray(arr)) arr.forEach((m) => list.push(`${k}: ${m}`));
+        });
+        if (list.length) {
+          message = `${message}. ${list.join(' | ')}`;
+        }
+      }
+      $q.notify({ type: 'negative', message });
+      // Mantener el diálogo abierto para corregir
     });
-  showDialog.value = false;
-  form.value = initialForm();
-  // Resetear modo avanzado e items de factura
-  isAdvancedAmount.value = false;
-  invoiceItems.value = [{ item: '', quantity: 1, unitPrice: 0 }];
 }
 
 // Create new provider on the fly
@@ -1156,10 +1244,14 @@ watch(
     // Auto-selección de tipo según el signo del importe
     const findIncome =
       ttypes.types.find((t) => (t.slug || '').toLowerCase() === 'income') ||
-      ttypes.types.find((t) => t.name.toLowerCase().includes('ingreso') || t.name.toLowerCase().includes('income'));
+      ttypes.types.find(
+        (t) => t.name.toLowerCase().includes('ingreso') || t.name.toLowerCase().includes('income')
+      );
     const findExpense =
       ttypes.types.find((t) => (t.slug || '').toLowerCase() === 'expense') ||
-      ttypes.types.find((t) => t.name.toLowerCase().includes('egreso') || t.name.toLowerCase().includes('expense'));
+      ttypes.types.find(
+        (t) => t.name.toLowerCase().includes('egreso') || t.name.toLowerCase().includes('expense')
+      );
     if (val < 0 && findExpense && form.value.transaction_type_id !== findExpense.id) {
       form.value.transaction_type_id = findExpense.id;
     } else if (val > 0 && findIncome && form.value.transaction_type_id !== findIncome.id) {
