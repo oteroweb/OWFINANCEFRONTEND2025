@@ -73,17 +73,12 @@ export const useTransactionsStore = defineStore('transactions', {
         this.loading = false
       }
     },
-    async addTransaction(tx: Omit<Transaction, 'id'>): Promise<AxiosResponse> {
-      try {
-        const response: AxiosResponse = await api.post('/transactions', tx)
-        const newTx = response.data.data || response.data
-        this.transactions.push(newTx)
-        return response
-      } catch (error) {
-        console.error('Error adding transaction', error)
-        // Rethrow so calling component can handle validation errors
-        throw error
-      }
+  async addTransaction(tx: Record<string, unknown>): Promise<AxiosResponse> {
+      const response: AxiosResponse = await api.post('/transactions', tx)
+      const payload = response.data as unknown as { data?: unknown }
+      const newTx = (payload && typeof payload === 'object' && 'data' in payload ? payload.data : response.data) as Transaction
+  this.transactions.push(newTx)
+      return response
     },
     async updateTransaction(tx: Transaction): Promise<AxiosResponse> {
       try {
