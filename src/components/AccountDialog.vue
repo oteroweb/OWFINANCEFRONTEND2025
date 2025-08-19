@@ -1,8 +1,11 @@
 <template>
-  <q-dialog :model-value="modelValue" @update:model-value="(val) => emit('update:modelValue', val)">
+  <q-dialog
+    :model-value="modelValue"
+    @update:model-value="(val) => $emit('update:modelValue', val)"
+  >
     <q-card style="min-width: 350px">
       <q-card-section>
-        <div class="text-h6">Nueva Cuenta</div>
+        <div class="text-h6">{{ mode === 'edit' ? 'Editar Cuenta' : 'Nueva Cuenta' }}</div>
       </q-card-section>
       <q-card-section>
         <q-input v-model="accountName" label="Nombre de la Cuenta" filled dense />
@@ -25,53 +28,83 @@
       </q-card-section>
       <q-card-actions align="right">
         <q-btn flat label="Cancelar" color="secondary" v-close-popup @click="cancel" />
-        <q-btn flat label="Agregar" color="primary" @click="submit" />
+        <q-btn
+          flat
+          :label="mode === 'edit' ? 'Guardar' : 'Agregar'"
+          color="primary"
+          @click="submit"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
 </template>
 
-<script setup lang="ts">
-import { ref, watch, defineProps, defineEmits } from 'vue';
+<script lang="ts">
+import { defineComponent, ref, watch } from 'vue';
 
-const props = defineProps({
-  modelValue: Boolean,
-  accountTypeOptions: {
-    type: Array,
-    default: () => [
-      { label: 'Ahorro', value: 'savings' },
-      { label: 'Corriente', value: 'checking' },
-      { label: 'Inversión', value: 'investment' },
-    ],
+export default defineComponent({
+  name: 'AccountDialog',
+  props: {
+    modelValue: { type: Boolean, default: false },
+    mode: { type: String as () => 'create' | 'edit', default: 'create' },
+    initialData: {
+      type: Object as () => { name?: string; initialAmount?: number | null; type?: string } | null,
+      default: null,
+    },
+    accountTypeOptions: {
+      type: Array as () => Array<{ label: string; value: string }>,
+      default: () => [
+        { label: 'Ahorro', value: 'savings' },
+        { label: 'Corriente', value: 'checking' },
+        { label: 'Inversión', value: 'investment' },
+      ],
+    },
   },
-});
-const emit = defineEmits(['update:modelValue', 'submit', 'cancel']);
+  emits: ['update:modelValue', 'submit', 'cancel'],
+  setup(props, { emit }) {
+    const accountName = ref('');
+    const initialAmount = ref<number | null>(null);
+    const accountType = ref('');
 
-const accountName = ref('');
-const initialAmount = ref<number | null>(null);
-const accountType = ref('');
-
-watch(
-  () => props.modelValue,
-  (val) => {
-    if (!val) {
+    function resetFields() {
       accountName.value = '';
       initialAmount.value = null;
       accountType.value = '';
     }
-  }
-);
 
-function submit() {
-  emit('submit', {
-    name: accountName.value,
-    initialAmount: initialAmount.value,
-    type: accountType.value,
-  });
-  emit('update:modelValue', false);
-}
-function cancel() {
-  emit('cancel');
-  emit('update:modelValue', false);
-}
+    watch(
+      () => props.modelValue,
+      (val) => {
+        if (val) {
+          // opening: prefill if edit mode and initialData provided
+          if (props.mode === 'edit' && props.initialData) {
+            accountName.value = props.initialData.name ?? '';
+            initialAmount.value = props.initialData.initialAmount ?? null;
+            accountType.value = props.initialData.type ?? '';
+          } else {
+            resetFields();
+          }
+        } else {
+          // closing: reset
+          resetFields();
+        }
+      }
+    );
+
+    function submit() {
+      emit('submit', {
+        name: accountName.value,
+        initialAmount: initialAmount.value,
+        type: accountType.value,
+      });
+      emit('update:modelValue', false);
+    }
+    function cancel() {
+      emit('cancel');
+      emit('update:modelValue', false);
+    }
+
+    return { accountName, initialAmount, accountType, submit, cancel };
+  },
+});
 </script>

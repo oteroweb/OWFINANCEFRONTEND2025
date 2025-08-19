@@ -7,9 +7,7 @@ export type UserMenuLink = {
 
 export const userMenuLinks: readonly UserMenuLink[] = [
   { title: 'Transacciones', icon: 'receipt_long', to: '/user/transactions' },
-  { title: 'Cuentas', icon: 'account_balance_wallet', to: '/user/accounts' },
-  { title: 'Categorías', icon: 'category', to: '/user/categories' },
-  { title: 'Impuestos', icon: 'percent', to: '/user/taxes' },
+  { title: 'Configuración', icon: 'settings', to: '/user/config' },
 ];
 
 export const defaultAvatarUrl = 'https://cdn.quasar.dev/img/boy-avatar.png';
