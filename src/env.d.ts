@@ -1,16 +1,14 @@
-declare namespace NodeJS {
-  interface ProcessEnv {
-    NODE_ENV: string;
-    VUE_ROUTER_MODE: 'hash' | 'history' | 'abstract' | undefined;
-    VUE_ROUTER_BASE: string | undefined;
-  }
+/// <reference types="vite/client" />
+
+// Tipado de variables de entorno usadas por Vite en el cliente
+interface ImportMetaEnv {
+  readonly VITE_API_BASE_URL?: string;
+  readonly VITE_API_KEY?: string;
+  // Si usas router mode/base vía env, puedes dejarlas opcionales
+  readonly VUE_ROUTER_MODE?: 'hash' | 'history' | 'abstract';
+  readonly VUE_ROUTER_BASE?: string;
 }
-// no se si tiene efecto
-// Vue SFC module shim (ensures .vue files have a default export for TS)
-// declare module '*.vue' {
-//   import type { DefineComponent } from 'vue'
-//   type Props = Record<string, never>
-//   type Emits = Record<string, never>
-//   const component: DefineComponent<Props, Emits, unknown>
-//   export default component
-// }
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
