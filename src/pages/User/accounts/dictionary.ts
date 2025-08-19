@@ -7,6 +7,7 @@ export const dictionary = {
   capitalize_api: 'Account',
   capitalize_apis: 'Accounts',
   url_apis: 'accounts',
+  user_scoped_param: 'user_id',
   pagination_params: {
     page: 'page',
     per_page: 'per_page',
