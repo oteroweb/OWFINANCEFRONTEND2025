@@ -606,9 +606,16 @@ function onEditAccount(payload: { id: string; label: string }) {
     await loadAccountDialogOptions();
     try {
       const res = await api.get(`/accounts/${payload.id}`);
-      type Detail = BackendAccount & { currency_id?: number | string | null; account_type_id?: number | string | null; initial?: number | string | null };
+      type Detail = BackendAccount & {
+        currency_id?: number | string | null;
+        account_type_id?: number | string | null;
+        initial?: number | string | null;
+      };
       const data = (res.data as { data?: Detail }).data || ({} as Detail);
-      const initVal = typeof data.initial === 'string' || typeof data.initial === 'number' ? Number(data.initial) : null;
+      const initVal =
+        typeof data.initial === 'string' || typeof data.initial === 'number'
+          ? Number(data.initial)
+          : null;
       editingInitialData.value = {
         name: String(data.name ?? payload.label ?? ''),
         initialAmount: Number.isFinite(initVal as number) ? (initVal as number) : null,
@@ -632,9 +639,16 @@ function openEditFromViewer() {
     await loadAccountDialogOptions();
     try {
       const res = await api.get(`/accounts/${id}`);
-      type Detail = BackendAccount & { currency_id?: number | string | null; account_type_id?: number | string | null; initial?: number | string | null };
+      type Detail = BackendAccount & {
+        currency_id?: number | string | null;
+        account_type_id?: number | string | null;
+        initial?: number | string | null;
+      };
       const data = (res.data as { data?: Detail }).data || ({} as Detail);
-      const initVal = typeof data.initial === 'string' || typeof data.initial === 'number' ? Number(data.initial) : null;
+      const initVal =
+        typeof data.initial === 'string' || typeof data.initial === 'number'
+          ? Number(data.initial)
+          : null;
       editingInitialData.value = {
         name: String(data.name ?? name ?? ''),
         initialAmount: Number.isFinite(initVal as number) ? (initVal as number) : null,

@@ -32,6 +32,11 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <!-- Floating action button to create a new transaction -->
+    <q-btn fab color="primary" icon="add" class="fab-add" @click="openGlobalNewTransaction">
+      <q-tooltip>Nueva transacción</q-tooltip>
+    </q-btn>
   </q-layout>
 </template>
 
@@ -40,21 +45,34 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
+import { useUiStore } from 'stores/ui';
 
 const router = useRouter();
 const auth = useAuthStore();
 const leftDrawerOpen = ref(true);
 const avatarUrl = computed(() => defaultAvatarUrl);
 const menuLinks = userMenuLinks;
+const ui = useUiStore();
 
 async function handleLogout() {
   auth.logout();
   await router.push('/login');
+}
+
+function openGlobalNewTransaction() {
+  // Open the global dialog without changing the current route
+  ui.openNewTransactionDialog();
 }
 </script>
 
 <style scoped>
 .q-drawer {
   width: 260px;
+}
+.fab-add {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2000;
 }
 </style>

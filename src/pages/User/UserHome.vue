@@ -10,11 +10,11 @@
         icon="add"
         color="primary"
         v-tooltip="'Crear nueva transacción'"
-        @click="showDialog = true"
+        @click="ui.openNewTransactionDialog()"
       />
     </div>
     <!-- Dialog for transaction form -->
-    <q-dialog v-model="showDialog">
+    <q-dialog v-model="ui.showDialogNewTransaction">
       <q-card style="min-width: 400px">
         <q-card-section>
           <div class="text-h6">Nueva Transacción</div>
@@ -337,7 +337,7 @@
             label="Cancelar"
             color="secondary"
             v-close-popup
-            @click="showDialog = false"
+            @click="ui.closeNewTransactionDialog()"
           />
           <q-btn flat label="Guardar" color="primary" @click="saveTransaction" />
         </q-card-actions>
@@ -434,7 +434,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
 import { useTransactionTypesStore } from 'stores/transactionTypes';
@@ -446,7 +447,10 @@ const auth = useAuthStore();
 const tsStore = useTransactionsStore();
 const ttypes = useTransactionTypesStore();
 const $q = useQuasar();
-const showDialog = ref(false);
+import { useUiStore } from 'stores/ui';
+const ui = useUiStore();
+const route = useRoute();
+const router = useRouter();
 const showAddProviderDialog = ref(false);
 // Diálogo de nueva cuenta
 const showAddAccountDialog = ref(false);
@@ -1091,7 +1095,7 @@ function saveTransaction() {
     .addTransaction(payload)
     .then(() => {
       $q.notify({ type: 'positive', message: 'Transacción creada' });
-      showDialog.value = false;
+      ui.closeNewTransactionDialog();
       form.value = initialForm();
       // Resetear modo avanzado e items de factura
       isAdvancedAmount.value = false;
@@ -1305,6 +1309,29 @@ void (async () => {
     console.error('Error cargando tipos de transacción', e);
   }
 })();
+
+// Abrir el formulario automáticamente si viene ?new=...
+function openIfNewFlag() {
+  if (route.query.new != null) {
+    ui.openNewTransactionDialog();
+    const nextQuery: Record<string, string | number | null | (string | number | null)[]> = {
+      ...route.query,
+    };
+    delete nextQuery.new;
+    void router.replace({ query: nextQuery });
+  }
+}
+
+onMounted(() => {
+  openIfNewFlag();
+});
+
+watch(
+  () => route.query.new,
+  () => {
+    openIfNewFlag();
+  }
+);
 </script>
 
 <!-- contenido original de UserHome -->
