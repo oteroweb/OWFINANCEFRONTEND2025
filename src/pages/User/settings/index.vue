@@ -78,6 +78,7 @@
           </div>
           <AccountsTree
             ref="accountsTreeRef"
+            :can-delete-folder="supportsFolderDelete"
             @create-account="onCreateAccount"
             @create-folder="onCreateFolder"
             @move-node="onMoveNode"
@@ -89,6 +90,8 @@
             v-model="showAccountDialog"
             :mode="editingAccount ? 'edit' : 'create'"
             :initial-data="editingInitialData"
+            :currency-options="currencyOptions"
+            :account-type-options="accountTypeOptions"
             @submit="onAccountSubmit"
           />
           <AccountViewerDialog
@@ -104,7 +107,89 @@
         </q-tab-panel>
 
         <q-tab-panel name="categories">
-          <CrudPage :dictionary="categoriesDictionary" />
+          <div class="q-mb-sm text-body2">
+            Opción Categorías: Mediante esta opción cuando creas un movimiento podrás poner una
+            categoría (por ejemplo gastos o ingresos). De esta forma con un solo vistazo podrás ver
+            en qué gastas tu dinero y todos tus ingresos. Las categorías las puedes organizar como
+            creas más oportuno, con carpetas, subcarpetas, etc.
+          </div>
+          <CategoriesTree
+            ref="categoriesTreeRef"
+            @create-category="onCreateCategory"
+            @move-node="onMoveCategoryNode"
+            @delete-category="onDeleteCategory"
+            @edit-category="onEditCategory"
+          />
+          <div class="q-mt-md q-gutter-sm row items-center">
+            <div class="col-auto">
+              <q-btn color="primary" dense label="Probar GET árbol" @click="testLoadCategories" />
+            </div>
+            <div class="col-auto">
+              <q-btn color="secondary" outline dense label="Limpiar debug" @click="clearCatDebug" />
+            </div>
+          </div>
+          <q-expansion-item
+            class="q-mt-sm"
+            icon="bug_report"
+            label="Debug API Categorías (requests/responses)"
+            expand-icon="expand_more"
+            dense
+            default-opened
+          >
+            <div v-if="catDebug.length === 0" class="text-grey q-pa-sm">Sin registros</div>
+            <div v-for="(d, idx) in catDebug" :key="idx" class="q-mb-sm">
+              <q-card flat bordered>
+                <q-card-section class="q-pa-sm">
+                  <div class="row items-center no-wrap">
+                    <div class="col">
+                      <div class="text-caption text-grey">{{ d.ts }}</div>
+                      <div class="text-body2">
+                        <strong>{{ d.action }}</strong> ·
+                        <span class="text-primary">{{ d.method }}</span>
+                        <span class="text-grey-8"> {{ d.url }}</span>
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <q-badge v-if="d.error" color="negative" label="error" />
+                      <q-badge v-else color="positive" label="ok" />
+                    </div>
+                  </div>
+                </q-card-section>
+                <q-separator />
+                <q-card-section class="q-pa-sm">
+                  <div class="text-caption text-grey-7">Payload enviado</div>
+                  <pre class="debug-pre">{{ json(d.payload) }}</pre>
+                </q-card-section>
+                <q-separator />
+                <q-card-section class="q-pa-sm">
+                  <div class="text-caption text-grey-7">Respuesta</div>
+                  <pre v-if="!d.error" class="debug-pre">{{ json(d.response) }}</pre>
+                  <pre v-else class="debug-pre text-negative">{{ json(d.error) }}</pre>
+                </q-card-section>
+              </q-card>
+            </div>
+          </q-expansion-item>
+          <q-dialog v-model="showCategoryDialog">
+            <q-card style="min-width: 360px">
+              <q-card-section class="text-subtitle1"
+                >{{ editingCategory ? 'Editar' : 'Nueva' }} categoría</q-card-section
+              >
+              <q-card-section class="q-gutter-md">
+                <q-input v-model="categoryForm.name" label="Nombre" dense outlined />
+                <q-input v-model="categoryForm.date" label="Fecha" dense outlined type="date" />
+                <q-toggle v-model="categoryForm.active" label="Activo" />
+              </q-card-section>
+              <q-card-actions align="right">
+                <q-btn flat label="Cancelar" color="primary" v-close-popup />
+                <q-btn
+                  flat
+                  :label="editingCategory ? 'Actualizar' : 'Crear'"
+                  color="primary"
+                  @click="onSubmitCategory"
+                />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
@@ -112,15 +197,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import CrudPage from 'components/CrudPage.vue';
+import CategoriesTree from 'components/CategoriesTree.vue';
 import AccountsTree from 'components/AccountsTree.vue';
 import AccountDialog from 'components/AccountDialog.vue';
 import AccountViewerDialog from 'components/AccountViewerDialog.vue';
 import { useAuthStore } from 'stores/auth';
 import { defaultAvatarUrl } from '../config';
 import { dictionary as taxesDictionary } from '../taxes/dictionary';
-import { dictionary as categoriesDictionary } from '../categories/dictionary';
 import { api } from 'boot/axios';
 import { Notify, useQuasar } from 'quasar';
 
@@ -143,18 +228,23 @@ const avatarPreview = ref<string | null>(null);
 const saving = ref(false);
 const showAccountDialog = ref(false);
 const showViewer = ref(false);
+const supportsFolderDelete = ref(false);
 type AccountsTreeExposed = {
   addAccountToFolder: (acc: { id: string; label: string }, parentId?: string | null) => void;
   addFolderToParent: (folder: { id: string; label: string }, parentId?: string | null) => void;
   updateNodeLabel: (id: string, label: string) => void;
   removeNode: (id: string) => void;
+  setTree: (nodes: AccountsNodeInput[]) => void;
 };
 const accountsTreeRef = ref<AccountsTreeExposed | null>(null);
 const editingAccount = ref<{ id: string; label: string } | null>(null);
 const editingInitialData = ref<{
   name?: string;
   initialAmount?: number | null;
+  // legacy support: some backends used `type` as an alias for account_type_id
   type?: string;
+  currency_id?: number | string | null;
+  account_type_id?: number | string | null;
 } | null>(null);
 type ViewerAccountData = {
   id: string;
@@ -166,6 +256,177 @@ type ViewerAccountData = {
   active?: boolean | null;
 };
 const viewerAccount = ref<ViewerAccountData | null>(null);
+
+// Accounts tree loader using /api/accounts/tree
+type AccountsNodeInput = {
+  id: string | number;
+  label: string;
+  type: 'folder' | 'account';
+  children?: AccountsNodeInput[];
+};
+const accountsLoaded = ref(false);
+async function loadAccountsTree() {
+  try {
+    type RemoteNode = {
+      id: string | number;
+      label?: string;
+      name?: string;
+      type: 'folder' | 'account';
+      children?: RemoteNode[];
+    };
+    const res = await api.get('/accounts/tree');
+    const raw: RemoteNode[] = (res.data as { data?: { nodes?: RemoteNode[] } }).data?.nodes || [];
+    const mapNodes = (nodes: RemoteNode[]): AccountsNodeInput[] =>
+      nodes.map((n) => ({
+        id: n.id,
+        label: String(n.label ?? n.name ?? ''),
+        type: n.type,
+        children: n.children ? mapNodes(n.children) : [],
+      }));
+    accountsTreeRef.value?.setTree(mapNodes(raw));
+    accountsLoaded.value = true;
+  } catch (e: unknown) {
+    const msg = (e as { message?: string })?.message || 'No se pudo cargar el árbol de cuentas';
+    Notify.create({ type: 'warning', message: msg });
+  }
+}
+
+// Categories state/refs
+type CategoriesTreeExposed = {
+  addCategoryToParent: (cat: { id: string; label: string }, parentId?: string | null) => void;
+  updateNodeLabel: (id: string, label: string) => void;
+  removeNode: (id: string) => void;
+  setTree: (children: CatNodeInput[]) => void;
+};
+const categoriesTreeRef = ref<CategoriesTreeExposed | null>(null);
+const showCategoryDialog = ref(false);
+const editingCategory = ref<null | { id: string }>(null);
+const pendingCategoryParentId = ref<string | null>('root');
+const categoryForm = ref<{ name: string; active: boolean; date: string; parent_id: string | null }>(
+  { name: '', active: true, date: '', parent_id: 'root' }
+);
+
+// Tipado de nodos para setTree
+type CatNodeInput = { id: string | number; label: string; children?: CatNodeInput[] };
+
+// Carga inicial de categorías (una sola vez por visita)
+const categoriesLoaded = ref(false);
+async function loadCategoriesTree() {
+  try {
+    type RemoteNode = {
+      id: string | number;
+      name?: string;
+      label?: string;
+      children?: RemoteNode[];
+    };
+    const res = await api.get('/user/categories/tree');
+    const raw: RemoteNode[] = (res.data as { data?: RemoteNode[] }).data || [];
+    const mapNodes = (nodes: RemoteNode[]): CatNodeInput[] =>
+      nodes.map((n) => ({
+        id: n.id,
+        label: String(n.label ?? n.name ?? ''),
+        children: n.children ? mapNodes(n.children) : [],
+      }));
+    categoriesTreeRef.value?.setTree(mapNodes(raw));
+    categoriesLoaded.value = true;
+  } catch (e: unknown) {
+    const msg = (e as { message?: string })?.message || 'No se pudieron cargar las categorías';
+    Notify.create({ type: 'warning', message: msg });
+  }
+}
+
+onMounted(() => {
+  if (tab.value === 'categories' && !categoriesLoaded.value) void loadCategoriesTree();
+  if (tab.value === 'accounts' && !accountsLoaded.value) void loadAccountsTree();
+});
+
+watch(tab, (val) => {
+  if (val === 'categories' && !categoriesLoaded.value) void loadCategoriesTree();
+  if (val === 'accounts' && !accountsLoaded.value) void loadAccountsTree();
+});
+
+// Options for AccountDialog
+type Opt = { label: string; value: string | number };
+const currencyOptions = ref<Opt[]>([]);
+const accountTypeOptions = ref<Opt[]>([]);
+let optionsLoaded = false;
+async function loadAccountDialogOptions() {
+  if (optionsLoaded) return;
+  try {
+    const [curRes, typeRes] = await Promise.all([
+      api.get('/currencies', { params: { per_page: 1000 } }),
+      api.get('/account_types', { params: { per_page: 1000 } }),
+    ]);
+    type ApiList<T> = { data?: T[] } | { data?: { data?: T[] } } | { data?: { items?: T[] } };
+    type Currency = { id: number | string; name?: string; code?: string };
+    type AccType = { id: number | string; name?: string };
+    const extract = <T>(payload: ApiList<T>): T[] => {
+      const p = payload as { data?: unknown };
+      const d = p?.data;
+      if (Array.isArray(d)) return d as T[];
+      const obj = (d as { data?: unknown; items?: unknown }) || {};
+      if (Array.isArray(obj.data)) return obj.data as T[];
+      if (Array.isArray(obj.items)) return obj.items as T[];
+      return [] as T[];
+    };
+    const currArr = extract<Currency>(curRes.data as ApiList<Currency>);
+    const typeArr = extract<AccType>(typeRes.data as ApiList<AccType>);
+    currencyOptions.value = currArr.map((c) => ({
+      value: c.id,
+      label: c.name || c.code || String(c.id),
+    }));
+    accountTypeOptions.value = typeArr.map((t) => ({ value: t.id, label: t.name || String(t.id) }));
+    optionsLoaded = true;
+  } catch (e: unknown) {
+    const msg = (e as { message?: string })?.message || 'No se pudieron cargar opciones';
+    Notify.create({ type: 'warning', message: msg });
+  }
+}
+
+// Debug de endpoints de categorías
+type CatDebug = {
+  ts: string;
+  action: string;
+  method: string;
+  url: string;
+  payload?: unknown;
+  response?: unknown;
+  error?: unknown;
+};
+const catDebug = ref<CatDebug[]>([]);
+function pushCatDebug(entry: CatDebug) {
+  catDebug.value.unshift(entry);
+  if (catDebug.value.length > 25) catDebug.value.pop();
+}
+function json(v: unknown) {
+  try {
+    return JSON.stringify(v, null, 2);
+  } catch {
+    return String(v);
+  }
+}
+function clearCatDebug() {
+  catDebug.value = [];
+}
+async function testLoadCategories() {
+  const url = '/user/categories/tree';
+  const meta: CatDebug = {
+    ts: new Date().toLocaleString(),
+    action: 'GET árbol',
+    method: 'GET',
+    url,
+  };
+  pushCatDebug(meta);
+  try {
+    const res = await api.get(url);
+    const entry = catDebug.value[0];
+    if (entry) entry.response = res.data;
+  } catch (e: unknown) {
+    const entry = catDebug.value[0];
+    if (entry) entry.error = e;
+    Notify.create({ type: 'warning', message: 'GET árbol falló' });
+  }
+}
 
 function pickAvatar() {
   fileInput.value?.click();
@@ -234,15 +495,17 @@ async function saveProfile() {
 function onCreateAccount() {
   // Abrir el flujo existente de creación de cuentas (CrudPage/AccountDialog) si aplica
   // Por ahora, solo notificamos; integración pendiente.
-  showAccountDialog.value = true;
+  void loadAccountDialogOptions().finally(() => {
+    showAccountDialog.value = true;
+  });
 }
 
 async function onCreateFolder(payload: { name: string; parent_id: string | null }) {
   try {
-    // POST /user/account-folders
-    const res = await api.post('/user/account-folders', {
+    // POST /account-folders
+    const res = await api.post('/account-folders', {
       name: payload.name,
-      parent_id: payload.parent_id,
+      parent_id: payload.parent_id === 'root' ? null : payload.parent_id,
     });
     const data = (res.data as { data?: { id?: string } }).data;
     const id = data?.id || `f-${Date.now()}`;
@@ -261,19 +524,19 @@ async function onMoveNode(payload: {
   node_id: string;
   new_parent_id: string;
   node_type: 'folder' | 'account';
+  sort_order?: number;
 }) {
   try {
     if (payload.node_type === 'folder') {
-      // PATCH /user/account-folders/:id/move
-      await api.patch(`/user/account-folders/${payload.node_id}/move`, {
-        parent_id: payload.new_parent_id,
-      });
-    } else {
-      // PATCH /user/accounts/:id/move
-      await api.patch(`/user/accounts/${payload.node_id}/move`, {
-        folder_id: payload.new_parent_id,
-      });
+      // No hay ruta documentada para mover carpetas
+      Notify.create({ type: 'warning', message: 'Mover carpetas no está soportado por la API' });
+      return;
     }
+    // PATCH /accounts/:id/move
+    await api.patch(`/accounts/${payload.node_id}/move`, {
+      folder_id: payload.new_parent_id === 'root' ? null : payload.new_parent_id,
+      ...(typeof payload.sort_order === 'number' ? { sort_order: payload.sort_order } : {}),
+    });
     Notify.create({ type: 'info', message: 'Movimiento guardado' });
   } catch (e: unknown) {
     const msg = (e as { message?: string })?.message || 'Error al mover';
@@ -281,22 +544,38 @@ async function onMoveNode(payload: {
   }
 }
 
-async function onAccountSubmit(acc: { name: string; initialAmount: number | null; type: string }) {
+async function onAccountSubmit(acc: {
+  name: string;
+  initialAmount: number | null;
+  currency_id?: string | number;
+  account_type_id?: string | number;
+  type?: string;
+}) {
   try {
     if (editingAccount.value) {
-      await api.patch(`/user/accounts/${editingAccount.value.id}`, {
+      // PUT /accounts/{id}
+      await api.put(`/accounts/${editingAccount.value.id}`, {
         name: acc.name,
-        account_type_id: acc.type,
+        ...(acc.account_type_id !== undefined && acc.account_type_id !== ''
+          ? { account_type_id: acc.account_type_id }
+          : acc.type && acc.type !== ''
+          ? { account_type_id: acc.type }
+          : {}),
+        ...(acc.currency_id !== undefined && acc.currency_id !== ''
+          ? { currency_id: acc.currency_id }
+          : {}),
+        ...(typeof acc.initialAmount === 'number' ? { initial: acc.initialAmount } : {}),
       });
       accountsTreeRef.value?.updateNodeLabel(editingAccount.value.id, acc.name);
       Notify.create({ type: 'positive', message: 'Cuenta actualizada' });
     } else {
-      // POST /user/accounts (ajusta campos según tu backend)
-      const res = await api.post('/user/accounts', {
+      // POST /accounts (ajusta campos según la API)
+      const res = await api.post('/accounts', {
         name: acc.name,
-        initial_amount: acc.initialAmount,
-        account_type_id: acc.type,
-        folder_id: 'root',
+        currency_id: acc.currency_id,
+        account_type_id: acc.account_type_id ?? acc.type,
+        initial: acc.initialAmount,
+        folder_id: null,
         active: true,
       });
       const data = (res.data as { data?: { id?: string; name?: string; folder_id?: string } }).data;
@@ -323,17 +602,51 @@ async function onViewAccount(payload: { id: string; label: string }) {
 
 function onEditAccount(payload: { id: string; label: string }) {
   editingAccount.value = payload;
-  editingInitialData.value = { name: payload.label, initialAmount: null, type: '' };
-  showAccountDialog.value = true;
+  void (async () => {
+    await loadAccountDialogOptions();
+    try {
+      const res = await api.get(`/accounts/${payload.id}`);
+      type Detail = BackendAccount & { currency_id?: number | string | null; account_type_id?: number | string | null; initial?: number | string | null };
+      const data = (res.data as { data?: Detail }).data || ({} as Detail);
+      const initVal = typeof data.initial === 'string' || typeof data.initial === 'number' ? Number(data.initial) : null;
+      editingInitialData.value = {
+        name: String(data.name ?? payload.label ?? ''),
+        initialAmount: Number.isFinite(initVal as number) ? (initVal as number) : null,
+        currency_id: data.currency_id ?? null,
+        account_type_id: data.account_type_id ?? null,
+      };
+    } catch {
+      editingInitialData.value = { name: payload.label, initialAmount: null };
+    } finally {
+      showAccountDialog.value = true;
+    }
+  })();
 }
 
 function openEditFromViewer() {
   if (!viewerAccount.value) return;
   const { id, name } = viewerAccount.value;
   editingAccount.value = { id, label: name };
-  editingInitialData.value = { name, initialAmount: null, type: '' };
   showViewer.value = false;
-  showAccountDialog.value = true;
+  void (async () => {
+    await loadAccountDialogOptions();
+    try {
+      const res = await api.get(`/accounts/${id}`);
+      type Detail = BackendAccount & { currency_id?: number | string | null; account_type_id?: number | string | null; initial?: number | string | null };
+      const data = (res.data as { data?: Detail }).data || ({} as Detail);
+      const initVal = typeof data.initial === 'string' || typeof data.initial === 'number' ? Number(data.initial) : null;
+      editingInitialData.value = {
+        name: String(data.name ?? name ?? ''),
+        initialAmount: Number.isFinite(initVal as number) ? (initVal as number) : null,
+        currency_id: data.currency_id ?? null,
+        account_type_id: data.account_type_id ?? null,
+      };
+    } catch {
+      editingInitialData.value = { name, initialAmount: null };
+    } finally {
+      showAccountDialog.value = true;
+    }
+  })();
 }
 
 async function onDeleteAccount() {
@@ -347,7 +660,7 @@ async function onDeleteAccount() {
       persistent: true,
     });
     if (!ok) return;
-    await api.delete(`/user/accounts/${viewerAccount.value.id}`);
+    await api.delete(`/accounts/${viewerAccount.value.id}`);
     accountsTreeRef.value?.removeNode(viewerAccount.value.id);
     Notify.create({ type: 'positive', message: 'Cuenta eliminada' });
     showViewer.value = false;
@@ -369,9 +682,13 @@ async function onDeleteFolder(payload: { id: string; label: string }) {
       persistent: true,
     });
     if (!ok) return;
-    await api.delete(`/user/account-folders/${payload.id}`);
-    accountsTreeRef.value?.removeNode(payload.id);
-    Notify.create({ type: 'positive', message: 'Carpeta eliminada' });
+    if (supportsFolderDelete.value) {
+      await api.delete(`/account-folders/${payload.id}`);
+      accountsTreeRef.value?.removeNode(payload.id);
+      Notify.create({ type: 'positive', message: 'Carpeta eliminada' });
+    } else {
+      Notify.create({ type: 'warning', message: 'Eliminar carpetas no está soportado por la API' });
+    }
   } catch (e: unknown) {
     const msg = (e as { message?: string })?.message || 'Error eliminando carpeta';
     Notify.create({ type: 'negative', message: msg });
@@ -393,8 +710,8 @@ type BackendAccount = {
 
 async function loadAccountDetails(id: string, fallbackName: string) {
   try {
-    // Ajusta a tu backend: GET /user/accounts/:id debe devolver dentro de data los campos mostrados
-    const res = await api.get(`/user/accounts/${id}`);
+    // GET /accounts/:id debe devolver dentro de data los campos mostrados
+    const res = await api.get(`/accounts/${id}`);
     const data = (res.data as { data?: BackendAccount }).data || ({} as BackendAccount);
     viewerAccount.value = {
       id: String(data.id ?? id),
@@ -442,6 +759,165 @@ function confirmDialog(opts: {
       .onCancel(() => resolve(false))
       .onDismiss(() => resolve(false));
   });
+}
+
+// Categories handlers
+function onCreateCategory(payload: { parent_id: string | null }) {
+  pendingCategoryParentId.value = payload.parent_id ?? 'root';
+  editingCategory.value = null;
+  categoryForm.value = {
+    name: '',
+    active: true,
+    date: '',
+    parent_id: pendingCategoryParentId.value,
+  };
+  showCategoryDialog.value = true;
+}
+
+async function onEditCategory(payload: { id: string; label: string }) {
+  editingCategory.value = { id: payload.id };
+  try {
+    const url = `/user/categories/${payload.id}`;
+    pushCatDebug({
+      ts: new Date().toLocaleString(),
+      action: 'GET categoría',
+      method: 'GET',
+      url,
+    });
+    const res = await api.get(url);
+    const entry = catDebug.value[0];
+    if (entry) entry.response = res.data;
+    type RemoteCategory = { name?: unknown; active?: unknown; date?: unknown; parent_id?: unknown };
+    const data = (res.data as { data?: RemoteCategory }).data ?? {};
+    const name = typeof data.name === 'string' ? data.name : payload.label;
+    const active = typeof data.active === 'boolean' ? data.active : true;
+    const date = typeof data.date === 'string' ? data.date : '';
+    const parentId = typeof data.parent_id === 'string' ? data.parent_id : 'root';
+    categoryForm.value = { name, active, date, parent_id: parentId };
+  } catch (e: unknown) {
+    const entry = catDebug.value[0];
+    if (entry) entry.error = e;
+    categoryForm.value = { name: payload.label, active: true, date: '', parent_id: 'root' };
+  } finally {
+    showCategoryDialog.value = true;
+  }
+}
+
+async function onSubmitCategory() {
+  try {
+    if (!categoryForm.value.name) {
+      Notify.create({ type: 'warning', message: 'Nombre es requerido' });
+      return;
+    }
+    if (editingCategory.value) {
+      const url = `/user/categories/${editingCategory.value.id}`;
+      const payload = {
+        name: categoryForm.value.name,
+        active: categoryForm.value.active,
+        date: categoryForm.value.date || null,
+        parent_id: categoryForm.value.parent_id === 'root' ? null : categoryForm.value.parent_id,
+      };
+      pushCatDebug({
+        ts: new Date().toLocaleString(),
+        action: 'PATCH actualizar',
+        method: 'PATCH',
+        url,
+        payload,
+      });
+      const res = await api.patch(url, payload);
+      const entry = catDebug.value[0];
+      if (entry) entry.response = res.data;
+      categoriesTreeRef.value?.updateNodeLabel(editingCategory.value.id, categoryForm.value.name);
+      Notify.create({ type: 'positive', message: 'Categoría actualizada' });
+    } else {
+      const url = '/user/categories';
+      const payload = {
+        name: categoryForm.value.name,
+        active: categoryForm.value.active,
+        date: categoryForm.value.date || null,
+        parent_id: pendingCategoryParentId.value === 'root' ? null : pendingCategoryParentId.value,
+      };
+      pushCatDebug({
+        ts: new Date().toLocaleString(),
+        action: 'POST crear',
+        method: 'POST',
+        url,
+        payload,
+      });
+      const res = await api.post(url, payload);
+      const entry = catDebug.value[0];
+      if (entry) entry.response = res.data;
+      const data = (
+        res.data as { data?: { id?: string; name?: string; parent_id?: string | null } }
+      ).data;
+      const id = data?.id || `cat-${Date.now()}`;
+      const label = data?.name || categoryForm.value.name;
+      const parentId = data?.parent_id ?? pendingCategoryParentId.value ?? 'root';
+      categoriesTreeRef.value?.addCategoryToParent({ id, label }, parentId || 'root');
+      Notify.create({ type: 'positive', message: 'Categoría creada' });
+    }
+  } catch (e: unknown) {
+    const entry = catDebug.value[0];
+    if (entry && !entry.error) entry.error = e;
+    const msg = (e as { message?: string })?.message || 'Error guardando categoría';
+    Notify.create({ type: 'negative', message: msg });
+  } finally {
+    showCategoryDialog.value = false;
+    editingCategory.value = null;
+  }
+}
+
+async function onMoveCategoryNode(payload: { node_id: string; new_parent_id: string }) {
+  try {
+    const url = `/user/categories/${payload.node_id}/move`;
+    const body = { parent_id: payload.new_parent_id === 'root' ? null : payload.new_parent_id };
+    pushCatDebug({
+      ts: new Date().toLocaleString(),
+      action: 'PATCH mover',
+      method: 'PATCH',
+      url,
+      payload: body,
+    });
+    const res = await api.patch(url, body);
+    const entry = catDebug.value[0];
+    if (entry) entry.response = res.data;
+    Notify.create({ type: 'info', message: 'Movimiento guardado' });
+  } catch (e: unknown) {
+    const entry = catDebug.value[0];
+    if (entry && !entry.error) entry.error = e;
+    const msg = (e as { message?: string })?.message || 'Error moviendo categoría';
+    Notify.create({ type: 'negative', message: msg });
+  }
+}
+
+async function onDeleteCategory(payload: { id: string; label: string }) {
+  try {
+    const ok = await confirmDialog({
+      title: 'Eliminar categoría',
+      message: `¿Eliminar la categoría "${payload.label}"? Esta acción no se puede deshacer.`,
+      ok: { label: 'Eliminar', color: 'negative', flat: true },
+      cancel: { label: 'Cancelar', flat: true },
+      persistent: true,
+    });
+    if (!ok) return;
+    const url = `/user/categories/${payload.id}`;
+    pushCatDebug({
+      ts: new Date().toLocaleString(),
+      action: 'DELETE eliminar',
+      method: 'DELETE',
+      url,
+    });
+    const res = await api.delete(url);
+    const entry = catDebug.value[0];
+    if (entry) entry.response = res.data;
+    categoriesTreeRef.value?.removeNode(payload.id);
+    Notify.create({ type: 'positive', message: 'Categoría eliminada' });
+  } catch (e: unknown) {
+    const entry = catDebug.value[0];
+    if (entry && !entry.error) entry.error = e;
+    const msg = (e as { message?: string })?.message || 'Error eliminando categoría';
+    Notify.create({ type: 'negative', message: msg });
+  }
 }
 </script>
 

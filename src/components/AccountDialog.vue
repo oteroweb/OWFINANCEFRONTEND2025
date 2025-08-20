@@ -18,8 +18,24 @@
           class="q-mt-sm"
         />
         <q-select
-          v-model="accountType"
+          v-model="currencyId"
+          :options="currencyOptions"
+          option-value="value"
+          option-label="label"
+          emit-value
+          map-options
+          label="Moneda"
+          filled
+          dense
+          class="q-mt-sm"
+        />
+        <q-select
+          v-model="accountTypeId"
           :options="accountTypeOptions"
+          option-value="value"
+          option-label="label"
+          emit-value
+          map-options
           label="Tipo de Cuenta"
           filled
           dense
@@ -48,11 +64,21 @@ export default defineComponent({
     modelValue: { type: Boolean, default: false },
     mode: { type: String as () => 'create' | 'edit', default: 'create' },
     initialData: {
-      type: Object as () => { name?: string; initialAmount?: number | null; type?: string } | null,
+      type: Object as () => {
+        name?: string;
+        initialAmount?: number | null;
+        type?: string;
+        currency_id?: number | string | null;
+        account_type_id?: number | string | null;
+      } | null,
       default: null,
     },
+    currencyOptions: {
+      type: Array as () => Array<{ label: string; value: string | number }>,
+      default: () => [],
+    },
     accountTypeOptions: {
-      type: Array as () => Array<{ label: string; value: string }>,
+      type: Array as () => Array<{ label: string; value: string | number }>,
       default: () => [
         { label: 'Ahorro', value: 'savings' },
         { label: 'Corriente', value: 'checking' },
@@ -64,12 +90,14 @@ export default defineComponent({
   setup(props, { emit }) {
     const accountName = ref('');
     const initialAmount = ref<number | null>(null);
-    const accountType = ref('');
+    const currencyId = ref<string | number>('');
+    const accountTypeId = ref<string | number>('');
 
     function resetFields() {
       accountName.value = '';
       initialAmount.value = null;
-      accountType.value = '';
+      currencyId.value = '';
+      accountTypeId.value = '';
     }
 
     watch(
@@ -80,7 +108,8 @@ export default defineComponent({
           if (props.mode === 'edit' && props.initialData) {
             accountName.value = props.initialData.name ?? '';
             initialAmount.value = props.initialData.initialAmount ?? null;
-            accountType.value = props.initialData.type ?? '';
+            currencyId.value = (props.initialData.currency_id as number | string) ?? '';
+            accountTypeId.value = (props.initialData.account_type_id as number | string) ?? '';
           } else {
             resetFields();
           }
@@ -95,7 +124,8 @@ export default defineComponent({
       emit('submit', {
         name: accountName.value,
         initialAmount: initialAmount.value,
-        type: accountType.value,
+        currency_id: currencyId.value,
+        account_type_id: accountTypeId.value,
       });
       emit('update:modelValue', false);
     }
@@ -104,7 +134,7 @@ export default defineComponent({
       emit('update:modelValue', false);
     }
 
-    return { accountName, initialAmount, accountType, submit, cancel };
+    return { accountName, initialAmount, currencyId, accountTypeId, submit, cancel };
   },
 });
 </script>
