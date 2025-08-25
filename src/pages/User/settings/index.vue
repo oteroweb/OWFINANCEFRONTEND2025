@@ -170,27 +170,22 @@
               </q-card>
             </div>
           </q-expansion-item>
-          <q-dialog v-model="showCategoryDialog">
-            <q-card style="min-width: 360px">
-              <q-card-section class="text-subtitle1"
-                >{{ editingCategory ? 'Editar' : (categoryForm.isFolder ? 'Nueva carpeta' : 'Nueva categoría') }}</q-card-section
-              >
-              <q-card-section class="q-gutter-md">
-                <q-input v-model="categoryForm.name" label="Nombre" dense outlined />
-                <q-input v-model="categoryForm.date" label="Fecha" dense outlined type="date" />
-                <q-toggle v-model="categoryForm.active" label="Activo" />
-              </q-card-section>
-              <q-card-actions align="right">
-                <q-btn flat label="Cancelar" color="primary" v-close-popup />
-                <q-btn
-                  flat
-                  :label="editingCategory ? 'Actualizar' : 'Crear'"
-                  color="primary"
-                  @click="onSubmitCategory"
-                />
-              </q-card-actions>
-            </q-card>
-          </q-dialog>
+
+          <CategoryDialog
+            v-model="showCategoryDialog"
+            :mode="editingCategory ? 'edit' : 'create'"
+            :is-folder="categoryForm.isFolder || false"
+            :initial-data="{
+              name: categoryForm.name,
+              date: categoryForm.date,
+              active: categoryForm.active,
+              parent_id: categoryForm.parent_id,
+              icon: categoryForm.icon || null,
+              type_transaction: categoryForm.type_transaction || 'both',
+              include_in_balance: !!categoryForm.include_in_balance,
+            }"
+            @submit="onSubmitCategoryDialog"
+          />
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
@@ -201,6 +196,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import CrudPage from 'components/CrudPage.vue';
 import CategoriesTree from 'components/CategoriesTree.vue';
+import CategoryDialog from 'components/CategoryDialog.vue';
 import AccountsTree from 'components/AccountsTree.vue';
 import AccountDialog from 'components/AccountDialog.vue';
 import AccountViewerDialog from 'components/AccountViewerDialog.vue';
@@ -404,10 +400,14 @@ async function loadAccountsTree() {
 // Categories state/refs
 type CategoriesTreeExposed = {
   addCategoryToParent: (
-    cat: { id: string; label: string; type?: 'folder' | 'category' },
+    cat: { id: string; label: string; type?: 'folder' | 'category'; icon?: string | null },
     parentId?: string | null
   ) => void;
   updateNodeLabel: (id: string, label: string) => void;
+  updateNodeMeta: (
+    id: string,
+    patch: { label?: string; icon?: string | null; type?: 'folder' | 'category' }
+  ) => void;
   removeNode: (id: string) => void;
   setTree: (children: CatNodeInput[]) => void;
 };
@@ -421,7 +421,19 @@ const categoryForm = ref<{
   date: string;
   parent_id: string | null;
   isFolder?: boolean;
-}>({ name: '', active: true, date: '', parent_id: 'root', isFolder: false });
+  icon?: string | null;
+  type_transaction?: 'income' | 'expense' | 'both' | null;
+  include_in_balance?: boolean;
+}>({
+  name: '',
+  active: true,
+  date: '',
+  parent_id: 'root',
+  isFolder: false,
+  icon: null,
+  type_transaction: 'both',
+  include_in_balance: true,
+});
 
 // Tipado de nodos para setTree
 type CatNodeInput = {
@@ -429,6 +441,7 @@ type CatNodeInput = {
   label: string;
   type?: 'folder' | 'category';
   children?: CatNodeInput[];
+  icon?: string | null;
 };
 
 // Carga inicial de categorías (una sola vez por visita)
@@ -440,15 +453,16 @@ async function loadCategoriesTree() {
       name?: string;
       label?: string;
       type?: 'folder' | 'category';
+      icon?: string | null;
       children?: RemoteNode[];
     };
     const res = await api.get('categories/tree');
     const data = (res.data as { data?: unknown }).data;
     const raw: RemoteNode[] = Array.isArray(data)
       ? (data as RemoteNode[])
-      : (data && typeof data === 'object' && Array.isArray((data as { nodes?: unknown }).nodes)
-          ? (((data as { nodes?: unknown }).nodes as RemoteNode[]))
-          : ([] as RemoteNode[]));
+      : data && typeof data === 'object' && Array.isArray((data as { nodes?: unknown }).nodes)
+      ? ((data as { nodes?: unknown }).nodes as RemoteNode[])
+      : ([] as RemoteNode[]);
     const mapNodes = (nodes: RemoteNode[]): CatNodeInput[] =>
       nodes.map((n) => {
         const kids = n.children ? mapNodes(n.children) : [];
@@ -457,7 +471,13 @@ async function loadCategoriesTree() {
           : kids.length > 0
           ? 'folder'
           : 'category';
-        return { id: n.id, label: String(n.label ?? n.name ?? ''), type, children: kids };
+        return {
+          id: n.id,
+          label: String(n.label ?? n.name ?? ''),
+          type,
+          icon: n.icon || null,
+          children: kids,
+        };
       });
     categoriesTreeRef.value?.setTree(raw.length ? mapNodes(raw) : []);
     categoriesLoaded.value = true;
@@ -482,6 +502,7 @@ type Opt = { label: string; value: string | number };
 const currencyOptions = ref<Opt[]>([]);
 const accountTypeOptions = ref<Opt[]>([]);
 let optionsLoaded = false;
+
 async function loadAccountDialogOptions() {
   if (optionsLoaded) return;
   try {
@@ -950,76 +971,137 @@ async function onEditCategory(payload: { id: string; label: string }) {
     const res = await api.get(url);
     const entry = catDebug.value[0];
     if (entry) entry.response = res.data;
-    type RemoteCategory = { name?: unknown; active?: unknown; date?: unknown; parent_id?: unknown };
+    type RemoteCategory = {
+      name?: string;
+      active?: boolean;
+      date?: string | null;
+      parent_id?: string | null;
+      icon?: string | null;
+      type_transaction?: 'income' | 'expense' | 'both' | null;
+      include_in_balance?: boolean | null;
+    };
     const data = (res.data as { data?: RemoteCategory }).data ?? {};
     const name = typeof data.name === 'string' ? data.name : payload.label;
     const active = typeof data.active === 'boolean' ? data.active : true;
     const date = typeof data.date === 'string' ? data.date : '';
     const parentId = typeof data.parent_id === 'string' ? data.parent_id : 'root';
-    categoryForm.value = { name, active, date, parent_id: parentId };
+    const icon = data.icon ?? null;
+    const type_transaction =
+      data.type_transaction === 'income' ||
+      data.type_transaction === 'expense' ||
+      data.type_transaction === 'both'
+        ? data.type_transaction
+        : 'both';
+    const include_in_balance =
+      typeof data.include_in_balance === 'boolean' ? data.include_in_balance : true;
+    categoryForm.value = {
+      name,
+      active,
+      date,
+      parent_id: parentId,
+      icon,
+      type_transaction,
+      include_in_balance,
+    };
   } catch (e: unknown) {
     const entry = catDebug.value[0];
     if (entry) entry.error = e;
-    categoryForm.value = { name: payload.label, active: true, date: '', parent_id: 'root' };
+    categoryForm.value = {
+      name: payload.label,
+      active: true,
+      date: '',
+      parent_id: 'root',
+      icon: null,
+      type_transaction: 'both',
+      include_in_balance: true,
+    };
   } finally {
     showCategoryDialog.value = true;
   }
 }
 
-async function onSubmitCategory() {
+async function onSubmitCategoryDialog(payload: {
+  name: string;
+  active: boolean;
+  date: string | null;
+  parent_id?: string | null;
+  isFolder?: boolean;
+  icon?: string | null;
+  type_transaction?: 'income' | 'expense' | 'both' | null;
+  include_in_balance?: boolean;
+}) {
   try {
-    if (!categoryForm.value.name) {
+    if (!payload.name) {
       Notify.create({ type: 'warning', message: 'Nombre es requerido' });
       return;
     }
     if (editingCategory.value) {
       const url = `categories/${editingCategory.value.id}`;
-      const payload = {
-        name: categoryForm.value.name,
-        active: categoryForm.value.active,
-        date: categoryForm.value.date || null,
+      const body = {
+        name: payload.name,
+        active: payload.active,
+        date: payload.date || null,
         parent_id: categoryForm.value.parent_id === 'root' ? null : categoryForm.value.parent_id,
-  ...(categoryForm.value.isFolder ? { type: 'folder' as const } : { type: 'category' as const }),
+        ...(categoryForm.value.isFolder
+          ? { type: 'folder' as const }
+          : { type: 'category' as const }),
+        icon: payload.icon || null,
+        type_transaction: payload.type_transaction ?? 'both',
+        include_in_balance: payload.include_in_balance ?? true,
       };
       pushCatDebug({
         ts: new Date().toLocaleString(),
         action: 'PATCH actualizar',
         method: 'PATCH',
         url,
-        payload,
+        payload: body,
       });
-      const res = await api.patch(url, payload);
+      const res = await api.patch(url, body);
       const entry = catDebug.value[0];
       if (entry) entry.response = res.data;
-      categoriesTreeRef.value?.updateNodeLabel(editingCategory.value.id, categoryForm.value.name);
+      // Update label and icon locally
+      categoriesTreeRef.value?.updateNodeMeta(editingCategory.value.id, {
+        label: payload.name,
+        icon: payload.isFolder ? null : payload.icon || null,
+      });
       Notify.create({ type: 'positive', message: 'Categoría actualizada' });
     } else {
       const url = 'categories';
-      const payload = {
-        name: categoryForm.value.name,
-        active: categoryForm.value.active,
-        date: categoryForm.value.date || null,
+      const body = {
+        name: payload.name,
+        active: payload.active,
+        date: payload.date || null,
         parent_id: pendingCategoryParentId.value === 'root' ? null : pendingCategoryParentId.value,
-  type: categoryForm.value.isFolder ? 'folder' : 'category',
+        type: categoryForm.value.isFolder ? 'folder' : 'category',
+        icon: payload.icon || null,
+        type_transaction: payload.type_transaction ?? 'both',
+        include_in_balance: payload.include_in_balance ?? true,
       };
       pushCatDebug({
         ts: new Date().toLocaleString(),
         action: 'POST crear',
         method: 'POST',
         url,
-        payload,
+        payload: body,
       });
-      const res = await api.post(url, payload);
+      const res = await api.post(url, body);
       const entry = catDebug.value[0];
       if (entry) entry.response = res.data;
       const data = (
-        res.data as { data?: { id?: string; name?: string; parent_id?: string | null } }
+        res.data as {
+          data?: { id?: string; name?: string; parent_id?: string | null; icon?: string | null };
+        }
       ).data;
       const id = data?.id || `cat-${Date.now()}`;
-      const label = data?.name || categoryForm.value.name;
+      const label = data?.name || payload.name;
       const parentId = data?.parent_id ?? pendingCategoryParentId.value ?? 'root';
       categoriesTreeRef.value?.addCategoryToParent(
-        { id, label, type: categoryForm.value.isFolder ? 'folder' : 'category' },
+        {
+          id,
+          label,
+          type: categoryForm.value.isFolder ? 'folder' : 'category',
+          icon: data?.icon || payload.icon || null,
+        },
         parentId || 'root'
       );
       Notify.create({ type: 'positive', message: 'Categoría creada' });

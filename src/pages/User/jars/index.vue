@@ -31,7 +31,7 @@
               <div class="jar-body">
                 <div
                   class="jar-fill"
-                  :style="{ height: jar.percent + '%', background: jarFillGradient(idx) }"
+                  :style="{ height: jar.percent + '%', background: jarFillGradient() }"
                 />
                 <div class="jar-percent">{{ jar.percent }}%</div>
               </div>
@@ -63,7 +63,7 @@
                     <div class="jar-body">
                       <div
                         class="jar-fill"
-                        :style="{ height: jar.percent + '%', background: jarFillGradient(idx) }"
+                        :style="{ height: jar.percent + '%', background: jarFillGradient() }"
                       />
                     </div>
                   </div>
@@ -147,7 +147,7 @@ function onPercentChange() {
   }));
 }
 
-function jarFillGradient(idx: number): string {
+function jarFillGradient(): string {
   // Azul consistente para mejorar la legibilidad del porcentaje dentro del frasco
   // Usa el primario si existe; fallback a un azul (#1976D2)
   return 'linear-gradient(180deg, rgba(25,118,210,0.95) 0%, rgba(25,118,210,0.9) 60%, rgba(25,118,210,0.75) 100%)';

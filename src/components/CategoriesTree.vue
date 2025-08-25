@@ -27,6 +27,16 @@
           @click="onRequestDeleteCategory"
         />
       </div>
+      <div class="col-auto" v-if="selectedNodeId && selectedNodeId !== 'root'">
+        <q-btn
+          color="secondary"
+          outline
+          dense
+          icon="north"
+          label="Mover a raíz"
+          @click="onMoveSelectedToRoot"
+        />
+      </div>
     </div>
 
     <q-card flat bordered>
@@ -34,7 +44,19 @@
         <div v-if="dragNodeId && dragNodeLabel" class="drag-floating">
           Moviendo: <strong>{{ dragNodeLabel }}</strong>
         </div>
-        <q-tree :nodes="tree" node-key="id" default-expand-all no-transition>
+        <!-- Nodo especial de drop a raíz -->
+        <div
+          v-if="dragNodeId"
+          class="row items-center no-wrap q-gutter-x-sm tree-node q-ml-sm q-mb-xs"
+          :class="{ 'is-drop-target': dragOverRoot }"
+          @dragover.prevent="onRootDragOver"
+          @drop.prevent="onRootDrop"
+          @dragleave="onRootDragLeave"
+        >
+          <q-icon name="arrow_upward" size="18px" />
+          <div class="ellipsis col text-primary">Mover a raíz</div>
+        </div>
+        <q-tree :nodes="nodesToRender" node-key="id" default-expand-all no-transition>
           <template #default-header="{ node }">
             <div
               class="row items-center no-wrap q-gutter-x-sm tree-node"
@@ -54,7 +76,7 @@
               @drop.prevent="(ev) => onDrop(node, ev)"
               @dragleave="onDragLeave(node)"
             >
-              <q-icon :name="node.type === 'folder' ? 'folder' : 'sell'" size="18px" />
+              <q-icon :name="node.type === 'folder' ? 'folder' : node.icon || 'sell'" size="18px" />
               <div class="ellipsis col">{{ node.label }}</div>
             </div>
           </template>
@@ -65,13 +87,15 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent, ref, computed } from 'vue';
 import { Notify } from 'quasar';
+import type { QTreeNode } from 'quasar';
 
 type TreeNode = {
   id: string;
   label: string;
   type: 'folder' | 'category';
+  icon?: string;
   children?: TreeNode[];
 };
 
@@ -88,6 +112,8 @@ export default defineComponent({
     const hoveredNodeId = ref<string | null>(null);
     const selectedNodeId = ref<string | null>(null);
     const dragOverNodeId = ref<string | null>(null);
+    const dragOverRoot = ref<boolean>(false);
+    // UI state
     const selectedIsCategory = ref<boolean>(false);
 
     function onRequestCreateCategory() {
@@ -96,13 +122,12 @@ export default defineComponent({
     }
 
     function onRequestCreateFolder() {
-      // Si la selección actual es una categoría, crear en raíz; si es carpeta o root, usar selección
-      const parentId = selectedIsCategory.value ? 'root' : selectedNodeId.value || 'root';
+      // Crear bajo el nodo seleccionado (carpeta o categoría) o en root si nada seleccionado
+      const parentId = selectedNodeId.value || 'root';
       emit('create-folder', { parent_id: parentId });
     }
 
     function onDragStart(node: TreeNode, ev: DragEvent) {
-      if (node.type !== 'category') return;
       dragNodeId.value = node.id;
       dragNodeLabel.value = node.label;
       ev.dataTransfer?.setData('text/plain', node.id);
@@ -113,7 +138,11 @@ export default defineComponent({
     function onDragOver(node: TreeNode, ev: DragEvent) {
       const draggingId = dragNodeId.value;
       if (!draggingId) return;
-      if (node.id !== draggingId && (node.type === 'folder' || node.id === 'root')) {
+      // Permitir soltar sobre carpetas, root o categorías (si se suelta en categoría, se convierte en carpeta)
+      if (
+        node.id !== draggingId &&
+        (node.type === 'folder' || node.type === 'category' || node.id === 'root')
+      ) {
         ev.preventDefault();
         dragOverNodeId.value = node.id;
       }
@@ -140,15 +169,21 @@ export default defineComponent({
       // remove from old parent
       if (srcParent) {
         srcParent.children = (srcParent.children || []).filter((n) => n.id !== srcNode.id);
+        if ((srcParent.children?.length || 0) === 0 && srcParent.id !== 'root') {
+          srcParent.type = 'category';
+        }
       } else {
         const idx = tree.value.findIndex((n) => n.id === srcNode.id);
         if (idx !== -1) tree.value.splice(idx, 1);
       }
 
-      // only allow dropping into folders (or root)
-      if (!(tgtNode.type === 'folder' || tgtNode.id === 'root')) {
-        Notify.create({ type: 'warning', message: 'Solo puedes soltar dentro de carpetas' });
+      // permitir categoría como destino: si es categoría, la convertimos a 'folder' para UI
+      if (!(tgtNode.type === 'folder' || tgtNode.id === 'root' || tgtNode.type === 'category')) {
+        Notify.create({ type: 'warning', message: 'Destino no válido' });
         return;
+      }
+      if (tgtNode.type === 'category') {
+        tgtNode.type = 'folder';
       }
       tgtNode.children = tgtNode.children || [];
       tgtNode.children.push(srcNode);
@@ -163,6 +198,63 @@ export default defineComponent({
     function onDragLeave(node: TreeNode) {
       if (dragOverNodeId.value === node.id) dragOverNodeId.value = null;
     }
+
+    function onRootDragOver() {
+      if (dragNodeId.value) dragOverRoot.value = true;
+    }
+    function onRootDragLeave() {
+      dragOverRoot.value = false;
+    }
+    function onRootDrop(ev: DragEvent) {
+      const sourceId = ev.dataTransfer?.getData('text/plain') || dragNodeId.value;
+      dragOverRoot.value = false;
+      if (!sourceId) return;
+      const sourceInfo = findNodeWithParent(tree.value, sourceId);
+      const rootInfo = findNodeWithParent(tree.value, 'root');
+      if (!sourceInfo || !rootInfo) return;
+      const { node: srcNode, parent: srcParent } = sourceInfo;
+      const rootNode = rootInfo.node;
+      if (srcParent && srcParent.id === 'root') return;
+      if (srcParent) {
+        srcParent.children = (srcParent.children || []).filter((n) => n.id !== srcNode.id);
+        if ((srcParent.children?.length || 0) === 0 && srcParent.id !== 'root') {
+          srcParent.type = 'category';
+        }
+      }
+      rootNode.children = rootNode.children || [];
+      rootNode.children.push(srcNode);
+      emit('move-node', { node_id: srcNode.id, new_parent_id: 'root' });
+      dragNodeId.value = null;
+      dragNodeLabel.value = null;
+      dragOverNodeId.value = null;
+    }
+
+    function onMoveSelectedToRoot() {
+      if (!selectedNodeId.value) return;
+      const sourceInfo = findNodeWithParent(tree.value, selectedNodeId.value);
+      const rootInfo = findNodeWithParent(tree.value, 'root');
+      if (!sourceInfo || !rootInfo) return;
+      const { node: srcNode, parent: srcParent } = sourceInfo;
+      const rootNode = rootInfo.node;
+      if (srcParent && srcParent.id === 'root') return;
+      if (srcParent) {
+        srcParent.children = (srcParent.children || []).filter((n) => n.id !== srcNode.id);
+        if ((srcParent.children?.length || 0) === 0 && srcParent.id !== 'root') {
+          srcParent.type = 'category';
+        }
+      }
+      rootNode.children = rootNode.children || [];
+      rootNode.children.push(srcNode);
+      emit('move-node', { node_id: srcNode.id, new_parent_id: 'root' });
+    }
+
+    // Map internal nodes to QTreeNode typing for template consumption
+    const nodesToRender = computed<QTreeNode<unknown>[]>(() => {
+      const rootInfo = findNodeWithParent(tree.value, 'root');
+      const kids = rootInfo?.node.children || [];
+      // Cast is safe for QTree as it ignores extra fields.
+      return kids as unknown as QTreeNode<unknown>[];
+    });
 
     function onSelect(node: TreeNode) {
       selectedNodeId.value = node.id;
@@ -208,7 +300,7 @@ export default defineComponent({
     }
 
     function addCategoryToParent(
-      category: { id: string; label: string; type?: 'folder' | 'category' },
+      category: { id: string; label: string; type?: 'folder' | 'category'; icon?: string | null },
       parentId: string | null = 'root'
     ) {
       const parentInfo = parentId ? findNodeWithParent(tree.value, parentId) : null;
@@ -217,6 +309,7 @@ export default defineComponent({
         id: category.id,
         label: category.label,
         type: category.type || 'category',
+        ...(category.icon ? { icon: category.icon } : {}),
       };
       if (parentNode) {
         parentNode.children = parentNode.children || [];
@@ -231,12 +324,34 @@ export default defineComponent({
       if (info) info.node.label = label;
     }
 
+    function updateNodeMeta(
+      id: string,
+      patch: { label?: string; icon?: string | null; type?: 'folder' | 'category' }
+    ) {
+      const info = findNodeWithParent(tree.value, id);
+      if (!info) return;
+      const node = info.node;
+      if (typeof patch.label === 'string') node.label = patch.label;
+      if (patch.icon !== undefined) {
+        if (patch.icon === null) {
+          // remove icon if present
+          if ('icon' in node) delete (node as Record<string, unknown>).icon;
+        } else {
+          node.icon = patch.icon;
+        }
+      }
+      if (patch.type) node.type = patch.type;
+    }
+
     function removeNode(id: string) {
       const info = findNodeWithParent(tree.value, id);
       if (!info) return;
       const { parent } = info;
       if (parent) {
         parent.children = (parent.children || []).filter((n) => n.id !== id);
+        if ((parent.children?.length || 0) === 0 && parent.id !== 'root') {
+          parent.type = 'category';
+        }
       } else {
         const idx = tree.value.findIndex((n) => n.id === id);
         if (idx !== -1) tree.value.splice(idx, 1);
@@ -248,6 +363,7 @@ export default defineComponent({
       id: string | number;
       label: string;
       type?: 'folder' | 'category';
+      icon?: string | null;
       children?: NodeInput[];
     };
     function sortRecursive(nodes: TreeNode[]): TreeNode[] {
@@ -264,21 +380,21 @@ export default defineComponent({
             : kids.length > 0
             ? 'folder'
             : 'category';
-          return {
+          const base: TreeNode = {
             id: String(n.id),
             label: String(n.label ?? ''),
             type,
             children: kids,
           };
+          if (n.icon) base.icon = n.icon;
+          return base;
         });
-      const root = findNodeWithParent(tree.value, 'root');
       const mapped = sortRecursive(toTree(children));
+      const root = findNodeWithParent(tree.value, 'root');
       if (root) {
         root.node.children = mapped;
       } else {
-        tree.value = [
-          { id: 'root', label: 'Categorías', type: 'folder', children: mapped },
-        ];
+        tree.value = [{ id: 'root', label: 'Categorías', type: 'folder', children: mapped }];
       }
     }
 
@@ -313,7 +429,14 @@ export default defineComponent({
       return el;
     }
 
-  expose({ addCategoryToParent, updateNodeLabel, removeNode, setTree, setTreeFlexible });
+    expose({
+      addCategoryToParent,
+      updateNodeLabel,
+      updateNodeMeta,
+      removeNode,
+      setTree,
+      setTreeFlexible,
+    });
 
     return {
       tree,
@@ -322,19 +445,28 @@ export default defineComponent({
       hoveredNodeId,
       selectedNodeId,
       dragOverNodeId,
+
       selectedIsCategory,
       onRequestCreateCategory,
-  onRequestCreateFolder,
+      onRequestCreateFolder,
       onDragStart,
       onDragOver,
       onDrop,
       onDragLeave,
+      onRootDragOver,
+      onRootDragLeave,
+      onRootDrop,
       onSelect,
       onDblClick,
+      onMoveSelectedToRoot,
+
       onRequestDeleteCategory,
       addCategoryToParent,
       updateNodeLabel,
+      updateNodeMeta,
       removeNode,
+      dragOverRoot,
+      nodesToRender,
       // setTree is exposed for parent refs; no need to return to template
     };
   },
