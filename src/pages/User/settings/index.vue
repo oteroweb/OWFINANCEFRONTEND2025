@@ -116,6 +116,7 @@
           <CategoriesTree
             ref="categoriesTreeRef"
             @create-category="onCreateCategory"
+            @create-folder="onCreateFolderCategory"
             @move-node="onMoveCategoryNode"
             @delete-category="onDeleteCategory"
             @edit-category="onEditCategory"
@@ -172,7 +173,7 @@
           <q-dialog v-model="showCategoryDialog">
             <q-card style="min-width: 360px">
               <q-card-section class="text-subtitle1"
-                >{{ editingCategory ? 'Editar' : 'Nueva' }} categoría</q-card-section
+                >{{ editingCategory ? 'Editar' : (categoryForm.isFolder ? 'Nueva carpeta' : 'Nueva categoría') }}</q-card-section
               >
               <q-card-section class="q-gutter-md">
                 <q-input v-model="categoryForm.name" label="Nombre" dense outlined />
@@ -228,7 +229,7 @@ const avatarPreview = ref<string | null>(null);
 const saving = ref(false);
 const showAccountDialog = ref(false);
 const showViewer = ref(false);
-const supportsFolderDelete = ref(false);
+const supportsFolderDelete = ref(true);
 type AccountsTreeExposed = {
   addAccountToFolder: (acc: { id: string; label: string }, parentId?: string | null) => void;
   addFolderToParent: (folder: { id: string; label: string }, parentId?: string | null) => void;
@@ -257,7 +258,7 @@ type ViewerAccountData = {
 };
 const viewerAccount = ref<ViewerAccountData | null>(null);
 
-// Accounts tree loader using /api/accounts/tree
+// Accounts tree loader using accounts/tree
 type AccountsNodeInput = {
   id: string | number;
   label: string;
@@ -266,6 +267,7 @@ type AccountsNodeInput = {
 };
 const accountsLoaded = ref(false);
 async function loadAccountsTree() {
+  // Primer intento: endpoint agregado que devuelve folders+accounts en árbol
   try {
     type RemoteNode = {
       id: string | number;
@@ -274,16 +276,124 @@ async function loadAccountsTree() {
       type: 'folder' | 'account';
       children?: RemoteNode[];
     };
-    const res = await api.get('/accounts/tree');
+    const res = await api.get('accounts/tree');
     const raw: RemoteNode[] = (res.data as { data?: { nodes?: RemoteNode[] } }).data?.nodes || [];
-    const mapNodes = (nodes: RemoteNode[]): AccountsNodeInput[] =>
-      nodes.map((n) => ({
-        id: n.id,
-        label: String(n.label ?? n.name ?? ''),
-        type: n.type,
-        children: n.children ? mapNodes(n.children) : [],
-      }));
-    accountsTreeRef.value?.setTree(mapNodes(raw));
+    if (Array.isArray(raw) && raw.length > 0) {
+      const mapNodes = (nodes: RemoteNode[]): AccountsNodeInput[] =>
+        nodes.map((n) => ({
+          id: n.id,
+          label: String(n.label ?? n.name ?? ''),
+          type: n.type,
+          children: n.children ? mapNodes(n.children) : [],
+        }));
+      accountsTreeRef.value?.setTree(mapNodes(raw));
+      accountsLoaded.value = true;
+      return;
+    }
+  } catch {
+    /* fallback below */
+  }
+
+  // Fallback: construir árbol con GET accounts/folders y GET accounts
+  try {
+    type Folder = {
+      id: string | number;
+      name?: string;
+      label?: string;
+      parent_id?: string | number | null;
+      children?: Folder[];
+    };
+    type Account = {
+      id: string | number;
+      name?: string;
+      label?: string;
+      folder_id?: string | number | null;
+    };
+    const [foldersRes, accountsRes] = await Promise.all([
+      api.get('accounts/folders'),
+      api.get('accounts', { params: { per_page: 1000 } }),
+    ]);
+
+    const extract = <T>(payload: unknown): T[] => {
+      const p = payload as { data?: unknown };
+      const d = p?.data;
+      if (Array.isArray(d)) return d as T[];
+      const obj = (d as { data?: unknown; items?: unknown }) || {};
+      if (Array.isArray(obj.data)) return obj.data as T[];
+      if (Array.isArray(obj.items)) return obj.items as T[];
+      return [] as T[];
+    };
+
+    const folders = extract<Folder>(foldersRes);
+    const accounts = extract<Account>(accountsRes);
+
+    const toNode = (f: Folder): AccountsNodeInput => ({
+      id: f.id,
+      label: String(f.label ?? f.name ?? ''),
+      type: 'folder',
+      children: (f.children || []).map(toNode),
+    });
+
+    // Si folders viene plano, construir jerarquía por parent_id
+    const isFlat =
+      folders.length > 0 &&
+      !folders.some((f) => Array.isArray(f.children) && f.children.length > 0);
+    let folderTree: AccountsNodeInput[];
+    if (isFlat) {
+      const byId = new Map<string, AccountsNodeInput>();
+      const roots: AccountsNodeInput[] = [];
+      for (const f of folders) {
+        byId.set(String(f.id), {
+          id: f.id,
+          label: String(f.label ?? f.name ?? ''),
+          type: 'folder',
+          children: [],
+        });
+      }
+      for (const f of folders) {
+        const node = byId.get(String(f.id))!;
+        const pid = f.parent_id == null ? null : String(f.parent_id);
+        if (pid && byId.has(pid)) {
+          const parent = byId.get(pid)!;
+          parent.children = parent.children || [];
+          parent.children.push(node);
+        } else {
+          roots.push(node);
+        }
+      }
+      folderTree = roots;
+    } else {
+      folderTree = folders.map(toNode);
+    }
+
+    // Colocar cuentas dentro de su carpeta
+    const byIdNode = new Map<string, AccountsNodeInput>();
+    const collect = (nodes: AccountsNodeInput[]) => {
+      for (const n of nodes) {
+        byIdNode.set(String(n.id), n);
+        if (n.children) collect(n.children);
+      }
+    };
+    collect(folderTree);
+
+    for (const a of accounts) {
+      const node: AccountsNodeInput = {
+        id: a.id,
+        label: String(a.label ?? a.name ?? ''),
+        type: 'account',
+      };
+      const fid = a.folder_id == null ? null : String(a.folder_id);
+      if (fid && byIdNode.has(fid)) {
+        const parent = byIdNode.get(fid)!;
+        parent.children = parent.children || [];
+        parent.children.push(node);
+      } else {
+        // top-level; AccountsTree agrupará en "Sin asignar"
+        folderTree.push(node);
+      }
+    }
+
+    accountsTreeRef.value?.setTree(folderTree);
     accountsLoaded.value = true;
   } catch (e: unknown) {
     const msg = (e as { message?: string })?.message || 'No se pudo cargar el árbol de cuentas';
@@ -293,7 +403,10 @@ async function loadAccountsTree() {
 
 // Categories state/refs
 type CategoriesTreeExposed = {
-  addCategoryToParent: (cat: { id: string; label: string }, parentId?: string | null) => void;
+  addCategoryToParent: (
+    cat: { id: string; label: string; type?: 'folder' | 'category' },
+    parentId?: string | null
+  ) => void;
   updateNodeLabel: (id: string, label: string) => void;
   removeNode: (id: string) => void;
   setTree: (children: CatNodeInput[]) => void;
@@ -302,12 +415,21 @@ const categoriesTreeRef = ref<CategoriesTreeExposed | null>(null);
 const showCategoryDialog = ref(false);
 const editingCategory = ref<null | { id: string }>(null);
 const pendingCategoryParentId = ref<string | null>('root');
-const categoryForm = ref<{ name: string; active: boolean; date: string; parent_id: string | null }>(
-  { name: '', active: true, date: '', parent_id: 'root' }
-);
+const categoryForm = ref<{
+  name: string;
+  active: boolean;
+  date: string;
+  parent_id: string | null;
+  isFolder?: boolean;
+}>({ name: '', active: true, date: '', parent_id: 'root', isFolder: false });
 
 // Tipado de nodos para setTree
-type CatNodeInput = { id: string | number; label: string; children?: CatNodeInput[] };
+type CatNodeInput = {
+  id: string | number;
+  label: string;
+  type?: 'folder' | 'category';
+  children?: CatNodeInput[];
+};
 
 // Carga inicial de categorías (una sola vez por visita)
 const categoriesLoaded = ref(false);
@@ -317,17 +439,27 @@ async function loadCategoriesTree() {
       id: string | number;
       name?: string;
       label?: string;
+      type?: 'folder' | 'category';
       children?: RemoteNode[];
     };
-    const res = await api.get('/user/categories/tree');
-    const raw: RemoteNode[] = (res.data as { data?: RemoteNode[] }).data || [];
+    const res = await api.get('categories/tree');
+    const data = (res.data as { data?: unknown }).data;
+    const raw: RemoteNode[] = Array.isArray(data)
+      ? (data as RemoteNode[])
+      : (data && typeof data === 'object' && Array.isArray((data as { nodes?: unknown }).nodes)
+          ? (((data as { nodes?: unknown }).nodes as RemoteNode[]))
+          : ([] as RemoteNode[]));
     const mapNodes = (nodes: RemoteNode[]): CatNodeInput[] =>
-      nodes.map((n) => ({
-        id: n.id,
-        label: String(n.label ?? n.name ?? ''),
-        children: n.children ? mapNodes(n.children) : [],
-      }));
-    categoriesTreeRef.value?.setTree(mapNodes(raw));
+      nodes.map((n) => {
+        const kids = n.children ? mapNodes(n.children) : [];
+        const type: 'folder' | 'category' = n.type
+          ? n.type
+          : kids.length > 0
+          ? 'folder'
+          : 'category';
+        return { id: n.id, label: String(n.label ?? n.name ?? ''), type, children: kids };
+      });
+    categoriesTreeRef.value?.setTree(raw.length ? mapNodes(raw) : []);
     categoriesLoaded.value = true;
   } catch (e: unknown) {
     const msg = (e as { message?: string })?.message || 'No se pudieron cargar las categorías';
@@ -409,7 +541,7 @@ function clearCatDebug() {
   catDebug.value = [];
 }
 async function testLoadCategories() {
-  const url = '/user/categories/tree';
+  const url = 'categories/tree';
   const meta: CatDebug = {
     ts: new Date().toLocaleString(),
     action: 'GET árbol',
@@ -502,8 +634,8 @@ function onCreateAccount() {
 
 async function onCreateFolder(payload: { name: string; parent_id: string | null }) {
   try {
-    // POST /account-folders
-    const res = await api.post('/account-folders', {
+    // POST accounts/folders
+    const res = await api.post('accounts/folders', {
       name: payload.name,
       parent_id: payload.parent_id === 'root' ? null : payload.parent_id,
     });
@@ -528,12 +660,15 @@ async function onMoveNode(payload: {
 }) {
   try {
     if (payload.node_type === 'folder') {
-      // No hay ruta documentada para mover carpetas
-      Notify.create({ type: 'warning', message: 'Mover carpetas no está soportado por la API' });
+      // PATCH accounts/folders/:id/move
+      await api.patch(`accounts/folders/${payload.node_id}/move`, {
+        parent_id: payload.new_parent_id === 'root' ? null : payload.new_parent_id,
+      });
+      Notify.create({ type: 'info', message: 'Carpeta movida' });
       return;
     }
-    // PATCH /accounts/:id/move
-    await api.patch(`/accounts/${payload.node_id}/move`, {
+    // PATCH accounts/:id/move
+    await api.patch(`accounts/${payload.node_id}/move`, {
       folder_id: payload.new_parent_id === 'root' ? null : payload.new_parent_id,
       ...(typeof payload.sort_order === 'number' ? { sort_order: payload.sort_order } : {}),
     });
@@ -554,7 +689,7 @@ async function onAccountSubmit(acc: {
   try {
     if (editingAccount.value) {
       // PUT /accounts/{id}
-      await api.put(`/accounts/${editingAccount.value.id}`, {
+      await api.put(`accounts/${editingAccount.value.id}`, {
         name: acc.name,
         ...(acc.account_type_id !== undefined && acc.account_type_id !== ''
           ? { account_type_id: acc.account_type_id }
@@ -570,7 +705,7 @@ async function onAccountSubmit(acc: {
       Notify.create({ type: 'positive', message: 'Cuenta actualizada' });
     } else {
       // POST /accounts (ajusta campos según la API)
-      const res = await api.post('/accounts', {
+      const res = await api.post('accounts', {
         name: acc.name,
         currency_id: acc.currency_id,
         account_type_id: acc.account_type_id ?? acc.type,
@@ -605,7 +740,7 @@ function onEditAccount(payload: { id: string; label: string }) {
   void (async () => {
     await loadAccountDialogOptions();
     try {
-      const res = await api.get(`/accounts/${payload.id}`);
+      const res = await api.get(`accounts/${payload.id}`);
       type Detail = BackendAccount & {
         currency_id?: number | string | null;
         account_type_id?: number | string | null;
@@ -638,7 +773,7 @@ function openEditFromViewer() {
   void (async () => {
     await loadAccountDialogOptions();
     try {
-      const res = await api.get(`/accounts/${id}`);
+      const res = await api.get(`accounts/${id}`);
       type Detail = BackendAccount & {
         currency_id?: number | string | null;
         account_type_id?: number | string | null;
@@ -674,7 +809,7 @@ async function onDeleteAccount() {
       persistent: true,
     });
     if (!ok) return;
-    await api.delete(`/accounts/${viewerAccount.value.id}`);
+    await api.delete(`accounts/${viewerAccount.value.id}`);
     accountsTreeRef.value?.removeNode(viewerAccount.value.id);
     Notify.create({ type: 'positive', message: 'Cuenta eliminada' });
     showViewer.value = false;
@@ -697,7 +832,7 @@ async function onDeleteFolder(payload: { id: string; label: string }) {
     });
     if (!ok) return;
     if (supportsFolderDelete.value) {
-      await api.delete(`/account-folders/${payload.id}`);
+      await api.delete(`accounts/folders/${payload.id}`);
       accountsTreeRef.value?.removeNode(payload.id);
       Notify.create({ type: 'positive', message: 'Carpeta eliminada' });
     } else {
@@ -725,7 +860,7 @@ type BackendAccount = {
 async function loadAccountDetails(id: string, fallbackName: string) {
   try {
     // GET /accounts/:id debe devolver dentro de data los campos mostrados
-    const res = await api.get(`/accounts/${id}`);
+    const res = await api.get(`accounts/${id}`);
     const data = (res.data as { data?: BackendAccount }).data || ({} as BackendAccount);
     viewerAccount.value = {
       id: String(data.id ?? id),
@@ -784,6 +919,20 @@ function onCreateCategory(payload: { parent_id: string | null }) {
     active: true,
     date: '',
     parent_id: pendingCategoryParentId.value,
+    isFolder: false,
+  };
+  showCategoryDialog.value = true;
+}
+
+function onCreateFolderCategory(payload: { parent_id: string | null }) {
+  pendingCategoryParentId.value = payload.parent_id ?? 'root';
+  editingCategory.value = null;
+  categoryForm.value = {
+    name: '',
+    active: true,
+    date: '',
+    parent_id: pendingCategoryParentId.value,
+    isFolder: true,
   };
   showCategoryDialog.value = true;
 }
@@ -791,7 +940,7 @@ function onCreateCategory(payload: { parent_id: string | null }) {
 async function onEditCategory(payload: { id: string; label: string }) {
   editingCategory.value = { id: payload.id };
   try {
-    const url = `/user/categories/${payload.id}`;
+    const url = `categories/${payload.id}`;
     pushCatDebug({
       ts: new Date().toLocaleString(),
       action: 'GET categoría',
@@ -824,12 +973,13 @@ async function onSubmitCategory() {
       return;
     }
     if (editingCategory.value) {
-      const url = `/user/categories/${editingCategory.value.id}`;
+      const url = `categories/${editingCategory.value.id}`;
       const payload = {
         name: categoryForm.value.name,
         active: categoryForm.value.active,
         date: categoryForm.value.date || null,
         parent_id: categoryForm.value.parent_id === 'root' ? null : categoryForm.value.parent_id,
+  ...(categoryForm.value.isFolder ? { type: 'folder' as const } : { type: 'category' as const }),
       };
       pushCatDebug({
         ts: new Date().toLocaleString(),
@@ -844,12 +994,13 @@ async function onSubmitCategory() {
       categoriesTreeRef.value?.updateNodeLabel(editingCategory.value.id, categoryForm.value.name);
       Notify.create({ type: 'positive', message: 'Categoría actualizada' });
     } else {
-      const url = '/user/categories';
+      const url = 'categories';
       const payload = {
         name: categoryForm.value.name,
         active: categoryForm.value.active,
         date: categoryForm.value.date || null,
         parent_id: pendingCategoryParentId.value === 'root' ? null : pendingCategoryParentId.value,
+  type: categoryForm.value.isFolder ? 'folder' : 'category',
       };
       pushCatDebug({
         ts: new Date().toLocaleString(),
@@ -867,7 +1018,10 @@ async function onSubmitCategory() {
       const id = data?.id || `cat-${Date.now()}`;
       const label = data?.name || categoryForm.value.name;
       const parentId = data?.parent_id ?? pendingCategoryParentId.value ?? 'root';
-      categoriesTreeRef.value?.addCategoryToParent({ id, label }, parentId || 'root');
+      categoriesTreeRef.value?.addCategoryToParent(
+        { id, label, type: categoryForm.value.isFolder ? 'folder' : 'category' },
+        parentId || 'root'
+      );
       Notify.create({ type: 'positive', message: 'Categoría creada' });
     }
   } catch (e: unknown) {
@@ -883,7 +1037,7 @@ async function onSubmitCategory() {
 
 async function onMoveCategoryNode(payload: { node_id: string; new_parent_id: string }) {
   try {
-    const url = `/user/categories/${payload.node_id}/move`;
+    const url = `categories/${payload.node_id}/move`;
     const body = { parent_id: payload.new_parent_id === 'root' ? null : payload.new_parent_id };
     pushCatDebug({
       ts: new Date().toLocaleString(),
@@ -914,7 +1068,7 @@ async function onDeleteCategory(payload: { id: string; label: string }) {
       persistent: true,
     });
     if (!ok) return;
-    const url = `/user/categories/${payload.id}`;
+    const url = `categories/${payload.id}`;
     pushCatDebug({
       ts: new Date().toLocaleString(),
       action: 'DELETE eliminar',

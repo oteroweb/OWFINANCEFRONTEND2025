@@ -112,30 +112,10 @@ export default defineComponent({
     'delete-folder',
   ],
   setup(_, { emit, expose }) {
+    // Top-level nodes; we keep a special folder id 'root' labeled 'Sin asignar'
+    const UNASSIGNED_ID = 'root';
     const tree = ref<TreeNode[]>([
-      {
-        id: 'root',
-        label: 'Mi dinero',
-        type: 'folder',
-        children: [
-          { id: 'cash', label: 'Efectivo', type: 'folder', children: [] },
-          {
-            id: 'local-acc',
-            label: 'Cuentas Locales',
-            type: 'folder',
-            children: [
-              { id: 'acc-1', label: 'Mi mercantil', type: 'account' },
-              { id: 'acc-2', label: 'Mi venezuela', type: 'account' },
-            ],
-          },
-          {
-            id: 'debts',
-            label: 'Deudas',
-            type: 'folder',
-            children: [{ id: 'acc-3', label: 'Tarjeta Visa', type: 'account' }],
-          },
-        ],
-      },
+      { id: UNASSIGNED_ID, label: 'Sin asignar', type: 'folder', children: [] },
     ]);
 
     // DnD state
@@ -175,7 +155,7 @@ export default defineComponent({
       if (!sourceInfo || !targetInfo) return;
 
       const { node: srcNode, parent: srcParent } = sourceInfo;
-      const { node: tgtNode } = targetInfo;
+      let { node: tgtNode } = targetInfo;
 
       // prevent dropping a folder into its own descendant
       if (srcNode.type === 'folder' && isDescendant(srcNode, tgtNode)) {
@@ -183,6 +163,20 @@ export default defineComponent({
           type: 'warning',
           message: 'No puedes mover una carpeta dentro de sí misma',
         });
+        return;
+      }
+
+      // UI rule: accounts dropped on 'Sin asignar' stay there; payload 'root' => null en backend
+      let payloadParentId = tgtNode.id;
+      const isUnassigned = tgtNode.id === UNASSIGNED_ID;
+      if (isUnassigned && srcNode.type === 'account') {
+        const un = getOrCreateUnassigned();
+        tgtNode = un;
+        payloadParentId = 'root'; // keep API semantic: root => null folder
+      }
+      // Do not allow moving a folder into 'Sin asignar'
+      if (isUnassigned && srcNode.type === 'folder') {
+        Notify.create({ type: 'warning', message: 'No puedes mover carpetas a "Sin asignar"' });
         return;
       }
 
@@ -203,7 +197,7 @@ export default defineComponent({
       // emit payload for backend with node_type
       emit('move-node', {
         node_id: srcNode.id,
-        new_parent_id: tgtNode.id,
+        new_parent_id: payloadParentId,
         node_type: srcNode.type,
         sort_order: sortOrder,
       });
@@ -233,7 +227,7 @@ export default defineComponent({
 
     function onSelect(node: TreeNode) {
       selectedNodeId.value = node.id;
-      selectedIsFolder.value = node.type === 'folder' && node.id !== 'root';
+      selectedIsFolder.value = node.type === 'folder' && node.id !== UNASSIGNED_ID;
     }
 
     function onRequestDeleteFolder() {
@@ -273,9 +267,9 @@ export default defineComponent({
     // New folder dialog
     const showNewFolder = ref(false);
     const newFolderName = ref('');
-    let newFolderParentId: string | null = 'root';
+    let newFolderParentId: string | null = null;
 
-    function openNewFolderDialog(parentId: string | null = 'root') {
+    function openNewFolderDialog(parentId: string | null = null) {
       newFolderParentId = parentId;
       newFolderName.value = '';
       showNewFolder.value = true;
@@ -294,8 +288,13 @@ export default defineComponent({
       account: { id: string; label: string },
       parentId: string | null = 'root'
     ) {
-      const parentInfo = parentId ? findNodeWithParent(tree.value, parentId) : null;
-      const parentNode = parentInfo?.node || null;
+      let parentNode: TreeNode | null = null;
+      if (parentId === 'root') {
+        parentNode = getOrCreateUnassigned();
+      } else {
+        const parentInfo = parentId ? findNodeWithParent(tree.value, parentId) : null;
+        parentNode = parentInfo?.node || null;
+      }
       const node: TreeNode = { id: account.id, label: account.label, type: 'account' };
       if (parentNode && parentNode.type === 'folder') {
         parentNode.children = parentNode.children || [];
@@ -308,12 +307,14 @@ export default defineComponent({
     // Helper to add a folder under a parent (used after backend creates it)
     function addFolderToParent(
       folder: { id: string; label: string },
-      parentId: string | null = 'root'
+      parentId: string | null = null
     ) {
-      const parentInfo = parentId ? findNodeWithParent(tree.value, parentId) : null;
+      // parentId === 'root' or null => top-level folder (sibling of "Sin asignar")
+      const isTopLevel = !parentId || parentId === UNASSIGNED_ID;
+      const parentInfo = !isTopLevel && parentId ? findNodeWithParent(tree.value, parentId) : null;
       const parentNode = parentInfo?.node || null;
       const node: TreeNode = { id: folder.id, label: folder.label, type: 'folder', children: [] };
-      if (parentNode && parentNode.type === 'folder') {
+      if (!isTopLevel && parentNode && parentNode.type === 'folder') {
         parentNode.children = parentNode.children || [];
         parentNode.children.push(node);
       } else {
@@ -341,6 +342,7 @@ export default defineComponent({
     // Replace entire tree with provided nodes (typed, no any)
     type NodeInput = { id: string | number; label: string; type: NodeType; children?: NodeInput[] };
     function setTree(nodes: NodeInput[]) {
+      // Normalize incoming nodes
       const toTree = (items: NodeInput[]): TreeNode[] =>
         items.map((n) => ({
           id: String(n.id),
@@ -348,7 +350,51 @@ export default defineComponent({
           type: n.type,
           children: n.children ? toTree(n.children) : [],
         }));
-      tree.value = toTree(nodes);
+
+      // If backend provides a node with id 'root', treat it as 'Sin asignar' children
+      const children = toTree(nodes);
+
+      // Split top-level items: folders vs orphan accounts
+      const folders: TreeNode[] = [];
+      const orphanAccounts: TreeNode[] = [];
+      for (const n of children) {
+        if (n.id === UNASSIGNED_ID && n.type === 'folder') {
+          // Merge its children into orphanAccounts
+          orphanAccounts.push(...(n.children || []).filter((c) => c.type === 'account'));
+          // Also keep any nested folders from this node at top-level
+          folders.push(...(n.children || []).filter((c) => c.type === 'folder'));
+          continue;
+        }
+        if (n.type === 'folder') folders.push(n);
+        else orphanAccounts.push(n);
+      }
+
+      // Sort folders by label
+      folders.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+
+      // Ensure 'Sin asignar' node exists and is first
+      const unassigned: TreeNode = {
+        id: UNASSIGNED_ID,
+        label: 'Sin asignar',
+        type: 'folder',
+        children: orphanAccounts,
+      };
+
+      tree.value = [unassigned, ...folders];
+    }
+
+    function getOrCreateUnassigned(): TreeNode {
+      // Find existing 'Sin asignar' at top-level; if missing, create it
+      const existing = tree.value.find((n) => n.id === UNASSIGNED_ID && n.type === 'folder');
+      if (existing) return existing;
+      const un: TreeNode = {
+        id: UNASSIGNED_ID,
+        label: 'Sin asignar',
+        type: 'folder',
+        children: [],
+      };
+      tree.value.unshift(un);
+      return un;
     }
 
     function makeDragImage(label: string) {
