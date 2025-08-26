@@ -1,6 +1,6 @@
 <template>
   <div class="categories-tree">
-    <div class="row items-center q-pa-sm q-gutter-sm">
+    <div class="row items-center q-pa-sm q-gutter-sm" v-if="!isReadonly">
       <div class="col">
         <q-btn
           color="primary"
@@ -46,7 +46,7 @@
         </div>
         <!-- Nodo especial de drop a raíz -->
         <div
-          v-if="dragNodeId"
+          v-if="!isReadonly && dragNodeId"
           class="row items-center no-wrap q-gutter-x-sm tree-node q-ml-sm q-mb-xs"
           :class="{ 'is-drop-target': dragOverRoot }"
           @dragover.prevent="onRootDragOver"
@@ -101,8 +101,11 @@ type TreeNode = {
 
 export default defineComponent({
   name: 'CategoriesTree',
+  props: {
+    readonly: { type: Boolean, default: false },
+  },
   emits: ['create-category', 'create-folder', 'move-node', 'delete-category', 'edit-category'],
-  setup(_, { emit, expose }) {
+  setup(props, { emit, expose }) {
     const tree = ref<TreeNode[]>([
       { id: 'root', label: 'Categorías', type: 'folder', children: [] },
     ]);
@@ -117,11 +120,13 @@ export default defineComponent({
     const selectedIsCategory = ref<boolean>(false);
 
     function onRequestCreateCategory() {
+      if (props.readonly) return;
       // Parent will open dialog; pass current selected as parent
       emit('create-category', { parent_id: selectedNodeId.value || 'root' });
     }
 
     function onRequestCreateFolder() {
+      if (props.readonly) return;
       // Crear bajo el nodo seleccionado (carpeta o categoría) o en root si nada seleccionado
       const parentId = selectedNodeId.value || 'root';
       emit('create-folder', { parent_id: parentId });
@@ -136,6 +141,7 @@ export default defineComponent({
     }
 
     function onDragOver(node: TreeNode, ev: DragEvent) {
+      if (props.readonly) return;
       const draggingId = dragNodeId.value;
       if (!draggingId) return;
       // Permitir soltar sobre carpetas, root o categorías (si se suelta en categoría, se convierte en carpeta)
@@ -149,6 +155,7 @@ export default defineComponent({
     }
 
     function onDrop(target: TreeNode, ev: DragEvent) {
+      if (props.readonly) return;
       const sourceId = ev.dataTransfer?.getData('text/plain') || dragNodeId.value;
       if (!sourceId) return;
       if (target.id === sourceId) return;
@@ -200,12 +207,14 @@ export default defineComponent({
     }
 
     function onRootDragOver() {
+      if (props.readonly) return;
       if (dragNodeId.value) dragOverRoot.value = true;
     }
     function onRootDragLeave() {
       dragOverRoot.value = false;
     }
     function onRootDrop(ev: DragEvent) {
+      if (props.readonly) return;
       const sourceId = ev.dataTransfer?.getData('text/plain') || dragNodeId.value;
       dragOverRoot.value = false;
       if (!sourceId) return;
@@ -230,6 +239,7 @@ export default defineComponent({
     }
 
     function onMoveSelectedToRoot() {
+      if (props.readonly) return;
       if (!selectedNodeId.value) return;
       const sourceInfo = findNodeWithParent(tree.value, selectedNodeId.value);
       const rootInfo = findNodeWithParent(tree.value, 'root');
@@ -262,6 +272,7 @@ export default defineComponent({
     }
 
     function onRequestDeleteCategory() {
+      if (props.readonly) return;
       if (!selectedIsCategory.value || !selectedNodeId.value) return;
       const info = findNodeWithParent(tree.value, selectedNodeId.value);
       if (!info) return;
@@ -271,6 +282,7 @@ export default defineComponent({
     }
 
     function onDblClick(node: TreeNode) {
+      if (props.readonly) return;
       if (node.id === 'root') return;
       emit('edit-category', { id: node.id, label: node.label });
     }
@@ -313,6 +325,8 @@ export default defineComponent({
       };
       if (parentNode) {
         parentNode.children = parentNode.children || [];
+        // asegurar que el padre sea tratado como carpeta si recibe hijos
+        if (parentNode.type !== 'folder') parentNode.type = 'folder';
         parentNode.children.push(node);
       } else {
         tree.value.push(node);
@@ -429,6 +443,8 @@ export default defineComponent({
       return el;
     }
 
+    const isReadonly = computed(() => props.readonly);
+
     expose({
       addCategoryToParent,
       updateNodeLabel,
@@ -439,6 +455,7 @@ export default defineComponent({
     });
 
     return {
+      isReadonly,
       tree,
       dragNodeId,
       dragNodeLabel,
