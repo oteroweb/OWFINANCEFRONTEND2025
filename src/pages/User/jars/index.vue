@@ -22,10 +22,15 @@
           />
           <div
             class="text-subtitle2 q-ml-md"
-            :class="{ 'text-negative': !hasFixedJar && totalPercentage > 100, 'text-warning': !hasFixedJar && totalPercentage < 100 }"
+            :class="{
+              'text-negative': !hasFixedJar && totalPercentage > 100,
+              'text-warning': !hasFixedJar && totalPercentage < 100,
+            }"
           >
             Total: {{ totalPercentage }}%
-            <q-tooltip v-if="hasFixedJar">Hay cántaros fijos; la suma de % es informativa.</q-tooltip>
+            <q-tooltip v-if="hasFixedJar"
+              >Hay cántaros fijos; la suma de % es informativa.</q-tooltip
+            >
           </div>
         </div>
         <div class="row q-col-gutter-lg">
@@ -44,66 +49,111 @@
             >
               <template #item="{ element: jar, index: idx }">
                 <div class="col-12">
-                  <q-card flat class="q-pa-md">
+                  <q-card
+                    flat
+                    class="q-pa-md"
+                    :style="{ border: '2px solid ' + getJarColor(jar), borderRadius: '8px' }"
+                  >
                     <div class="row items-start">
-                      <div class="col-auto">
-                        <!-- Jar visual -->
-                        <div class="jar-visual jar-drag-handle" style="cursor: grab">
-                          <div class="jar-cap" />
-                          <div class="jar-body">
-                            <div
-                              class="jar-fill"
-                              :style="{
-                                height: (jar.type === 'percent' ? jar.percent || 0 : 0) + '%',
-                                background: jarFillGradient(),
-                              }"
-                            />
-                          </div>
-                        </div>
-                        <div class="jar-caption text-center q-mt-xs" style="max-width: 140px">
-                          <div class="jar-title ellipsis-2-lines">{{ jar.name }}</div>
-                          <div class="jar-type text-caption text-grey-7 ellipsis">
-                            {{ jar.type === 'percent' ? 'Porcentaje' : 'Fijo' }}
-                          </div>
-                        </div>
-                      </div>
                       <div class="col">
-                        <div class="row items-center justify-between q-gutter-sm">
+                        <div class="jar-controls-grid">
+                          <q-icon
+                            name="drag_indicator"
+                            class="jar-drag-handle"
+                            size="20px"
+                            style="cursor: grab; color: var(--q-grey-6)"
+                          />
                           <q-input
                             v-model="jar.name"
                             dense
                             filled
                             placeholder="Nombre del cántaro"
                             :maxlength="60"
-                            style="max-width: 280px"
+                            class="jar-name-input"
                             @blur="() => onJarNameBlur(idx)"
                           />
-                          <div class="row items-center q-gutter-sm">
-                            <q-btn-toggle
-                              v-model="jar.type"
-                              :options="jarTypeOptions"
-                              dense
-                              unelevated
-                              toggle-color="primary"
-                              color="grey-4"
-                              @update:model-value="() => onJarTypeChange(idx)"
-                            />
-                            <div class="text-caption text-grey-6">$ fijo / % porcentaje</div>
-                            <div class="text-caption text-grey-7">
-                              Asignadas: {{ jar.categories?.length || 0 }}
-                            </div>
-                            <q-btn
-                              flat
-                              dense
-                              round
-                              color="negative"
-                              icon="delete"
-                              @click="() => deleteJar(idx)"
-                              :disable="(jar.categories?.length || 0) === 0 ? false : false"
-                            >
-                              <q-tooltip>Eliminar cántaro</q-tooltip>
-                            </q-btn>
-                          </div>
+                          <q-btn-toggle
+                            v-model="jar.type"
+                            :options="jarTypeOptions"
+                            dense
+                            unelevated
+                            toggle-color="primary"
+                            color="grey-4"
+                            @update:model-value="() => onJarTypeChange(idx)"
+                          />
+                          <!-- Color selector -->
+                          <q-btn
+                            dense
+                            flat
+                            class="jar-color-btn"
+                            :style="{ backgroundColor: getJarColor(jar) }"
+                            icon="palette"
+                          >
+                            <q-menu anchor="bottom left" self="top left" fit>
+                              <div class="q-pa-sm" style="width: 280px">
+                                <q-color
+                                  v-model="jar.color"
+                                  format-model="hex"
+                                  default-view="palette"
+                                  no-header
+                                  no-footer
+                                />
+                                <div class="row no-wrap items-center justify-between q-mt-sm">
+                                  <div class="row no-wrap items-center q-gutter-xs">
+                                    <q-btn
+                                      v-for="c in suggestedJarColors(jar.name || 'Jar')"
+                                      :key="c"
+                                      round
+                                      dense
+                                      flat
+                                      size="sm"
+                                      :style="{
+                                        backgroundColor: c,
+                                        width: '22px',
+                                        height: '22px',
+                                        minWidth: '22px',
+                                        border: '1px solid rgba(0,0,0,0.15)',
+                                      }"
+                                      @click="onPickSuggestedColor(idx, c)"
+                                    />
+                                  </div>
+                                  <div class="row no-wrap items-center q-gutter-xs">
+                                    <q-btn
+                                      flat
+                                      dense
+                                      round
+                                      size="sm"
+                                      icon="shuffle"
+                                      @click="onJarColorRandom(idx)"
+                                    >
+                                      <q-tooltip>Aleatorio</q-tooltip>
+                                    </q-btn>
+                                    <q-btn
+                                      flat
+                                      dense
+                                      round
+                                      size="sm"
+                                      icon="backspace"
+                                      @click="onJarColorClear(idx)"
+                                    >
+                                      <q-tooltip>Limpiar</q-tooltip>
+                                    </q-btn>
+                                  </div>
+                                </div>
+                              </div>
+                            </q-menu>
+                          </q-btn>
+                          <q-btn
+                            flat
+                            dense
+                            round
+                            color="negative"
+                            icon="delete"
+                            @click="() => deleteJar(idx)"
+                            :disable="(jar.categories?.length || 0) === 0 ? false : false"
+                          >
+                            <q-tooltip>Eliminar cántaro</q-tooltip>
+                          </q-btn>
                         </div>
                         <div class="row items-center q-gutter-sm q-mt-xs">
                           <template v-if="jar.type === 'percent'">
@@ -132,7 +182,7 @@
                               type="number"
                               dense
                               filled
-                              style="width: 140px"
+                              style="width: 100%"
                               prefix="$"
                               step="0.01"
                               min="0"
@@ -154,18 +204,48 @@
                           <div v-if="(jar.categories?.length || 0) === 0" class="text-grey-5">
                             Ninguna asignada
                           </div>
-                          <div v-else class="q-gutter-xs">
-                            <q-chip
-                              v-for="c in jar.categories"
-                              :key="c.id"
-                              dense
-                              v-bind="categoryChipBind(c.label)"
-                              removable
-                              @remove="() => removeCategoryFromJar(idx, c.id)"
+                          <div v-else :class="{ 'invalid-drop': invalidCategoryDropIndex === idx }">
+                            <Draggable
+                              v-model="jar.categories"
+                              group="jar-categories"
+                              item-key="id"
+                              class="q-gutter-xs"
+                              :animation="180"
+                              :move="onCategoryMove"
+                              :ghost-class="'drag-ghost'"
+                              :chosen-class="'drag-chosen'"
+                              :drag-class="'drag-dragging'"
+                              @start="onCategoryDragStart"
+                              @end="clearInvalidCategoryDrop"
+                              @change="onCategoryChange"
                             >
-                              {{ c.label }}
-                            </q-chip>
+                              <template #item="{ element: c }">
+                                <q-chip
+                                  :key="c.id"
+                                  dense
+                                  v-bind="categoryChipBind(c.label)"
+                                  removable
+                                  @remove="() => removeCategoryFromJar(idx, c.id)"
+                                  draggable="true"
+                                  @dragstart="onChipDragStart(c, $event)"
+                                >
+                                  <q-icon
+                                    name="open_with"
+                                    size="12px"
+                                    class="q-mr-xs chip-drag-handle"
+                                  />
+                                  {{ c.label }}
+                                </q-chip>
+                              </template>
+                            </Draggable>
+                            <q-tooltip v-if="invalidCategoryDropIndex === idx"
+                              >Elemento inválido</q-tooltip
+                            >
                           </div>
+                        </div>
+                        <!-- Contador de categorías asignadas abajo -->
+                        <div class="text-caption text-grey-7 q-mt-sm">
+                          Asignadas: {{ jar.categories?.length || 0 }}
                         </div>
                       </div>
                     </div>
@@ -295,10 +375,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from 'stores/auth';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import { useJarsStore } from 'stores/jars';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import Draggable from 'vuedraggable';
 
@@ -338,9 +419,11 @@ type CatNodeInput = {
 const $q = useQuasar();
 const auth = useAuthStore();
 const jarElements = ref<Jar[]>([]);
+const jarsStore = useJarsStore();
 
 // Drag state for per-jar dropzones
 const jarDropOverIndex = ref<number | null>(null);
+const invalidCategoryDropIndex = ref<number | null>(null);
 
 // Tree ref (typed with exposed API) and map of categories for quick lookup on drop
 type CategoriesTreeExposed = {
@@ -364,6 +447,25 @@ type CatInfo = {
 const categoriesMap = ref<Record<string, CatInfo>>({});
 // Carpeta visible en árbol (para no recrearla y perder hijos)
 const visibleFolders = ref<Set<string>>(new Set());
+
+// Types for draggable category items
+type CatItem = { id: string; label: string };
+type DragMoveEvent = {
+  relatedContext?: { list?: CatItem[]; component?: unknown };
+  draggedContext?: { element?: CatItem; list?: CatItem[]; component?: unknown };
+};
+type DragChangeEvent = {
+  added?: { element: CatItem; newIndex: number };
+  removed?: { element: CatItem; oldIndex: number };
+  moved?: { element: CatItem; newIndex: number; oldIndex: number };
+  from?: CatItem[];
+  to?: CatItem[];
+};
+
+// Simple logger utility to prefix logs for this page
+function log(...args: unknown[]) {
+  console.log('[Jars][DND]', ...args);
+}
 
 // Generador de uid estable para draggable
 function genUid(seed?: string | number) {
@@ -439,10 +541,10 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 }
 function autoColorForLabel(label: string): string {
-  if (!label) return '#9CA3AF';
+  if (!label) return '#6B7280';
   const h = hashString(label) % 360;
-  const s = 65; // saturation
-  const l = 45; // lightness
+  const s = 78; // higher saturation for more contrast
+  const l = 38; // a bit darker for stronger contrast
   return hslToHex(h, s, l);
 }
 function luminance(hex: string): number {
@@ -488,6 +590,15 @@ function categoryChipBind(
   }
   // unlikely path (palette token), but keep consistent
   return { color: bg, textColor: contrastTextColor('#777') } as const;
+}
+
+// Color derivation for jars (stable and contrasting): reuse provided color or generate
+function getJarBaseColor(j: Jar): string {
+  if (j.color && isHexColor(j.color)) return j.color;
+  return autoColorForLabel(j.name || 'Jar');
+}
+function getJarColor(j: Jar): string {
+  return getJarBaseColor(j);
 }
 
 // Datos dummy de plantillas (hasta conectar backend)
@@ -790,6 +901,41 @@ function onJarNameBlur(idx: number) {
   }
 }
 
+function onJarColorClear(idx: number) {
+  const j = jarElements.value[idx];
+  if (!j) return;
+  j.color = undefined;
+}
+
+// Provide a compact set of deterministic, high-contrast color suggestions for the given name
+function suggestedJarColors(name: string): string[] {
+  const base = hashString(name);
+  // Create 6 hues spaced around the wheel, with fixed S/L tuned for contrast
+  const hues = [0, 40, 80, 160, 200, 280];
+  return hues.map((offset) => {
+    const h = Math.floor((base + offset) % 360);
+    const s = 72; // strong saturation
+    const l = 46; // darker for better contrast on white
+    return hslToHex(h, s, l);
+  });
+}
+
+function onPickSuggestedColor(idx: number, color: string) {
+  const j = jarElements.value[idx];
+  if (!j) return;
+  j.color = color;
+}
+
+function onJarColorRandom(idx: number) {
+  const j = jarElements.value[idx];
+  if (!j) return;
+  // Random hue, fixed saturation/lightness for good contrast
+  const h = Math.floor(Math.random() * 360);
+  const s = 78; // vivid
+  const l = 40; // slightly dark for contrast
+  j.color = hslToHex(h, s, l);
+}
+
 function createJar() {
   const remaining = Math.max(0, 100 - totalPercentage.value);
   const nextIndex = jarElements.value.length + 1;
@@ -884,20 +1030,16 @@ function applyTemplate(tpl: JarTemplate) {
   $q.notify({ type: 'positive', message: `Plantilla "${tpl.name}" aplicada` });
 }
 
-function jarFillGradient(): string {
-  // Azul consistente para mejorar la legibilidad del porcentaje dentro del frasco
-  // Usa el primario si existe; fallback a un azul (#1976D2)
-  return 'linear-gradient(180deg, rgba(25,118,210,0.95) 0%, rgba(25,118,210,0.9) 60%, rgba(25,118,210,0.75) 100%)';
-}
+// jarFillGradient removed (unused)
 
 async function loadJarData() {
   try {
     // Prefer backend if available
     const res = await api.get('/jars', { params: { user_id: auth.user?.id, per_page: 100 } });
-  const raw = (res.data?.data || res.data || []) as JarAPI[];
-  const mapped: Jar[] = (Array.isArray(raw) ? raw : []).map((r, i) => {
-  const idVal = (r as { id?: number }).id;
-  const t: 'percent' | 'fixed' = r.type === 'fixed' ? 'fixed' : 'percent';
+    const raw = (res.data?.data || res.data || []) as JarAPI[];
+    const mapped: Jar[] = (Array.isArray(raw) ? raw : []).map((r, i) => {
+      const idVal = (r as { id?: number }).id;
+      const t: 'percent' | 'fixed' = r.type === 'fixed' ? 'fixed' : 'percent';
       const j = mkJar(
         r.name || `Cántaro ${i + 1}`,
         Math.max(0, Math.min(100, Number(r.percent ?? 0))),
@@ -1039,26 +1181,65 @@ function setCategories(nodes: CatNodeInput[]) {
 }
 
 function onJarDragOver(idx: number) {
+  log('Jar drag over', { idx, jarName: jarElements.value[idx]?.name });
   jarDropOverIndex.value = idx;
 }
 function onJarDragLeave(idx: number) {
+  log('Jar drag leave', { idx, jarName: jarElements.value[idx]?.name });
   if (jarDropOverIndex.value === idx) jarDropOverIndex.value = null;
 }
 function onJarDrop(idx: number, ev: DragEvent) {
+  log('Jar drop', { idx, jarName: jarElements.value[idx]?.name });
   jarDropOverIndex.value = null;
-  const id = ev.dataTransfer?.getData('text/plain');
-  if (!id) return;
+  // Try JSON first for richer payload
+  let payload: { id?: string; label?: string; type?: 'folder' | 'category' } | null = null;
+  const json = ev.dataTransfer?.getData('application/json');
+  if (json) {
+    try {
+      const obj = JSON.parse(json);
+      payload = obj && typeof obj === 'object' ? obj : null;
+    } catch {
+      payload = null;
+    }
+  }
+  // Fallback to text/plain which should carry the id
+  const text = ev.dataTransfer?.getData('text/plain') || '';
+  // In some cases, nested icon text can leak into the payload, e.g., 'open_with "Label"'
+  // If that happens, try to extract quoted label and then map back to id by label
+  let id = '';
+  if (payload?.id) {
+    id = String(payload.id);
+  } else if (text) {
+    // If text contains spaces and quotes, attempt to parse id as the first token matching a known id
+    const parts = text.trim().split(/\s+/);
+    // Prefer exact match on known ids
+    const matchId = parts.find((p) => categoriesMap.value[p]);
+    if (matchId) id = matchId;
+  }
+  // If still no id but we have a label, try to resolve by unique label
+  if (!id && payload && payload.label) {
+    const lbl = payload.label;
+    const byLabel = Object.values(categoriesMap.value).find(
+      (n) => n.type === 'category' && n.label === lbl
+    );
+    if (byLabel) id = byLabel.id;
+  }
+  if (!id) {
+    $q.notify({ type: 'warning', message: 'Elemento no válido' });
+    log('Drop invalid item id', text || '(empty)', payload);
+    return;
+  }
   const info = categoriesMap.value[id];
   if (!info) {
     $q.notify({ type: 'warning', message: 'Elemento no válido' });
+    log('Drop id not found in categoriesMap', { id, payload, text });
     return;
   }
   const jar = jarElements.value[idx];
   if (!jar) return;
   jar.categories = jar.categories || [];
 
-  const isAssignedAnywhere = (catId: string) =>
-    jarElements.value.some((j) => (j.categories || []).some((c) => c.id === catId));
+  // removed unused helper isAssignedAnywhere
 
   const addCategoryToJar = (
     catId: string,
@@ -1084,6 +1265,15 @@ function onJarDrop(idx: number, ev: DragEvent) {
   };
 
   if (info.type === 'category') {
+    log('Tree drop category', {
+      catId: info.id,
+      label: info.label,
+      toIdx: idx,
+      toName: jarElements.value[idx]?.name,
+      fromIdx: jarElements.value.findIndex((j) =>
+        (j.categories || []).some((c) => c.id === info.id)
+      ),
+    });
     addCategoryToJar(info.id, info.label, { forceMove: true });
   } else {
     // Carpeta: añadir todas las hojas (categorías) evitando duplicados
@@ -1092,10 +1282,14 @@ function onJarDrop(idx: number, ev: DragEvent) {
     leafIds.forEach((leafId) => {
       const leaf = categoriesMap.value[leafId];
       if (!leaf || leaf.type !== 'category') return;
-      // Solo añadir si no está asignada en ningún cántaro
-      if (!isAssignedAnywhere(leaf.id)) {
-        addCategoryToJar(leaf.id, leaf.label, { forceMove: false });
-      }
+      // Reasignar al cántaro destino: quitar de su dueño si aplica y añadir aquí
+      log('Tree drop folder item', {
+        catId: leaf.id,
+        label: leaf.label,
+        toIdx: idx,
+        toName: jarElements.value[idx]?.name,
+      });
+      addCategoryToJar(leaf.id, leaf.label, { forceMove: true });
     });
     // Ocultar carpeta del árbol hasta que alguna categoría regrese
     categoriesTreeRef.value?.removeNode(info.id);
@@ -1104,6 +1298,11 @@ function onJarDrop(idx: number, ev: DragEvent) {
 }
 
 function removeCategoryFromJar(idx: number, catId: string) {
+  log('Remove category from jar', {
+    idx,
+    jarName: jarElements.value[idx]?.name,
+    catId,
+  });
   const jar = jarElements.value[idx];
   if (!jar) return;
   jar.categories = (jar.categories || []).filter((c) => c.id !== catId);
@@ -1115,6 +1314,7 @@ function removeCategoryFromJar(idx: number, catId: string) {
     if (catInfo.parent) {
       const parent = categoriesMap.value[catInfo.parent];
       if (parent && !visibleFolders.value.has(parent.id)) {
+        log('Re-adding hidden parent folder to tree', parent.id);
         categoriesTreeRef.value?.addCategoryToParent(
           { id: parent.id, label: parent.label, type: 'folder' },
           'root'
@@ -1122,11 +1322,102 @@ function removeCategoryFromJar(idx: number, catId: string) {
         visibleFolders.value.add(parent.id);
       }
     }
+    log('Re-adding category to tree', { id: catInfo.id, label: catInfo.label, parentId });
     categoriesTreeRef.value?.addCategoryToParent(
       { id: catInfo.id, label: catInfo.label, type: 'category' },
       parentId
     );
   }
+}
+
+// Prevent duplicates when moving between jars via Draggable
+function onCategoryMove(evt: DragMoveEvent): boolean {
+  const dragged = evt?.draggedContext?.element;
+  const toList = evt?.relatedContext?.list;
+  const fromList = evt?.draggedContext?.list;
+  if (!dragged || !toList || !fromList) {
+    log('Move check missing context', { dragged, hasTo: !!toList, hasFrom: !!fromList });
+    return true;
+  }
+  // Identify source/target jars by list reference
+  const ownerIdx = jarElements.value.findIndex((j) => (j.categories || []) === fromList);
+  const targetIdx = jarElements.value.findIndex((j) => (j.categories || []) === toList);
+  log('Moving', {
+    cat: dragged,
+    ownerIdx,
+    ownerName: jarElements.value[ownerIdx]?.name,
+    targetIdx,
+    targetName: jarElements.value[targetIdx]?.name,
+  });
+  // Allow the move and handle de-duplication in onCategoryChange to avoid false negatives
+  invalidCategoryDropIndex.value = null;
+  return true;
+}
+function clearInvalidCategoryDrop() {
+  invalidCategoryDropIndex.value = null;
+}
+
+// Reconcile state after a drag between jars to ensure single ownership
+function onCategoryChange(evt: DragChangeEvent) {
+  log('Change event', evt);
+  const added = evt.added?.element;
+  const toList = evt.to;
+  if (!added || !toList) return;
+  // Find target jar by list reference
+  const targetIdx = jarElements.value.findIndex((j) => (j.categories || []) === toList);
+  log('Change applied', {
+    added,
+    targetIdx,
+    targetName: jarElements.value[targetIdx]?.name,
+  });
+  if (targetIdx === -1) return;
+  const targetJar = jarElements.value[targetIdx];
+  if (!targetJar) return;
+  // Deduplicate in target just in case vuedraggable inserted a clone
+  const beforeLen = (targetJar.categories || []).length;
+  targetJar.categories = (targetJar.categories || []).filter(
+    (c, i, arr) => arr.findIndex((x) => x.id === c.id) === i
+  );
+  if ((targetJar.categories || []).length !== beforeLen) {
+    log('Deduped target list', {
+      targetIdx,
+      removed: beforeLen - (targetJar.categories || []).length,
+    });
+  }
+  // Remove the element from any other jar that still contains it
+  for (let i = 0; i < jarElements.value.length; i++) {
+    if (i === targetIdx) continue;
+    const jar = jarElements.value[i];
+    if (!jar) continue;
+    const before = (jar.categories || []).length;
+    jar.categories = (jar.categories || []).filter((c) => c.id !== added.id);
+    if ((jar.categories || []).length !== before) {
+      // removed from previous owner
+      log('Removed from previous owner', { fromIdx: i, fromName: jar.name, catId: added.id });
+    }
+  }
+}
+
+// Extra debug for start event to inspect raw lists and element
+function onCategoryDragStart(evt: { item?: HTMLElement; clone?: HTMLElement }) {
+  log('Drag start', { itemText: evt.item?.textContent?.trim() });
+}
+
+// When dragging a chip between jars, encode full category info for robust drop handling
+function onChipDragStart(cat: { id: string; label: string }, ev: DragEvent) {
+  try {
+    ev.dataTransfer?.setData(
+      'application/json',
+      JSON.stringify({
+        id: cat.id,
+        label: cat.label,
+        type: 'category',
+      })
+    );
+  } catch {
+    /* no-op: best effort drag payload */
+  }
+  ev.dataTransfer?.setData('text/plain', cat.id);
 }
 
 function saveChanges() {
@@ -1170,6 +1461,24 @@ onMounted(() => {
     });
   });
 });
+
+// keep sidebar jar in sync (exclusive to this view)
+watch(
+  jarElements,
+  (val) => {
+    jarsStore.setJars(
+      (val || []).map((j) => ({
+        uid: j.uid,
+        name: j.name,
+        type: j.type,
+        percent: j.percent,
+        fixedAmount: j.fixedAmount,
+        color: j.color,
+      }))
+    );
+  },
+  { deep: true, immediate: true }
+);
 </script>
 
 <style scoped>
@@ -1187,6 +1496,10 @@ onMounted(() => {
   position: relative;
   display: inline-block;
 }
+.jar-visual--xl {
+  width: 110px;
+  height: 180px;
+}
 .jar-visual--sm {
   transform: scale(0.92);
   transform-origin: center;
@@ -1203,7 +1516,7 @@ onMounted(() => {
   width: 60px;
   height: 88px;
   margin: 0 auto;
-  border: 3px solid var(--q-grey-4);
+  border: 3px solid rgba(0, 0, 0, 0.02); /* match jar background */
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
   border-top-left-radius: 12px;
@@ -1211,12 +1524,45 @@ onMounted(() => {
   overflow: hidden;
   background: rgba(0, 0, 0, 0.02);
 }
+.jar-visual--xl .jar-body {
+  width: 110px;
+  height: 168px;
+}
 .jar-fill {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   transition: height 200ms ease;
+}
+.jar-stack {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.jar-segment {
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.jar-segment-empty {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.05),
+    rgba(0, 0, 0, 0.05) 6px,
+    rgba(0, 0, 0, 0.08) 6px,
+    rgba(0, 0, 0, 0.08) 12px
+  );
+}
+.color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
 }
 .jar-percent {
   position: absolute;
@@ -1250,9 +1596,39 @@ onMounted(() => {
   background: rgba(76, 175, 80, 0.08);
   border-color: rgba(76, 175, 80, 0.8);
 }
+.invalid-drop {
+  outline: 2px dashed rgba(239, 68, 68, 0.6);
+  outline-offset: 4px;
+}
+.chip-drag-handle {
+  cursor: grab;
+}
 
 .apply-template-btn :deep(.q-btn__content) {
   font-weight: 600;
+}
+
+.jar-color-btn {
+  border-radius: 6px;
+  color: #fff;
+}
+
+/* Make the jar header controls span full width and adapt */
+.jar-controls-grid {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) max-content max-content max-content;
+  align-items: center;
+  gap: 8px;
+}
+.jar-name-input {
+  width: 100%;
+}
+@media (max-width: 599px) {
+  .jar-controls-grid {
+    grid-template-columns: auto 1fr;
+    grid-auto-flow: row;
+    grid-row-gap: 6px;
+  }
 }
 
 /* Sticky categories column on desktop */

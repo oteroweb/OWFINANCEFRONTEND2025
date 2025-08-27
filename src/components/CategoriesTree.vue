@@ -56,7 +56,7 @@
           <q-icon name="arrow_upward" size="18px" />
           <div class="ellipsis col text-primary">Mover a raíz</div>
         </div>
-        <q-tree :nodes="nodesToRender" node-key="id" default-expand-all no-transition>
+        <q-tree :nodes="nodesToRender" node-key="id" v-model:expanded="expandedKeys" no-transition>
           <template #default-header="{ node }">
             <div
               class="row items-center no-wrap q-gutter-x-sm tree-node"
@@ -116,6 +116,7 @@ export default defineComponent({
     const selectedNodeId = ref<string | null>(null);
     const dragOverNodeId = ref<string | null>(null);
     const dragOverRoot = ref<boolean>(false);
+    const expandedKeys = ref<string[]>([]);
     // UI state
     const selectedIsCategory = ref<boolean>(false);
 
@@ -135,7 +136,16 @@ export default defineComponent({
     function onDragStart(node: TreeNode, ev: DragEvent) {
       dragNodeId.value = node.id;
       dragNodeLabel.value = node.label;
+      // Provide multiple payload types for consumers
       ev.dataTransfer?.setData('text/plain', node.id);
+      try {
+        ev.dataTransfer?.setData(
+          'application/json',
+          JSON.stringify({ id: node.id, label: node.label, type: node.type })
+        );
+      } catch {
+        // ignore
+      }
       const img = makeDragImage(node.label);
       ev.dataTransfer?.setDragImage(img, 8, 8);
     }
@@ -410,6 +420,22 @@ export default defineComponent({
       } else {
         tree.value = [{ id: 'root', label: 'Categorías', type: 'folder', children: mapped }];
       }
+      // expand all folders by default
+      expandedKeys.value = computeExpandedFrom(mapped);
+    }
+
+    function computeExpandedFrom(nodes: TreeNode[]): string[] {
+      const keys: string[] = [];
+      const walk = (arr: TreeNode[]) => {
+        for (const n of arr) {
+          if (n.children && n.children.length) {
+            keys.push(n.id);
+            walk(n.children);
+          }
+        }
+      };
+      walk(nodes);
+      return keys;
     }
 
     // Flexible setter: acepta un array de hijos o un nodo raíz con children
@@ -462,6 +488,7 @@ export default defineComponent({
       hoveredNodeId,
       selectedNodeId,
       dragOverNodeId,
+      expandedKeys,
 
       selectedIsCategory,
       onRequestCreateCategory,

@@ -129,7 +129,16 @@ export default defineComponent({
     function onDragStart(node: TreeNode, ev: DragEvent) {
       dragNodeId.value = node.id;
       dragNodeLabel.value = node.label;
+      // Provide multiple payload types for consumers
       ev.dataTransfer?.setData('text/plain', node.id);
+      try {
+        ev.dataTransfer?.setData(
+          'application/json',
+          JSON.stringify({ id: node.id, label: node.label, type: node.type })
+        );
+      } catch {
+        /* no-op */
+      }
       // custom drag image for better UX
       const img = makeDragImage(node.label);
       ev.dataTransfer?.setDragImage(img, 8, 8);

@@ -26,6 +26,10 @@
             </q-item>
           </q-list>
         </div>
+        <div v-if="isJarsRoute" class="q-mb-md">
+          <BigJarSidebar />
+          <q-separator class="q-my-md" />
+        </div>
       </q-scroll-area>
     </q-drawer>
 
@@ -42,17 +46,20 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
 import { useUiStore } from 'stores/ui';
+import BigJarSidebar from 'components/BigJarSidebar.vue';
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 const leftDrawerOpen = ref(true);
 const avatarUrl = computed(() => defaultAvatarUrl);
 const menuLinks = userMenuLinks;
 const ui = useUiStore();
+const isJarsRoute = computed(() => route.path.includes('/user/jars'));
 
 async function handleLogout() {
   auth.logout();
