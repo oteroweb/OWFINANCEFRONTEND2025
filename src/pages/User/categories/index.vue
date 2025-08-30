@@ -38,7 +38,11 @@ import { api } from 'boot/axios';
 import { Notify, useQuasar } from 'quasar';
 
 type CategoriesTreeExposed = {
-  addCategoryToParent: (cat: { id: string; label: string }, parentId?: string | null) => void;
+  addCategoryToParent: (
+    cat: { id: string; label: string; type?: 'folder' | 'category'; icon?: string | null },
+    parentId?: string | null,
+    atIndex?: number
+  ) => void;
   updateNodeLabel: (id: string, label: string) => void;
   removeNode: (id: string) => void;
 };

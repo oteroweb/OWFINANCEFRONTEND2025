@@ -1,5 +1,5 @@
 <template>
-  <div class="categories-tree">
+  <div class="categories-tree" :class="{ multicol: columnsCount > 1 }" :style="rootStyle">
     <div class="row items-center q-pa-sm q-gutter-sm" v-if="!isReadonly">
       <div class="col">
         <q-btn
@@ -40,9 +40,12 @@
     </div>
 
     <q-card flat bordered>
-      <q-scroll-area style="height: 420px">
+      <q-scroll-area class="tree-scroll">
         <div v-if="dragNodeId && dragNodeLabel" class="drag-floating">
           Moviendo: <strong>{{ dragNodeLabel }}</strong>
+        </div>
+        <div v-if="(nodesToRender?.length || 0) === 0" class="q-pa-sm text-grey-6">
+          No hay categorías para mostrar
         </div>
         <!-- Nodo especial de drop a raíz -->
         <div
@@ -56,7 +59,14 @@
           <q-icon name="arrow_upward" size="18px" />
           <div class="ellipsis col text-primary">Mover a raíz</div>
         </div>
-        <q-tree :nodes="nodesToRender" node-key="id" v-model:expanded="expandedKeys" no-transition>
+        <!-- Single column -->
+        <q-tree
+          v-if="columnsCount === 1"
+          :nodes="nodesToRender"
+          node-key="id"
+          v-model:expanded="expandedKeys"
+          no-transition
+        >
           <template #default-header="{ node }">
             <div
               class="row items-center no-wrap q-gutter-x-sm tree-node"
@@ -81,13 +91,53 @@
             </div>
           </template>
         </q-tree>
+
+        <!-- Multi columns: split top-level nodes across N trees -->
+        <div v-else class="tree-columns">
+          <q-tree
+            v-for="(col, i) in columnsNodes"
+            :key="'col-' + i"
+            :nodes="col"
+            node-key="id"
+            v-model:expanded="expandedKeys"
+            no-transition
+          >
+            <template #default-header="{ node }">
+              <div
+                class="row items-center no-wrap q-gutter-x-sm tree-node"
+                :class="{
+                  'is-hovered': hoveredNodeId === node.id,
+                  'is-dragging': dragNodeId === node.id,
+                  'is-selected': selectedNodeId === node.id,
+                  'is-drop-target': dragOverNodeId === node.id,
+                }"
+                :draggable="node.id !== 'root'"
+                @mouseenter="hoveredNodeId = node.id"
+                @mouseleave="hoveredNodeId = null"
+                @click="onSelect(node)"
+                @dblclick="onDblClick(node)"
+                @dragstart="(ev) => onDragStart(node, ev)"
+                @dragover.prevent="(ev) => onDragOver(node, ev)"
+                @drop.prevent="(ev) => onDrop(node, ev)"
+                @dragleave="onDragLeave(node)"
+              >
+                <q-icon
+                  :name="node.type === 'folder' ? 'folder' : node.icon || 'sell'"
+                  size="18px"
+                />
+                <div class="ellipsis col">{{ node.label }}</div>
+              </div>
+            </template>
+          </q-tree>
+        </div>
       </q-scroll-area>
     </q-card>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue';
+import { defineComponent, ref, computed, watch } from 'vue';
+import type { PropType } from 'vue';
 import { Notify } from 'quasar';
 import type { QTreeNode } from 'quasar';
 
@@ -96,6 +146,7 @@ type TreeNode = {
   label: string;
   type: 'folder' | 'category';
   icon?: string;
+  order?: number;
   children?: TreeNode[];
 };
 
@@ -103,6 +154,9 @@ export default defineComponent({
   name: 'CategoriesTree',
   props: {
     readonly: { type: Boolean, default: false },
+    columns: { type: Number, default: 1 },
+    // Optional: nodes provided directly from parent
+    nodes: { type: Array as PropType<unknown[]>, default: null },
   },
   emits: ['create-category', 'create-folder', 'move-node', 'delete-category', 'edit-category'],
   setup(props, { emit, expose }) {
@@ -270,10 +324,26 @@ export default defineComponent({
 
     // Map internal nodes to QTreeNode typing for template consumption
     const nodesToRender = computed<QTreeNode<unknown>[]>(() => {
-      const rootInfo = findNodeWithParent(tree.value, 'root');
-      const kids = rootInfo?.node.children || [];
+      const rootNode = tree.value[0];
+      const kids = rootNode?.children || [];
       // Cast is safe for QTree as it ignores extra fields.
       return kids as unknown as QTreeNode<unknown>[];
+    });
+
+    const columnsCount = computed(() => Math.max(1, Number(props.columns || 1)));
+    const rootStyle = computed<Record<string, string> | undefined>(() =>
+      columnsCount.value > 1 ? { '--cols': String(columnsCount.value) } : undefined
+    );
+    const columnsNodes = computed<QTreeNode<unknown>[][]>(() => {
+      const cols = columnsCount.value;
+      if (cols <= 1) return [nodesToRender.value];
+      const chunks: QTreeNode<unknown>[][] = Array.from({ length: cols }, () => []);
+      const nodes = nodesToRender.value;
+      nodes.forEach((n, i) => {
+        const idx = i % cols;
+        chunks[idx]!.push(n);
+      });
+      return chunks;
     });
 
     function onSelect(node: TreeNode) {
@@ -322,8 +392,15 @@ export default defineComponent({
     }
 
     function addCategoryToParent(
-      category: { id: string; label: string; type?: 'folder' | 'category'; icon?: string | null },
-      parentId: string | null = 'root'
+      category: {
+        id: string;
+        label: string;
+        type?: 'folder' | 'category';
+        icon?: string | null;
+        order?: number;
+      },
+      parentId: string | null = 'root',
+      atIndex?: number
     ) {
       const parentInfo = parentId ? findNodeWithParent(tree.value, parentId) : null;
       const parentNode = parentInfo?.node || null;
@@ -332,14 +409,34 @@ export default defineComponent({
         label: category.label,
         type: category.type || 'category',
         ...(category.icon ? { icon: category.icon } : {}),
+        ...(typeof category.order === 'number' ? { order: category.order } : {}),
+      };
+      const computeInsertIndex = (arr: TreeNode[], fallbackIndex?: number) => {
+        if (typeof node.order === 'number') {
+          const targetOrder: number = node.order;
+          const pos = arr.findIndex((n) => typeof n.order === 'number' && n.order > targetOrder);
+          return pos >= 0 ? pos : arr.length;
+        }
+        if (
+          typeof fallbackIndex === 'number' &&
+          fallbackIndex >= 0 &&
+          fallbackIndex <= arr.length
+        ) {
+          return fallbackIndex;
+        }
+        return arr.length;
       };
       if (parentNode) {
         parentNode.children = parentNode.children || [];
         // asegurar que el padre sea tratado como carpeta si recibe hijos
         if (parentNode.type !== 'folder') parentNode.type = 'folder';
-        parentNode.children.push(node);
+        const arr = parentNode.children;
+        const idx = computeInsertIndex(arr, atIndex);
+        arr.splice(idx, 0, node);
       } else {
-        tree.value.push(node);
+        const rootKids = tree.value;
+        const idx = computeInsertIndex(rootKids, atIndex);
+        rootKids.splice(idx, 0, node);
       }
     }
 
@@ -388,14 +485,11 @@ export default defineComponent({
       label: string;
       type?: 'folder' | 'category';
       icon?: string | null;
+      order?: number;
       children?: NodeInput[];
     };
-    function sortRecursive(nodes: TreeNode[]): TreeNode[] {
-      nodes.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
-      for (const n of nodes) if (n.children?.length) sortRecursive(n.children);
-      return nodes;
-    }
     function setTree(children: NodeInput[]) {
+      // Preserve incoming order as provided by parent/server
       const toTree = (nodes: NodeInput[]): TreeNode[] =>
         nodes.map((n) => {
           const kids = n.children ? toTree(n.children) : [];
@@ -410,16 +504,23 @@ export default defineComponent({
             type,
             children: kids,
           };
+          if (typeof n.order === 'number') base.order = n.order;
           if (n.icon) base.icon = n.icon;
           return base;
         });
-      const mapped = sortRecursive(toTree(children));
-      const root = findNodeWithParent(tree.value, 'root');
-      if (root) {
-        root.node.children = mapped;
-      } else {
-        tree.value = [{ id: 'root', label: 'Categorías', type: 'folder', children: mapped }];
-      }
+      const mapped = toTree(children);
+      // Ensure every sibling has a stable order value based on its original index
+      const stampOrder = (nodes: TreeNode[]) => {
+        nodes.forEach((n, idx) => {
+          if (typeof n.order !== 'number') n.order = idx;
+          if (n.children?.length) stampOrder(n.children);
+        });
+      };
+      stampOrder(mapped);
+      // Fallback: ensure there is at least an empty root if no nodes
+      const safeChildren = Array.isArray(mapped) ? mapped : [];
+      // Always rebuild the root to avoid id collisions with server-provided nodes
+      tree.value = [{ id: 'root', label: 'Categorías', type: 'folder', children: safeChildren }];
       // expand all folders by default
       expandedKeys.value = computeExpandedFrom(mapped);
     }
@@ -447,6 +548,18 @@ export default defineComponent({
         : (payload as { id: string | number; children?: NodeInput[] }).children || [];
       setTree(arr);
     }
+
+    // If nodes prop is provided, populate tree from it
+    watch(
+      () => props.nodes,
+      (val) => {
+        if (Array.isArray(val)) {
+          // Treat array items as NodeInput
+          setTree(val as unknown as NodeInput[]);
+        }
+      },
+      { immediate: true, deep: true }
+    );
 
     function makeDragImage(label: string) {
       const el = document.createElement('div');
@@ -482,6 +595,9 @@ export default defineComponent({
 
     return {
       isReadonly,
+      rootStyle,
+      columnsCount,
+      columnsNodes,
       tree,
       dragNodeId,
       dragNodeLabel,
@@ -520,6 +636,30 @@ export default defineComponent({
 <style scoped>
 .categories-tree {
   max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column; /* stack toolbar above the tree card */
+}
+.categories-tree > .q-card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 360px; /* ensure usable height when parent doesn't set one */
+}
+.tree-scroll {
+  height: 100%;
+  flex: 1 1 auto;
+}
+@media (max-width: 1023px) {
+  .categories-tree {
+    height: auto;
+  }
+  .categories-tree > .q-card {
+    min-height: 260px; /* keep a reasonable height on mobile too */
+  }
+  .tree-scroll {
+    height: 50vh; /* ensure content is visible on mobile */
+  }
 }
 .tree-node {
   padding: 4px 2px;
@@ -549,5 +689,11 @@ export default defineComponent({
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   color: #1976d2;
   font-size: 12px;
+}
+
+.tree-columns {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), 1fr);
+  gap: 8px 12px;
 }
 </style>

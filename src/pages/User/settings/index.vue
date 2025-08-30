@@ -113,63 +113,16 @@
             en qué gastas tu dinero y todos tus ingresos. Las categorías las puedes organizar como
             creas más oportuno, con carpetas, subcarpetas, etc.
           </div>
-          <CategoriesTree
-            ref="categoriesTreeRef"
-            @create-category="onCreateCategory"
-            @create-folder="onCreateFolderCategory"
-            @move-node="onMoveCategoryNode"
-            @delete-category="onDeleteCategory"
-            @edit-category="onEditCategory"
-          />
-          <div class="q-mt-md q-gutter-sm row items-center">
-            <div class="col-auto">
-              <q-btn color="primary" dense label="Probar GET árbol" @click="testLoadCategories" />
-            </div>
-            <div class="col-auto">
-              <q-btn color="secondary" outline dense label="Limpiar debug" @click="clearCatDebug" />
-            </div>
+          <div class="cat-tree-row q-mt-sm">
+            <CategoriesTree
+              ref="categoriesTreeRef"
+              @create-category="onCreateCategory"
+              @create-folder="onCreateFolderCategory"
+              @move-node="onMoveCategoryNode"
+              @delete-category="onDeleteCategory"
+              @edit-category="onEditCategory"
+            />
           </div>
-          <q-expansion-item
-            class="q-mt-sm"
-            icon="bug_report"
-            label="Debug API Categorías (requests/responses)"
-            expand-icon="expand_more"
-            dense
-            default-opened
-          >
-            <div v-if="catDebug.length === 0" class="text-grey q-pa-sm">Sin registros</div>
-            <div v-for="(d, idx) in catDebug" :key="idx" class="q-mb-sm">
-              <q-card flat bordered>
-                <q-card-section class="q-pa-sm">
-                  <div class="row items-center no-wrap">
-                    <div class="col">
-                      <div class="text-caption text-grey">{{ d.ts }}</div>
-                      <div class="text-body2">
-                        <strong>{{ d.action }}</strong> ·
-                        <span class="text-primary">{{ d.method }}</span>
-                        <span class="text-grey-8"> {{ d.url }}</span>
-                      </div>
-                    </div>
-                    <div class="col-auto">
-                      <q-badge v-if="d.error" color="negative" label="error" />
-                      <q-badge v-else color="positive" label="ok" />
-                    </div>
-                  </div>
-                </q-card-section>
-                <q-separator />
-                <q-card-section class="q-pa-sm">
-                  <div class="text-caption text-grey-7">Payload enviado</div>
-                  <pre class="debug-pre">{{ json(d.payload) }}</pre>
-                </q-card-section>
-                <q-separator />
-                <q-card-section class="q-pa-sm">
-                  <div class="text-caption text-grey-7">Respuesta</div>
-                  <pre v-if="!d.error" class="debug-pre">{{ json(d.response) }}</pre>
-                  <pre v-else class="debug-pre text-negative">{{ json(d.error) }}</pre>
-                </q-card-section>
-              </q-card>
-            </div>
-          </q-expansion-item>
 
           <CategoryDialog
             v-model="showCategoryDialog"
@@ -550,35 +503,6 @@ const catDebug = ref<CatDebug[]>([]);
 function pushCatDebug(entry: CatDebug) {
   catDebug.value.unshift(entry);
   if (catDebug.value.length > 25) catDebug.value.pop();
-}
-function json(v: unknown) {
-  try {
-    return JSON.stringify(v, null, 2);
-  } catch {
-    return String(v);
-  }
-}
-function clearCatDebug() {
-  catDebug.value = [];
-}
-async function testLoadCategories() {
-  const url = 'categories/tree';
-  const meta: CatDebug = {
-    ts: new Date().toLocaleString(),
-    action: 'GET árbol',
-    method: 'GET',
-    url,
-  };
-  pushCatDebug(meta);
-  try {
-    const res = await api.get(url);
-    const entry = catDebug.value[0];
-    if (entry) entry.response = res.data;
-  } catch (e: unknown) {
-    const entry = catDebug.value[0];
-    if (entry) entry.error = e;
-    Notify.create({ type: 'warning', message: 'GET árbol falló' });
-  }
 }
 
 function pickAvatar() {
@@ -1177,5 +1101,11 @@ async function onDeleteCategory(payload: { id: string; label: string }) {
 }
 .profile-media-row {
   padding-left: 10px;
+}
+.cat-tree-row {
+  width: 100%;
+  /* show a decent height for the tree; the inner q-scroll-area will handle overflow */
+  height: 60vh;
+  min-height: 360px;
 }
 </style>
