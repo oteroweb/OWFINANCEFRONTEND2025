@@ -28,7 +28,12 @@
             :disable="saveDisabled"
           />
           <div
-            v-if="!hasFixedJar && totalPercentage !== 100 && !isExactlyOnePercent100()"
+            v-if="
+              !hasFixedJar &&
+              hasActivePercentJars &&
+              totalPercentage !== 100 &&
+              !isExactlyOnePercent100()
+            "
             class="text-caption text-negative q-ml-sm"
           >
             Ajusta los porcentajes al 100% para guardar
@@ -87,6 +92,12 @@
                               :maxlength="60"
                               class="jar-name-input"
                               @blur="() => onJarNameBlur(idx)"
+                            />
+                            <q-toggle
+                              v-model="jar.active"
+                              dense
+                              color="primary"
+                              :label="jar.active ? 'Activo' : 'Inactivo'"
                             />
                             <q-btn-toggle
                               v-model="jar.type"
@@ -424,6 +435,7 @@ type Jar = {
   type: 'percent' | 'fixed';
   color?: string | undefined;
   categories?: Array<{ id: string; label: string }>;
+  active?: boolean;
 };
 
 // API response typing for jars
@@ -437,6 +449,8 @@ type JarAPI = {
   categories?: Array<{ id: string | number; name?: string; label?: string }>;
   color?: string | null;
   sort_order?: number | null;
+  active?: number | boolean | null;
+  is_active?: number | boolean | null;
 };
 
 type CatNodeInput = {
@@ -453,9 +467,11 @@ const jarElements = ref<Jar[]>([]);
 const jarsStore = useJarsStore();
 const serverJarIds = ref<Set<number>>(new Set());
 const saving = ref(false);
-// Exclusivo solo si existe exactamente un único jar de porcentaje y es 100%
+// Exclusivo solo si existe exactamente un único jar de porcentaje ACTIVO y es 100%
 function isExactlyOnePercent100(): boolean {
-  const percents = (jarElements.value || []).filter((j) => j.type === 'percent');
+  const percents = (jarElements.value || []).filter(
+    (j) => j.type === 'percent' && (j.active ?? true)
+  );
   if (percents.length !== 1) return false;
   const only = percents[0]!;
   return Math.round(Number(only.percent) || 0) === 100;
@@ -463,7 +479,10 @@ function isExactlyOnePercent100(): boolean {
 const saveDisabled = computed(
   () =>
     saving.value ||
-    (!hasFixedJar.value && totalPercentage.value !== 100 && !isExactlyOnePercent100())
+    (!hasFixedJar.value &&
+      hasActivePercentJars.value &&
+      totalPercentage.value !== 100 &&
+      !isExactlyOnePercent100())
 );
 
 // Drag state for per-jar dropzones
@@ -536,6 +555,7 @@ function mkJar(name: string, percent: number, type: 'percent' | 'fixed', id?: nu
     type,
     color: undefined,
     categories: [],
+    active: true,
   };
   if (id != null) j.id = id;
   return j;
@@ -658,11 +678,16 @@ function getJarColor(j: Jar): string {
 
 const totalPercentage = computed(() => {
   const sum = (jarElements.value || [])
-    .filter((j) => j.type === 'percent')
+    .filter((j) => j.type === 'percent' && (j.active ?? true))
     .reduce((acc, j) => acc + (Number(j.percent) || 0), 0);
   return Math.round(sum * 100) / 100;
 });
-const hasFixedJar = computed(() => (jarElements.value || []).some((j) => j.type === 'fixed'));
+const hasFixedJar = computed(() =>
+  (jarElements.value || []).some((j) => j.type === 'fixed' && (j.active ?? true))
+);
+const hasActivePercentJars = computed(() =>
+  (jarElements.value || []).some((j) => j.type === 'percent' && (j.active ?? true))
+);
 
 function onPercentChange() {
   // Clamp between 0-100 and round to int for percent jars only
@@ -751,6 +776,7 @@ function createJar() {
     percent: remaining,
     type: 'percent',
     categories: [],
+    active: true,
   });
 }
 
@@ -844,13 +870,37 @@ async function loadJarData() {
     const userId = auth.user?.id;
     const url = userId ? `/users/${userId}/jars` : '/jars';
     const res = await api.get(url, { params: { per_page: 100 } });
-    const raw = (res.data?.data || res.data || []) as JarAPI[];
-    const rawList: JarAPI[] = Array.isArray(raw) ? raw.slice() : [];
-    rawList.sort(
-      (a, b) =>
-        Number(a.sort_order ?? Number.MAX_SAFE_INTEGER) -
-          Number(b.sort_order ?? Number.MAX_SAFE_INTEGER) || Number(a.id ?? 0) - Number(b.id ?? 0)
-    );
+    // Soportar múltiples formas de envoltorio: array directo, { data: [] }, o { data: { data: [] } }
+    type AnyObj = { [k: string]: unknown };
+    const top = res.data as AnyObj | JarAPI[] | undefined;
+    const topData = top && (top as AnyObj).data;
+    const paginated =
+      topData && typeof topData === 'object' && Array.isArray((topData as AnyObj).data)
+        ? ((topData as AnyObj).data as unknown[])
+        : null;
+    const arr = Array.isArray(topData)
+      ? (topData as unknown[])
+      : Array.isArray(top)
+      ? (top as unknown[])
+      : paginated || [];
+    const rawList: JarAPI[] = (arr as JarAPI[]).slice();
+    rawList.sort((a, b) => {
+      const aAct =
+        (a as { is_active?: unknown; active?: unknown }).is_active === true ||
+        (a as { is_active?: unknown; active?: unknown }).active === true ||
+        Number((a as { is_active?: unknown; active?: unknown }).is_active) === 1 ||
+        Number((a as { is_active?: unknown; active?: unknown }).active) === 1;
+      const bAct =
+        (b as { is_active?: unknown; active?: unknown }).is_active === true ||
+        (b as { is_active?: unknown; active?: unknown }).active === true ||
+        Number((b as { is_active?: unknown; active?: unknown }).is_active) === 1 ||
+        Number((b as { is_active?: unknown; active?: unknown }).active) === 1;
+      if (aAct !== bAct) return bAct ? 1 : -1; // activos primero
+      const soA = Number(a.sort_order ?? Number.MAX_SAFE_INTEGER);
+      const soB = Number(b.sort_order ?? Number.MAX_SAFE_INTEGER);
+      if (soA !== soB) return soA - soB;
+      return Number(a.id ?? 0) - Number(b.id ?? 0);
+    });
     const mapped: Jar[] = rawList.map((r, i) => {
       const idVal = (r as { id?: number }).id;
       const t: 'percent' | 'fixed' = r.type === 'fixed' ? 'fixed' : 'percent';
@@ -862,6 +912,8 @@ async function loadJarData() {
       );
       if (t === 'fixed') j.fixedAmount = Number(r.fixed_amount ?? r.amount ?? 0);
       if (r.color) j.color = r.color || undefined;
+      const act = (r as { is_active?: unknown }).is_active ?? (r as { active?: unknown }).active;
+      if (act != null) j.active = Number(act) === 1 || act === true;
       j.categories = Array.isArray(r.categories)
         ? r.categories.map((c) => ({
             id: String(c.id),
@@ -872,7 +924,7 @@ async function loadJarData() {
     });
     // Track server IDs to detect deletions on save
     serverJarIds.value = new Set<number>(
-      (raw || [])
+      rawList
         .map((r) => (typeof r.id === 'number' ? r.id : undefined))
         .filter((x): x is number => typeof x === 'number')
     );
@@ -1249,12 +1301,72 @@ async function saveChanges() {
     /* noop */
   }
   try {
-    // Identificar si hay exactamente un jar % al 100% para forzar exclusividad
-    const percentJars = (jarElements.value || []).filter((j) => j.type === 'percent');
+    // Identificar si hay exactamente un jar % ACTIVO al 100% para forzar exclusividad
+    const percentJars = (jarElements.value || []).filter(
+      (j) => j.type === 'percent' && (j.active ?? true)
+    );
     const exclusiveJarUid =
       percentJars.length === 1 && Math.round(Number(percentJars[0]?.percent) || 0) === 100
         ? percentJars[0]!.uid
         : null;
+
+    // Intento 0: Enviar TODO en un único payload (bulk/sync) con estructura completa
+    // Construye shape completo por jar
+    const bulkCurrentIds = new Set<number>(
+      jarElements.value.map((j) => j.id).filter((x): x is number => typeof x === 'number')
+    );
+    const deletedIds = Array.from(serverJarIds.value).filter((id) => !bulkCurrentIds.has(id));
+    const fullPayload = {
+      jars: jarElements.value.map((j, idx) => ({
+        id: j.id,
+        uid: j.uid,
+        name: j.name,
+        type: j.type,
+        percent: j.type === 'percent' ? Number(j.percent || 0) : undefined,
+        fixed_amount: j.type === 'fixed' ? Number(j.fixedAmount || 0) : undefined,
+        color: j.color,
+        sort_order: idx + 1,
+        is_active: j.active ?? true ? 1 : 0,
+        exclusive: exclusiveJarUid && j.uid === exclusiveJarUid ? true : undefined,
+        // Incluye categorías tal cual están y también los ids por compatibilidad
+        categories: (j.categories || []).map((c) => ({ id: String(c.id), label: c.label })),
+        category_ids: (j.categories || []).map((c) => String(c.id)),
+      })),
+      deleted_ids: deletedIds,
+    } as Record<string, unknown>;
+    let bulkOk = false;
+    const candidates: Array<{ method: 'put' | 'post'; url: string }> = [
+      { method: 'put', url: `/users/${userId}/jars/sync` },
+      { method: 'post', url: `/users/${userId}/jars/sync` },
+      { method: 'put', url: `/users/${userId}/jars/bulk` },
+      { method: 'post', url: `/users/${userId}/jars/bulk` },
+      { method: 'put', url: `/users/${userId}/jars` },
+      { method: 'post', url: `/users/${userId}/jars` },
+    ];
+    for (const c of candidates) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const res = await (api as any)[c.method](c.url, fullPayload);
+        if (res && (res.status == null || (res.status >= 200 && res.status < 300))) {
+          bulkOk = true;
+          break;
+        }
+      } catch (err) {
+        // Continuar probando otras rutas
+        console.debug('Bulk jars attempt failed', c, err);
+      }
+    }
+    if (bulkOk) {
+      // Si el servidor acepta bulk/sync, no hace falta hacer llamadas por jar
+      await loadJarData();
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ($q as any).notify?.({ type: 'positive', message: 'Cántaros guardados' });
+      } catch {
+        /* noop */
+      }
+      return;
+    }
 
     // 1) Create or update jars in current order
     for (let idx = 0; idx < jarElements.value.length; idx++) {
@@ -1266,7 +1378,7 @@ async function saveChanges() {
         fixed_amount: j.type === 'fixed' ? j.fixedAmount ?? 0 : undefined,
         color: j.color,
         sort_order: idx + 1,
-        is_active: 1,
+        is_active: j.active ?? true ? 1 : 0,
       } as Record<string, unknown>;
       // Añadir exclusive SOLO cuando existe un único jar % y es este al 100%
       if (exclusiveJarUid && j.uid === exclusiveJarUid) {
@@ -1361,6 +1473,7 @@ watch(
         percent: j.percent,
         fixedAmount: j.fixedAmount,
         color: j.color,
+        active: j.active ?? true,
       }))
     );
   },
@@ -1592,7 +1705,7 @@ watch(
 /* Make the jar header controls span full width and adapt */
 .jar-controls-grid {
   display: grid;
-  grid-template-columns: auto minmax(160px, 1fr) max-content max-content max-content;
+  grid-template-columns: auto minmax(140px, 1fr) max-content max-content max-content max-content;
   align-items: center;
   gap: 8px;
 }

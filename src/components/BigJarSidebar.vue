@@ -44,7 +44,7 @@ import { computed } from 'vue';
 import { useJarsStore, type JarLite } from 'stores/jars';
 
 const store = useJarsStore();
-const jars = computed(() => store.jars);
+const jars = computed(() => store.jars.filter((j) => j.active ?? true));
 const totalPercentage = computed(() => store.totalPercentage);
 const hasFixedJar = computed(() => store.hasFixedJar);
 
@@ -86,7 +86,7 @@ function getJarColor(j: JarLite): string {
 // Build stacked segments from percent jars, normalized
 const segments = computed(() => {
   const parts = (jars.value || [])
-    .filter((j) => j.type === 'percent' && (j.percent || 0) > 0)
+    .filter((j) => (j.active ?? true) && j.type === 'percent' && (j.percent || 0) > 0)
     .map((j) => ({ uid: j.uid, percent: Number(j.percent || 0), color: getJarColor(j) }));
   const sum = parts.reduce((a, b) => a + b.percent, 0);
   if (sum <= 0) return [] as Array<{ uid: string; height: number; color: string }>;
