@@ -223,56 +223,46 @@
                             @dragleave="() => onJarDragLeave(idx)"
                             @drop.prevent="(ev) => onJarDrop(idx, ev)"
                           >
-                            <div class="text-caption text-grey-7 q-mb-xs">
-                              Arrastra categorías aquí
-                            </div>
-                            <div v-if="(jar.categories?.length || 0) === 0" class="text-grey-5">
-                              Ninguna asignada
-                            </div>
-                            <div
-                              v-else
-                              :class="{ 'invalid-drop': invalidCategoryDropIndex === idx }"
+                            <Draggable
+                              v-model="jar.categories"
+                              group="categories"
+                              item-key="id"
+                              class="chip-list"
+                              :animation="160"
+                              :ghost-class="'drag-ghost'"
+                              :chosen-class="'drag-chosen'"
+                              handle=".chip-drag-handle"
+                              :move="onCategoryMove"
+                              @change="onCategoryChange"
                             >
-                              <Draggable
-                                v-model="jar.categories"
-                                group="jar-categories"
-                                item-key="id"
-                                class="q-gutter-xs"
-                                :animation="180"
-                                :move="onCategoryMove"
-                                :ghost-class="'drag-ghost'"
-                                :chosen-class="'drag-chosen'"
-                                :drag-class="'drag-dragging'"
-                                @start="onCategoryDragStart"
-                                @end="clearInvalidCategoryDrop"
-                                @change="onCategoryChange"
-                              >
-                                <template #item="{ element: c }">
-                                  <q-chip
-                                    :key="c.id"
-                                    dense
-                                    v-bind="categoryChipBind(c.label)"
-                                    removable
-                                    @remove="() => removeCategoryFromJar(idx, c.id)"
-                                    draggable
-                                    @dragstart="onChipDragStart(c, $event)"
-                                  >
-                                    <q-icon
-                                      name="open_with"
-                                      size="12px"
-                                      class="q-mr-xs chip-drag-handle"
-                                    />
-                                    {{ c.label }}
-                                  </q-chip>
-                                </template>
-                              </Draggable>
-                              <q-tooltip v-if="invalidCategoryDropIndex === idx"
-                                >Elemento inválido</q-tooltip
-                              >
+                              <!-- handle=".chip-drag-handle" -->
+                              <template #item="{ element: c }">
+                                <q-chip
+                                  dense
+                                  :key="c.id"
+                                  :draggable="false"
+                                  @dragstart="onChipDragStart(c, $event)"
+                                  removable
+                                  remove-icon="close"
+                                  @remove.stop="removeCategoryFromJar(idx, c.id)"
+                                  v-bind="categoryChipBind(c.label)"
+                                  class="q-mr-xs q-mb-xs"
+                                >
+                                  <q-icon
+                                    name="open_with"
+                                    size="14px"
+                                    class="chip-drag-handle q-mr-xs"
+                                  />
+                                  {{ c.label }}
+                                </q-chip>
+                              </template>
+                            </Draggable>
+                            <div
+                              v-if="!jar.categories || jar.categories.length === 0"
+                              class="text-caption text-grey-7"
+                            >
+                              Suelta categorías aquí
                             </div>
-                          </div>
-                          <div class="text-caption text-grey-7 q-mt-sm">
-                            Asignadas: {{ jar.categories?.length || 0 }}
                           </div>
                         </div>
                       </div>
@@ -283,135 +273,131 @@
             </template>
             <template v-else>
               <div class="empty-state">
-                <div class="text-grey-7">No hay cántaros para mostrar.</div>
+                <div class="text-h6 text-grey-7">No tienes cántaros</div>
+                <div class="text-body2 text-grey-6">
+                  Crea uno o aplica una plantilla para empezar
+                </div>
                 <div class="empty-actions">
-                  <q-btn
-                    color="primary"
-                    icon="add"
-                    label="Crear primer cántaro"
-                    @click="createJar"
-                  />
+                  <q-btn color="primary" icon="add" label="Añadir cántaro" @click="createJar" />
                   <q-btn
                     color="accent"
                     icon="layers"
-                    label="Usar una plantilla"
+                    label="Aplicar plantilla"
                     @click="openTemplatesDialog"
                   />
                 </div>
               </div>
             </template>
           </div>
-
-          <!-- Columna: Árbol de categorías -->
-          <div class="aside-col sticky-categories">
-            <q-card flat bordered class="sticky-categories-card">
-              <q-card-section class="q-pb-none">
-                <div class="text-subtitle2">Categorías</div>
-                <div class="text-caption text-grey-7">Arrastra una categoría hacia un cántaro</div>
-              </q-card-section>
-              <q-separator />
-              <q-card-section class="q-pt-sm cats-section">
-                <div class="cats-wrap">
-                  <CategoriesTree
-                    ref="categoriesTreeRef"
-                    :readonly="true"
-                    :nodes="categoriesPropNodes || []"
-                  />
-                </div>
-              </q-card-section>
-            </q-card>
+          <div class="aside-col">
+            <div class="sticky-categories">
+              <q-card flat bordered class="sticky-categories-card">
+                <q-card-section class="q-pt-sm">
+                  <div class="text-subtitle2">Categorías</div>
+                </q-card-section>
+                <q-card-section class="cats-section">
+                  <div class="cats-wrap">
+                    <CategoriesTree
+                      ref="categoriesTreeRef"
+                      :readonly="true"
+                      :columns="1"
+                      :nodes="categoriesPropNodes || []"
+                    />
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
           </div>
         </div>
       </q-card-section>
     </q-card>
-  </q-page>
 
-  <!-- Selector grande de plantillas -->
-  <q-dialog v-model="showTemplates" persistent maximized>
-    <q-card class="column full-height">
-      <q-toolbar>
-        <q-toolbar-title>Seleccionar plantilla de cántaros</q-toolbar-title>
-        <q-space />
-        <q-btn flat round icon="close" v-close-popup />
-      </q-toolbar>
-      <q-separator />
-      <q-card-section class="col q-pa-none">
-        <q-scroll-area class="fit">
-          <div class="q-pa-md templates-grid">
-            <div class="template-skeleton" v-if="loadingTemplates">
-              <q-skeleton type="rect" height="120px" class="q-mb-md" v-for="n in 3" :key="n" />
-            </div>
-            <template v-else>
-              <div
-                v-for="tpl in templates"
-                :key="tpl.slug || tpl.id || tpl.name"
-                class="template-item"
-              >
-                <q-card bordered class="q-pa-sm">
-                  <q-card-section>
-                    <div class="text-subtitle1">{{ tpl.name }}</div>
-                    <div class="text-caption text-grey-7">{{ tpl.description }}</div>
-                  </q-card-section>
-                  <q-separator />
-                  <q-card-section>
-                    <div class="text-caption text-grey-8 q-mb-xs">Jarras</div>
-                    <div class="chip-list">
-                      <q-chip
-                        v-for="j in tpl.jars || []"
-                        :key="(j.sort_order || 0) + '-' + (j.name || '')"
-                        v-bind="jarChipBind(j)"
-                        dense
-                        class="q-mr-xs q-mb-xs"
-                      >
-                        {{ j.name }}
-                        <span v-if="j.type === 'percent' && j.percent != null">
-                          — {{ j.percent }}%</span
+    <q-dialog v-model="showTemplates" maximized>
+      <q-card style="min-width: 720px; max-width: 1200px">
+        <q-toolbar>
+          <q-toolbar-title>Seleccionar plantilla de cántaros</q-toolbar-title>
+          <q-space />
+          <q-btn flat round icon="close" v-close-popup />
+        </q-toolbar>
+        <q-separator />
+        <q-card-section class="col q-pa-none">
+          <q-scroll-area class="fit">
+            <div class="q-pa-md templates-grid">
+              <div class="template-skeleton" v-if="loadingTemplates">
+                <q-skeleton type="rect" height="120px" class="q-mb-md" v-for="n in 3" :key="n" />
+              </div>
+              <template v-else>
+                <div
+                  v-for="tpl in templates"
+                  :key="tpl.slug || tpl.id || tpl.name"
+                  class="template-item"
+                >
+                  <q-card bordered class="q-pa-sm">
+                    <q-card-section>
+                      <div class="text-subtitle1">{{ tpl.name }}</div>
+                      <div class="text-caption text-grey-7">{{ tpl.description }}</div>
+                    </q-card-section>
+                    <q-separator />
+                    <q-card-section>
+                      <div class="text-caption text-grey-8 q-mb-xs">Jarras</div>
+                      <div class="chip-list">
+                        <q-chip
+                          v-for="j in tpl.jars || []"
+                          :key="(j.sort_order || 0) + '-' + (j.name || '')"
+                          v-bind="jarChipBind(j)"
+                          dense
+                          class="q-mr-xs q-mb-xs"
                         >
-                        <span v-else-if="j.fixed_amount != null"> — fijo</span>
-                      </q-chip>
-                    </div>
-                    <!-- Categorías sugeridas por jar (si existen) -->
-                    <div
-                      v-for="j in tpl.jars || []"
-                      :key="'cats-' + (j.sort_order || 0) + '-' + (j.name || '')"
-                    >
-                      <div
-                        v-if="Array.isArray(j.categories) && j.categories.length"
-                        class="q-mt-sm"
-                      >
-                        <div class="text-caption text-grey-7 q-mb-xs">
-                          Categorías para {{ j.name }}
-                        </div>
-                        <div class="chip-list">
-                          <q-chip
-                            v-for="cat in j.categories"
-                            :key="typeof cat === 'string' ? cat : cat.id ?? (cat.name || '')"
-                            dense
-                            v-bind="categoryChipBind(cat)"
-                            class="q-mr-xs q-mb-xs"
+                          {{ j.name }}
+                          <span v-if="j.type === 'percent' && j.percent != null">
+                            — {{ j.percent }}%</span
                           >
-                            {{ typeof cat === 'string' ? cat : cat.name || '' }}
-                          </q-chip>
+                          <span v-else-if="j.fixed_amount != null"> — fijo</span>
+                        </q-chip>
+                      </div>
+                      <!-- Categorías sugeridas por jar (si existen) -->
+                      <div
+                        v-for="j in tpl.jars || []"
+                        :key="'cats-' + (j.sort_order || 0) + '-' + (j.name || '')"
+                      >
+                        <div
+                          v-if="Array.isArray(j.categories) && j.categories.length"
+                          class="q-mt-sm"
+                        >
+                          <div class="text-caption text-grey-7 q-mb-xs">
+                            Categorías para {{ j.name }}
+                          </div>
+                          <div class="chip-list">
+                            <q-chip
+                              v-for="cat in j.categories"
+                              :key="typeof cat === 'string' ? cat : cat.id ?? (cat.name || '')"
+                              dense
+                              v-bind="categoryChipBind(cat)"
+                              class="q-mr-xs q-mb-xs"
+                            >
+                              {{ typeof cat === 'string' ? cat : cat.name || '' }}
+                            </q-chip>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </q-card-section>
-                  <q-separator />
-                  <q-card-actions align="right">
-                    <q-btn
-                      color="primary"
-                      label="Aplicar"
-                      @click="() => confirmApplyTemplate(tpl)"
-                    />
-                  </q-card-actions>
-                </q-card>
-              </div>
-            </template>
-          </div>
-        </q-scroll-area>
-      </q-card-section>
-    </q-card>
-  </q-dialog>
+                    </q-card-section>
+                    <q-separator />
+                    <q-card-actions align="right">
+                      <q-btn
+                        color="primary"
+                        label="Aplicar"
+                        @click="() => confirmApplyTemplate(tpl)"
+                      />
+                    </q-card-actions>
+                  </q-card>
+                </div>
+              </template>
+            </div>
+          </q-scroll-area>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+  </q-page>
 </template>
 
 <script setup lang="ts">
@@ -983,7 +969,40 @@ async function loadCategoriesTree() {
 
 function setCategories(nodes: CatNodeInput[]) {
   // Carga el árbol en el componente y construye un mapa rápido
-  categoriesPropNodes.value = nodes;
+  // 1) Deduplicar por id, preservando el primer nodo y fusionando hijos para carpetas
+  const dedupeById = (arr: CatNodeInput[]): CatNodeInput[] => {
+    const seen: Record<string, CatNodeInput> = {};
+    const out: CatNodeInput[] = [];
+    for (const n of arr) {
+      const key = String(n.id);
+      const existing = seen[key];
+      if (!existing) {
+        // clone shallow; normalize children to array
+        const clone: CatNodeInput = {
+          id: n.id,
+          label: n.label,
+          type:
+            (n.type as 'folder' | 'category') ||
+            (n.children && n.children.length ? 'folder' : 'category'),
+          icon: n.icon ?? null,
+          children: n.children ? dedupeById(n.children) : [],
+        };
+        seen[key] = clone;
+        out.push(clone);
+      } else {
+        // merge: if any side has children, merge and dedupe
+        const mergedKids = [
+          ...((existing.children as CatNodeInput[]) || []),
+          ...(n.children ? n.children : []),
+        ];
+        existing.children = dedupeById(mergedKids);
+        // keep label/icon from first occurrence
+      }
+    }
+    return out;
+  };
+  const safeNodes = Array.isArray(nodes) ? dedupeById(nodes) : [];
+  categoriesPropNodes.value = safeNodes;
   const map: Record<string, CatInfo> = {};
   const initialVisible = new Set<string>();
   const collectLeafIds = (arr: CatNodeInput[], acc: string[] = []) => {
@@ -1014,9 +1033,44 @@ function setCategories(nodes: CatNodeInput[]) {
       if (n.children?.length) walk(n.children, String(n.id));
     }
   };
-  walk(nodes);
+  walk(safeNodes);
   categoriesMap.value = map;
   visibleFolders.value = initialVisible;
+}
+
+// Elimina del árbol las categorías que ya están asignadas a algún cántaro y
+// poda carpetas vacías resultantes, preservando el orden original.
+function filterOutAssignedNodes(nodes: CatNodeInput[], assigned: Set<string>): CatNodeInput[] {
+  const recur = (arr: CatNodeInput[]): CatNodeInput[] => {
+    const out: CatNodeInput[] = [];
+    for (const n of arr) {
+      const isFolder = !!(n.children && n.children.length);
+      if (isFolder) {
+        const kids = recur(n.children || []);
+        if (kids.length > 0) {
+          out.push({
+            id: n.id,
+            label: n.label,
+            type: (n.type as 'folder' | 'category') || 'folder',
+            icon: n.icon ?? null,
+            children: kids,
+          });
+        }
+      } else {
+        if (!assigned.has(String(n.id))) {
+          // omitimos 'children' para respetar exactOptionalPropertyTypes
+          out.push({
+            id: n.id,
+            label: n.label,
+            type: (n.type as 'folder' | 'category') || 'category',
+            icon: n.icon ?? null,
+          });
+        }
+      }
+    }
+    return out;
+  };
+  return recur(nodes);
 }
 
 function onJarDragOver(idx: number) {
@@ -1213,9 +1267,6 @@ function onCategoryMove(evt: DragMoveEvent): boolean {
   invalidCategoryDropIndex.value = null;
   return true;
 }
-function clearInvalidCategoryDrop() {
-  invalidCategoryDropIndex.value = null;
-}
 
 // Reconcile state after a drag between jars to ensure single ownership
 function onCategoryChange(evt: DragChangeEvent) {
@@ -1259,9 +1310,6 @@ function onCategoryChange(evt: DragChangeEvent) {
 }
 
 // Extra debug for start event to inspect raw lists and element
-function onCategoryDragStart(evt: { item?: HTMLElement; clone?: HTMLElement }) {
-  log('Drag start', { itemText: evt.item?.textContent?.trim() });
-}
 
 // When dragging a chip between jars, encode full category info for robust drop handling
 function onChipDragStart(cat: { id: string; label: string }, ev: DragEvent) {
@@ -1310,16 +1358,15 @@ async function saveChanges() {
         ? percentJars[0]!.uid
         : null;
 
-    // Intento 0: Enviar TODO en un único payload (bulk/sync) con estructura completa
-    // Construye shape completo por jar
-    const bulkCurrentIds = new Set<number>(
-      jarElements.value.map((j) => j.id).filter((x): x is number => typeof x === 'number')
-    );
-    const deletedIds = Array.from(serverJarIds.value).filter((id) => !bulkCurrentIds.has(id));
-    const fullPayload = {
-      jars: jarElements.value.map((j, idx) => ({
-        id: j.id,
-        uid: j.uid,
+    // Guardar SIEMPRE por jar usando /users/{userId}/jars/save con estructura completa
+    for (let idx = 0; idx < jarElements.value.length; idx++) {
+      const j = jarElements.value[idx]!;
+      const category_ids = (j.categories || []).map((c) => {
+        const n = Number(c.id);
+        return Number.isFinite(n) ? n : String(c.id);
+      });
+      const payload: Record<string, unknown> = {
+        id: j.id ?? null,
         name: j.name,
         type: j.type,
         percent: j.type === 'percent' ? Number(j.percent || 0) : undefined,
@@ -1327,88 +1374,14 @@ async function saveChanges() {
         color: j.color,
         sort_order: idx + 1,
         is_active: j.active ?? true ? 1 : 0,
-        exclusive: exclusiveJarUid && j.uid === exclusiveJarUid ? true : undefined,
-        // Incluye categorías tal cual están y también los ids por compatibilidad
-        categories: (j.categories || []).map((c) => ({ id: String(c.id), label: c.label })),
-        category_ids: (j.categories || []).map((c) => String(c.id)),
-      })),
-      deleted_ids: deletedIds,
-    } as Record<string, unknown>;
-    let bulkOk = false;
-    const candidates: Array<{ method: 'put' | 'post'; url: string }> = [
-      { method: 'put', url: `/users/${userId}/jars/sync` },
-      { method: 'post', url: `/users/${userId}/jars/sync` },
-      { method: 'put', url: `/users/${userId}/jars/bulk` },
-      { method: 'post', url: `/users/${userId}/jars/bulk` },
-      { method: 'put', url: `/users/${userId}/jars` },
-      { method: 'post', url: `/users/${userId}/jars` },
-    ];
-    for (const c of candidates) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const res = await (api as any)[c.method](c.url, fullPayload);
-        if (res && (res.status == null || (res.status >= 200 && res.status < 300))) {
-          bulkOk = true;
-          break;
-        }
-      } catch (err) {
-        // Continuar probando otras rutas
-        console.debug('Bulk jars attempt failed', c, err);
-      }
-    }
-    if (bulkOk) {
-      // Si el servidor acepta bulk/sync, no hace falta hacer llamadas por jar
-      await loadJarData();
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ($q as any).notify?.({ type: 'positive', message: 'Cántaros guardados' });
-      } catch {
-        /* noop */
-      }
-      return;
-    }
-
-    // 1) Create or update jars in current order
-    for (let idx = 0; idx < jarElements.value.length; idx++) {
-      const j = jarElements.value[idx]!;
-      const base = {
-        name: j.name,
-        type: j.type,
-        percent: j.type === 'percent' ? j.percent ?? 0 : undefined,
-        fixed_amount: j.type === 'fixed' ? j.fixedAmount ?? 0 : undefined,
-        color: j.color,
-        sort_order: idx + 1,
-        is_active: j.active ?? true ? 1 : 0,
-      } as Record<string, unknown>;
-      // Añadir exclusive SOLO cuando existe un único jar % y es este al 100%
+        category_ids,
+      };
       if (exclusiveJarUid && j.uid === exclusiveJarUid) {
-        base.exclusive = true;
+        payload.exclusive = true;
       }
-      if (j.id) {
-        await api.put(`/users/${userId}/jars/${j.id}`, base);
-      } else {
-        const res = await api.post(`/users/${userId}/jars`, base);
-        const newId: number | undefined = res.data?.id ?? res.data?.data?.id;
-        if (typeof newId === 'number') {
-          j.id = newId;
-        }
-      }
-      // Apply category assignments (replace set)
-      const category_ids = (j.categories || []).map((c) =>
-        typeof c.id === 'string' ? c.id : String(c.id)
-      );
-      if (j.id) {
-        // Prefer PUT semantics if supported; fallback to POST on 405/404
-        const exclusivePayload =
-          exclusiveJarUid && j.uid === exclusiveJarUid
-            ? { category_ids, exclusive: true }
-            : { category_ids };
-        try {
-          await api.put(`/users/${userId}/jars/${j.id}/categories`, exclusivePayload);
-        } catch {
-          await api.post(`/users/${userId}/jars/${j.id}/categories`, exclusivePayload);
-        }
-      }
+      const res = await api.post(`/users/${userId}/jars/save`, payload);
+      const retId: number | undefined = res.data?.id ?? res.data?.data?.id;
+      if (typeof retId === 'number') j.id = retId;
     }
 
     // 2) Delete jars that existed on server but are no longer present
@@ -1421,7 +1394,7 @@ async function saveChanges() {
       }
     }
 
-    // Refresh state and ids
+    // Refresh state and ids (o usar la lista devuelta por el último save si se prefiere)
     await loadJarData();
     $q.notify({ type: 'positive', message: 'Cántaros guardados' });
   } catch (e) {
@@ -1440,13 +1413,14 @@ async function saveChanges() {
 
 onMounted(() => {
   void Promise.all([loadJarData(), loadCategoriesTree()]).then(() => {
-    // Oculta en el árbol las categorías ya asignadas a algún cántaro
+    // Remueve del árbol las categorías ya asignadas a algún cántaro
     const assigned = new Set<string>();
     for (const j of jarElements.value) {
       for (const c of j.categories || []) assigned.add(c.id);
     }
-    if (assigned.size > 0) {
-      // Cuando usamos :nodes, evitamos mutar el árbol por ref aquí; la UI podrá ocultar chips al asignar
+    if (assigned.size > 0 && Array.isArray(categoriesPropNodes.value)) {
+      const filtered = filterOutAssignedNodes(categoriesPropNodes.value, assigned);
+      setCategories(filtered);
     }
     // También ocultar carpetas que están totalmente asignadas
     Object.values(categoriesMap.value).forEach((node) => {
