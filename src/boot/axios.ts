@@ -11,7 +11,7 @@ declare module 'vue' {
 
 const api = axios.create({
   // Ensure a string to satisfy TS when exactOptionalPropertyTypes is enabled
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   // withCredentials: true, // allow sending cookies for Sanctum
   headers: {
     Accept: 'application/json',

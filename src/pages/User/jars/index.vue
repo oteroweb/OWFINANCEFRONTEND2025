@@ -232,6 +232,8 @@
                               :ghost-class="'drag-ghost'"
                               :chosen-class="'drag-chosen'"
                               handle=".chip-drag-handle"
+                              :filter="'.q-chip__icon--remove'"
+                              :prevent-on-filter="true"
                               :move="onCategoryMove"
                               @change="onCategoryChange"
                             >
@@ -241,10 +243,9 @@
                                   dense
                                   :key="c.id"
                                   :draggable="false"
-                                  @dragstart="onChipDragStart(c, $event)"
                                   removable
                                   remove-icon="close"
-                                  @remove.stop="removeCategoryFromJar(idx, c.id)"
+                                  @remove="removeCategoryFromJar(idx, c.id)"
                                   v-bind="categoryChipBind(c.label)"
                                   class="q-mr-xs q-mb-xs"
                                 >
@@ -252,6 +253,8 @@
                                     name="open_with"
                                     size="14px"
                                     class="chip-drag-handle q-mr-xs"
+                                    draggable="true"
+                                    @dragstart="onChipDragStart(c, $event)"
                                   />
                                   {{ c.label }}
                                 </q-chip>
@@ -313,20 +316,23 @@
     </q-card>
 
     <q-dialog v-model="showTemplates" maximized>
-      <q-card style="min-width: 720px; max-width: 1200px">
+      <q-card class="template-dialog-card" style="min-width: 720px; max-width: 1200px">
         <q-toolbar>
           <q-toolbar-title>Seleccionar plantilla de cántaros</q-toolbar-title>
           <q-space />
           <q-btn flat round icon="close" v-close-popup />
         </q-toolbar>
         <q-separator />
-        <q-card-section class="col q-pa-none">
+        <q-card-section class="template-scroll-section">
           <q-scroll-area class="fit">
             <div class="q-pa-md templates-grid">
               <div class="template-skeleton" v-if="loadingTemplates">
                 <q-skeleton type="rect" height="120px" class="q-mb-md" v-for="n in 3" :key="n" />
               </div>
               <template v-else>
+                <div v-if="!templates.length" class="text-caption text-grey-7">
+                  No hay plantillas disponibles.
+                </div>
                 <div
                   v-for="tpl in templates"
                   :key="tpl.slug || tpl.id || tpl.name"
@@ -503,6 +509,9 @@ type CatInfo = {
   order?: number | undefined;
 };
 const categoriesMap = ref<Record<string, CatInfo>>({});
+// Mapa maestro con TODAS las categorías del árbol original (deduplicado),
+// aunque luego filtremos las asignadas de la vista.
+const categoriesMasterMap = ref<Record<string, CatInfo>>({});
 // Carpeta visible en árbol (para no recrearla y perder hijos)
 const visibleFolders = ref<Set<string>>(new Set());
 // Provide nodes via prop for CategoriesTree rendering
@@ -800,8 +809,35 @@ async function loadTemplates() {
   loadingTemplates.value = true;
   try {
     const res = await api.get('/jar-templates', { params: { active: 1, per_page: 100 } });
-    const arr = (res.data?.data || res.data || []) as JarTemplate[];
+    const top = res.data as unknown;
+    const pickArray = (d: unknown): unknown[] => {
+      if (Array.isArray(d)) return d as unknown[];
+      if (d && typeof d === 'object') {
+        const o = d as Record<string, unknown>;
+        if (Array.isArray(o.data)) return o.data as unknown[];
+        const oData = (o as { data?: unknown }).data;
+        if (oData && typeof oData === 'object') {
+          const innerData = (oData as { data?: unknown }).data;
+          if (Array.isArray(innerData)) return innerData as unknown[];
+          // Also check common keys inside nested data
+          const innerKeys = ['templates', 'items', 'results', 'records', 'rows'] as const;
+          const o2 = oData as Record<string, unknown>;
+          for (const k of innerKeys) {
+            const v2 = o2[k];
+            if (Array.isArray(v2)) return v2 as unknown[];
+          }
+        }
+        const keys = ['templates', 'items', 'results', 'records', 'rows'] as const;
+        for (const k of keys) {
+          const v = o[k];
+          if (Array.isArray(v)) return v as unknown[];
+        }
+      }
+      return [] as unknown[];
+    };
+    const arr = pickArray(top) as JarTemplate[];
     templates.value = Array.isArray(arr) ? arr : [];
+    console.log('[Jars][Templates] loaded', templates.value.length);
   } catch (e) {
     templates.value = [];
     $q.notify({ type: 'warning', message: 'No se pudieron cargar plantillas' });
@@ -822,7 +858,24 @@ function confirmApplyTemplate(tpl: JarTemplate) {
 }
 
 function applyTemplate(tpl: JarTemplate) {
-  // Devolver categorías de todos los jars actuales al árbol
+  // Construir nuevos jars desde la plantilla (pre-cálculo para validar)
+  const source = Array.isArray(tpl.jars) ? tpl.jars.slice() : [];
+  const sorted = source.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  const incoming = sorted.map((j) => {
+    const t: 'percent' | 'fixed' = j.type === 'fixed' ? 'fixed' : 'percent';
+    const percent = t === 'percent' && j.percent != null ? Number(j.percent) : 0;
+    const jar = mkJar(j.name, percent, t);
+    if (t === 'fixed') jar.fixedAmount = Number(j.fixed_amount ?? 0);
+    jar.color = j.color || undefined;
+    return jar;
+  });
+
+  if (incoming.length === 0) {
+    $q.notify({ type: 'warning', message: 'La plantilla seleccionada no define jarras' });
+    return;
+  }
+
+  // Devolver categorías de todos los jars actuales al árbol antes de reemplazar
   for (let i = 0; i < jarElements.value.length; i++) {
     const jar = jarElements.value[i];
     if (!jar) continue;
@@ -832,18 +885,9 @@ function applyTemplate(tpl: JarTemplate) {
       removeCategoryFromJar(i, first.id);
     }
   }
-  // Construir nuevos jars desde la plantilla
-  const jars = (tpl.jars || []).slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-  jarElements.value = jars.map((j) => {
-    const t: 'percent' | 'fixed' = j.type === 'fixed' ? 'fixed' : 'percent';
-    const percent = t === 'percent' && j.percent != null ? Number(j.percent) : 0;
-    const jar = mkJar(j.name, percent, t);
-    if (t === 'fixed') {
-      jar.fixedAmount = Number(j.fixed_amount ?? 0);
-    }
-    jar.color = j.color || undefined;
-    return jar;
-  });
+
+  // Reemplazar con los jars de la plantilla
+  jarElements.value = incoming;
   showTemplates.value = false;
   $q.notify({ type: 'positive', message: `Plantilla "${tpl.name}" aplicada` });
 }
@@ -967,7 +1011,7 @@ async function loadCategoriesTree() {
   }
 }
 
-function setCategories(nodes: CatNodeInput[]) {
+function setCategories(nodes: CatNodeInput[], updateMaster = true) {
   // Carga el árbol en el componente y construye un mapa rápido
   // 1) Deduplicar por id, preservando el primer nodo y fusionando hijos para carpetas
   const dedupeById = (arr: CatNodeInput[]): CatNodeInput[] => {
@@ -1004,6 +1048,7 @@ function setCategories(nodes: CatNodeInput[]) {
   const safeNodes = Array.isArray(nodes) ? dedupeById(nodes) : [];
   categoriesPropNodes.value = safeNodes;
   const map: Record<string, CatInfo> = {};
+  const master: Record<string, CatInfo> = updateMaster ? {} : { ...categoriesMasterMap.value };
   const initialVisible = new Set<string>();
   const collectLeafIds = (arr: CatNodeInput[], acc: string[] = []) => {
     for (const n of arr) {
@@ -1021,7 +1066,7 @@ function setCategories(nodes: CatNodeInput[]) {
         : n.children && n.children.length
         ? 'folder'
         : 'category';
-      map[String(n.id)] = {
+      const info: CatInfo = {
         id: String(n.id),
         label: String(n.label),
         type,
@@ -1029,12 +1074,15 @@ function setCategories(nodes: CatNodeInput[]) {
         parent: parentId,
         order: idx,
       };
+      map[String(n.id)] = info;
+      if (updateMaster) master[String(n.id)] = info;
       if (type === 'folder') initialVisible.add(String(n.id));
       if (n.children?.length) walk(n.children, String(n.id));
     }
   };
   walk(safeNodes);
   categoriesMap.value = map;
+  if (updateMaster) categoriesMasterMap.value = master;
   visibleFolders.value = initialVisible;
 }
 
@@ -1084,7 +1132,7 @@ function onJarDragLeave(idx: number) {
 
 // Asegura que toda la cadena de carpetas hasta root esté visible y en su posición original
 function ensureFolderChainVisible(folderId: string) {
-  const folder = categoriesMap.value[folderId];
+  const folder = categoriesMap.value[folderId] || categoriesMasterMap.value[folderId];
   if (!folder || folder.type !== 'folder') return;
   const parentId = folder.parent || 'root';
   if (folder.parent) ensureFolderChainVisible(folder.parent);
@@ -1096,6 +1144,17 @@ function ensureFolderChainVisible(folderId: string) {
       atIndex
     );
     visibleFolders.value.add(folderId);
+    // Ensure categoriesMap knows this folder
+    if (!categoriesMap.value[folderId]) {
+      categoriesMap.value[folderId] = {
+        id: folder.id,
+        label: folder.label,
+        type: 'folder',
+        parent: folder.parent,
+        order: folder.order,
+        children: folder.children,
+      };
+    }
   }
 }
 function onJarDrop(idx: number, ev: DragEvent) {
@@ -1129,9 +1188,14 @@ function onJarDrop(idx: number, ev: DragEvent) {
   // If still no id but we have a label, try to resolve by unique label
   if (!id && payload && payload.label) {
     const lbl = payload.label;
-    const byLabel = Object.values(categoriesMap.value).find(
+    let byLabel = Object.values(categoriesMap.value).find(
       (n) => n.type === 'category' && n.label === lbl
     );
+    if (!byLabel) {
+      byLabel = Object.values(categoriesMasterMap.value).find(
+        (n) => n.type === 'category' && n.label === lbl
+      );
+    }
     if (byLabel) id = byLabel.id;
   }
   if (!id) {
@@ -1139,10 +1203,10 @@ function onJarDrop(idx: number, ev: DragEvent) {
     log('Drop invalid item id', text || '(empty)', payload);
     return;
   }
-  const info = categoriesMap.value[id];
+  const info = categoriesMap.value[id] || categoriesMasterMap.value[id];
   if (!info) {
     $q.notify({ type: 'warning', message: 'Elemento no válido' });
-    log('Drop id not found in categoriesMap', { id, payload, text });
+    log('Drop id not found in categories maps', { id, payload, text });
     return;
   }
   const jar = jarElements.value[idx];
@@ -1192,7 +1256,7 @@ function onJarDrop(idx: number, ev: DragEvent) {
     const isAssigned = (catId: string) =>
       jarElements.value.some((j) => (j.categories || []).some((c) => c.id === catId));
     leafIds.forEach((leafId) => {
-      const leaf = categoriesMap.value[leafId];
+  const leaf = categoriesMap.value[leafId] || categoriesMasterMap.value[leafId];
       if (!leaf || leaf.type !== 'category') return;
       if (isAssigned(leaf.id)) return; // ya asignada, no mover
       log('Tree drop folder item (unassigned only)', {
@@ -1224,7 +1288,7 @@ function removeCategoryFromJar(idx: number, catId: string) {
   if (!jar) return;
   jar.categories = (jar.categories || []).filter((c) => c.id !== catId);
   // Reincorporar al árbol (bajo root) para que pueda ser usado en otro cántaro
-  const catInfo = categoriesMap.value[catId];
+  const catInfo = categoriesMap.value[catId] || categoriesMasterMap.value[catId];
   if (catInfo && catInfo.type === 'category') {
     // Asegurar que la cadena de carpetas original exista; si no, recrearla en su posición
     const parentId = catInfo.parent || 'root';
@@ -1241,6 +1305,14 @@ function removeCategoryFromJar(idx: number, catId: string) {
       parentId,
       atIndex
     );
+    // Update categoriesMap to include the reinserted category metadata
+    categoriesMap.value[catInfo.id] = {
+      id: catInfo.id,
+      label: catInfo.label,
+      type: 'category',
+      parent: catInfo.parent,
+      order: catInfo.order,
+    };
   }
 }
 
@@ -1358,14 +1430,13 @@ async function saveChanges() {
         ? percentJars[0]!.uid
         : null;
 
-    // Guardar SIEMPRE por jar usando /users/{userId}/jars/save con estructura completa
-    for (let idx = 0; idx < jarElements.value.length; idx++) {
-      const j = jarElements.value[idx]!;
+    // Construir payload bulk
+    const jarsPayload = jarElements.value.map((j, idx) => {
       const category_ids = (j.categories || []).map((c) => {
         const n = Number(c.id);
         return Number.isFinite(n) ? n : String(c.id);
       });
-      const payload: Record<string, unknown> = {
+      const p: Record<string, unknown> = {
         id: j.id ?? null,
         name: j.name,
         type: j.type,
@@ -1376,25 +1447,55 @@ async function saveChanges() {
         is_active: j.active ?? true ? 1 : 0,
         category_ids,
       };
-      if (exclusiveJarUid && j.uid === exclusiveJarUid) {
-        payload.exclusive = true;
+      if (exclusiveJarUid && j.uid === exclusiveJarUid) p.exclusive = true;
+      return p;
+    });
+
+    // POST único con todo el arreglo (el backend debe sincronizar altas/bajas/cambios)
+    const res = await api.post(`/users/${userId}/jars/save`, { jars: jarsPayload });
+
+    // Intentar actualizar IDs locales desde la respuesta si están presentes
+    type SaveResp =
+      | { jars?: Array<{ temp_index?: number; id?: number }>; data?: unknown }
+      | { data?: { jars?: Array<{ temp_index?: number; id?: number }> } }
+      | Array<{ id?: number }>
+      | { ids?: Array<number> };
+    const payload = res.data as SaveResp & { data?: unknown };
+    let returned: Array<{ id?: number; temp_index?: number }> = [];
+    if (Array.isArray(payload)) returned = payload as Array<{ id?: number }>;
+    else if (Array.isArray((payload as { jars?: unknown[] }).jars))
+      returned = ((payload as { jars?: unknown[] }).jars || []) as Array<{
+        id?: number;
+        temp_index?: number;
+      }>;
+    else if (
+      payload?.data &&
+      typeof payload.data === 'object' &&
+      Array.isArray((payload.data as { jars?: unknown[] }).jars)
+    )
+      returned = ((payload.data as { jars?: unknown[] }).jars || []) as Array<{
+        id?: number;
+        temp_index?: number;
+      }>;
+
+    // Mapear ids si hay el mismo tamaño o viene temp_index
+    if (returned.length) {
+      if (returned.length === jarElements.value.length) {
+        jarElements.value.forEach((j, i) => {
+          const rid = returned[i]?.id;
+          if (typeof rid === 'number') j.id = rid;
+        });
+      } else {
+        returned.forEach((r) => {
+          const i = typeof r.temp_index === 'number' ? r.temp_index : -1;
+          if (i >= 0 && i < jarElements.value.length && typeof r.id === 'number') {
+            jarElements.value[i]!.id = r.id;
+          }
+        });
       }
-      const res = await api.post(`/users/${userId}/jars/save`, payload);
-      const retId: number | undefined = res.data?.id ?? res.data?.data?.id;
-      if (typeof retId === 'number') j.id = retId;
     }
 
-    // 2) Delete jars that existed on server but are no longer present
-    const currentIds = new Set<number>(
-      jarElements.value.map((j) => j.id).filter((x): x is number => typeof x === 'number')
-    );
-    for (const id of serverJarIds.value) {
-      if (!currentIds.has(id)) {
-        await api.delete(`/users/${userId}/jars/${id}`);
-      }
-    }
-
-    // Refresh state and ids (o usar la lista devuelta por el último save si se prefiere)
+    // Opcional: refrescar desde backend por consistencia
     await loadJarData();
     $q.notify({ type: 'positive', message: 'Cántaros guardados' });
   } catch (e) {
@@ -1420,7 +1521,8 @@ onMounted(() => {
     }
     if (assigned.size > 0 && Array.isArray(categoriesPropNodes.value)) {
       const filtered = filterOutAssignedNodes(categoriesPropNodes.value, assigned);
-      setCategories(filtered);
+      // No actualizar el master map aquí; solo la vista
+      setCategories(filtered, false);
     }
     // También ocultar carpetas que están totalmente asignadas
     Object.values(categoriesMap.value).forEach((node) => {
@@ -1760,6 +1862,18 @@ watch(
 }
 .template-skeleton {
   grid-column: 1 / -1;
+}
+
+/* Ensure the templates dialog provides height to the scroll area */
+.template-dialog-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.template-scroll-section {
+  padding: 0;
+  flex: 1 1 auto;
+  min-height: 0; /* allow QScrollArea to compute height via .fit */
 }
 
 /* Chip list grid */
