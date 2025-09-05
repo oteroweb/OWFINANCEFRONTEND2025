@@ -1256,7 +1256,7 @@ function onJarDrop(idx: number, ev: DragEvent) {
     const isAssigned = (catId: string) =>
       jarElements.value.some((j) => (j.categories || []).some((c) => c.id === catId));
     leafIds.forEach((leafId) => {
-  const leaf = categoriesMap.value[leafId] || categoriesMasterMap.value[leafId];
+      const leaf = categoriesMap.value[leafId] || categoriesMasterMap.value[leafId];
       if (!leaf || leaf.type !== 'category') return;
       if (isAssigned(leaf.id)) return; // ya asignada, no mover
       log('Tree drop folder item (unassigned only)', {
