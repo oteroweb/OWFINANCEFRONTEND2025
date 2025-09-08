@@ -41,6 +41,7 @@
     <q-btn fab color="primary" icon="add" class="fab-add" @click="openGlobalNewTransaction">
       <q-tooltip>Nueva transacción</q-tooltip>
     </q-btn>
+    <TransactionCreateDialog />
   </q-layout>
 </template>
 
@@ -51,6 +52,7 @@ import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
 import { useUiStore } from 'stores/ui';
 import BigJarSidebar from 'components/BigJarSidebar.vue';
+import TransactionCreateDialog from 'components/TransactionCreateDialog.vue';
 
 const router = useRouter();
 const route = useRoute();

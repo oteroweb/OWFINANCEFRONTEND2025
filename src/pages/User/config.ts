@@ -6,6 +6,7 @@ export type UserMenuLink = {
 };
 
 export const userMenuLinks: readonly UserMenuLink[] = [
+  { title: 'Inicio', icon: 'dashboard', to: '/user/home' },
   { title: 'Transacciones', icon: 'receipt_long', to: '/user/transactions' },
   { title: 'Cántaros', icon: 'water_drop', to: '/user/jars' },
   { title: 'Configuración', icon: 'settings', to: '/user/config' },
