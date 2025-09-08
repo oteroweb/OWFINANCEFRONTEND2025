@@ -188,12 +188,10 @@
               v-if="form.account_from_id && form.account_to_id && form.amount != null"
               class="q-mt-xs q-pr-xs text-right text-caption text-grey-7"
             >
+              <div>Importe: {{ originCurrencySymbol }}{{ Number(form.amount).toFixed(2) }}</div>
               <div>
-                Importe: {{ originCurrencySymbol }}{{ Number(form.amount).toFixed(2) }}
-              </div>
-              <div>
-                De: {{ originAccount?.name || '—' }} ({{ originAccount?.currencyCode || '—' }}) →
-                A: {{ destAccount?.name || '—' }} ({{ destAccount?.currencyCode || '—' }})
+                De: {{ originAccount?.name || '—' }} ({{ originAccount?.currencyCode || '—' }}) → A:
+                {{ destAccount?.name || '—' }} ({{ destAccount?.currencyCode || '—' }})
               </div>
               <div>
                 <span v-if="!isCrossCurrency">Destino = actual + importe</span>
@@ -326,13 +324,42 @@
     <q-card style="min-width: 320px">
       <q-card-section class="text-h6">Nuevo Proveedor</q-card-section>
       <q-card-section class="q-pt-none">
-        <q-input v-model="newProviderName" label="Nombre" dense filled class="q-mb-sm" />
-        <q-input v-model="newProviderAddress" label="Dirección" dense filled />
+        <q-input
+          v-model="newProviderName"
+          label="Nombre"
+          dense
+          filled
+          class="q-mb-sm"
+          :error="!!providerErrors.name"
+          :error-message="providerErrors.name ? providerErrors.name.join(', ') : ''"
+          :disable="providerSaving"
+        />
+        <q-input
+          v-model="newProviderAddress"
+          label="Dirección"
+          dense
+          filled
+          :error="!!providerErrors.address"
+          :error-message="providerErrors.address ? providerErrors.address.join(', ') : ''"
+          :disable="providerSaving"
+        />
       </q-card-section>
       <q-separator />
       <q-card-actions align="right">
-        <q-btn flat label="Cancelar" v-close-popup />
-        <q-btn color="primary" label="Guardar" @click="addProvider" />
+        <q-btn
+          flat
+          label="Cancelar"
+          v-close-popup
+          @click="resetProviderDialog"
+          :disable="providerSaving"
+        />
+        <q-btn
+          color="primary"
+          label="Guardar"
+          @click="addProvider"
+          :loading="providerSaving"
+          :disable="providerSaving"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -480,6 +507,8 @@ const allProviders = ref<ProviderOption[]>([]);
 const showAddProviderDialog = ref(false);
 const newProviderName = ref('');
 const newProviderAddress = ref('');
+const providerErrors = ref<Record<string, string[]>>({});
+const providerSaving = ref(false);
 let providersLoaded = false;
 function providerLabel(p: { name?: string; address?: string }) {
   if (!p) return '';
@@ -510,25 +539,65 @@ function triggerAddProviderDialog(val: string) {
   newProviderName.value = val;
   newProviderAddress.value = '';
   showAddProviderDialog.value = true;
+  providerErrors.value = {};
 }
 async function addProvider() {
+  providerErrors.value = {};
+  // Front-end quick validation
+  const nameTrim = newProviderName.value.trim();
+  const addrTrim = newProviderAddress.value.trim();
+  if (!nameTrim) providerErrors.value.name = ['El nombre es requerido'];
+  else if (nameTrim.length < 2) providerErrors.value.name = ['Mínimo 2 caracteres'];
+  if (!addrTrim) providerErrors.value.address = ['La dirección es requerida'];
+  else if (addrTrim.length < 3) providerErrors.value.address = ['Mínimo 3 caracteres'];
+  if (Object.keys(providerErrors.value).length) {
+    $q.notify({ type: 'warning', message: 'Completa los campos requeridos' });
+    return;
+  }
+  providerSaving.value = true;
   try {
     const resp = await api.post('/providers', {
-      name: newProviderName.value,
-      address: newProviderAddress.value,
+      name: newProviderName.value.trim(),
+      address: newProviderAddress.value.trim(),
       user_id: auth.user?.id,
     });
     const p = resp.data?.data || resp.data;
     form.value.provider_id = p.id;
     providersLoaded = false;
     await ensureProvidersLoaded();
-  } catch {
-    $q.notify({ type: 'negative', message: 'Error al crear proveedor' });
-  } finally {
+    $q.notify({ type: 'positive', message: 'Proveedor creado' });
+    resetProviderDialog();
     showAddProviderDialog.value = false;
-    newProviderName.value = '';
-    newProviderAddress.value = '';
+  } catch (err) {
+    let message = 'Error al crear proveedor';
+    try {
+      const e = err as { response?: { data?: any } };
+      const data = e.response?.data;
+      if (data?.message) message = data.message;
+      // Field errors may come in data.data or data.errors
+      const fieldErrors: Record<string, string[]> = data?.data || data?.errors || {};
+      if (fieldErrors && typeof fieldErrors === 'object') {
+        providerErrors.value = fieldErrors;
+        const flat: string[] = [];
+        Object.keys(fieldErrors).forEach((k) => {
+          const arr = fieldErrors[k];
+          if (Array.isArray(arr)) arr.forEach((m) => flat.push(`${k}: ${m}`));
+        });
+        if (flat.length) message = `${message}. ${flat.join(' | ')}`;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+    $q.notify({ type: 'negative', message });
+  } finally {
+    providerSaving.value = false;
   }
+}
+function resetProviderDialog() {
+  newProviderName.value = '';
+  newProviderAddress.value = '';
+  providerErrors.value = {};
+  providerSaving.value = false;
 }
 
 // ----- Accounts / Types / Currencies -----
@@ -1086,15 +1155,15 @@ function saveTransaction() {
           if (list.length) message = `${message}. ${list.join(' | ')}`;
         } else if (e?.response?.data) {
           const data = e.response.data;
-            if (data.message) message = data.message;
-            if (data.errors && typeof data.errors === 'object') {
-              const list: string[] = [];
-              Object.keys(data.errors).forEach((k) => {
-                const arr = data.errors[k];
-                if (Array.isArray(arr)) arr.forEach((m: string) => list.push(`${k}: ${m}`));
-              });
-              if (list.length) message = `${message}. ${list.join(' | ')}`;
-            }
+          if (data.message) message = data.message;
+          if (data.errors && typeof data.errors === 'object') {
+            const list: string[] = [];
+            Object.keys(data.errors).forEach((k) => {
+              const arr = data.errors[k];
+              if (Array.isArray(arr)) arr.forEach((m: string) => list.push(`${k}: ${m}`));
+            });
+            if (list.length) message = `${message}. ${list.join(' | ')}`;
+          }
         }
       } catch (_) {
         /* ignore parse error */
