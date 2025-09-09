@@ -235,12 +235,9 @@
             </div>
           </div>
 
-          <!-- Impuesto y archivo URL -->
+          <!-- Archivo URL -->
           <div class="row q-col-gutter-sm q-mt-sm">
-            <div class="col-12 col-sm-4">
-              <q-checkbox v-model="form.amount_tax" label="Incluir Impuesto" dense />
-            </div>
-            <div class="col-12 col-sm-8">
+            <div class="col-12">
               <q-input v-model="form.url_file" label="Archivo (URL)" dense filled />
             </div>
           </div>
@@ -300,6 +297,13 @@
                 Subtotal: {{ Number(invoiceSubtotal).toFixed(2) }}
               </div>
             </div>
+            <div class="row q-mt-xs">
+              <div class="col text-right text-negative text-caption" v-if="advancedMismatch">
+                El subtotal ({{ Number(invoiceSubtotal).toFixed(2) }}) no coincide con el monto ({{
+                  Math.abs(Number(form.amount || 0)).toFixed(2)
+                }}).
+              </div>
+            </div>
             <div class="row items-center q-mt-xs text-caption">
               <div class="col text-right">
                 Resultado total
@@ -312,7 +316,7 @@
           <!-- Acciones -->
           <div class="row justify-end q-gutter-sm q-mt-md">
             <q-btn flat label="Cancelar" v-close-popup />
-            <q-btn color="primary" label="Guardar" type="submit" />
+            <q-btn color="primary" label="Guardar" type="submit" :disable="isSaveDisabled" />
           </div>
         </q-form>
       </q-card-section>
@@ -445,7 +449,7 @@ interface TransactionForm {
   id?: number;
   name: string;
   amount: number | null;
-  amount_tax: boolean;
+  // taxes removed (amount_tax per-items later)
   datetime: string;
   provider_id: number | null;
   account_id: number | null;
@@ -458,7 +462,7 @@ interface TransactionForm {
 const initialForm = (): TransactionForm => ({
   name: '',
   amount: null,
-  amount_tax: false,
+  // taxes removed
   datetime: new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 16),
@@ -495,6 +499,8 @@ async function loadTransactionTypes() {
   }
 }
 void loadTransactionTypes();
+
+// taxes deferred: UI and logic removed
 
 // ----- Providers -----
 interface ProviderOption {
@@ -571,7 +577,13 @@ async function addProvider() {
   } catch (err) {
     let message = 'Error al crear proveedor';
     try {
-      const e = err as { response?: { data?: any } };
+      type ApiErrorData = {
+        message?: string;
+        errors?: Record<string, string[]>;
+        data?: Record<string, string[]>;
+      };
+      type AxiosLikeError = { response?: { data?: ApiErrorData | undefined } };
+      const e = err as AxiosLikeError;
       const data = e.response?.data;
       if (data?.message) message = data.message;
       // Field errors may come in data.data or data.errors
@@ -585,7 +597,7 @@ async function addProvider() {
         });
         if (flat.length) message = `${message}. ${flat.join(' | ')}`;
       }
-    } catch (_) {
+    } catch {
       /* ignore */
     }
     $q.notify({ type: 'negative', message });
@@ -841,26 +853,17 @@ function lineTotal(r: InvoiceRow) {
   return Number.isFinite(q) && Number.isFinite(u) ? q * u : 0;
 }
 const invoiceSubtotal = computed(() => invoiceItems.value.reduce((s, r) => s + lineTotal(r), 0));
-watch(
-  () => invoiceSubtotal.value,
-  (sub) => {
-    if (isAdvancedAmount.value) {
-      syncAmountWithInvoice(sub);
-    }
-  }
-);
-watch(
-  () => isAdvancedAmount.value,
-  (on) => {
-    if (on) syncAmountWithInvoice(invoiceSubtotal.value);
-  }
-);
-function syncAmountWithInvoice(sub: number) {
-  const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
-  const slug = (ty?.slug || '').toLowerCase();
-  if (slug === 'expense') form.value.amount = sub > 0 ? -Math.abs(sub) : 0;
-  else form.value.amount = Math.abs(sub);
-}
+// Advanced mode behavior: do NOT modify amount automatically. Require equality to enable save.
+const advancedMismatch = computed(() => {
+  if (!isAdvancedAmount.value) return false;
+  const amtAbs = Math.abs(Number(form.value.amount || 0));
+  const sub = Number(invoiceSubtotal.value) || 0;
+  return Number(amtAbs.toFixed(2)) !== Number(sub.toFixed(2));
+});
+const isSaveDisabled = computed(() => {
+  if (isAdvancedAmount.value && advancedMismatch.value) return true;
+  return false;
+});
 
 // ----- Transfer & currency logic -----
 const originAccount = computed(() =>
@@ -913,7 +916,14 @@ const rateLabel = computed(() => {
   })`;
 });
 
-// Balances
+// taxes UI/logic removed for now
+const needsRateForAccountBalance = computed(
+  () => !isTransfer.value && showRateInput.value && !(Number(form.value.rate || 0) > 0)
+);
+const needsRateForDestBalance = computed(
+  () => isTransfer.value && isCrossCurrency.value && !(Number(form.value.rate || 0) > 0)
+);
+// Restore symbols used in result display from earlier balances section
 const currentBalance = computed(() => {
   const accId = isTransfer.value ? form.value.account_from_id : form.value.account_id;
   const acc = allAccounts.value.find((a) => a.id === accId);
@@ -929,42 +939,6 @@ const destCurrencySymbol = computed(() => destAccount.value?.currencySymbol || '
 const destCurrentBalance = computed(() => destAccount.value?.balance ?? 0);
 const applyRateToTotal = computed(
   () => showRateInput.value && !!form.value.rate && Number(form.value.rate) > 0
-);
-const amountForAccountCurrency = computed(() => {
-  if (isTransfer.value) return Number(form.value.amount || 0);
-  const base = Number(form.value.amount || 0);
-  if (showRateInput.value) {
-    const r = Number(form.value.rate || 0);
-    if (Number.isFinite(r) && r > 0) return base * r;
-  }
-  return base;
-});
-const newBalance = computed(() => {
-  const base = Number(currentBalance.value) || 0;
-  if (isTransfer.value) return base - (Number(form.value.amount || 0) || 0);
-  const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
-  const slug = (ty?.slug || '').toLowerCase();
-  const amt = Number(amountForAccountCurrency.value) || 0;
-  if (slug === 'expense') return base - Math.abs(amt);
-  if (slug === 'income') return base + Math.abs(amt);
-  return base + amt;
-});
-const destNewBalance = computed(() => {
-  if (!isTransfer.value) return Number(destCurrentBalance.value) || 0;
-  const amtRaw = form.value.amount;
-  const amt = typeof amtRaw === 'number' ? amtRaw : Number(amtRaw || 0);
-  const base = Number(destCurrentBalance.value) || 0;
-  const amount = Number.isFinite(amt) ? Math.abs(amt) : 0;
-  if (!isCrossCurrency.value) return base + amount;
-  const r = Number(form.value.rate || 0);
-  if (Number.isFinite(r) && r > 0) return base + amount * r;
-  return base;
-});
-const needsRateForAccountBalance = computed(
-  () => !isTransfer.value && showRateInput.value && !(Number(form.value.rate || 0) > 0)
-);
-const needsRateForDestBalance = computed(
-  () => isTransfer.value && isCrossCurrency.value && !(Number(form.value.rate || 0) > 0)
 );
 const resultCurrencySymbol = computed(() =>
   isTransfer.value
@@ -1073,6 +1047,15 @@ function saveTransaction() {
     $q.notify({ type: 'warning', message: 'Ingresa la tasa de cambio' });
     return;
   }
+  // In advanced mode, enforce that amount equals subtotal (absolute)
+  if (isAdvancedAmount.value) {
+    const amtAbs = Math.abs(Number(form.value.amount || 0));
+    const sub = Number(invoiceSubtotal.value) || 0;
+    if (Number(amtAbs.toFixed(2)) !== Number(sub.toFixed(2))) {
+      $q.notify({ type: 'warning', message: 'El subtotal no coincide con el monto.' });
+      return;
+    }
+  }
   let dateStr = form.value.datetime;
   if (dateStr.includes('T')) dateStr = dateStr.replace('T', ' ');
   if (dateStr.length === 16) dateStr += ':00';
@@ -1106,20 +1089,21 @@ function saveTransaction() {
     payload = {
       name: form.value.name,
       amount: form.value.amount ?? 0,
-      amount_tax: Number(form.value.amount_tax ? 1 : 0),
+      amount_tax: 0,
       date: dateStr,
       provider_id: form.value.provider_id,
       account_id: form.value.account_id,
       transaction_type_id: form.value.transaction_type_id,
       url_file: form.value.url_file || null,
       rate: showRateInput.value ? form.value.rate : null,
+      // taxes removed for now
       items,
     };
   } else {
     payload = {
       name: form.value.name,
       amount: form.value.amount ?? 0,
-      amount_tax: Number(form.value.amount_tax ? 1 : 0),
+      amount_tax: 0,
       date: dateStr,
       provider_id: form.value.provider_id,
       account_from_id: form.value.account_from_id,
@@ -1127,6 +1111,7 @@ function saveTransaction() {
       transaction_type_id: form.value.transaction_type_id,
       url_file: form.value.url_file || null,
       rate: form.value.rate ?? null,
+      // taxes removed for now
     };
   }
   tsStore
@@ -1139,10 +1124,15 @@ function saveTransaction() {
     .catch((err: unknown) => {
       let message = 'Error al crear transacción';
       try {
+        type ApiErrorData = {
+          message?: string;
+          errors?: Record<string, string[]>;
+          data?: Record<string, string[]>;
+        };
         const e = err as {
           isApiError?: boolean;
           api?: { message?: string; errors?: Record<string, string[]> };
-          response?: { data?: any };
+          response?: { data?: ApiErrorData | undefined };
         };
         if (e?.isApiError && e.api) {
           if (e.api.message) message = e.api.message;
@@ -1156,16 +1146,15 @@ function saveTransaction() {
         } else if (e?.response?.data) {
           const data = e.response.data;
           if (data.message) message = data.message;
-          if (data.errors && typeof data.errors === 'object') {
-            const list: string[] = [];
-            Object.keys(data.errors).forEach((k) => {
-              const arr = data.errors[k];
-              if (Array.isArray(arr)) arr.forEach((m: string) => list.push(`${k}: ${m}`));
-            });
-            if (list.length) message = `${message}. ${list.join(' | ')}`;
-          }
+          const errs: Record<string, string[]> = (data?.errors as Record<string, string[]>) ?? {};
+          const list: string[] = [];
+          Object.keys(errs).forEach((k) => {
+            const arr = errs[k];
+            if (Array.isArray(arr)) arr.forEach((m: string) => list.push(`${k}: ${m}`));
+          });
+          if (list.length) message = `${message}. ${list.join(' | ')}`;
         }
-      } catch (_) {
+      } catch {
         /* ignore parse error */
       }
       console.error(err);
