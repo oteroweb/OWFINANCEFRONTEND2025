@@ -1,6 +1,6 @@
 <template>
   <q-dialog v-model="ui.showDialogNewTransaction" @hide="resetForm">
-    <q-card style="min-width: 430px; max-width: 860px" class="q-pa-sm">
+    <q-card :style="cardStyle" class="q-pa-sm">
       <q-card-section class="q-pt-none">
         <div class="row items-center">
           <div class="col">
@@ -255,16 +255,36 @@
             <q-markup-table dense flat bordered class="invoice-table">
               <thead>
                 <tr class="text-caption">
-                  <th style="width: 45%">Item</th>
-                  <th style="width: 15%">Cant</th>
-                  <th style="width: 20%">Precio</th>
-                  <th style="width: 15%">Total</th>
+                  <th style="width: 22%">Categoría</th>
+                  <th style="width: 28%">Producto</th>
+                  <th style="width: 10%">Cant</th>
+                  <th style="width: 15%">Monto</th>
+                  <th style="width: 10%">Exento</th>
+                  <th style="width: 10%">Total</th>
                   <th style="width: 5%"></th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(row, i) in invoiceItems" :key="i" class="text-caption">
-                  <td><q-input v-model="row.item" dense filled /></td>
+                  <td>
+                    <q-select
+                      v-model="row.categoryId"
+                      :options="itemCategoryOptions"
+                      :onFilter="onItemCategoryFilter"
+                      option-value="id"
+                      option-label="name"
+                      emit-value
+                      map-options
+                      dense
+                      filled
+                      use-input
+                      clearable
+                      input-debounce="300"
+                      label="Categoría"
+                      @focus="ensureItemCategoriesLoaded"
+                    />
+                  </td>
+                  <td><q-input v-model="row.item" dense filled label="Producto" /></td>
                   <td><q-input v-model.number="row.quantity" type="number" dense filled /></td>
                   <td>
                     <q-input
@@ -273,6 +293,13 @@
                       step="0.01"
                       dense
                       filled
+                    />
+                  </td>
+                  <td class="text-center">
+                    <q-checkbox
+                      v-model="row.exempt"
+                      dense
+                      @update:model-value="() => onToggleExempt(i)"
                     />
                   </td>
                   <td class="text-right">{{ lineTotal(row).toFixed(2) }}</td>
@@ -499,6 +526,32 @@ async function loadTransactionTypes() {
   }
 }
 void loadTransactionTypes();
+
+// ----- Taxes (fetch only) -----
+type Tax = { id: number; name: string; percent: number; active?: boolean };
+const availableTaxes = ref<Tax[]>([]);
+async function fetchAvailableTaxes() {
+  try {
+    const res = await api.get('/taxes', { params: { user_id: auth.user?.id, active: 1 } });
+    const list = (res.data?.data || res.data) as Array<{
+      id: number;
+      name: string;
+      percent: string | number;
+      active?: boolean;
+    }>;
+    availableTaxes.value = (list || []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      percent: Number(t.percent),
+      ...(typeof t.active === 'boolean' ? { active: t.active } : {}),
+    }));
+    // Optional: small debug note
+    // console.debug('Impuestos cargados:', availableTaxes.value);
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error cargando impuestos' });
+    availableTaxes.value = [];
+  }
+}
 
 // taxes deferred: UI and logic removed
 
@@ -837,20 +890,33 @@ watch(
 );
 
 // ----- Invoice (advanced amount) -----
-type InvoiceRow = { item: string; quantity: number; unitPrice: number; categoryId?: number | null };
+type InvoiceRow = {
+  item: string;
+  quantity: number;
+  unitPrice: number;
+  categoryId?: number | null;
+  exempt?: boolean; // Exento de IVA
+};
 const isAdvancedAmount = ref(false);
-const invoiceItems = ref<InvoiceRow[]>([{ item: '', quantity: 1, unitPrice: 0 }]);
+const invoiceItems = ref<InvoiceRow[]>([{ item: '', quantity: 1, unitPrice: 0, exempt: false }]);
 function addInvoiceRow() {
-  invoiceItems.value.push({ item: '', quantity: 1, unitPrice: 0 });
+  invoiceItems.value.push({ item: '', quantity: 1, unitPrice: 0, exempt: false });
 }
 function removeInvoiceRow(i: number) {
   invoiceItems.value.splice(i, 1);
-  if (!invoiceItems.value.length) invoiceItems.value.push({ item: '', quantity: 1, unitPrice: 0 });
+  if (!invoiceItems.value.length)
+    invoiceItems.value.push({ item: '', quantity: 1, unitPrice: 0, exempt: false });
 }
 function lineTotal(r: InvoiceRow) {
-  const q = Number(r.quantity || 0),
-    u = Number(r.unitPrice || 0);
-  return Number.isFinite(q) && Number.isFinite(u) ? q * u : 0;
+  const q = Number(r.quantity || 0);
+  const u = Number(r.unitPrice || 0);
+  const base = Number.isFinite(q) && Number.isFinite(u) ? q * u : 0;
+  // If item is not exempt and IVA 16% exists, add tax
+  if (!r.exempt && iva16.value) {
+    const pct = Number(iva16.value.percent || 0) / 100;
+    if (pct > 0) return base + base * pct;
+  }
+  return base;
 }
 const invoiceSubtotal = computed(() => invoiceItems.value.reduce((s, r) => s + lineTotal(r), 0));
 // Advanced mode behavior: do NOT modify amount automatically. Require equality to enable save.
@@ -864,6 +930,13 @@ const isSaveDisabled = computed(() => {
   if (isAdvancedAmount.value && advancedMismatch.value) return true;
   return false;
 });
+
+// Dynamic card size: widen when advanced (placed after isAdvancedAmount is declared)
+const cardStyle = computed(() =>
+  isAdvancedAmount.value
+    ? 'min-width: 640px; max-width: 1100px'
+    : 'min-width: 430px; max-width: 860px'
+);
 
 // ----- Transfer & currency logic -----
 const originAccount = computed(() =>
@@ -953,6 +1026,51 @@ const resultTotal = computed(() => {
   return base * r;
 });
 
+// ----- Item categories (for invoice rows) -----
+type ItemCategory = { id: number; name: string };
+const itemCategoryOptions = ref<ItemCategory[]>([]);
+const allItemCategories = ref<ItemCategory[]>([]);
+let itemCategoriesLoaded = false;
+async function ensureItemCategoriesLoaded() {
+  if (itemCategoriesLoaded) return;
+  try {
+    const res = await api.get('/item_categories', {
+      params: { order_by: 'name', order_dir: 'asc' },
+    });
+    const data = (res.data?.data || res.data) as ItemCategory[];
+    allItemCategories.value = data || [];
+    itemCategoryOptions.value = data || [];
+    itemCategoriesLoaded = true;
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error cargando categorías de item' });
+    itemCategoriesLoaded = false;
+  }
+}
+function onItemCategoryFilter(val: string, done: (cb: () => void) => void) {
+  const needle = (val || '').toLowerCase();
+  done(() => {
+    itemCategoryOptions.value = !needle
+      ? allItemCategories.value
+      : allItemCategories.value.filter((o) => (o.name || '').toLowerCase().includes(needle));
+  });
+}
+
+// ----- IVA anchoring (Exento toggle) -----
+// If row.exempt is false (no exento) and we recognize an IVA 16% in availableTaxes, we could tag it here for a future per-item tax payload.
+const iva16 = computed(() => {
+  const list = availableTaxes.value || [];
+  // heuristics: name includes 'iva' and percent == 16
+  return (
+    list.find((t) => (t.name || '').toLowerCase().includes('iva') && Number(t.percent) === 16) ||
+    null
+  );
+});
+function onToggleExempt() {
+  // For now we only keep the flag at row level; per-item tax payload can be added later.
+  // Touch computed to avoid unused warning and as future hook
+  void iva16.value;
+}
+
 // Watchers (sign & type)
 watch(
   () => form.value.amount,
@@ -1003,6 +1121,16 @@ watch(
   }
 );
 
+// Preload categories and taxes when entering advanced mode
+watch(
+  () => isAdvancedAmount.value,
+  async (on) => {
+    if (on) {
+      await Promise.allSettled([ensureItemCategoriesLoaded(), fetchAvailableTaxes()]);
+    }
+  }
+);
+
 // Open by query (?new)
 function openIfNewFlag() {
   if (route.query.new != null) {
@@ -1016,6 +1144,15 @@ onMounted(() => openIfNewFlag());
 watch(
   () => route.query.new,
   () => openIfNewFlag()
+);
+
+// Fetch available taxes whenever the dialog opens
+watch(
+  () => ui.showDialogNewTransaction,
+  (open) => {
+    if (open) void fetchAvailableTaxes();
+  },
+  { immediate: false }
 );
 
 // Save
@@ -1077,11 +1214,30 @@ function saveTransaction() {
         $q.notify({ type: 'warning', message: 'Agrega al menos una línea válida' });
         return;
       }
-      items = valid.map((r) => ({
-        name: r.name,
-        amount: r.qty * r.price,
-        category_id: r.category_id,
-      }));
+      items = valid.map((r) => {
+        const base = r.qty * r.price;
+        const addTax = (() => {
+          if (invoiceItems.value.length) {
+            // Find the corresponding row by matching fields; fallback to global IVA
+            const row = invoiceItems.value.find(
+              (it) =>
+                (it.item || 'Item') === r.name &&
+                Number(it.quantity || 0) === r.qty &&
+                Number(it.unitPrice || 0) === r.price
+            );
+            if (row && !row.exempt && iva16.value) {
+              const pct = Number(iva16.value.percent || 0) / 100;
+              return pct > 0 ? base * pct : 0;
+            }
+          }
+          return 0;
+        })();
+        return {
+          name: r.name,
+          amount: base + addTax,
+          category_id: r.category_id,
+        } as ItemPayload;
+      });
     } else {
       const amtAbs = Math.abs(Number(form.value.amount || 0));
       items = [{ name: form.value.name || 'Item', amount: amtAbs, category_id: null }];
@@ -1167,13 +1323,6 @@ function resetForm() {
   isAdvancedAmount.value = false;
   invoiceItems.value = [{ item: '', quantity: 1, unitPrice: 0 }];
 }
-</script>
-
-<script lang="ts">
-import { defineComponent } from 'vue';
-const Comp = defineComponent({ name: 'TransactionCreateDialog' });
-export default Comp;
-export const TransactionCreateDialog = Comp;
 </script>
 
 <style scoped>
