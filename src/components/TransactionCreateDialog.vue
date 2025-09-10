@@ -321,7 +321,13 @@
                 <q-btn dense flat icon="add" label="Agregar línea" @click="addInvoiceRow" />
               </div>
               <div class="col text-right text-caption">
-                Subtotal: {{ Number(invoiceSubtotal).toFixed(2) }}
+                <div>Subtotal (sin IVA): {{ Number(invoiceBaseSubtotal).toFixed(2) }}</div>
+                <div>
+                  Impuesto
+                  <span v-if="iva16">(IVA {{ Number(iva16.percent).toFixed(0) }}%)</span>:
+                  {{ Number(invoiceTaxTotal).toFixed(2) }}
+                </div>
+                <div>Subtotal con IVA: {{ Number(invoiceSubtotal).toFixed(2) }}</div>
               </div>
             </div>
             <div class="row q-mt-xs">
@@ -918,7 +924,25 @@ function lineTotal(r: InvoiceRow) {
   }
   return base;
 }
-const invoiceSubtotal = computed(() => invoiceItems.value.reduce((s, r) => s + lineTotal(r), 0));
+const invoiceBaseSubtotal = computed(() =>
+  invoiceItems.value.reduce((s, r) => {
+    const q = Number(r.quantity || 0);
+    const u = Number(r.unitPrice || 0);
+    return s + (Number.isFinite(q) && Number.isFinite(u) ? q * u : 0);
+  }, 0)
+);
+const invoiceTaxTotal = computed(() => {
+  const taxPct = iva16.value ? Number(iva16.value.percent || 0) / 100 : 0;
+  if (taxPct <= 0) return 0;
+  return invoiceItems.value.reduce((s, r) => {
+    if (r.exempt) return s;
+    const q = Number(r.quantity || 0);
+    const u = Number(r.unitPrice || 0);
+    const base = Number.isFinite(q) && Number.isFinite(u) ? q * u : 0;
+    return s + base * taxPct;
+  }, 0);
+});
+const invoiceSubtotal = computed(() => invoiceBaseSubtotal.value + invoiceTaxTotal.value);
 // Advanced mode behavior: do NOT modify amount automatically. Require equality to enable save.
 const advancedMismatch = computed(() => {
   if (!isAdvancedAmount.value) return false;
