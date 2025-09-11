@@ -158,7 +158,14 @@ export default defineComponent({
     // Optional: nodes provided directly from parent
     nodes: { type: Array as PropType<unknown[]>, default: null },
   },
-  emits: ['create-category', 'create-folder', 'move-node', 'delete-category', 'edit-category'],
+  emits: [
+    'create-category',
+    'create-folder',
+    'move-node',
+    'delete-category',
+    'edit-category',
+    'select-node',
+  ],
   setup(props, { emit, expose }) {
     const tree = ref<TreeNode[]>([
       { id: 'root', label: 'Categorías', type: 'folder', children: [] },
@@ -349,6 +356,8 @@ export default defineComponent({
     function onSelect(node: TreeNode) {
       selectedNodeId.value = node.id;
       selectedIsCategory.value = node.id !== 'root' && node.type === 'category';
+      // Always notify parent of selection (even in readonly mode) so it can react
+      emit('select-node', { id: node.id, label: node.label, type: node.type });
     }
 
     function onRequestDeleteCategory() {

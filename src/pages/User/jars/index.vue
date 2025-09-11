@@ -2,10 +2,42 @@
   <q-page padding>
     <q-card flat bordered>
       <q-card-section class="header-grid">
-        <div>
+        <div class="header-title">
           <div class="text-h6">Mis Cántaros</div>
           <div class="text-caption text-grey-7">
             Distribuye y visualiza tus porcentajes por frascos
+          </div>
+          <div
+            v-if="
+              !hasFixedJar &&
+              hasActivePercentJars &&
+              totalPercentage !== 100 &&
+              !isExactlyOnePercent100()
+            "
+            class="text-caption text-negative q-mt-xs"
+          >
+            Ajusta los porcentajes al 100% para guardar
+          </div>
+        </div>
+        <!-- barra horizontal centrada -->
+        <div class="header-bar-col">
+          <div
+            class="jar-hbar"
+            :class="{ warn: !hasFixedJar && hasActivePercentJars && totalPercentage !== 100 }"
+            aria-label="Resumen de porcentajes de cántaros"
+          >
+            <div class="jar-hbar__bar">
+              <div class="jar-hbar__stack">
+                <div
+                  v-for="seg in hbarSegments"
+                  :key="seg.key"
+                  :class="['jar-hbar__seg', { empty: seg.key === 'empty' }]"
+                  :style="{ width: seg.width + '%', backgroundColor: seg.color }"
+                >
+                  <q-tooltip>{{ seg.tooltip }}</q-tooltip>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <!-- acciones a la derecha -->
@@ -27,17 +59,6 @@
             :loading="saving"
             :disable="saveDisabled"
           />
-          <div
-            v-if="
-              !hasFixedJar &&
-              hasActivePercentJars &&
-              totalPercentage !== 100 &&
-              !isExactlyOnePercent100()
-            "
-            class="text-caption text-negative q-ml-sm"
-          >
-            Ajusta los porcentajes al 100% para guardar
-          </div>
           <div
             class="text-subtitle2 q-ml-md"
             :class="{
@@ -683,6 +704,34 @@ const hasFixedJar = computed(() =>
 const hasActivePercentJars = computed(() =>
   (jarElements.value || []).some((j) => j.type === 'percent' && (j.active ?? true))
 );
+
+// Segments for horizontal bar: active percent jars, plus empty remainder up to 100%
+const hbarSegments = computed(() => {
+  const segs = (jarElements.value || [])
+    .filter((j) => j.type === 'percent' && (j.active ?? true))
+    .map((j) => ({
+      key: j.uid,
+      width: Math.max(0, Math.min(100, Number(j.percent) || 0)),
+      color: getJarColor(j),
+      tooltip: `${j.name}: ${Math.round(Number(j.percent) || 0)}%`,
+    }));
+  // Normalize if sum > 100 to avoid overflow
+  const sum = segs.reduce((s, x) => s + x.width, 0);
+  if (sum > 100) {
+    const k = 100 / sum;
+    segs.forEach((s) => (s.width = Math.round(s.width * k * 100) / 100));
+  }
+  const remainder = Math.max(0, 100 - segs.reduce((s, x) => s + x.width, 0));
+  if (remainder >= 0.5) {
+    segs.push({
+      key: 'empty',
+      width: Math.round(remainder * 100) / 100,
+      color: 'rgba(0,0,0,0.08)',
+      tooltip: `Libre: ${Math.round(remainder)}%`,
+    });
+  }
+  return segs;
+});
 
 function onPercentChange() {
   // Clamp between 0-100 and round to int for percent jars only
@@ -1705,9 +1754,16 @@ watch(
 /* Header layout */
 .header-grid {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(280px, 1fr) auto;
   align-items: center;
   gap: 12px;
+}
+.header-title {
+  min-width: 0;
+}
+.header-bar-col {
+  display: flex;
+  justify-content: center;
 }
 .header-actions {
   display: inline-grid;
@@ -1715,6 +1771,70 @@ watch(
   grid-auto-columns: max-content;
   gap: 8px;
   align-items: center;
+}
+
+/* Horizontal jars bar */
+.jar-hbar { /* center column bar */
+  width: 100%;
+  max-width: 520px;
+}
+.jar-hbar.warn .jar-hbar__bar {
+  outline: 2px dashed rgba(255, 152, 0, 0.6);
+  outline-offset: 2px;
+}
+.jar-hbar__bar {
+  height: 28px; /* thicker bar */
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.jar-hbar__stack {
+  display: flex;
+  height: 100%;
+}
+.jar-hbar__seg {
+  height: 100%;
+  position: relative;
+}
+.jar-hbar__seg + .jar-hbar__seg {
+  border-left: 1px solid rgba(255, 255, 255, 0.3); /* soft separator */
+}
+.jar-hbar__seg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.14) 0px,
+    rgba(255, 255, 255, 0.14) 6px,
+    rgba(255, 255, 255, 0.0) 6px,
+    rgba(255, 255, 255, 0.0) 12px
+  );
+}
+.jar-hbar__seg.empty::before {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.08) 0px,
+    rgba(0, 0, 0, 0.08) 6px,
+    rgba(0, 0, 0, 0.0) 6px,
+    rgba(0, 0, 0, 0.0) 12px
+  );
+}
+
+@media (max-width: 1023px) {
+  .header-grid {
+    grid-template-columns: 1fr;
+    grid-row-gap: 8px;
+  }
+  .header-bar-col {
+    order: 2;
+  }
+  .header-actions {
+    order: 3;
+    justify-self: start;
+  }
 }
 
 /* 70/30 grid layout for main (jars) and aside (categories) */

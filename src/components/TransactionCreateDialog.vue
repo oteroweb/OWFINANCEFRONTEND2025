@@ -23,6 +23,31 @@
             inline
           />
 
+          <!-- Categoría de la transacción (simple: lista plana de todas las categorías) -->
+          <div v-if="!isTransfer && !isAdvancedAmount" class="row q-col-gutter-sm q-mt-sm">
+            <div class="col">
+              <q-select
+                v-model="simpleCategoryId"
+                :options="txnCategoryOptions"
+                :onFilter="onTxnCategoryFilter"
+                option-value="id"
+                option-label="name"
+                emit-value
+                map-options
+                filled
+                dense
+                use-input
+                clearable
+                input-debounce="300"
+                label="Categoría"
+                @focus="ensureTxnCategoriesLoaded"
+              />
+            </div>
+            <div class="col-auto">
+              <q-btn dense outline color="primary" label="Ver todas" @click="openTxnCatsDialog" />
+            </div>
+          </div>
+
           <!-- Proveedor -->
           <q-select
             v-model="form.provider_id"
@@ -69,43 +94,165 @@
 
           <!-- Cuentas (no transfer) -->
           <div v-if="!isTransfer" class="q-mt-sm">
-            <q-select
-              v-model="form.account_id"
-              :options="accountOptions"
-              :onFilter="onAccountFilter"
-              option-value="id"
-              :option-label="accountLabel"
-              emit-value
-              map-options
-              filled
-              dense
-              use-input
-              clearable
-              input-debounce="300"
-              label="Cuenta"
-              @focus="ensureAccountsLoaded"
-            >
-              <template #append>
-                <q-btn flat dense icon="add" @click.stop="showAddAccountDialog = true" />
-              </template>
-              <template #no-option="scope">
-                <q-item clickable @click="triggerAddAccountDialog(scope.inputValue)">
-                  <q-item-section>Crear nueva "{{ scope.inputValue }}"</q-item-section>
-                </q-item>
-              </template>
-            </q-select>
-            <div
-              v-if="form.account_id"
-              class="row items-center q-pt-xs q-pl-xs q-pr-xs text-caption"
-            >
+            <div class="row items-center">
               <div class="col">
-                Saldo actual: {{ currencySymbol }}{{ Number(currentBalance).toFixed(2) }}
+                <q-toggle
+                  v-model="isAdvancedPayment"
+                  label="Pago avanzado (múltiples cuentas)"
+                  dense
+                />
               </div>
-              <div class="col text-right">
-                <template v-if="needsRateForAccountBalance">Saldo después: requiere tasa</template>
-                <template v-else
-                  >Saldo después: {{ currencySymbol }}{{ Number(newBalance).toFixed(2) }}</template
-                >
+            </div>
+            <div v-if="!isAdvancedPayment">
+              <q-select
+                v-model="form.account_id"
+                :options="accountOptions"
+                :onFilter="onAccountFilter"
+                option-value="id"
+                :option-label="accountLabel"
+                emit-value
+                map-options
+                filled
+                dense
+                use-input
+                clearable
+                input-debounce="300"
+                label="Cuenta"
+                @focus="ensureAccountsLoaded"
+              >
+                <template #append>
+                  <q-btn flat dense icon="add" @click.stop="showAddAccountDialog = true" />
+                </template>
+                <template #no-option="scope">
+                  <q-item clickable @click="triggerAddAccountDialog(scope.inputValue)">
+                    <q-item-section>Crear nueva "{{ scope.inputValue }}"</q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <div
+                v-if="form.account_id"
+                class="row items-center q-pt-xs q-pl-xs q-pr-xs text-caption"
+              >
+                <div class="col">
+                  Saldo actual: {{ currencySymbol }}{{ Number(currentBalance).toFixed(2) }}
+                </div>
+                <div class="col text-right">
+                  <template v-if="needsRateForAccountBalance"
+                    >Saldo después: requiere tasa</template
+                  >
+                  <template v-else
+                    >Saldo después: {{ currencySymbol
+                    }}{{ Number(newBalance).toFixed(2) }}</template
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Advanced Payments -->
+            <div v-else class="q-mt-sm">
+              <q-markup-table dense flat bordered>
+                <thead>
+                  <tr class="text-caption">
+                    <th style="width: 26%">Cuenta</th>
+                    <th style="width: 16%">Monto</th>
+                    <th style="width: 18%">Tasa</th>
+                    <th style="width: 20%">Impuesto</th>
+                    <th style="width: 12%">Resultado</th>
+                    <th style="width: 8%"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(p, i) in payments" :key="i" class="text-caption">
+                    <td>
+                      <q-select
+                        :key="'pay-acc-' + i + '-' + paymentsAccountsKey"
+                        v-model="p.account_id"
+                        :options="paymentRowOptions[i] || paymentAccountOptions(i)"
+                        :onFilter="(val, done) => onPaymentAccountFilter(i, val, done)"
+                        option-value="id"
+                        :option-label="accountLabel"
+                        emit-value
+                        map-options
+                        dense
+                        filled
+                        use-input
+                        clearable
+                        input-debounce="300"
+                        label="Cuenta"
+                        @focus="ensureAccountsLoaded"
+                      />
+                    </td>
+                    <td>
+                      <q-input v-model.number="p.amount" type="number" step="0.01" dense filled />
+                    </td>
+                    <td>
+                      <div class="row items-center no-wrap">
+                        <div class="col">
+                          <q-input
+                            v-model.number="p.rate"
+                            type="number"
+                            step="0.0001"
+                            dense
+                            filled
+                            :label="rowRateLabel(p)"
+                            :disable="!rowNeedsRate(p)"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="row items-center q-col-gutter-xs">
+                        <div class="col-auto">
+                          <q-checkbox v-model="p.applyTax" dense />
+                        </div>
+                        <div class="col">
+                          <q-select
+                            v-model="p.tax_id"
+                            :options="taxSelectOptions"
+                            option-value="id"
+                            option-label="name"
+                            emit-value
+                            map-options
+                            dense
+                            filled
+                            clearable
+                            :disable="!p.applyTax"
+                            label="Impuesto"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-right">
+                      {{ Number(rowTotalBase(p)).toFixed(2) }}
+                    </td>
+                    <td>
+                      <q-btn
+                        flat
+                        dense
+                        round
+                        icon="close"
+                        color="negative"
+                        @click="removePayment(i)"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </q-markup-table>
+              <div class="row items-center q-mt-xs">
+                <div class="col-auto">
+                  <q-btn dense flat icon="add" label="Agregar pago" @click="addPayment" />
+                </div>
+                <div class="col text-right text-caption">
+                  <div>
+                    Total pagos ({{ userCurrencyCode || 'Base' }}):
+                    {{ Number(paymentsTotalBase).toFixed(2) }}
+                  </div>
+                  <div v-if="paymentsMismatch" class="text-negative">
+                    Debe coincidir con el monto absoluto ({{
+                      Math.abs(Number(form.amount || 0)).toFixed(2)
+                    }})
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -296,11 +443,7 @@
                     />
                   </td>
                   <td class="text-center">
-                    <q-checkbox
-                      v-model="row.exempt"
-                      dense
-                      @update:model-value="() => onToggleExempt(i)"
-                    />
+                    <q-checkbox v-model="row.exempt" dense @update:model-value="onToggleExempt" />
                   </td>
                   <td class="text-right">{{ lineTotal(row).toFixed(2) }}</td>
                   <td>
@@ -349,7 +492,12 @@
           <!-- Acciones -->
           <div class="row justify-end q-gutter-sm q-mt-md">
             <q-btn flat label="Cancelar" v-close-popup />
-            <q-btn color="primary" label="Guardar" type="submit" :disable="isSaveDisabled" />
+            <q-btn
+              color="primary"
+              label="Guardar"
+              type="submit"
+              :disable="isSaveDisabled || (isAdvancedPayment && paymentsMismatch)"
+            />
           </div>
         </q-form>
       </q-card-section>
@@ -456,6 +604,34 @@
       </q-card-actions>
     </q-card>
   </q-dialog>
+
+  <!-- Dialog: seleccionar categoría desde árbol -->
+  <q-dialog v-model="showTxnCatsDialog">
+    <q-card
+      style="
+        min-width: 520px;
+        max-width: 880px;
+        width: 90vw;
+        height: 70vh;
+        display: flex;
+        flex-direction: column;
+      "
+    >
+      <q-card-section class="row items-center q-pb-none">
+        <div class="col text-h6">Seleccionar categoría</div>
+        <div class="col-auto">
+          <q-btn dense round flat icon="close" v-close-popup />
+        </div>
+      </q-card-section>
+      <q-card-section class="q-pt-sm" style="flex: 1 1 auto; min-height: 300px">
+        <CategoriesTree
+          :readonly="true"
+          :nodes="categoriesTreeNodes"
+          @select-node="onCatsTreeSelect"
+        />
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup lang="ts">
@@ -467,6 +643,7 @@ import { useTransactionsStore } from 'stores/transactions';
 import { useTransactionTypesStore, type TransactionType } from 'stores/transactionTypes';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import CategoriesTree from './CategoriesTree.vue';
 defineOptions({ name: 'TransactionCreateDialog' });
 
 const ui = useUiStore();
@@ -993,6 +1170,7 @@ const isCrossCurrency = computed(() => {
 const selectedAccountCurrencyId = computed(() => selectedAccount.value?.currencyId ?? null);
 const selectedAccountCurrencyCode = computed(() => selectedAccount.value?.currencyCode ?? null);
 const showRateInput = computed(() => {
+  if (!isTransfer.value && isAdvancedPayment.value) return false; // rate per-row in advanced payments
   if (isTransfer.value) return isCrossCurrency.value;
   const uid = userCurrencyId.value,
     aid = selectedAccountCurrencyId.value;
@@ -1050,11 +1228,162 @@ const resultTotal = computed(() => {
   return base * r;
 });
 
+// Projected balances after transaction
+const newBalance = computed(() => {
+  const amt = Number(form.value.amount || 0);
+  const bal = Number(currentBalance.value || 0);
+  const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
+  const slug = (ty?.slug || '').toLowerCase();
+  if (slug === 'transfer') return bal - Math.abs(amt);
+  if (slug === 'income') return bal + Math.abs(amt);
+  if (slug === 'expense') return bal - Math.abs(amt);
+  return bal;
+});
+const destNewBalance = computed(() => {
+  if (!(form.value.account_to_id && form.value.amount != null)) return destCurrentBalance.value;
+  const curr = destCurrentBalance.value;
+  if (!isCrossCurrency.value) return curr + Math.abs(Number(form.value.amount || 0));
+  const r = Number(form.value.rate || 0);
+  if (!(r > 0)) return curr; // needs rate
+  return curr + Math.abs(Number(form.value.amount || 0)) * r;
+});
+
+// ----- Advanced Payments (multiple accounts) -----
+type PaymentRow = {
+  account_id: number | null;
+  amount: number | null; // in account currency
+  rate: number | null; // to user base currency when needed
+  applyTax: boolean;
+  tax_id: number | null;
+  note?: string | null;
+};
+const isAdvancedPayment = ref(false);
+const payments = ref<PaymentRow[]>([
+  { account_id: null, amount: null, rate: null, applyTax: false, tax_id: null, note: null },
+]);
+const taxSelectOptions = computed(() =>
+  (availableTaxes.value || []).map((t) => ({
+    id: t.id,
+    name: `${t.name} (${t.percent}%)`,
+    percent: t.percent,
+  }))
+);
+function addPayment() {
+  payments.value.push({
+    account_id: null,
+    amount: null,
+    rate: null,
+    applyTax: false,
+    tax_id: null,
+    note: null,
+  });
+}
+function removePayment(i: number) {
+  payments.value.splice(i, 1);
+  if (!payments.value.length) addPayment();
+}
+// reactive cleanups
+watch(
+  () => payments.value.map((p) => p.account_id),
+  () => {
+    // when a payment no longer needs a rate, clear it
+    payments.value.forEach((p) => {
+      if (!p) return;
+      if (!rowNeedsRate(p)) p.rate = null;
+    });
+  }
+);
+watch(
+  () => payments.value.map((p) => p.applyTax),
+  () => {
+    payments.value.forEach((p) => {
+      if (!p) return;
+      if (!p.applyTax) p.tax_id = null;
+    });
+  }
+);
+function rowAccount(i: number | PaymentRow) {
+  const accId = typeof i === 'number' ? payments.value[i]?.account_id : i.account_id;
+  return allAccounts.value.find((a) => a.id === accId) || null;
+}
+function paymentAccountOptions(index: number) {
+  const chosenIds = new Set<number>(
+    payments.value
+      .map((p, i) => (i === index ? null : p?.account_id))
+      .filter((v): v is number => typeof v === 'number')
+  );
+  return allAccounts.value.filter((a) => !chosenIds.has(a.id));
+}
+function rowNeedsRate(p: PaymentRow) {
+  const acc = rowAccount(p);
+  const uid = userCurrencyId.value;
+  const aid = acc?.currencyId ?? null;
+  if (uid && aid) return uid !== aid;
+  const ucode = userCurrencyCode.value;
+  const acode = acc?.currencyCode;
+  if (ucode && acode) return ucode !== acode;
+  return false;
+}
+function rowRateLabel(p: PaymentRow) {
+  const acc = rowAccount(p);
+  const from = acc?.currencyCode || 'Cuenta';
+  const to = userCurrencyCode.value || 'Usuario';
+  return `Tasa (${from}→${to})`;
+}
+function rowTaxPercent(p: PaymentRow): number {
+  if (!p.applyTax || !p.tax_id) return 0;
+  const tax = availableTaxes.value.find((t) => t.id === p.tax_id);
+  return tax ? Number(tax.percent || 0) : 0;
+}
+function rowTotalBase(p: PaymentRow): number {
+  const amt = Math.abs(Number(p.amount || 0));
+  if (!Number.isFinite(amt) || amt <= 0) return 0;
+  const pct = rowTaxPercent(p);
+  const withTax = amt * (1 + pct / 100);
+  const needs = rowNeedsRate(p);
+  const r = needs ? Number(p.rate || 0) : 1;
+  if (needs && !(r > 0)) return 0;
+  return withTax * r;
+}
+const paymentsTotalBase = computed(() => payments.value.reduce((s, p) => s + rowTotalBase(p), 0));
+const paymentsMismatch = computed(() => {
+  const target = Math.abs(Number(form.value.amount || 0));
+  return Number(paymentsTotalBase.value.toFixed(2)) !== Number(target.toFixed(2));
+});
+// key to force per-row select refresh when selected accounts set changes
+const paymentsAccountsKey = computed(() =>
+  payments.value.map((p) => (typeof p?.account_id === 'number' ? p.account_id : 'n')).join('|')
+);
+// per-row options cache for filtering
+const paymentRowOptions = ref<Record<number, AccountOption[]>>({});
+function onPaymentAccountFilter(index: number, val: string, done: (cb: () => void) => void) {
+  const needle = (val || '').toLowerCase();
+  const base = paymentAccountOptions(index);
+  const filtered = !needle
+    ? base
+    : base.filter((a) => {
+        const name = (a.name || '').toLowerCase();
+        const code = (a.currencyCode || '').toLowerCase();
+        return name.includes(needle) || code.includes(needle);
+      });
+  done(() => {
+    paymentRowOptions.value = { ...paymentRowOptions.value, [index]: filtered };
+  });
+}
+watch(
+  () => paymentsAccountsKey.value,
+  () => {
+    // clear caches so options recompute after account changes
+    paymentRowOptions.value = {};
+  }
+);
+
 // ----- Item categories (for invoice rows) -----
 type ItemCategory = { id: number; name: string };
 const itemCategoryOptions = ref<ItemCategory[]>([]);
 const allItemCategories = ref<ItemCategory[]>([]);
 let itemCategoriesLoaded = false;
+const simpleCategoryId = ref<number | null>(null);
 async function ensureItemCategoriesLoaded() {
   if (itemCategoriesLoaded) return;
   try {
@@ -1079,6 +1408,148 @@ function onItemCategoryFilter(val: string, done: (cb: () => void) => void) {
   });
 }
 
+// ----- Transaction categories (categories tree for simple selector) -----
+type TxnCategoryNode = {
+  id: number | string;
+  name: string;
+  type?: 'folder' | 'category';
+  children?: TxnCategoryNode[];
+};
+type TxnCategoryOption = {
+  id: number | string;
+  name: string;
+  rawName?: string;
+};
+const allTxnCategoriesTree = ref<TxnCategoryNode[] | null>(null);
+const allTxnCategoriesFlat = ref<TxnCategoryOption[]>([]);
+const txnCategoryOptions = ref<TxnCategoryOption[]>([]);
+
+async function ensureTxnCategoriesLoaded() {
+  if (allTxnCategoriesTree.value) return;
+  try {
+    // Use the categories tree with user_id and flatten as: "Nombre (Padre)"
+    const res = await api.get('/categories/tree', { params: { user_id: auth.user?.id } });
+    // Shape example from backend: { status, code, data: { nodes: [...] } }
+    const pickNodes = (v: unknown): unknown => {
+      const obj = safeObj(v);
+      if (obj) {
+        const data = safeObj((obj as { data?: unknown }).data);
+        const dataNodes = data ? (data as { nodes?: unknown }).nodes : undefined;
+        if (Array.isArray(dataNodes)) return dataNodes;
+        const nodes = (obj as { nodes?: unknown }).nodes;
+        if (Array.isArray(nodes)) return nodes;
+      }
+      return [];
+    };
+    const nodesUnknown = pickNodes(res.data);
+    type UnknownNode = {
+      id?: unknown;
+      name?: unknown;
+      label?: unknown;
+      type?: unknown;
+      children?: unknown;
+    };
+    const isUnknownNodeArray = (v: unknown): v is UnknownNode[] => Array.isArray(v);
+    const toNodes = (arr: UnknownNode[]): TxnCategoryNode[] =>
+      (arr || []).map((n) => {
+        const id = typeof n.id === 'number' || typeof n.id === 'string' ? n.id : String(n.id);
+        const nm =
+          typeof n.name === 'string' ? n.name : typeof n.label === 'string' ? n.label : String(id);
+        const childrenUnknown =
+          n.children && Array.isArray(n.children) ? (n.children as UnknownNode[]) : [];
+        const kids = toNodes(childrenUnknown);
+        const inferredType: 'folder' | 'category' =
+          typeof n.type === 'string' && (n.type === 'folder' || n.type === 'category')
+            ? n.type
+            : kids.length
+            ? 'folder'
+            : 'category';
+        return { id, name: nm, type: inferredType, children: kids };
+      });
+    const rootChildren: TxnCategoryNode[] = isUnknownNodeArray(nodesUnknown)
+      ? toNodes(nodesUnknown)
+      : toNodes(
+          typeof (nodesUnknown as Record<string, unknown> | null)?.children !== 'undefined' &&
+            Array.isArray((nodesUnknown as Record<string, unknown>).children)
+            ? (nodesUnknown as { children: UnknownNode[] }).children
+            : []
+        );
+    allTxnCategoriesTree.value = rootChildren;
+    flattenTxnCategories();
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error cargando categorías de transacción' });
+    allTxnCategoriesTree.value = [];
+    allTxnCategoriesFlat.value = [];
+    txnCategoryOptions.value = [];
+  }
+}
+
+function flattenTxnCategories() {
+  const flat: TxnCategoryOption[] = [];
+  function walk(nodes: TxnCategoryNode[], parent: TxnCategoryNode | null) {
+    for (const n of nodes) {
+      const isFolder = (n.type || 'category') === 'folder';
+      if (!isFolder) {
+        const parentName = parent ? parent.name : null;
+        const label = parentName ? `${n.name} (${parentName})` : n.name;
+        const raw = parentName ? `${n.name} ${parentName}` : n.name;
+        flat.push({ id: n.id, name: label, rawName: raw });
+      }
+      if (n.children?.length) walk(n.children, n);
+    }
+  }
+  walk(allTxnCategoriesTree.value || [], null);
+  allTxnCategoriesFlat.value = flat;
+  txnCategoryOptions.value = flat.slice();
+}
+
+function onTxnCategoryFilter(val: string, done: (cb: () => void) => void) {
+  const needle = (val || '').toLowerCase();
+  const base = allTxnCategoriesFlat.value;
+  const filtered = !needle
+    ? base
+    : base.filter((o) => (o.rawName || o.name).toLowerCase().includes(needle));
+  done(() => {
+    txnCategoryOptions.value = filtered;
+  });
+}
+
+// Categories dialog integration
+const showTxnCatsDialog = ref(false);
+const categoriesTreeNodes = computed(() => {
+  type TreeInput = {
+    id: string | number;
+    label: string;
+    type?: 'folder' | 'category';
+    icon?: string | null;
+    children?: TreeInput[];
+  };
+  const mapNodes = (ns: TxnCategoryNode[] | null | undefined): TreeInput[] => {
+    if (!ns || !ns.length) return [];
+    return ns.map((n) => ({
+      id: n.id,
+      label: n.name,
+      type: (n.type as 'folder' | 'category') || 'category',
+      children: mapNodes(n.children || []),
+    }));
+  };
+  return mapNodes(allTxnCategoriesTree.value);
+});
+function openTxnCatsDialog() {
+  void ensureTxnCategoriesLoaded();
+  showTxnCatsDialog.value = true;
+}
+function onCatsTreeSelect(payload: {
+  id: string | number;
+  label: string;
+  type: 'folder' | 'category';
+}) {
+  if (payload && payload.type === 'category') {
+    simpleCategoryId.value = Number(payload.id);
+    showTxnCatsDialog.value = false;
+  }
+}
+
 // ----- IVA anchoring (Exento toggle) -----
 // If row.exempt is false (no exento) and we recognize an IVA 16% in availableTaxes, we could tag it here for a future per-item tax payload.
 const iva16 = computed(() => {
@@ -1094,6 +1565,16 @@ function onToggleExempt() {
   // Touch computed to avoid unused warning and as future hook
   void iva16.value;
 }
+
+// Ensure required data when enabling advanced payments
+watch(
+  () => isAdvancedPayment.value,
+  async (v) => {
+    if (v) {
+      await Promise.allSettled([ensureAccountsLoaded(), fetchAvailableTaxes()]);
+    }
+  }
+);
 
 // Watchers (sign & type)
 watch(
@@ -1204,6 +1685,42 @@ function saveTransaction() {
     $q.notify({ type: 'warning', message: 'Selecciona una cuenta' });
     return;
   }
+  // Advanced payments validation for non-transfer
+  if (slug !== 'transfer' && isAdvancedPayment.value) {
+    // disallow duplicate accounts
+    const seen = new Set<number>();
+    for (const p of payments.value) {
+      if (typeof p?.account_id === 'number') {
+        if (seen.has(p.account_id)) {
+          $q.notify({ type: 'warning', message: 'Cada pago debe usar una cuenta diferente.' });
+          return;
+        }
+        seen.add(p.account_id);
+      }
+    }
+    for (let i = 0; i < payments.value.length; i++) {
+      const p = payments.value[i];
+      if (!p) {
+        $q.notify({ type: 'warning', message: `Pago #${i + 1}: fila inválida.` });
+        return;
+      }
+      if (!p.account_id || !p.amount || !(Number(p.amount) > 0)) {
+        $q.notify({ type: 'warning', message: `Pago #${i + 1}: cuenta y monto son requeridos.` });
+        return;
+      }
+      if (rowNeedsRate(p as PaymentRow) && !(Number(p.rate || 0) > 0)) {
+        $q.notify({
+          type: 'warning',
+          message: `Pago #${i + 1}: tasa requerida por moneda distinta.`,
+        });
+        return;
+      }
+    }
+    if (paymentsMismatch.value) {
+      $q.notify({ type: 'warning', message: 'La suma de pagos no coincide con el monto.' });
+      return;
+    }
+  }
   if (showRateInput.value && (!form.value.rate || Number(form.value.rate) <= 0)) {
     $q.notify({ type: 'warning', message: 'Ingresa la tasa de cambio' });
     return;
@@ -1221,7 +1738,30 @@ function saveTransaction() {
   if (dateStr.includes('T')) dateStr = dateStr.replace('T', ' ');
   if (dateStr.length === 16) dateStr += ':00';
   const isTrans = slug === 'transfer';
-  let payload: Record<string, unknown>;
+  // Payload types
+  type PaymentPayload = {
+    account_id: number | null;
+    amount: number; // in account currency
+    rate: number | null; // to user base currency
+    tax_id: number | null;
+    note: string | null;
+  };
+  type TransactionPayload = {
+    name: string;
+    amount: number;
+    amount_tax: number;
+    date: string;
+    provider_id: number | null;
+    transaction_type_id?: string | null;
+    url_file: string | null;
+    rate: number | null;
+    account_id?: number | null;
+    account_from_id?: number | null;
+    account_to_id?: number | null;
+    items?: Array<{ name: string; amount: number; category_id?: number | null }>;
+    payments?: PaymentPayload[];
+  };
+  let payload: TransactionPayload;
   if (!isTrans) {
     type ItemPayload = { name: string; amount: number; category_id?: number | null };
     let items: ItemPayload[] = [];
@@ -1264,7 +1804,13 @@ function saveTransaction() {
       });
     } else {
       const amtAbs = Math.abs(Number(form.value.amount || 0));
-      items = [{ name: form.value.name || 'Item', amount: amtAbs, category_id: null }];
+      items = [
+        {
+          name: form.value.name || 'Item',
+          amount: amtAbs,
+          category_id: simpleCategoryId.value ?? null,
+        },
+      ];
     }
     payload = {
       name: form.value.name,
@@ -1272,13 +1818,22 @@ function saveTransaction() {
       amount_tax: 0,
       date: dateStr,
       provider_id: form.value.provider_id,
-      account_id: form.value.account_id,
-      transaction_type_id: form.value.transaction_type_id,
+      account_id: isAdvancedPayment.value ? null : form.value.account_id ?? null,
+      transaction_type_id: form.value.transaction_type_id ?? null,
       url_file: form.value.url_file || null,
-      rate: showRateInput.value ? form.value.rate : null,
+      rate: isAdvancedPayment.value ? null : showRateInput.value ? form.value.rate ?? null : null,
       // taxes removed for now
       items,
     };
+    if (isAdvancedPayment.value) {
+      payload.payments = payments.value.map((p) => ({
+        account_id: p.account_id,
+        amount: Math.abs(Number(p.amount || 0)), // account currency
+        rate: rowNeedsRate(p as PaymentRow) ? Number(p.rate || 0) : null,
+        tax_id: p.applyTax ? p.tax_id : null,
+        note: p.note || null,
+      }));
+    }
   } else {
     payload = {
       name: form.value.name,
@@ -1286,9 +1841,9 @@ function saveTransaction() {
       amount_tax: 0,
       date: dateStr,
       provider_id: form.value.provider_id,
-      account_from_id: form.value.account_from_id,
-      account_to_id: form.value.account_to_id,
-      transaction_type_id: form.value.transaction_type_id,
+      account_from_id: form.value.account_from_id ?? null,
+      account_to_id: form.value.account_to_id ?? null,
+      transaction_type_id: form.value.transaction_type_id ?? null,
       url_file: form.value.url_file || null,
       rate: form.value.rate ?? null,
       // taxes removed for now
@@ -1346,6 +1901,11 @@ function resetForm() {
   form.value = initialForm();
   isAdvancedAmount.value = false;
   invoiceItems.value = [{ item: '', quantity: 1, unitPrice: 0 }];
+  isAdvancedPayment.value = false;
+  payments.value = [
+    { account_id: null, amount: null, rate: null, applyTax: false, tax_id: null, note: null },
+  ];
+  simpleCategoryId.value = null;
 }
 </script>
 
