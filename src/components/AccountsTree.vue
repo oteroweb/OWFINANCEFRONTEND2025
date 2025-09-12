@@ -45,7 +45,7 @@
                 'is-selected': selectedNodeId === node.id,
                 'is-drop-target': dragOverFolderId === node.id,
               }"
-              :draggable="true"
+              :draggable="node.id !== UNASSIGNED_ID"
               @mouseenter="hoveredNodeId = node.id"
               @mouseleave="hoveredNodeId = null"
               @click="onSelect(node)"
@@ -60,6 +60,18 @@
             </div>
           </template>
         </q-tree>
+        <!-- Root drop target to move folders/accounts to top-level (or to 'Sin asignar' for accounts) -->
+        <div
+          v-if="dragNodeId"
+          class="row items-center no-wrap q-gutter-x-sm tree-node q-ml-sm q-mt-sm"
+          :class="{ 'is-drop-target': dragOverRoot }"
+          @dragover.prevent="onRootDragOver"
+          @drop.prevent="onRootDrop"
+          @dragleave="onRootDragLeave"
+        >
+          <q-icon name="arrow_upward" size="18px" />
+          <div class="ellipsis col text-primary">Mover a raíz</div>
+        </div>
       </q-scroll-area>
     </q-card>
 
@@ -124,6 +136,7 @@ export default defineComponent({
     const hoveredNodeId = ref<string | null>(null);
     const selectedNodeId = ref<string | null>(null);
     const dragOverFolderId = ref<string | null>(null);
+    const dragOverRoot = ref<boolean>(false);
     const selectedIsFolder = ref<boolean>(false);
 
     function onDragStart(node: TreeNode, ev: DragEvent) {
@@ -214,6 +227,60 @@ export default defineComponent({
       dragNodeId.value = null;
       dragNodeLabel.value = null;
       dragOverFolderId.value = null;
+    }
+
+    function onRootDragOver() {
+      if (dragNodeId.value) dragOverRoot.value = true;
+    }
+
+    function onRootDragLeave() {
+      dragOverRoot.value = false;
+    }
+
+    function onRootDrop(ev: DragEvent) {
+      const sourceId = ev.dataTransfer?.getData('text/plain') || dragNodeId.value;
+      dragOverRoot.value = false;
+      if (!sourceId) return;
+      const sourceInfo = findNodeWithParent(tree.value, String(sourceId));
+      if (!sourceInfo) return;
+      const { node: srcNode, parent: srcParent } = sourceInfo;
+      // Do not allow moving the special 'Sin asignar' node
+      if (srcNode.id === UNASSIGNED_ID) return;
+
+      // Remove from old parent
+      if (srcParent) {
+        srcParent.children = (srcParent.children || []).filter((n) => n.id !== srcNode.id);
+      } else {
+        const idx = tree.value.findIndex((n) => n.id === srcNode.id);
+        if (idx !== -1) tree.value.splice(idx, 1);
+      }
+
+      if (srcNode.type === 'account') {
+        // Accounts moved to root go to 'Sin asignar'
+        const un = getOrCreateUnassigned();
+        un.children = un.children || [];
+        un.children.push(srcNode);
+        const sortOrder = (un.children?.length || 1) - 1;
+        emit('move-node', {
+          node_id: srcNode.id,
+          new_parent_id: UNASSIGNED_ID, // backend can treat 'root' as null folder
+          node_type: 'account',
+          sort_order: sortOrder,
+        });
+      } else {
+        // Folders moved to root become top-level siblings of 'Sin asignar'
+        tree.value.push(srcNode);
+        const sortOrder = tree.value.length - 1;
+        emit('move-node', {
+          node_id: srcNode.id,
+          new_parent_id: 'root', // parent_id null at backend
+          node_type: 'folder',
+          sort_order: sortOrder,
+        });
+      }
+
+      dragNodeId.value = null;
+      dragNodeLabel.value = null;
     }
 
     function onDragLeave(node: TreeNode) {
@@ -432,6 +499,7 @@ export default defineComponent({
     expose({ addAccountToFolder, addFolderToParent, updateNodeLabel, removeNode, setTree });
 
     return {
+      UNASSIGNED_ID,
       tree,
       showNewFolder,
       newFolderName,
@@ -446,6 +514,7 @@ export default defineComponent({
       hoveredNodeId,
       selectedNodeId,
       dragOverFolderId,
+      dragOverRoot,
       selectedIsFolder,
       emitView,
       emitEdit,
@@ -456,12 +525,14 @@ export default defineComponent({
       addFolderToParent,
       updateNodeLabel,
       removeNode,
+      onRootDragOver,
+      onRootDragLeave,
+      onRootDrop,
       // setTree is exposed for parent refs; no need to return to template
     };
   },
 });
 </script>
-
 <style scoped>
 .accounts-tree {
   max-width: 100%;

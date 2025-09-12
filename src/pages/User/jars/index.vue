@@ -1774,7 +1774,8 @@ watch(
 }
 
 /* Horizontal jars bar */
-.jar-hbar { /* center column bar */
+.jar-hbar {
+  /* center column bar */
   width: 100%;
   max-width: 520px;
 }
@@ -1809,8 +1810,8 @@ watch(
     45deg,
     rgba(255, 255, 255, 0.14) 0px,
     rgba(255, 255, 255, 0.14) 6px,
-    rgba(255, 255, 255, 0.0) 6px,
-    rgba(255, 255, 255, 0.0) 12px
+    rgba(255, 255, 255, 0) 6px,
+    rgba(255, 255, 255, 0) 12px
   );
 }
 .jar-hbar__seg.empty::before {
@@ -1818,8 +1819,8 @@ watch(
     45deg,
     rgba(0, 0, 0, 0.08) 0px,
     rgba(0, 0, 0, 0.08) 6px,
-    rgba(0, 0, 0, 0.0) 6px,
-    rgba(0, 0, 0, 0.0) 12px
+    rgba(0, 0, 0, 0) 6px,
+    rgba(0, 0, 0, 0) 12px
   );
 }
 

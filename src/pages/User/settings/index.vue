@@ -10,7 +10,7 @@
         <q-tab name="taxes" icon="percent" label="Impuestos" />
       </q-tabs>
       <q-separator />
-      <q-tab-panels v-model="tab" animated>
+      <q-tab-panels v-model="tab" animated keep-alive>
         <q-tab-panel name="profile">
           <div class="q-gutter-md">
             <div class="text-subtitle1">Información de Perfil</div>
