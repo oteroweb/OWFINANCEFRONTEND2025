@@ -35,9 +35,15 @@ export const useTransactionsStore = defineStore('transactions', {
   state: () => ({
     transactions: [] as Transaction[],
     total: 0 as number,
-    loading: false as boolean
+    loading: false as boolean,
+    // UI filter: selected accounts in sidebar widget
+    selectedAccountIds: [] as Array<string | number>
   }),
   actions: {
+    setSelectedAccountIds(ids: Array<string | number>) {
+      // Keep as primitive id array for URL-free filtering
+      this.selectedAccountIds = Array.isArray(ids) ? ids.slice() : []
+    },
     async fetchTransactions(params: Record<string, unknown> = {}) {
       this.loading = true
       try {

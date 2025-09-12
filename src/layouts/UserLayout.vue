@@ -14,7 +14,7 @@
           </div>
         </div>
 
-  <!-- Menú retirado de la izquierda -->
+        <!-- Menú retirado de la izquierda -->
 
         <q-space />
 
@@ -51,7 +51,6 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
-// @ts-expect-error SFC default export provided by build tooling
 import TransactionCreateDialog from 'components/TransactionCreateDialog.vue';
 const auth = useAuthStore();
 const avatarUrl = computed(() => defaultAvatarUrl);
@@ -96,7 +95,12 @@ async function handleLogout() {
 .user-line .sep {
   opacity: 0.6;
 }
-.actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .menu-scroll {
   height: 42px;
   max-width: 100%;

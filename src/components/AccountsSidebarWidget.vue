@@ -210,7 +210,7 @@ function toAccountItem(n: Node): AccountItem {
 
 onMounted(async () => {
   // initialize from store (no URL coupling)
-  ticked.value = (txStore.selectedAccountIds || []).map((v) =>
+  ticked.value = (txStore.selectedAccountIds || []).map((v: unknown) =>
     typeof v === 'string' || typeof v === 'number' ? v : String(v)
   );
   await loadTree();

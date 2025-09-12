@@ -35,6 +35,18 @@
         <div v-if="dragNodeId && dragNodeLabel" class="drag-floating">
           Moviendo: <strong>{{ dragNodeLabel }}</strong>
         </div>
+        <!-- Root drop target to move folders/accounts to top-level (or to 'Sin asignar' for accounts) -->
+        <div
+          v-if="dragNodeId"
+          class="row items-center no-wrap q-gutter-x-sm tree-node q-ml-sm q-mb-xs"
+          :class="{ 'is-drop-target': dragOverRoot }"
+          @dragover.prevent="onRootDragOver"
+          @drop.prevent="onRootDrop"
+          @dragleave="onRootDragLeave"
+        >
+          <q-icon name="arrow_upward" size="18px" />
+          <div class="ellipsis col text-primary">Mover a raíz</div>
+        </div>
         <q-tree :nodes="tree" node-key="id" default-expand-all no-transition>
           <template #default-header="{ node }">
             <div
@@ -60,18 +72,6 @@
             </div>
           </template>
         </q-tree>
-        <!-- Root drop target to move folders/accounts to top-level (or to 'Sin asignar' for accounts) -->
-        <div
-          v-if="dragNodeId"
-          class="row items-center no-wrap q-gutter-x-sm tree-node q-ml-sm q-mt-sm"
-          :class="{ 'is-drop-target': dragOverRoot }"
-          @dragover.prevent="onRootDragOver"
-          @drop.prevent="onRootDrop"
-          @dragleave="onRootDragLeave"
-        >
-          <q-icon name="arrow_upward" size="18px" />
-          <div class="ellipsis col text-primary">Mover a raíz</div>
-        </div>
       </q-scroll-area>
     </q-card>
 
