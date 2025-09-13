@@ -1,102 +1,171 @@
 <template>
   <q-page class="q-pa-md">
-    <!-- Encabezado -->
-    <div class="row items-center q-mb-md">
-      <div class="col">
-        <div class="text-h5">{{ dictionary.title }}</div>
-        <div class="text-caption text-grey-7">{{ dictionary.description }}</div>
-      </div>
-      <div class="col-auto">
-        <div class="row items-center q-gutter-sm">
-          <q-btn flat icon="download" color="primary" @click="exportCSV" :disable="!rows.length">
-            <q-tooltip>Exportar CSV</q-tooltip>
-          </q-btn>
-          <q-btn flat icon="filter_alt_off" color="secondary" @click="clearFilters" />
-          <q-btn :label="dictionary.buttonNewLabel" color="primary" @click="openDialog" />
+    <div class="row q-col-gutter-lg">
+      <!-- Sidebar de cuentas (siempre visible) -->
+      <div class="col-12 col-md-3 col-lg-3">
+        <div class="sticky-sidebar">
+          <AccountsSidebarWidget />
         </div>
       </div>
-    </div>
 
-    <!-- Búsqueda global -->
-    <div class="row q-col-gutter-md items-start q-mb-md">
-      <div class="col-12 col-sm-6 col-md-4">
-        <div class="text-caption q-mb-xs">{{ dictionary.finderLabel }}</div>
-        <q-input
-          class="full-width"
-          dense
-          filled
-          debounce="300"
-          v-model="filters.search"
-          :placeholder="dictionary.finderLabel + '...'"
-        >
-          <template v-slot:append><q-icon name="search" /></template>
-        </q-input>
-      </div>
-    </div>
-
-    <!-- Filtros dinámicos -->
-    <div class="q-pa-xs q-mb-md">
-      <div class="row q-col-gutter-md items-start">
-        <div
-          v-for="field in dictionary.forms_filter"
-          :key="field.id"
-          :class="`col-${field.col || 12}`"
-        >
-          <component
-            :is="selectComponent(field.type)"
-            class="full-width"
-            v-model="filters[field.vmodel]"
-            v-bind="fieldProps(field)"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabla de datos -->
-    <q-table
-      :columns="columns"
-      :rows="rows"
-      :loading="loading"
-      row-key="id"
-      flat
-      bordered
-      class="shadow-1"
-      v-model:pagination="pagination"
-      @request="onRequest"
-    >
-      <template v-slot:body-cell-actions="props">
-        <q-td align="right">
-          <q-btn flat round icon="edit" color="primary" @click="edit(props.row)" />
-          <q-btn flat round icon="delete" color="negative" @click="remove(props.row)" />
-        </q-td>
-      </template>
-      <template
-        v-for="col in manyToManyColumns"
-        :key="col.key"
-        v-slot:[`body-cell-${col.key}`]="props"
-      >
-        <q-td>
-          <div>
-            <template v-if="col.ownerKey && col.pivotKey">
-              <span
-                v-for="(item, idx) in getOwnedItems(props.row, col)"
-                :key="getItemKey(item, idx)"
-              >
-                {{ getItemLabel(item, col.labelKey) }}
-                <q-badge color="primary" class="q-ml-xs">Owner</q-badge>
-                <span v-if="idx < getOwnedItems(props.row, col).length - 1">, </span>
-              </span>
-            </template>
-            <template v-else>
-              <span v-for="(item, idx) in props.row[col.key] || []" :key="getItemKey(item, idx)">
-                {{ getItemLabel(item, col.labelKey) }}
-                <span v-if="idx < props.row[col.key]?.length - 1">, </span>
-              </span>
-            </template>
+      <!-- Contenido principal: header + filtros + tabla -->
+      <div class="col-12 col-md-9 col-lg-9">
+        <!-- Encabezado -->
+        <div class="row items-center q-mb-md">
+          <div class="col">
+            <div class="text-h5">{{ dictionary.title }}</div>
+            <div class="text-caption text-grey-7">{{ dictionary.description }}</div>
           </div>
-        </q-td>
-      </template>
-    </q-table>
+          <div class="col-auto">
+            <div class="row items-center q-gutter-sm">
+              <q-btn
+                flat
+                icon="download"
+                color="primary"
+                @click="exportCSV"
+                :disable="!rows.length"
+              >
+                <q-tooltip>Exportar CSV</q-tooltip>
+              </q-btn>
+              <q-btn flat icon="filter_alt_off" color="secondary" @click="clearFilters" />
+              <q-btn :label="dictionary.buttonNewLabel" color="primary" @click="openNewFab" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Búsqueda global -->
+        <div class="row q-col-gutter-md items-start q-mb-md">
+          <div class="col-12 col-sm-6 col-md-6">
+            <div class="text-caption q-mb-xs">{{ dictionary.finderLabel }}</div>
+            <q-input
+              class="full-width"
+              dense
+              filled
+              debounce="300"
+              v-model="filters.search"
+              :placeholder="dictionary.finderLabel + '...'"
+            >
+              <template v-slot:append><q-icon name="search" /></template>
+            </q-input>
+          </div>
+        </div>
+
+        <!-- Filtros dinámicos -->
+        <div class="q-pa-xs q-mb-md">
+          <div class="row q-col-gutter-md items-start">
+            <div
+              v-for="field in dictionary.forms_filter"
+              :key="field.id"
+              :class="`col-${field.col || 12}`"
+            >
+              <component
+                :is="selectComponent(field.type)"
+                class="full-width"
+                v-model="filters[field.vmodel]"
+                v-bind="fieldProps(field)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de datos -->
+        <q-table
+          :columns="columns"
+          :rows="rows"
+          :loading="loading"
+          row-key="id"
+          flat
+          bordered
+          class="shadow-1"
+          v-model:pagination="pagination"
+          @request="onRequest"
+        >
+          <template v-slot:body-cell-actions="props">
+            <q-td align="right">
+              <q-btn flat round icon="edit" color="primary" @click="edit(props.row)" />
+              <q-btn flat round icon="delete" color="negative" @click="remove(props.row)" />
+            </q-td>
+          </template>
+          <template
+            v-for="col in manyToManyColumns"
+            :key="col.key"
+            v-slot:[`body-cell-${col.key}`]="props"
+          >
+            <q-td>
+              <div>
+                <template v-if="col.ownerKey && col.pivotKey">
+                  <span
+                    v-for="(item, idx) in getOwnedItems(props.row, col)"
+                    :key="getItemKey(item, idx)"
+                  >
+                    {{ getItemLabel(item, col.labelKey) }}
+                    <q-badge color="primary" class="q-ml-xs">Owner</q-badge>
+                    <span v-if="idx < getOwnedItems(props.row, col).length - 1">, </span>
+                  </span>
+                </template>
+                <template v-else>
+                  <span
+                    v-for="(item, idx) in props.row[col.key] || []"
+                    :key="getItemKey(item, idx)"
+                  >
+                    {{ getItemLabel(item, col.labelKey) }}
+                    <span v-if="idx < props.row[col.key]?.length - 1">, </span>
+                  </span>
+                </template>
+              </div>
+            </q-td>
+          </template>
+        </q-table>
+
+        <!-- Resumen inferior -->
+        <div class="q-mt-md">
+          <q-separator class="q-mb-md" />
+          <div class="row items-stretch no-wrap q-gutter-md summary-row">
+            <div class="col summary-col">
+              <q-card flat bordered class="q-pa-sm">
+                <div class="text-caption text-grey-7">Nº Movimientos</div>
+                <div class="text-h6 q-mt-xs">{{ summary.count }}</div>
+                <div class="text-caption text-grey-7">
+                  registros encontrados: {{ pagination.rowsNumber }}
+                </div>
+              </q-card>
+            </div>
+            <div class="col summary-col">
+              <q-card flat bordered class="q-pa-sm">
+                <div class="text-caption text-grey-7">Total Gastos</div>
+                <div class="text-h6 text-negative q-mt-xs">{{ formatMoney(summary.gastos) }}</div>
+              </q-card>
+            </div>
+            <div class="col summary-col">
+              <q-card flat bordered class="q-pa-sm">
+                <div class="text-caption text-grey-7">Total Ingresos</div>
+                <div class="text-h6 text-positive q-mt-xs">{{ formatMoney(summary.ingresos) }}</div>
+              </q-card>
+            </div>
+            <div class="col summary-col">
+              <q-card flat bordered class="q-pa-sm">
+                <div class="text-caption text-grey-7">Impuesto gastado</div>
+                <div class="text-h6 q-mt-xs">{{ formatMoney(summary.impuestos) }}</div>
+              </q-card>
+            </div>
+            <div class="col summary-col">
+              <q-card flat bordered class="q-pa-sm">
+                <div class="text-caption text-grey-7">Balance Total</div>
+                <div
+                  :class="[
+                    'text-h6',
+                    'q-mt-xs',
+                    summary.balance >= 0 ? 'text-positive' : 'text-negative',
+                  ]"
+                >
+                  {{ formatMoney(summary.balance) }}
+                </div>
+              </q-card>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Diálogo de creación/edición -->
     <q-dialog v-model="showDialog" @keydown.escape="showDialog = false">
@@ -131,24 +200,38 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Diálogo (FAB) usando TransactionCreateDialog -->
+    <TransactionCreateDialog />
+
+    <!-- Botón flotante para crear transacción -->
+    <q-page-sticky position="bottom-right" :offset="[18, 18]">
+      <q-btn fab color="primary" icon="add" @click="openNewFab" />
+    </q-page-sticky>
   </q-page>
 </template>
 
 <script setup lang="ts">
 // Imports MUST precede any statements (ESM rule); previously defineOptions was before imports causing vue-tsc errors.
 import { ref, reactive, onMounted, watch, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useQuasar, QInput, QSelect, QCheckbox } from 'quasar';
 import type { QSelectProps, QInputProps } from 'quasar';
 import { api } from 'boot/axios';
 import { useAuthStore } from 'stores/auth';
 import { dictionary as dictionaryDef } from './dictionary';
+import { AccountsSidebarWidget, TransactionCreateDialog } from 'components';
+import { useTransactionsStore } from 'stores/transactions';
+import { usePeriodStore } from 'stores/period';
+import { useUiStore } from 'stores/ui';
 defineOptions({ name: 'UserTransactionsPage' });
 
 const $q = useQuasar();
-const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const txStore = useTransactionsStore();
+const ui = useUiStore();
+const periodStore = usePeriodStore();
 
 // Tipos del diccionario para ayuda local
 interface CrudField {
@@ -185,7 +268,6 @@ interface CrudDictionary {
   finderLabel: string;
   url_api: string;
   url_apis: string;
-  user_scoped_param?: string;
   pagination_params?: {
     page: string;
     per_page: string;
@@ -427,15 +509,17 @@ function loadRowIntoForm(row: Row): void {
   currentRowId.value = typeof maybeId === 'number' ? maybeId : null;
 }
 
-function openDialog(): void {
-  editing.value = false;
-  resetForm();
-  showDialog.value = true;
-}
 function edit(row: Row): void {
   editing.value = true;
   loadRowIntoForm(row);
   showDialog.value = true;
+}
+
+// FAB: abrir diálogo de nueva transacción usando UI store
+function openNewFab(): void {
+  editing.value = false;
+  resetForm();
+  ui.openNewTransactionDialog();
 }
 
 // Payload
@@ -484,10 +568,6 @@ function buildPayload(): Record<string, unknown> {
     payload['id'] = currentRowId.value;
   }
   // Ensure user scoping on save
-  if (dictionary.user_scoped_param && authStore.user?.id) {
-    const key = dictionary.user_scoped_param;
-    if (payload[key] == null || payload[key] === '') payload[key] = authStore.user.id;
-  }
   return payload;
 }
 
@@ -501,7 +581,7 @@ async function remove(row: unknown): Promise<void> {
     }
     await api.delete(`/${dictionary.url_apis}/${id}`);
     $q.notify({ type: 'negative', message: 'Registro eliminado' });
-    await onRequest({ pagination: pagination.value });
+    await runFetch(true);
   } catch {
     $q.notify({ type: 'negative', message: 'Error al eliminar' });
   }
@@ -532,7 +612,7 @@ async function save(): Promise<void> {
       $q.notify({ type: 'positive', message: 'Creado correctamente' });
     }
     showDialog.value = false;
-    await onRequest({ pagination: pagination.value });
+    await runFetch(true);
   } catch (err: unknown) {
     let message = 'Error al guardar';
     if (err && typeof err === 'object') {
@@ -542,6 +622,8 @@ async function save(): Promise<void> {
     $q.notify({ type: 'negative', message });
   }
 }
+
+// Guardado desde FAB lo maneja internamente el componente TransactionCreateDialog
 
 function getNumberProp(obj: unknown, key: string): number | undefined {
   if (obj && typeof obj === 'object') {
@@ -579,14 +661,26 @@ function buildQueryParams(): Record<string, unknown> {
     [pmap.descending]: pagination.value.descending,
   };
   if (filters.search) params[pmap.search] = filters.search;
-  if (dictionary.user_scoped_param && authStore.user?.id) {
-    params[dictionary.user_scoped_param] = authStore.user.id;
-  }
+  // Parámetros de periodo (cuando aplique)
+  const periodParams = periodStore.queryParams;
+  Object.entries(periodParams).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') params[k] = v;
+  });
   for (const f of dictionary.forms_filter as unknown as CrudField[]) {
     const val = (filters as Record<string, FilterValue>)[f.vmodel];
     if (val !== undefined && val !== null && val !== '') {
       params[f.vmodel_api || f.vmodel] = val;
     }
+  }
+  // Multi-cuenta: si hay más de una cuenta seleccionada en el sidebar, enviar account_ids (sin tocar la URL)
+  if (Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length > 1) {
+    const csv = txStore.selectedAccountIds
+      .map((v: unknown) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? String(n) : String(v);
+      })
+      .join(',');
+    if (csv) params['account_ids'] = csv;
   }
   return params;
 }
@@ -601,13 +695,20 @@ async function onRequest(props: QTableRequestProps): Promise<void> {
       descending: props.pagination.descending,
     };
   }
-  await fetchData(buildQueryParams());
+  await runFetch();
 }
 
+let currentAbort: AbortController | null = null;
 async function fetchData(params?: Record<string, unknown>): Promise<void> {
+  if (currentAbort) currentAbort.abort();
+  const controller = new AbortController();
+  currentAbort = controller;
   loading.value = true;
   try {
-    const res = await api.get(`/${dictionary.url_apis}`, { params: params || { ...filters } });
+    const res = await api.get(`/${dictionary.url_apis}`, {
+      params: params || { ...filters },
+      signal: controller.signal,
+    });
     const data: unknown = res.data;
     let arr: Row[] = [];
     if (Array.isArray(data)) {
@@ -651,11 +752,33 @@ async function fetchData(params?: Record<string, unknown>): Promise<void> {
       }
     }
     pagination.value.rowsNumber = Number(total) || 0;
-  } catch {
+  } catch (err) {
+    const e = err as { name?: string } | undefined;
+    if ((e && e.name === 'CanceledError') || controller.signal.aborted) return;
     $q.notify({ type: 'negative', message: 'Error cargando datos' });
   } finally {
     loading.value = false;
   }
+}
+
+// Scheduler unificado
+let fetchDebounceTimer: number | undefined;
+let lastParamsSignature = '';
+function stableSignature(obj: Record<string, unknown>): string {
+  return JSON.stringify(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)));
+}
+function scheduleFetch(): void {
+  if (fetchDebounceTimer) window.clearTimeout(fetchDebounceTimer);
+  fetchDebounceTimer = window.setTimeout(() => {
+    void runFetch();
+  }, 300);
+}
+async function runFetch(force = false): Promise<void> {
+  const params = buildQueryParams();
+  const sig = stableSignature(params);
+  if (!force && sig === lastParamsSignature) return;
+  lastParamsSignature = sig;
+  await fetchData(params);
 }
 
 // Montaje: cargar selects y datos
@@ -681,10 +804,10 @@ onMounted(async () => {
 
   const setOptions = (field: CrudField, list: Array<Record<string, unknown>>) => {
     const labelKey = field.select_label || 'name';
-    const sorted = [...list].sort((a, b) => {
-      const la = toStringLabel(a[labelKey]).toLowerCase();
-      const lb = toStringLabel(b[labelKey]).toLowerCase();
-      return la.localeCompare(lb, undefined, { numeric: true });
+    const sorted = [...list].sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+      const laStr = toStringLabel(a[labelKey]).toLowerCase();
+      const lbStr = toStringLabel(b[labelKey]).toLowerCase();
+      return laStr.localeCompare(lbStr, undefined, { numeric: true });
     });
     selectOptionsAll[field.vmodel] = sorted;
     selectOptionsFiltered[field.vmodel] = sorted;
@@ -704,9 +827,6 @@ onMounted(async () => {
           params.order_by = field.order_by;
           params.order_dir = field.order_dir || 'asc';
         }
-        if (dictionary.user_scoped_param && authStore.user?.id) {
-          params[dictionary.user_scoped_param] = authStore.user.id;
-        }
         const r = await api.get(`/${field.vmodel_url}`, { params });
         const list = (r.data?.data || r.data || []) as Array<Record<string, unknown>>;
         setOptions(field, Array.isArray(list) ? list : []);
@@ -721,28 +841,69 @@ onMounted(async () => {
     }
   }
 
-  await onRequest({ pagination: pagination.value });
+  await runFetch(true);
 });
 
-// Re-fetch y sincronizar filtros con la URL
+// Sidebar de cuentas: si hay exactamente una cuenta seleccionada en el widget,
+// aplicamos el filtro account_id; en caso contrario quitamos el filtro.
+watch(
+  () => txStore.selectedAccountIds.slice(),
+  (ids) => {
+    if (Array.isArray(ids) && ids.length === 1) {
+      const raw = ids[0];
+      const asNum = Number(raw);
+      (filters as Record<string, FilterValue>)['account_id'] = Number.isFinite(asNum)
+        ? asNum
+        : (String(raw) as FilterValue);
+    } else {
+      (filters as Record<string, FilterValue>)['account_id'] = '';
+    }
+    pagination.value.page = 1;
+    scheduleFetch();
+  },
+  { deep: false }
+);
+
+// Cuando se cierra el diálogo de nueva transacción (TransactionCreateDialog), refrescar la tabla
+watch(
+  () => ui.showDialogNewTransaction,
+  (open, prev) => {
+    if (prev === true && open === false) void runFetch(true);
+  }
+);
+
+// Si el usuario usa el filtro de "Cuenta" del formulario, reflejamos en el sidebar.
+watch(
+  () => (filters as Record<string, FilterValue>)['account_id'],
+  (val) => {
+    const current = txStore.selectedAccountIds.map(String);
+    const desired = val == null || val === '' ? [] : [String(val as unknown as string | number)];
+    if (JSON.stringify(current) !== JSON.stringify(desired)) {
+      txStore.setSelectedAccountIds(desired);
+    }
+  }
+);
+
+// Filtros internos: usar scheduler unificado
 watch(
   () => ({ ...filters }),
-  (vals) => {
-    const nextQuery: Record<string, string> = {};
-    if (vals.search) nextQuery.search = String(vals.search);
-    for (const f of dictionary.forms_filter as unknown as CrudField[]) {
-      const val = (vals as Record<string, FilterValue>)[f.vmodel];
-      if (val !== undefined && val !== null && val !== '') {
-        const key = f.vmodel_api || f.vmodel;
-        nextQuery[key] = String(val);
-      }
-    }
-    void router.replace({ query: nextQuery });
+  () => {
     pagination.value.page = 1;
-    void onRequest({ pagination: pagination.value });
+    scheduleFetch();
   },
   { deep: true }
 );
+
+// Cambios de periodo => refetch
+watch(
+  () => periodStore.signature,
+  () => {
+    pagination.value.page = 1;
+    scheduleFetch();
+  }
+);
+
+// Nota multi-cuentas: para >1 cuenta se usa account_ids en CSV y se ignora account_id individual.
 
 const manyToManyColumns = computed(() =>
   (dictionary.columns as unknown as CrudColumn[]).filter((col) => Boolean(col.manyToMany))
@@ -780,13 +941,66 @@ function getItemKey(item: AnyRecord, idx: number): string | number {
   return idx;
 }
 
+// ====== Resumen inferior (ingresos/gastos/impuestos) ======
+function parseNumber(val: unknown): number {
+  if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (!s) return 0;
+    // Try standard parse
+    const n1 = Number(s);
+    if (Number.isFinite(n1)) return n1;
+    // Try ES locale with comma decimals ("1.234,56")
+    const normalized = s.replace(/\./g, '').replace(/,/g, '.');
+    const n2 = Number(normalized);
+    return Number.isFinite(n2) ? n2 : 0;
+  }
+  return 0;
+}
+function isTransferRow(row: Row): boolean {
+  const tt = (row as AnyRecord)['transaction_type'] as AnyRecord | undefined;
+  let rawName: unknown = '';
+  if (tt && typeof tt === 'object') rawName = (tt as Record<string, unknown>)['name'];
+  const name = typeof rawName === 'string' ? rawName : '';
+  const low = name.toLowerCase();
+  return low.includes('transfer') || low.includes('traspaso');
+}
+const summary = computed(() => {
+  let gastos = 0;
+  let ingresos = 0;
+  let impuestos = 0;
+  const count = rows.value.length;
+  for (const r of rows.value) {
+    const amt = parseNumber((r as AnyRecord)['amount']);
+    const tax = parseNumber((r as AnyRecord)['amount_tax']);
+    const transfer = isTransferRow(r);
+    if (!transfer) {
+      if (amt < 0) gastos += Math.abs(amt);
+      else if (amt > 0) ingresos += amt;
+    }
+    // Sum taxes when present; if expense, consider absolute
+    if (tax) impuestos += Math.abs(tax);
+  }
+  const balance = ingresos - gastos;
+  return { count, gastos, ingresos, impuestos, balance };
+});
+function formatMoney(n: number): string {
+  const val = Number(n || 0);
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: 2,
+  }).format(val);
+}
+
 function clearFilters(): void {
   filters.search = '';
   for (const f of dictionary.forms_filter) {
     (filters as Record<string, FilterValue>)[f.vmodel] = '';
   }
   pagination.value.page = 1;
-  void onRequest({ pagination: pagination.value });
+  void runFetch();
 }
 
 function exportCSV(): void {
@@ -824,4 +1038,15 @@ function exportCSV(): void {
 
 
 <style scoped>
+.sticky-sidebar {
+  position: sticky;
+  top: 12px;
+  z-index: 1;
+}
+.summary-row {
+  overflow-x: auto;
+}
+.summary-col {
+  min-width: 220px;
+}
 </style>

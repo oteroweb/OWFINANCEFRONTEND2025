@@ -36,6 +36,10 @@
           <q-btn flat round dense icon="logout" @click="handleLogout" />
         </div>
       </q-toolbar>
+      <!-- Barra de periodos global -->
+      <div class="bg-white text-dark">
+        <PeriodFilterBar />
+      </div>
     </q-header>
 
     <q-page-container>
@@ -51,7 +55,8 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
-import TransactionCreateDialog from 'components/TransactionCreateDialog.vue';
+import { TransactionCreateDialog } from 'components';
+import { PeriodFilterBar } from 'components/models';
 const auth = useAuthStore();
 const avatarUrl = computed(() => defaultAvatarUrl);
 const menuLinks = userMenuLinks;
