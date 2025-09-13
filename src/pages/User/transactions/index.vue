@@ -69,6 +69,22 @@
         </div>
 
         <!-- Tabla de datos -->
+        <div v-if="showRunningBalanceColumn && singleAccountBalance != null" class="q-mb-sm">
+          <q-banner class="bg-blue-1 text-primary q-pa-sm" rounded>
+            <div class="row items-center no-wrap full-width">
+              <div class="col-auto text-weight-medium">Saldo actual de la cuenta:</div>
+              <div class="col-auto text-weight-bold">
+                {{ formatMoney(singleAccountBalance || 0) }}
+              </div>
+              <div
+                class="col text-right text-caption text-grey-7"
+                v-if="pagination.sortBy === 'date'"
+              >
+                (Columna Balance muestra saldo tras cada transacción)
+              </div>
+            </div>
+          </q-banner>
+        </div>
         <q-table
           :columns="columns"
           :rows="rows"
@@ -315,7 +331,7 @@ function getByPath(obj: unknown, path: string): unknown {
   }, obj);
 }
 
-const columns = (dictionary.columns as CrudColumn[]).map((col) => ({
+const baseColumns = (dictionary.columns as CrudColumn[]).map((col) => ({
   name: col.key === 'actions' ? 'actions' : col.key,
   label: col.name,
   field: col.key.includes('.') ? (row: Row) => getByPath(row, col.key) : col.key,
@@ -356,6 +372,100 @@ const columns = (dictionary.columns as CrudColumn[]).map((col) => ({
       }
     : {}),
 }));
+
+// Running balance support
+const runningBalanceMap = ref<Record<string | number, number>>({});
+const singleAccountSelected = computed(
+  () => Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length === 1
+);
+function extractAccountBalance(): number | null {
+  const first = rows.value[0];
+  if (!first || typeof first !== 'object') return null;
+  const acc = (first as Record<string, unknown>)['account'];
+  if (acc && typeof acc === 'object') {
+    const b = (acc as Record<string, unknown>)['balance'];
+    if (typeof b === 'number' && Number.isFinite(b)) return b;
+  }
+  return null;
+}
+const singleAccountBalance = computed(() =>
+  singleAccountSelected.value ? extractAccountBalance() : null
+);
+const showRunningBalanceColumn = computed(
+  () => singleAccountSelected.value && pagination.value.sortBy === 'date'
+);
+function computeRunningBalances(): void {
+  if (!showRunningBalanceColumn.value) {
+    runningBalanceMap.value = {};
+    return;
+  }
+  const currentBalance = singleAccountBalance.value;
+  if (currentBalance == null) {
+    runningBalanceMap.value = {};
+    return;
+  }
+  const list = rows.value.slice();
+  const amounts = list.map((r) => parseNumber((r as Record<string, unknown>)['amount']));
+  const descending = pagination.value.descending;
+  const sortBy = pagination.value.sortBy;
+  if (sortBy !== 'date') {
+    runningBalanceMap.value = {};
+    return;
+  }
+  const map: Record<string | number, number> = {};
+  if (descending) {
+    let bal = currentBalance;
+    for (let i = 0; i < list.length; i++) {
+      const row = list[i] as Record<string, unknown>;
+      const id = (row['id'] as string | number | undefined) ?? i;
+      map[id] = bal;
+      const amt = amounts[i] ?? 0;
+      bal = bal - amt;
+    }
+  } else {
+    const total = amounts.reduce((a, b) => a + b, 0);
+    let bal = currentBalance - total;
+    for (let i = 0; i < list.length; i++) {
+      const row = list[i] as Record<string, unknown>;
+      const id = (row['id'] as string | number | undefined) ?? i;
+      const amt = amounts[i] ?? 0;
+      bal = bal + amt;
+      map[id] = bal;
+    }
+  }
+  runningBalanceMap.value = map;
+}
+interface ColumnDef {
+  name: string;
+  label: string;
+  field: string | ((row: Row) => unknown);
+  align: 'left' | 'center' | 'right';
+  sortable: boolean;
+  format?: (val: unknown) => string;
+}
+const runningBalanceColumn: ColumnDef = {
+  name: 'running_balance',
+  label: 'Balance',
+  field: (row: Row) => {
+    const id = (row as Record<string, unknown>)['id'] as string | number | undefined;
+    const key = id ?? rows.value.indexOf(row);
+    const val = runningBalanceMap.value[key];
+    if (val == null) return '';
+    return formatMoney(val);
+  },
+  align: 'right' as const,
+  sortable: false,
+};
+const columns = computed<ColumnDef[]>(() => {
+  const base = baseColumns as unknown as ColumnDef[];
+  if (!showRunningBalanceColumn.value) return base;
+  const clone = [...base];
+  const idx = clone.findIndex((c) => c.name === 'amount');
+  if (idx >= 0 && !clone.find((c) => c.name === 'running_balance'))
+    clone.splice(idx + 1, 0, runningBalanceColumn);
+  else if (!clone.find((c) => c.name === 'running_balance')) clone.push(runningBalanceColumn);
+  return clone;
+});
 
 // Paginación
 const defaultSortKey = dictionary.columns.find((c) => c.key === 'date')
@@ -779,6 +889,7 @@ async function runFetch(force = false): Promise<void> {
   if (!force && sig === lastParamsSignature) return;
   lastParamsSignature = sig;
   await fetchData(params);
+  computeRunningBalances();
 }
 
 // Montaje: cargar selects y datos
@@ -1005,13 +1116,14 @@ function clearFilters(): void {
 
 function exportCSV(): void {
   if (!rows.value?.length) return;
-  const visibleCols = columns.filter((c) => c.name !== 'actions');
-  const header = visibleCols.map((c) => c.label);
+  const allCols = columns.value;
+  const visibleCols = allCols.filter((c) => c.name !== 'actions');
+  const header = visibleCols.map((c: ColumnDef) => c.label);
   const csv = [header.join(',')]
     .concat(
       rows.value.map((row) =>
         visibleCols
-          .map((col) => {
+          .map((col: ColumnDef) => {
             let v: unknown;
             if (typeof col.field === 'function') {
               v = col.field(row);

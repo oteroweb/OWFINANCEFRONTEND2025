@@ -21,7 +21,14 @@
         <q-btn dense flat icon="chevron_left" @click="period.shift(-1)" />
         <div class="label text-body2 text-weight-bold">{{ period.label }}</div>
         <q-btn dense flat icon="chevron_right" @click="period.shift(1)" />
-        <q-btn v-if="period.state.type === 'custom'" dense flat icon="edit_calendar" size="sm" @click="openCustom()" />
+        <q-btn
+          v-if="period.state.type === 'custom'"
+          dense
+          flat
+          icon="edit_calendar"
+          size="sm"
+          @click="openCustom()"
+        />
       </div>
     </div>
   </div>
@@ -137,9 +144,23 @@ const currentType = computed(() => period.state.type);
   overflow-x: auto;
   position: relative;
 }
-.inner { width:100%; display:flex; align-items:center; }
-.tabs-scroll { flex:1 1 auto; }
-.spacer { width:24px; }
-.label { min-width:220px; text-align:center; font-size:15px; }
-.period-tab { min-width:90px; }
+.inner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.tabs-scroll {
+  flex: 1 1 auto;
+}
+.spacer {
+  width: 24px;
+}
+.label {
+  min-width: 220px;
+  text-align: center;
+  font-size: 15px;
+}
+.period-tab {
+  min-width: 90px;
+}
 </style>

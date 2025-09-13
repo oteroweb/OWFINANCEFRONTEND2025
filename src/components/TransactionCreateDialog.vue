@@ -4,7 +4,7 @@
       <q-card-section class="q-pt-none">
         <div class="row items-center">
           <div class="col">
-            <div class="text-h6">Nueva Transacción</div>
+            <div class="text-h6"> </div>
             <div class="text-caption text-grey-7">Registra ingresos, egresos o transferencias</div>
           </div>
           <div class="col-auto">
@@ -1658,6 +1658,59 @@ watch(
     if (open) void fetchAvailableTaxes();
   },
   { immediate: false }
+);
+
+// Prefill single selected account from sidebar when opening dialog (ensure accounts first)
+watch(
+  () => ui.showDialogNewTransaction,
+  async (open) => {
+    if (!open) return;
+    try {
+      await ensureAccountsLoaded();
+      const ids = Array.isArray(tsStore.selectedAccountIds)
+        ? tsStore.selectedAccountIds.filter((v) => v !== null && v !== undefined)
+        : [];
+      if (ids.length === 1) {
+        const accIdNum = Number(ids[0]);
+        if (Number.isFinite(accIdNum)) {
+          const ty = ttypes.types.find((t) => t.id === form.value.transaction_type_id);
+          const slug = (ty?.slug || '').toLowerCase();
+          if (slug === 'transfer') {
+            if (!form.value.account_from_id) form.value.account_from_id = accIdNum;
+          } else if (!form.value.account_id) {
+            form.value.account_id = accIdNum;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Prefill account failed', e);
+    }
+  },
+  { immediate: false }
+);
+
+// When switching type, keep prefilled account coherent
+watch(
+  () => form.value.transaction_type_id,
+  (newVal) => {
+    if (!newVal) return;
+    const ty = ttypes.types.find((t) => t.id === newVal);
+    const slug = (ty?.slug || '').toLowerCase();
+    if (slug === 'transfer') {
+      // moving to transfer: use existing simple account as origin if set
+      if (!form.value.account_from_id && form.value.account_id) {
+        form.value.account_from_id = form.value.account_id;
+        form.value.account_id = null;
+      }
+    } else {
+      // leaving transfer: if no simple account but origin exists, reuse it
+      if (!form.value.account_id && form.value.account_from_id) {
+        form.value.account_id = form.value.account_from_id;
+        form.value.account_from_id = null;
+        form.value.account_to_id = null;
+      }
+    }
+  }
 );
 
 // Save
