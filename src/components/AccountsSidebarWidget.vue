@@ -83,13 +83,29 @@
               <q-icon name="account_balance" size="20px" data-ow="account-icon" />
             </q-item-section>
             <q-item-section class="min-w-0 ow-accounts-widget__label" data-ow="account-label">
-              <div class="ellipsis ow-accounts-widget__label-text">{{ acc.label }}</div>
+              <div class="ellipsis ow-accounts-widget__label-text">
+                {{ acc.label }}
+                <span v-if="acc.balance !== undefined && acc.balance !== null">
+                  ({{ formatBalance(acc) }})
+                </span>
+              </div>
             </q-item-section>
             <q-item-section side top data-ow="account-side">
               <div class="row items-center q-gutter-xs" data-ow="account-side-row">
-                <div class="text-caption text-grey-7" data-ow="account-balance">
-                  {{ formatBalance(acc) }}
-                </div>
+                <!-- Acciones de cuenta -->
+                <q-btn dense flat round icon="more_vert" @click.stop>
+                  <q-menu anchor="bottom right" self="top right">
+                    <q-list dense>
+                      <q-item clickable v-close-popup @click.stop="openAdjustDialog(acc.id, acc)">
+                        <q-item-section>Ajustar saldo</q-item-section>
+                      </q-item>
+                      <q-item clickable v-close-popup @click.stop="recalcBalance(acc.id)">
+                        <q-item-section>Recalcular saldo</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-menu>
+                </q-btn>
+                <!-- Selector -->
                 <q-checkbox
                   size="sm"
                   :model-value="isTicked(acc.id)"
@@ -104,10 +120,39 @@
       </div>
     </template>
   </q-card>
+  <!-- Dialogo ajustar saldo -->
+  <q-dialog v-model="showAdjust">
+    <q-card style="min-width: 340px">
+      <q-card-section class="text-h6">Ajustar saldo</q-card-section>
+      <q-card-section>
+        <div class="text-caption q-mb-xs">Cuenta: {{ adjustAccountLabel }}</div>
+        <q-input
+          v-model="adjustNewBalance"
+          label="Nuevo saldo"
+          type="number"
+          step="0.01"
+          dense
+          filled
+        />
+        <div class="q-mt-sm">
+          <q-checkbox
+            v-model="includeInBalanceAdjust"
+            label="Generar transacción de ajuste"
+            dense
+          />
+        </div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat label="Cancelar" v-close-popup :disable="adjusting" />
+        <q-btn color="primary" label="Guardar" :loading="adjusting" @click="submitAdjust" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
@@ -142,6 +187,7 @@ const ticked = ref<Array<string | number>>([]);
 const hasAccounts = computed(() => allAccountIds.value.length > 0);
 const allCount = computed(() => allAccountIds.value.length);
 const txStore = useTransactionsStore();
+const $q = useQuasar();
 
 type AccountItem = {
   id: string | number;
@@ -214,6 +260,15 @@ onMounted(async () => {
     typeof v === 'string' || typeof v === 'number' ? v : String(v)
   );
   await loadTree();
+
+  const handler = () => {
+    // fire and forget refresh (no await inside listener to avoid Promise lint)
+    void loadTree();
+  };
+  window.addEventListener('ow:transactions:changed', handler);
+  onUnmounted(() => {
+    window.removeEventListener('ow:transactions:changed', handler);
+  });
 });
 
 // No URL sync
@@ -237,7 +292,10 @@ async function loadTree() {
           });
           type ApiAccount = {
             id: string | number;
-            initial?: number;
+            initial?: number | string;
+            balance?: number | string;
+            balance_cached?: number | string;
+            balance_calculado?: number | string;
             currency?: { code?: string; symbol?: string };
           };
           const root = (accResp as unknown as { data?: unknown })?.data;
@@ -253,8 +311,14 @@ async function loadTree() {
           }
           details = {};
           for (const a of list) {
+            const num = (v: unknown): number | undefined => {
+              const n = Number(v as number | string);
+              return Number.isFinite(n) ? n : undefined;
+            };
+            const bal =
+              num(a.balance) ?? num(a.balance_cached) ?? num(a.balance_calculado) ?? num(a.initial);
             details[String(a.id)] = {
-              balance: typeof a.initial === 'number' ? a.initial : undefined,
+              balance: bal,
               code: a.currency?.code,
               symbol: a.currency?.symbol,
             };
@@ -303,7 +367,10 @@ async function loadTree() {
     type ApiAccount = {
       id: string | number;
       name: string;
-      initial?: number;
+      initial?: number | string;
+      balance?: number | string;
+      balance_cached?: number | string;
+      balance_calculado?: number | string;
       currency?: { code?: string; symbol?: string };
     };
     const accDetails: Record<
@@ -324,8 +391,14 @@ async function loadTree() {
       }
     }
     for (const a of arr) {
+      const num = (v: unknown): number | undefined => {
+        const n = Number(v as number | string);
+        return Number.isFinite(n) ? n : undefined;
+      };
+      const bal =
+        num(a.balance) ?? num(a.balance_cached) ?? num(a.balance_calculado) ?? num(a.initial);
       accDetails[String(a.id)] = {
-        balance: typeof a.initial === 'number' ? a.initial : undefined,
+        balance: bal,
         code: a.currency?.code,
         symbol: a.currency?.symbol,
       };
@@ -445,7 +518,10 @@ function formatBalance(n: {
   currencyCode?: string | undefined;
 }): string {
   const bal = typeof n.balance === 'number' ? n.balance : undefined;
-  if (bal == null) return '';
+  if (bal == null)
+    return '0.00' + n.currencySymbol || n.currencyCode
+      ? '0.00 ' + (n.currencySymbol || n.currencyCode)
+      : '';
   const sym = n.currencySymbol || '';
   const code = n.currencyCode || '';
   const val = Number(bal).toFixed(2);
@@ -471,6 +547,71 @@ function setTick(id: string | number, value: boolean) {
 
 function toggleTick(id: string | number) {
   setTick(id, !isTicked(id));
+}
+
+// ================== Ajustar / Recalcular saldo ==================
+const showAdjust = ref(false);
+const adjustAccountId = ref<string | number | null>(null);
+const adjustAccountLabel = ref<string>('');
+const adjustNewBalance = ref<string>('');
+const adjusting = ref(false);
+const includeInBalanceAdjust = ref(true);
+
+function openAdjustDialog(
+  id: string | number,
+  acc?: { label?: string; balance?: number | undefined }
+) {
+  adjustAccountId.value = id;
+  adjustAccountLabel.value = String(acc?.label ?? id);
+  adjustNewBalance.value = typeof acc?.balance === 'number' ? acc.balance.toFixed(2) : '';
+  includeInBalanceAdjust.value = true;
+  showAdjust.value = true;
+}
+
+async function submitAdjust(): Promise<void> {
+  const id = adjustAccountId.value;
+  if (!id) return;
+  const val = Number(adjustNewBalance.value);
+  if (!Number.isFinite(val)) {
+    $q.notify({ type: 'warning', message: 'Ingresa un saldo válido' });
+    return;
+  }
+  try {
+    adjusting.value = true;
+    await api.post(`/accounts/${id}/adjust-balance`, {
+      target_balance: val,
+      include_in_balance: includeInBalanceAdjust.value,
+      user_id: auth.user?.id,
+    });
+    // Recalcular saldo tras ajustar
+    await api.post(`/accounts/${id}/recalculate-account`, { user_id: auth.user?.id });
+    $q.notify({ type: 'positive', message: 'Saldo ajustado' });
+    showAdjust.value = false;
+    await loadTree();
+    window.dispatchEvent(
+      new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'adjust' } })
+    );
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error ajustando saldo' });
+  } finally {
+    adjusting.value = false;
+  }
+}
+
+async function recalcBalance(id: string | number): Promise<void> {
+  try {
+    $q.loading.show({ message: 'Recalculando saldo...' });
+    await api.post(`/accounts/${id}/recalculate-account`, { user_id: auth.user?.id });
+    $q.notify({ type: 'positive', message: 'Saldo recalculado' });
+    await loadTree();
+    window.dispatchEvent(
+      new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'recalc' } })
+    );
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error recalculando saldo' });
+  } finally {
+    $q.loading.hide();
+  }
 }
 </script>
 

@@ -4,7 +4,7 @@
       <q-card-section class="q-pt-none">
         <div class="row items-center">
           <div class="col">
-            <div class="text-h6"> </div>
+            <div class="text-h6"></div>
             <div class="text-caption text-grey-7">Registra ingresos, egresos o transferencias</div>
           </div>
           <div class="col-auto">
@@ -134,6 +134,7 @@
                 class="row items-center q-pt-xs q-pl-xs q-pr-xs text-caption"
               >
                 <div class="col">
+                  <q-spinner v-if="loadingCurrent" size="14px" class="q-mr-xs" />
                   Saldo actual: {{ currencySymbol }}{{ Number(currentBalance).toFixed(2) }}
                 </div>
                 <div class="col text-right">
@@ -302,6 +303,7 @@
               class="row items-center q-pt-xs q-pl-xs q-pr-xs text-caption"
             >
               <div class="col">
+                <q-spinner v-if="loadingCurrent" size="14px" class="q-mr-xs" />
                 Origen — Saldo actual: {{ originCurrencySymbol
                 }}{{ Number(currentBalance).toFixed(2) }}
               </div>
@@ -320,6 +322,7 @@
               class="row items-center q-pt-xs q-pl-xs q-pr-xs text-caption"
             >
               <div class="col">
+                <q-spinner v-if="loadingDest" size="14px" class="q-mr-xs" />
                 Destino — Saldo actual: {{ destCurrencySymbol
                 }}{{ Number(destCurrentBalance).toFixed(2) }}
               </div>
@@ -379,6 +382,13 @@
                 <div class="text-bold">Resultado</div>
                 <div>{{ resultCurrencySymbol }}{{ Number(resultTotal).toFixed(2) }}</div>
               </div>
+            </div>
+          </div>
+
+          <!-- Incluir en balance -->
+          <div class="row q-mt-xs">
+            <div class="col">
+              <q-toggle v-model="includeInBalance" label="Incluir en balance de cuentas" dense />
             </div>
           </div>
 
@@ -685,6 +695,8 @@ const initialForm = (): TransactionForm => ({
   url_file: '',
 });
 const form = ref<TransactionForm>(initialForm());
+// Flag para excluir la transacción del balance agregado de cuentas
+const includeInBalance = ref(true);
 
 // ----- Transaction Types -----
 const ttOptions = ref<{ label: string; value: string }[]>([]);
@@ -886,21 +898,33 @@ async function ensureAccountsLoaded() {
   if (accountsLoaded) return;
   try {
     const res = await api.get('/accounts', { params: { user_id: auth.user?.id } });
-    interface ApiAccount {
+    type ApiCurrency = { id?: number; code?: string; symbol?: string };
+    type ApiAccount = {
       id: number;
       name: string;
       initial?: number;
-      currency: { id?: number; code: string; symbol: string };
-    }
+      balance?: number;
+      current_balance?: number;
+      saldo?: number;
+      currency?: ApiCurrency;
+    };
     const fetched = (res.data.data || res.data) as ApiAccount[];
-    const mapped = fetched.map((a) => ({
-      id: a.id,
-      name: a.name,
-      balance: Number(a.initial || 0),
-      currencyId: a.currency?.id || null,
-      currencyCode: a.currency.code,
-      currencySymbol: a.currency.symbol,
-    }));
+    const mapped = (fetched || []).map((a) => {
+      const rawBal =
+        a.balance ??
+        a.current_balance ??
+        a.saldo ??
+        (typeof a.initial === 'number' ? a.initial : 0);
+      const cur: ApiCurrency = a.currency || {};
+      return {
+        id: a.id,
+        name: a.name,
+        balance: Number(rawBal || 0),
+        currencyId: typeof cur.id === 'number' ? cur.id : null,
+        currencyCode: cur.code || '',
+        currencySymbol: cur.symbol || '',
+      } as AccountOption;
+    });
     allAccounts.value = mapped;
     accountOptions.value = mapped;
     accountsLoaded = true;
@@ -1198,11 +1222,111 @@ const needsRateForAccountBalance = computed(
 const needsRateForDestBalance = computed(
   () => isTransfer.value && isCrossCurrency.value && !(Number(form.value.rate || 0) > 0)
 );
-// Restore symbols used in result display from earlier balances section
+// ----- Live Account Balances (fetch actual current balance per account) -----
+// Estrategia: cache en memoria por id; se refresca al seleccionar la cuenta o abrir el diálogo.
+// Ventajas: una sola llamada por cuenta (TTL corto configurable); evita traer todas las transacciones.
+// Fallback: si aún no se ha obtenido el balance real se usa el valor cargado inicialmente.
+interface CachedBalance {
+  value: number;
+  ts: number;
+}
+const accountBalanceCache = ref<Record<number, CachedBalance>>({});
+const accountBalanceLoading = ref<Set<number>>(new Set());
+const BALANCE_TTL_MS = 30_000; // 30s: ajustar según necesidad.
+
+function baseAccountBalance(id: number | null | undefined) {
+  if (!id) return 0;
+  const acc = allAccounts.value.find((a) => a.id === id);
+  return acc?.balance ?? 0;
+}
+function getCachedBalance(id: number | null | undefined) {
+  if (!id) return 0;
+  const cached = accountBalanceCache.value[id];
+  if (cached) return cached.value;
+  return baseAccountBalance(id);
+}
+const loadingCurrent = ref(false);
+const loadingDest = ref(false);
+async function fetchAccountBalance(id: number) {
+  if (!id || accountBalanceLoading.value.has(id)) return;
+  // Skip if cache fresh
+  const existing = accountBalanceCache.value[id];
+  if (existing && Date.now() - existing.ts < BALANCE_TTL_MS) return;
+  accountBalanceLoading.value.add(id);
+  try {
+    // Se asume endpoint GET /accounts/{id} devuelve { id, name, balance, currency { code, symbol } }
+    if (form.value.account_from_id === id || form.value.account_id === id)
+      loadingCurrent.value = true;
+    if (form.value.account_to_id === id) loadingDest.value = true;
+    const resp = await api.get(`/accounts/${id}`, { params: { user_id: auth.user?.id } });
+    const data = resp.data?.data || resp.data;
+    const value = Number(data?.balance ?? data?.current_balance ?? data?.saldo ?? 0);
+    accountBalanceCache.value = {
+      ...accountBalanceCache.value,
+      [id]: { value, ts: Date.now() },
+    };
+    // También actualizamos el listado base si existe para mantener consistencia visual en selects
+    const idx = allAccounts.value.findIndex((a) => a.id === id);
+    if (idx >= 0) {
+      const prev = allAccounts.value[idx];
+      if (prev) {
+        allAccounts.value[idx] = {
+          id: prev.id,
+          name: prev.name,
+          balance: value,
+          currencyId: typeof prev.currencyId === 'number' ? prev.currencyId : null,
+          currencyCode: prev.currencyCode || '',
+          currencySymbol: prev.currencySymbol || '',
+        };
+      }
+    }
+  } catch (e) {
+    // Silencioso; fallback a valor base.
+    console.warn('No se pudo obtener balance actual de la cuenta', id, e);
+  } finally {
+    accountBalanceLoading.value.delete(id);
+    if (form.value.account_from_id === id || form.value.account_id === id)
+      loadingCurrent.value = false;
+    if (form.value.account_to_id === id) loadingDest.value = false;
+  }
+}
+
+// Disparar fetch al cambiar cuentas seleccionadas (simple y transfer)
+watch(
+  () => form.value.account_id,
+  (id) => {
+    if (id) void fetchAccountBalance(id);
+  }
+);
+watch(
+  () => form.value.account_from_id,
+  (id) => {
+    if (id) void fetchAccountBalance(id);
+  }
+);
+watch(
+  () => form.value.account_to_id,
+  (id) => {
+    if (id) void fetchAccountBalance(id);
+  }
+);
+// También al abrir el diálogo (si ya viene preseleccionada)
+watch(
+  () => ui.showDialogNewTransaction,
+  (open) => {
+    if (!open) return;
+    const ids = [
+      form.value.account_id,
+      form.value.account_from_id,
+      form.value.account_to_id,
+    ].filter((v): v is number => typeof v === 'number');
+    ids.forEach((id) => void fetchAccountBalance(id));
+  }
+);
+
 const currentBalance = computed(() => {
   const accId = isTransfer.value ? form.value.account_from_id : form.value.account_id;
-  const acc = allAccounts.value.find((a) => a.id === accId);
-  return acc?.balance ?? 0;
+  return getCachedBalance(accId);
 });
 const currencySymbol = computed(() => {
   const accId = isTransfer.value ? form.value.account_from_id : form.value.account_id;
@@ -1211,7 +1335,7 @@ const currencySymbol = computed(() => {
 });
 const originCurrencySymbol = computed(() => originAccount.value?.currencySymbol || '');
 const destCurrencySymbol = computed(() => destAccount.value?.currencySymbol || '');
-const destCurrentBalance = computed(() => destAccount.value?.balance ?? 0);
+const destCurrentBalance = computed(() => getCachedBalance(form.value.account_to_id));
 const applyRateToTotal = computed(
   () => showRateInput.value && !!form.value.rate && Number(form.value.rate) > 0
 );
@@ -1234,6 +1358,7 @@ const newBalance = computed(() => {
   const bal = Number(currentBalance.value || 0);
   const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
   const slug = (ty?.slug || '').toLowerCase();
+  if (!includeInBalance.value) return bal; // si no se incluye, no altera preview
   if (slug === 'transfer') return bal - Math.abs(amt);
   if (slug === 'income') return bal + Math.abs(amt);
   if (slug === 'expense') return bal - Math.abs(amt);
@@ -1242,6 +1367,7 @@ const newBalance = computed(() => {
 const destNewBalance = computed(() => {
   if (!(form.value.account_to_id && form.value.amount != null)) return destCurrentBalance.value;
   const curr = destCurrentBalance.value;
+  if (!includeInBalance.value) return curr; // la exclusión aplica también a destino
   if (!isCrossCurrency.value) return curr + Math.abs(Number(form.value.amount || 0));
   const r = Number(form.value.rate || 0);
   if (!(r > 0)) return curr; // needs rate
@@ -1813,6 +1939,7 @@ function saveTransaction() {
     account_to_id?: number | null;
     items?: Array<{ name: string; amount: number; category_id?: number | null }>;
     payments?: PaymentPayload[];
+    include_in_balance?: number; // 1 o 0
   };
   let payload: TransactionPayload;
   if (!isTrans) {
@@ -1877,6 +2004,7 @@ function saveTransaction() {
       rate: isAdvancedPayment.value ? null : showRateInput.value ? form.value.rate ?? null : null,
       // taxes removed for now
       items,
+      include_in_balance: includeInBalance.value ? 1 : 0,
     };
     if (isAdvancedPayment.value) {
       payload.payments = payments.value.map((p) => ({
@@ -1900,12 +2028,49 @@ function saveTransaction() {
       url_file: form.value.url_file || null,
       rate: form.value.rate ?? null,
       // taxes removed for now
+      include_in_balance: includeInBalance.value ? 1 : 0,
     };
   }
   tsStore
     .addTransaction(payload)
-    .then(() => {
+    .then(async () => {
       $q.notify({ type: 'positive', message: 'Transacción creada' });
+      // Invalida cache de balances de cuentas afectadas y fuerza refetch
+      const affected: number[] = [];
+      if (form.value.account_id) affected.push(form.value.account_id);
+      if (form.value.account_from_id) affected.push(form.value.account_from_id);
+      if (form.value.account_to_id) affected.push(form.value.account_to_id);
+      // En pagos avanzados, incluir todas las cuentas usadas
+      if (!isTransfer.value && isAdvancedPayment.value) {
+        payments.value.forEach((p) => {
+          if (typeof p?.account_id === 'number') affected.push(p.account_id);
+        });
+      }
+      const ids = Array.from(new Set(affected.filter((v): v is number => typeof v === 'number')));
+      // Recalcular saldos de las cuentas afectadas
+      try {
+        if (ids.length) {
+          await Promise.all(
+            ids.map((id) =>
+              api.post(`/accounts/${id}/recalculate-account`, { user_id: auth.user?.id })
+            )
+          );
+        }
+      } catch {
+        // Silencioso: si falla el recálculo, continuamos con la UI
+      }
+      affected.forEach((id) => {
+        if (id in accountBalanceCache.value) delete accountBalanceCache.value[id];
+        void fetchAccountBalance(id);
+      });
+      // Notificar a la app para refrescar vistas relacionadas
+      if (ids.length) {
+        window.dispatchEvent(
+          new CustomEvent('ow:transactions:changed', {
+            detail: { account_ids: ids, reason: 'create' },
+          })
+        );
+      }
       ui.closeNewTransactionDialog();
       resetForm();
     })
@@ -1959,6 +2124,7 @@ function resetForm() {
     { account_id: null, amount: null, rate: null, applyTax: false, tax_id: null, note: null },
   ];
   simpleCategoryId.value = null;
+  includeInBalance.value = true;
 }
 </script>
 

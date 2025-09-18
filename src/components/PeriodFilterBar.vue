@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { usePeriodStore, type PeriodType } from 'stores/period';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 const period = usePeriodStore();
 
 interface TabDef {
@@ -134,8 +134,7 @@ function applyCustom() {
   showCustom.value = false;
 }
 
-// Exponer para tests si hiciera falta
-const currentType = computed(() => period.state.type);
+// noop
 </script>
 
 <style scoped>

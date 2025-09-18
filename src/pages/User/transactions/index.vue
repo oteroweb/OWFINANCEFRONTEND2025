@@ -20,6 +20,24 @@
             <div class="row items-center q-gutter-sm">
               <q-btn
                 flat
+                icon="tune"
+                color="primary"
+                @click="openAdjustTop"
+                :disable="!singleAccountSelected"
+              >
+                <q-tooltip>Ajustar saldo (cuenta seleccionada)</q-tooltip>
+              </q-btn>
+              <q-btn
+                flat
+                icon="autorenew"
+                color="secondary"
+                @click="recalcSingleAccountTop"
+                :disable="!singleAccountSelected"
+              >
+                <q-tooltip>Recalcular saldo (cuenta seleccionada)</q-tooltip>
+              </q-btn>
+              <q-btn
+                flat
                 icon="download"
                 color="primary"
                 @click="exportCSV"
@@ -74,6 +92,9 @@
             <div class="row items-center no-wrap full-width">
               <div class="col-auto text-weight-medium">Saldo actual de la cuenta:</div>
               <div class="col-auto text-weight-bold">
+                <template v-if="singleAccountBalanceLoading">
+                  <q-spinner size="16px" class="q-mr-xs" />
+                </template>
                 {{ formatMoney(singleAccountBalance || 0) }}
               </div>
               <div
@@ -224,6 +245,31 @@
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
       <q-btn fab color="primary" icon="add" @click="openNewFab" />
     </q-page-sticky>
+
+    <!-- Dialogo ajustar saldo desde transacciones -->
+    <q-dialog v-model="showAdjustTop">
+      <q-card style="min-width: 360px">
+        <q-card-section class="text-h6">Ajustar saldo de la cuenta</q-card-section>
+        <q-card-section>
+          <div class="text-caption q-mb-xs">Cuenta seleccionada: {{ singleAccountId ?? '-' }}</div>
+          <q-input
+            v-model="adjustBalanceTop"
+            label="Nuevo saldo"
+            type="number"
+            step="0.01"
+            dense
+            filled
+          />
+          <div class="q-mt-sm">
+            <q-checkbox v-model="includeInBalanceTop" label="Generar transacción de ajuste" dense />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" v-close-popup :disable="adjustingTop" />
+          <q-btn color="primary" label="Guardar" :loading="adjustingTop" @click="submitAdjustTop" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -378,18 +424,54 @@ const runningBalanceMap = ref<Record<string | number, number>>({});
 const singleAccountSelected = computed(
   () => Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length === 1
 );
-function extractAccountBalance(): number | null {
-  const first = rows.value[0];
-  if (!first || typeof first !== 'object') return null;
-  const acc = (first as Record<string, unknown>)['account'];
-  if (acc && typeof acc === 'object') {
-    const b = (acc as Record<string, unknown>)['balance'];
-    if (typeof b === 'number' && Number.isFinite(b)) return b;
+const singleAccountId = computed<number | null>(() => {
+  if (!singleAccountSelected.value) return null;
+  const raw = txStore.selectedAccountIds[0];
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+});
+const singleAccountBalance = ref<number | null>(null);
+const singleAccountBalanceLoading = ref(false);
+async function fetchSingleAccountBalance(): Promise<void> {
+  const id = singleAccountId.value;
+  if (!id) {
+    singleAccountBalance.value = null;
+    return;
   }
-  return null;
+  try {
+    singleAccountBalanceLoading.value = true;
+    const resp = await api.get(`/accounts/${id}`, { params: { user_id: authStore.user?.id } });
+    const data = (resp.data?.data ?? resp.data) as Record<string, unknown> | undefined;
+    let bal = 0;
+    if (data) {
+      const direct = data['balance'];
+      const cur = data['current_balance'];
+      const saldo = data['saldo'];
+      if (typeof direct === 'number') bal = direct;
+      else if (typeof cur === 'number') bal = cur;
+      else if (typeof saldo === 'number') bal = saldo;
+      else if (data['account'] && typeof data['account'] === 'object') {
+        const acc = data['account'] as Record<string, unknown>;
+        const ab = acc['balance'];
+        if (typeof ab === 'number') bal = ab;
+      }
+    }
+    singleAccountBalance.value = Number(bal) || 0;
+  } catch {
+    // si falla, no rompas la UI; deja último valor o null
+    if (singleAccountBalance.value == null) singleAccountBalance.value = 0;
+  } finally {
+    singleAccountBalanceLoading.value = false;
+  }
 }
-const singleAccountBalance = computed(() =>
-  singleAccountSelected.value ? extractAccountBalance() : null
+// reactivo a selección de cuenta
+watch(
+  () => singleAccountId.value,
+  (id) => {
+    if (id) void fetchSingleAccountBalance();
+    else singleAccountBalance.value = null;
+  },
+  { immediate: true }
 );
 const showRunningBalanceColumn = computed(
   () => singleAccountSelected.value && pagination.value.sortBy === 'date'
@@ -466,6 +548,65 @@ const columns = computed<ColumnDef[]>(() => {
   else if (!clone.find((c) => c.name === 'running_balance')) clone.push(runningBalanceColumn);
   return clone;
 });
+
+// ===== Acciones de saldo (ajustar / recalcular) desde cabecera =====
+const showAdjustTop = ref(false);
+const adjustBalanceTop = ref<string>('');
+const adjustingTop = ref(false);
+const includeInBalanceTop = ref(true);
+function openAdjustTop(): void {
+  if (!singleAccountSelected.value) return;
+  adjustBalanceTop.value =
+    singleAccountBalance.value != null ? singleAccountBalance.value.toFixed(2) : '';
+  showAdjustTop.value = true;
+}
+async function submitAdjustTop(): Promise<void> {
+  const id = singleAccountId.value;
+  if (!id) return;
+  const n = Number(adjustBalanceTop.value);
+  if (!Number.isFinite(n)) {
+    $q.notify({ type: 'warning', message: 'Ingresa un saldo válido' });
+    return;
+  }
+  try {
+    adjustingTop.value = true;
+    await api.post(`/accounts/${id}/adjust-balance`, {
+      target_balance: n,
+      include_in_balance: includeInBalanceTop.value,
+      user_id: authStore.user?.id,
+    });
+    await api.post(`/accounts/${id}/recalculate-account`, { user_id: authStore.user?.id });
+    $q.notify({ type: 'positive', message: 'Saldo ajustado' });
+    showAdjustTop.value = false;
+    await runFetch(true);
+    await fetchSingleAccountBalance();
+    window.dispatchEvent(
+      new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'adjust' } })
+    );
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error ajustando saldo' });
+  } finally {
+    adjustingTop.value = false;
+  }
+}
+async function recalcSingleAccountTop(): Promise<void> {
+  const id = singleAccountId.value;
+  if (!id) return;
+  try {
+    $q.loading.show({ message: 'Recalculando saldo...' });
+    await api.post(`/accounts/${id}/recalculate-account`, { user_id: authStore.user?.id });
+    $q.notify({ type: 'positive', message: 'Saldo recalculado' });
+    await runFetch(true);
+    await fetchSingleAccountBalance();
+    window.dispatchEvent(
+      new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'recalc' } })
+    );
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error recalculando saldo' });
+  } finally {
+    $q.loading.hide();
+  }
+}
 
 // Paginación
 const defaultSortKey = dictionary.columns.find((c) => c.key === 'date')
@@ -714,6 +855,14 @@ async function save(): Promise<void> {
       return;
     }
     const payload = buildPayload();
+    let affectedAccountId: number | null = null;
+    // Intentar obtener account_id del payload si existe
+    const rawAcc = payload['account_id'];
+    if (typeof rawAcc === 'number') affectedAccountId = rawAcc;
+    else if (typeof rawAcc === 'string') {
+      const n = Number(rawAcc);
+      if (Number.isFinite(n)) affectedAccountId = n;
+    }
     if (editing.value && currentRowId.value) {
       await api.put(`/${dictionary.url_apis}/${currentRowId.value}`, payload);
       $q.notify({ type: 'positive', message: 'Actualizado correctamente' });
@@ -722,6 +871,23 @@ async function save(): Promise<void> {
       $q.notify({ type: 'positive', message: 'Creado correctamente' });
     }
     showDialog.value = false;
+    // Recalcular saldo de la cuenta afectada (cuando se conoce)
+    try {
+      if (affectedAccountId) {
+        await api.post(`/accounts/${affectedAccountId}/recalculate-account`, {
+          user_id: authStore.user?.id,
+        });
+        // Actualizar banner si corresponde
+        if (singleAccountSelected.value) await fetchSingleAccountBalance();
+        window.dispatchEvent(
+          new CustomEvent('ow:transactions:changed', {
+            detail: { account_id: affectedAccountId, reason: 'save' },
+          })
+        );
+      }
+    } catch {
+      // continuar aunque falle recálculo
+    }
     await runFetch(true);
   } catch (err: unknown) {
     let message = 'Error al guardar';
@@ -890,6 +1056,7 @@ async function runFetch(force = false): Promise<void> {
   lastParamsSignature = sig;
   await fetchData(params);
   computeRunningBalances();
+  if (singleAccountSelected.value) void fetchSingleAccountBalance();
 }
 
 // Montaje: cargar selects y datos
@@ -953,6 +1120,16 @@ onMounted(async () => {
   }
 
   await runFetch(true);
+
+  // Listen to transaction changes to refresh single account balance/banner
+  const handler = () => {
+    if (singleAccountSelected.value) {
+      // Refrescar datos y saldo actual de la cuenta
+      void runFetch(true);
+      void fetchSingleAccountBalance();
+    }
+  };
+  window.addEventListener('ow:transactions:changed', handler);
 });
 
 // Sidebar de cuentas: si hay exactamente una cuenta seleccionada en el widget,

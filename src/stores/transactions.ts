@@ -84,6 +84,8 @@ export const useTransactionsStore = defineStore('transactions', {
       const payload = response.data as unknown as { data?: unknown }
       const newTx = (payload && typeof payload === 'object' && 'data' in payload ? payload.data : response.data) as Transaction
   this.transactions.push(newTx)
+      // Emit event so other components (accounts widget, balances) can refresh
+      window.dispatchEvent(new CustomEvent('ow:transactions:changed', { detail: { type: 'add', id: newTx.id } }))
       return response
     },
     async updateTransaction(tx: Transaction): Promise<AxiosResponse> {
@@ -92,6 +94,7 @@ export const useTransactionsStore = defineStore('transactions', {
         const updated = response.data.data || response.data
         const idx = this.transactions.findIndex(t => t.id === updated.id)
         if (idx !== -1) this.transactions.splice(idx, 1, updated)
+        window.dispatchEvent(new CustomEvent('ow:transactions:changed', { detail: { type: 'update', id: tx.id } }))
         return response
       } catch (error) {
         console.error('Error updating transaction', error)
@@ -103,6 +106,7 @@ export const useTransactionsStore = defineStore('transactions', {
       try {
         await api.delete(`/transactions/${id}`)
         this.transactions = this.transactions.filter(t => t.id !== id)
+        window.dispatchEvent(new CustomEvent('ow:transactions:changed', { detail: { type: 'delete', id } }))
       } catch (error) {
         console.error('Error deleting transaction', error)
       }
