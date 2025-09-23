@@ -22,6 +22,24 @@ const ui = useUiStore();
 </script>
 
 <script lang="ts">
+// Reutilizable para traducir errores simples cuando este diálogo se use para guardar.
+export function translateSimpleTransactionError(raw: string): string {
+  const map: Record<string, string> = { name: 'Concepto', amount: 'Monto' };
+  let out = raw;
+  Object.entries(map).forEach(([k, label]) => {
+    const r = new RegExp(`\\b${k}\\b.*is required`, 'i');
+    if (r.test(raw)) out = out.replace(r, `${label} es requerido`);
+  });
+  if (/incorrect params/i.test(raw)) {
+    const already = /es requerido/.test(out);
+    if (already) return out.replace(/incorrect params/i, 'Parámetros incorrectos');
+    return `Parámetros incorrectos. ${out}`;
+  }
+  return out;
+}
+</script>
+
+<script lang="ts">
 import { defineComponent } from 'vue';
 export default defineComponent({ name: 'TransactionFormDialog' });
 </script>

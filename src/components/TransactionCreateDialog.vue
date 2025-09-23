@@ -1958,11 +1958,13 @@ function saveTransaction() {
         $q.notify({ type: 'warning', message: 'Agrega al menos una línea válida' });
         return;
       }
+      const currentType = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
+      const currentSlug = (currentType?.slug || '').toLowerCase();
+      const isExpense = currentSlug === 'expense';
       items = valid.map((r) => {
         const base = r.qty * r.price;
         const addTax = (() => {
           if (invoiceItems.value.length) {
-            // Find the corresponding row by matching fields; fallback to global IVA
             const row = invoiceItems.value.find(
               (it) =>
                 (it.item || 'Item') === r.name &&
@@ -1976,18 +1978,24 @@ function saveTransaction() {
           }
           return 0;
         })();
+        let totalLine = base + addTax;
+        if (isExpense) totalLine = -Math.abs(totalLine); // respetar signo negativo en gastos
         return {
           name: r.name,
-          amount: base + addTax,
+            amount: totalLine,
           category_id: r.category_id,
         } as ItemPayload;
       });
     } else {
-      const amtAbs = Math.abs(Number(form.value.amount || 0));
+      const currentType = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
+      const currentSlug = (currentType?.slug || '').toLowerCase();
+      const isExpense = currentSlug === 'expense';
+      const rawAmt = Number(form.value.amount || 0);
+      const normalized = isExpense ? -Math.abs(rawAmt) : Math.abs(rawAmt);
       items = [
         {
           name: form.value.name || 'Item',
-          amount: amtAbs,
+          amount: normalized,
           category_id: simpleCategoryId.value ?? null,
         },
       ];
@@ -2006,6 +2014,13 @@ function saveTransaction() {
       items,
       include_in_balance: includeInBalance.value ? 1 : 0,
     };
+    // Asegurar que el monto principal coincide exactamente con la suma de los items (evita error backend)
+    if (isAdvancedAmount.value) {
+      const itemsSum = items.reduce((s, it) => s + Number(it.amount || 0), 0);
+      const norm = Number(itemsSum.toFixed(2));
+  const current = Number(payload.amount || 0);
+      if (Number(current.toFixed(2)) !== norm) payload.amount = norm;
+    }
     if (isAdvancedPayment.value) {
       payload.payments = payments.value.map((p) => ({
         account_id: p.account_id,
@@ -2076,6 +2091,7 @@ function saveTransaction() {
     })
     .catch((err: unknown) => {
       let message = 'Error al crear transacción';
+      let collectedFieldErrors: Record<string, string[]> | undefined;
       try {
         type ApiErrorData = {
           message?: string;
@@ -2090,6 +2106,7 @@ function saveTransaction() {
         if (e?.isApiError && e.api) {
           if (e.api.message) message = e.api.message;
           const fieldErrors = e.api.errors || {};
+          collectedFieldErrors = fieldErrors;
           const list: string[] = [];
           Object.keys(fieldErrors).forEach((k) => {
             const arr = fieldErrors[k];
@@ -2099,7 +2116,9 @@ function saveTransaction() {
         } else if (e?.response?.data) {
           const data = e.response.data;
           if (data.message) message = data.message;
-          const errs: Record<string, string[]> = (data?.errors as Record<string, string[]>) ?? {};
+          const errs: Record<string, string[]> =
+            (data?.errors as Record<string, string[]>) ?? (data?.data as Record<string, string[]>) ?? {};
+          collectedFieldErrors = errs;
           const list: string[] = [];
           Object.keys(errs).forEach((k) => {
             const arr = errs[k];
@@ -2110,6 +2129,7 @@ function saveTransaction() {
       } catch {
         /* ignore parse error */
       }
+      message = translateTransactionErrors(message, collectedFieldErrors);
       console.error(err);
       $q.notify({ type: 'negative', message });
     });
@@ -2125,6 +2145,62 @@ function resetForm() {
   ];
   simpleCategoryId.value = null;
   includeInBalance.value = true;
+}
+
+// Traduce mensajes de error de validación del backend a mensajes cortos en español usando
+// el nombre amigable del campo.
+function translateTransactionErrors(
+  rawMessage: string,
+  fieldErrors?: Record<string, string[]>
+): string {
+  const fieldMap: Record<string, string> = {
+    name: 'Concepto',
+    amount: 'Monto',
+    amount_tax: 'Impuesto',
+    account_id: 'Cuenta',
+    account_from_id: 'Cuenta origen',
+    account_to_id: 'Cuenta destino',
+    provider_id: 'Proveedor',
+    transaction_type_id: 'Tipo de transacción',
+    rate: 'Tasa',
+    date: 'Fecha',
+    datetime: 'Fecha',
+    url_file: 'Archivo',
+  };
+  const requiredPatterns = [
+    /the (.+?) is required/i,
+    /is required/i,
+    /is mandatory/i,
+    /required field/i,
+  ];
+
+  const spanishParts: string[] = [];
+  if (fieldErrors && typeof fieldErrors === 'object') {
+    Object.entries(fieldErrors).forEach(([field, msgs]) => {
+      const base = fieldMap[field] || field;
+      if (!Array.isArray(msgs) || !msgs.length) return;
+      const anyRequired = msgs.some((m) => requiredPatterns.some((r) => r.test(m)));
+      if (anyRequired) spanishParts.push(`${base} es requerido`);
+      else spanishParts.push(`${base}: ${msgs[0]}`);
+    });
+  }
+
+  // Si no hubo fieldErrors estructurados, intentar inferir desde el mensaje crudo
+  if (!spanishParts.length) {
+    Object.entries(fieldMap).forEach(([key, label]) => {
+      const regex = new RegExp(`\\b${key}\\b.*is required`, 'i');
+      if (regex.test(rawMessage)) spanishParts.push(`${label} es requerido`);
+    });
+  }
+
+  if (!spanishParts.length) return rawMessage; // no cambios
+
+  // Evitar duplicar si el mensaje original ya es traducido
+  const baseMsg = spanishParts.join(' | ');
+  if (rawMessage.toLowerCase().includes('incorrect')) {
+    return `Parámetros incorrectos. ${baseMsg}`;
+  }
+  return baseMsg;
 }
 </script>
 
