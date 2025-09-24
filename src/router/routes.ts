@@ -16,7 +16,7 @@ const routes = [
     component: () => import('layouts/AdminLayout.vue'),
     meta: { requiresAuth: true, role: 'admin' },
     children: [
-      { path: '', component: () => import('src/pages/admin/AdminDashboard.vue') },
+  { path: '', component: () => import('src/pages/admin/admin_dashboard.vue') },
       {
         path: 'transactions-old',
         component: () => import('src/pages/admin/old/TransactionsPage.vue'),
@@ -46,13 +46,13 @@ const routes = [
     children: [
   // Landing now points to user dashboard home
   { path: '', redirect: '/user/home' },
-  { path: 'home', component: () => import('src/pages/user/UserDashboard.vue') },
-      { path: 'transactions', component: () => import('src/pages/user/transactions/index.vue') },
-      { path: 'accounts', component: () => import('src/pages/user/accounts/index.vue') },
-      { path: 'categories', component: () => import('src/pages/user/categories/index.vue') },
-      { path: 'taxes', component: () => import('src/pages/user/taxes/index.vue') },
-      { path: 'config', component: () => import('src/pages/user/settings/index.vue') },
-      { path: 'jars', component: () => import('src/pages/user/jars/index.vue') },
+  { path: 'home', component: () => import('src/pages/user/user_dashboard.vue') },
+  { path: 'transactions', component: () => import('src/pages/user/transactions/index.vue') },
+  { path: 'accounts', component: () => import('src/pages/user/accounts/index.vue') },
+  { path: 'categories', component: () => import('src/pages/user/categories/index.vue') },
+  { path: 'taxes', component: () => import('src/pages/user/taxes/index.vue') },
+  { path: 'config', component: () => import('src/pages/user/settings/index.vue') },
+  { path: 'jars', component: () => import('src/pages/user/jars/index.vue') },
     ],
   },
   {

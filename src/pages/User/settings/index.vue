@@ -159,7 +159,7 @@ import { dictionary as taxesDictionary } from '../taxes/dictionary';
 import { api } from 'boot/axios';
 import { Notify, useQuasar } from 'quasar';
 
-defineOptions({ name: 'UserSettingsPage' });
+defineOptions({ name: 'user_settings_page' });
 
 const auth = useAuthStore();
 const $q = useQuasar();

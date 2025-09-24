@@ -91,7 +91,7 @@ import { dictionary as taxesDictionary } from '../taxes/dictionary';
 import { api } from 'boot/axios';
 import { Notify } from 'quasar';
 
-defineOptions({ name: 'UserConfigPage' });
+defineOptions({ name: 'user_config_page' });
 
 const auth = useAuthStore();
 const tab = ref<'profile' | 'accounts' | 'taxes'>('profile');

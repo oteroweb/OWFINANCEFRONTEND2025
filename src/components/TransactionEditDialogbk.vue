@@ -2,20 +2,18 @@
   <q-dialog
     v-model="modelValue"
     persistent
-    :maximized="isUpdate"
+    maximized
     transition-show="jump-down"
     transition-hide="jump-up"
   >
-    <q-card :class="isUpdate ? 'column fit' : ''" :style="!isUpdate ? cardStyle : undefined">
+    <q-card class="column fit">
       <q-bar class="q-pa-sm bg-primary text-white">
-        <div class="text-subtitle2">
-          {{ isUpdate ? 'Editar Transacción' : 'Nueva Transacción' }}
-        </div>
+        <div class="text-subtitle2">Editar Transacción</div>
         <q-space />
         <q-btn dense flat icon="refresh" @click="reloadLists" :disable="saving" />
         <q-btn dense flat icon="close" @click="close" />
       </q-bar>
-      <q-card-section class="q-gutter-md" :class="isUpdate ? 'scroll' : ''">
+      <q-card-section class="q-gutter-md scroll">
         <div class="row q-col-gutter-md">
           <div class="col-12">
             <q-option-group
@@ -60,7 +58,7 @@
               use-input
               input-debounce="300"
               @filter="onAccountFilter"
-              label="Cuenta Origen"
+              label="Cuentxa Origen"
               outlined
               dense
               emit-value
@@ -113,21 +111,12 @@
           <div class="col-12">
             <q-toggle v-model="includeInBalance" label="Incluir en balance de cuentas" dense />
           </div>
-          <div class="col-12">
-            <q-input v-model="form.url_file" label="Archivo (URL)" outlined dense />
-          </div>
         </div>
       </q-card-section>
       <q-separator />
       <q-card-actions align="right" class="q-pa-md">
         <q-btn flat label="Cancelar" color="primary" @click="close" />
-        <q-btn
-          unelevated
-          :label="isUpdate ? 'Guardar' : 'Crear'"
-          color="primary"
-          :loading="saving"
-          @click="persist"
-        />
+        <q-btn unelevated label="Guardar" color="primary" :loading="saving" @click="persist" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -135,31 +124,22 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useQuasar } from 'quasar';
-import { useTransactionsStore, type Transaction } from 'stores/transactions';
 import { useUiStore } from 'stores/ui';
+import { useTransactionsStore } from 'stores/transactions';
 import { useTransactionForm } from 'src/composables/useTransactionForm';
 
-// v-model for visibility
-const modelValue = defineModel<boolean>({ required: true });
-
-// Optional id to switch to update mode
-const props = defineProps<{ id?: number | null }>();
-
-const $q = useQuasar();
 const ui = useUiStore();
 const txStore = useTransactionsStore();
 
-const isUpdate = computed(() => typeof props.id === 'number' && Number.isFinite(props.id));
-
-// Keep the same default size as the previous create dialog when not maximized
-const cardStyle = computed(() => 'min-width: 430px; max-width: 860px');
+const modelValue = computed({
+  get: () => ui.showDialogEditTransaction,
+  set: (v: boolean) => (ui.showDialogEditTransaction = v),
+});
 
 const saving = ref(false);
 
 const {
   form,
-  includeInBalance,
   ttOptions,
   loadTransactionTypes,
   providerOptions,
@@ -177,27 +157,16 @@ const {
   rateLabel,
   previewBalance,
   loadFromTransaction,
-  reset,
-  saveCreate,
   saveUpdate,
+  includeInBalance,
 } = useTransactionForm();
 
-// Load data when opening
 watch(
-  () => modelValue.value,
-  (open) => {
-    if (!open) return;
-    void loadTransactionTypes();
-    void ensureProvidersLoaded();
-    void ensureAccountsLoaded();
-    if (isUpdate.value && props.id) {
-      const tx = txStore.transactions.find((t) => t.id === props.id) as Transaction | undefined;
-      if (tx) loadFromTransaction(tx);
-    } else {
-      // reset form on create
-      reset();
-      includeInBalance.value = true;
-    }
+  () => ui.editTransactionId,
+  (id) => {
+    if (!id) return;
+    const tx = txStore.transactions.find((t) => t.id === id);
+    if (tx) loadFromTransaction(tx as any);
   },
   { immediate: true }
 );
@@ -206,36 +175,10 @@ async function persist() {
   if (saving.value) return;
   saving.value = true;
   try {
-    if (isUpdate.value) await saveUpdate();
-    else await saveCreate();
-    // Notificar a la app para refrescar vistas relacionadas
-    const affected: Array<number | null | undefined> = [
-      form.value.account_id,
-      form.value.account_from_id,
-      form.value.account_to_id,
-    ];
-    const ids = Array.from(new Set(affected.filter((v): v is number => typeof v === 'number')));
-    if (ids.length) {
-      window.dispatchEvent(
-        new CustomEvent('ow:transactions:changed', {
-          detail: { account_ids: ids, reason: isUpdate.value ? 'update' : 'create' },
-        })
-      );
-    } else {
-      window.dispatchEvent(
-        new CustomEvent('ow:transactions:changed', {
-          detail: { reason: isUpdate.value ? 'update' : 'create' },
-        })
-      );
-    }
-    $q.notify({
-      type: 'positive',
-      message: isUpdate.value ? 'Transacción actualizada' : 'Transacción creada',
-    });
+    await saveUpdate();
     close();
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error al guardar';
-    $q.notify({ type: 'negative', message: msg });
+    console.error(e);
   } finally {
     saving.value = false;
   }
@@ -243,9 +186,6 @@ async function persist() {
 
 function close() {
   modelValue.value = false;
-  // Mantener compat con ui store por si estaba enlazado
-  if (isUpdate.value) ui.showDialogEditTransaction = false;
-  else ui.showDialogNewTransaction = false;
 }
 
 function reloadLists() {
@@ -253,25 +193,8 @@ function reloadLists() {
   reloadAccounts();
   void loadTransactionTypes();
 }
-</script>
 
-<script lang="ts">
-// Reutilizable para traducir errores simples cuando este diálogo se use para guardar.
-export function translateSimpleTransactionError(raw: string): string {
-  const map: Record<string, string> = { name: 'Concepto', amount: 'Monto' };
-  let out = raw;
-  Object.entries(map).forEach(([k, label]) => {
-    const r = new RegExp(`\\b${k}\\b.*is required`, 'i');
-    if (r.test(raw)) out = out.replace(r, `${label} es requerido`);
-  });
-  if (/incorrect params/i.test(raw)) {
-    const already = /es requerido/.test(out);
-    if (already) return out.replace(/incorrect params/i, 'Parámetros incorrectos');
-    return `Parámetros incorrectos. ${out}`;
-  }
-  return out;
-}
-
-import { defineComponent } from 'vue';
-export default defineComponent({ name: 'TransactionFormDialog' });
+void loadTransactionTypes();
+void ensureProvidersLoaded();
+void ensureAccountsLoaded();
 </script>

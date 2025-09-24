@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'UserCategoriesPage' });
+defineOptions({ name: 'user_categories_page' });
 import { ref } from 'vue';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import { api } from 'boot/axios';

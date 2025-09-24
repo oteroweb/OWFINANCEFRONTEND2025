@@ -95,7 +95,7 @@
                 <template v-if="singleAccountBalanceLoading">
                   <q-spinner size="16px" class="q-mr-xs" />
                 </template>
-                {{ formatMoney(singleAccountBalance || 0) }}
+                <span v-else>{{ formatSingleAccountBalanceDisplay() }}</span>
               </div>
               <div
                 class="col text-right text-caption text-grey-7"
@@ -204,42 +204,11 @@
       </div>
     </div>
 
-    <!-- Diálogo de creación/edición -->
-    <q-dialog v-model="showDialog" @keydown.escape="showDialog = false">
-      <q-card style="min-width: 420px">
-        <q-card-section>
-          <div class="text-h6">
-            {{ editing ? dictionary.window_update_title : dictionary.window_save_title }}
-          </div>
-          <div class="text-caption text-grey-7">
-            {{ editing ? dictionary.update_description : dictionary.save_description }}
-          </div>
-        </q-card-section>
-        <q-card-section>
-          <q-form @submit.prevent="save">
-            <component
-              v-for="field in editing ? dictionary.forms_update : dictionary.forms_save"
-              :key="field.id"
-              :is="formComponent(field.type)"
-              v-model="form[field.vmodel]"
-              v-bind="fieldProps(field)"
-            />
-          </q-form>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" color="secondary" v-close-popup />
-          <q-btn
-            flat
-            :label="editing ? dictionary.button_update_label : dictionary.button_save_label"
-            color="primary"
-            @click="save"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <!-- Diálogo (FAB) usando TransactionCreateDialog -->
-    <TransactionCreateDialog />
+    <!-- Diálogos: usar genérico solo para EDITAR; para NUEVA transacción se usa TransactionCreateDialog (en UserLayout) -->
+    <TransactionFormDialog
+      v-model="ui.showDialogEditTransaction"
+      :id="ui.editTransactionId || undefined"
+    />
 
     <!-- Botón flotante para crear transacción -->
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
@@ -270,27 +239,58 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="showAdjustTop">
+      <q-card style="min-width: 360px">
+        <q-card-section class="text-h6">Ajustar saldo de la cuenta</q-card-section>
+        <q-card-section>
+          <div class="text-caption q-mb-xs">Cuenta seleccionada: {{ singleAccountId ?? '-' }}</div>
+          <q-input
+            v-model="adjustBalanceTop"
+            label="Nuevo saldo"
+            type="number"
+            step="0.01"
+            dense
+            filled
+          />
+          <div class="q-mt-sm">
+            <q-checkbox v-model="includeInBalanceTop" label="Generar transacción de ajuste" dense />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" v-close-popup :disable="adjustingTop" />
+          <q-btn color="primary" label="Guardar" :loading="adjustingTop" @click="submitAdjustTop" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
+// --- Helpers and methods required by template ---
+function toStringLabel(val: unknown): string {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  return '';
+}
+
+const selectOptionsAll = reactive<Record<string, Array<Record<string, unknown>>>>({});
+const selectOptionsFiltered = reactive<Record<string, Array<Record<string, unknown>>>>({});
 // Imports MUST precede any statements (ESM rule); previously defineOptions was before imports causing vue-tsc errors.
 import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { useQuasar, QInput, QSelect, QCheckbox } from 'quasar';
-import type { QSelectProps, QInputProps } from 'quasar';
+import { useQuasar, QInput, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
-import { useAuthStore } from 'stores/auth';
+// import { useAuthStore } from 'stores/auth';
 import { dictionary as dictionaryDef } from './dictionary';
-import { AccountsSidebarWidget, TransactionCreateDialog } from 'components';
+import { AccountsSidebarWidget, TransactionFormDialog } from 'components';
 import { useTransactionsStore } from 'stores/transactions';
 import { usePeriodStore } from 'stores/period';
 import { useUiStore } from 'stores/ui';
-defineOptions({ name: 'UserTransactionsPage' });
+defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
 const route = useRoute();
-const authStore = useAuthStore();
+// const authStore = useAuthStore(); // actualmente no usado
 const txStore = useTransactionsStore();
 const ui = useUiStore();
 const periodStore = usePeriodStore();
@@ -432,6 +432,22 @@ const singleAccountId = computed<number | null>(() => {
 });
 const singleAccountBalance = ref<number | null>(null);
 const singleAccountBalanceLoading = ref(false);
+// Moneda asociada a la cuenta seleccionada
+const singleAccountCurrencySymbol = ref<string>('$');
+const singleAccountCurrencyAlign = ref<'left' | 'right'>('left');
+// Helper para convertir valores numéricos que llegan como string o number
+function toNumeric(val: unknown): number | null {
+  if (typeof val === 'number' && Number.isFinite(val)) return val;
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (!s) return null;
+    // El backend envía números como "351.40"; removemos separadores de miles comunes
+    const normalized = s.replace(/\s+/g, '').replace(/,/g, '');
+    const n = Number(normalized);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
 async function fetchSingleAccountBalance(): Promise<void> {
   const id = singleAccountId.value;
   if (!id) {
@@ -440,29 +456,62 @@ async function fetchSingleAccountBalance(): Promise<void> {
   }
   try {
     singleAccountBalanceLoading.value = true;
-    const resp = await api.get(`/accounts/${id}`, { params: { user_id: authStore.user?.id } });
+    const resp = await api.get(`/accounts/${id}`);
     const data = (resp.data?.data ?? resp.data) as Record<string, unknown> | undefined;
-    let bal = 0;
-    if (data) {
-      const direct = data['balance'];
-      const cur = data['current_balance'];
-      const saldo = data['saldo'];
-      if (typeof direct === 'number') bal = direct;
-      else if (typeof cur === 'number') bal = cur;
-      else if (typeof saldo === 'number') bal = saldo;
-      else if (data['account'] && typeof data['account'] === 'object') {
-        const acc = data['account'] as Record<string, unknown>;
-        const ab = acc['balance'];
-        if (typeof ab === 'number') bal = ab;
+    let bal: number | null = null;
+    if (data && typeof data === 'object') {
+      // Fuente principal: objeto raíz o data.account
+      const source: Record<string, unknown> =
+        data['account'] && typeof data['account'] === 'object'
+          ? (data['account'] as Record<string, unknown>)
+          : data;
+      // Capturar moneda si existe
+      if (source['currency'] && typeof source['currency'] === 'object') {
+        const cur = source['currency'] as Record<string, unknown>;
+        const sym = typeof cur['symbol'] === 'string' ? cur['symbol'] : '$';
+        const alignRaw = typeof cur['align'] === 'string' ? cur['align'].toLowerCase() : 'left';
+        singleAccountCurrencySymbol.value = sym || '$';
+        singleAccountCurrencyAlign.value = alignRaw === 'right' ? 'right' : 'left';
+      }
+      const candidateKeys = [
+        'balance_cached',
+        'balance',
+        'balance_calculado',
+        'current_balance',
+        'saldo',
+        'initial',
+      ];
+      for (const k of candidateKeys) {
+        if (bal != null) break;
+        bal = toNumeric(source[k]);
+      }
+      // Si todavía no encontramos, intentamos sobre el objeto raíz completo con todas las keys
+      if (bal == null && source !== data) {
+        for (const k of candidateKeys) {
+          if (bal != null) break;
+          bal = toNumeric(data[k]);
+        }
       }
     }
-    singleAccountBalance.value = Number(bal) || 0;
+    singleAccountBalance.value = bal != null ? bal : 0;
   } catch {
     // si falla, no rompas la UI; deja último valor o null
     if (singleAccountBalance.value == null) singleAccountBalance.value = 0;
   } finally {
     singleAccountBalanceLoading.value = false;
   }
+}
+// Formato específico del saldo de la cuenta seleccionada: -400$
+function formatSingleAccountBalanceDisplay(): string {
+  const val = singleAccountBalance.value ?? 0;
+  const sym = singleAccountCurrencySymbol.value || '$';
+  const align = singleAccountCurrencyAlign.value;
+  const absStr = Math.abs(val).toFixed(2).replace(/\.00$/, '');
+  const sign = val < 0 ? '-' : '';
+  // Requerimiento: símbolo al final (ej: -400$) independientemente del align, pero lo dejamos
+  // preparado por si luego se quiere usar align para variar.
+  if (align === 'left') return `${sign}${absStr}${sym}`;
+  return `${sign}${absStr}${sym}`;
 }
 // reactivo a selección de cuenta
 watch(
@@ -573,9 +622,8 @@ async function submitAdjustTop(): Promise<void> {
     await api.post(`/accounts/${id}/adjust-balance`, {
       target_balance: n,
       include_in_balance: includeInBalanceTop.value,
-      user_id: authStore.user?.id,
     });
-    await api.post(`/accounts/${id}/recalculate-account`, { user_id: authStore.user?.id });
+    await api.post(`/accounts/${id}/recalculate-account`);
     $q.notify({ type: 'positive', message: 'Saldo ajustado' });
     showAdjustTop.value = false;
     await runFetch(true);
@@ -594,7 +642,7 @@ async function recalcSingleAccountTop(): Promise<void> {
   if (!id) return;
   try {
     $q.loading.show({ message: 'Recalculando saldo...' });
-    await api.post(`/accounts/${id}/recalculate-account`, { user_id: authStore.user?.id });
+    await api.post(`/accounts/${id}/recalculate-account`);
     $q.notify({ type: 'positive', message: 'Saldo recalculado' });
     await runFetch(true);
     await fetchSingleAccountBalance();
@@ -620,294 +668,7 @@ const pagination = ref({
   rowsNumber: 0,
 });
 
-// Diálogo y formulario dinámico
-const showDialog = ref(false);
-const editing = ref(false);
-type FormValue = string | number | boolean | null | undefined;
-const form = reactive<Record<string, FormValue>>({});
-const selectOptionsAll = reactive<Record<string, Array<Record<string, unknown>>>>({});
-const selectOptionsFiltered = reactive<Record<string, Array<Record<string, unknown>>>>({});
-const currentRowId = ref<number | null>(null);
-
-function currentFormFields() {
-  return editing.value ? dictionary.forms_update : dictionary.forms_save;
-}
-
-// Componentes dinámicos
-function selectComponent(type: string) {
-  if (type === 'select') return QSelect;
-  if (type === 'checkbox') return QCheckbox;
-  return QInput;
-}
-function formComponent(type: string) {
-  if (type === 'textarea') return QInput;
-  if (type === 'checkbox') return QCheckbox;
-  if (type === 'select') return QSelect;
-  return QInput;
-}
-
-function toStringLabel(val: unknown): string {
-  if (typeof val === 'string') return val;
-  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
-  return '';
-}
-
-function fieldProps(field: CrudField): Partial<QSelectProps & QInputProps> {
-  const isSelect = field.type === 'select';
-  if (isSelect && !field.vmodel_api) {
-    return {
-      dense: true,
-      filled: true,
-      label: field.label,
-      options: field.items as Array<Record<string, unknown>>,
-      optionValue: 'value',
-      optionLabel: 'label',
-      emitValue: true,
-      mapOptions: true,
-      clearable: true,
-    } as Partial<QSelectProps>;
-  }
-  const isTextarea = field.type === 'textarea';
-  const isTime = field.type === 'time';
-  const propsObj: Record<string, unknown> = {
-    dense: true,
-    ...(field.type !== 'checkbox' ? { filled: true } : {}),
-    label: field.label,
-  };
-  if (isSelect) {
-    propsObj.options = selectOptionsFiltered[field.vmodel] || [];
-    propsObj.optionValue = 'id';
-    propsObj.optionLabel = field.select_label || 'name';
-    propsObj.emitValue = true;
-    propsObj.mapOptions = true;
-    propsObj.useInput = true;
-    propsObj.newValueMode = 'add';
-    propsObj.inputClass = 'text-body1';
-    propsObj.clearable = true;
-    propsObj.inputDebounce = 300;
-    propsObj.behavior = 'menu';
-    propsObj.popupContentClass = 'q-pa-sm';
-    propsObj.behaviorTimeout = 0;
-    propsObj.noOptionsLabel = 'Sin resultados';
-    propsObj.onFilter = ((val: string, doneFn: (update: () => void) => void) => {
-      const labelKey = field.select_label || 'name';
-      const all = selectOptionsAll[field.vmodel] || [];
-      const needle = String(val || '').toLowerCase();
-      doneFn(() => {
-        if (!needle) {
-          selectOptionsFiltered[field.vmodel] = all;
-        } else {
-          selectOptionsFiltered[field.vmodel] = all.filter((opt: Record<string, unknown>) => {
-            const raw = opt[labelKey];
-            const lbl = toStringLabel(raw);
-            return lbl.toLowerCase().includes(needle);
-          });
-        }
-      });
-    }) as QSelectProps['onFilter'];
-  }
-  if (field.type === 'date') Object.assign(propsObj, { type: 'date' as const });
-  if (field.type === 'datetime') Object.assign(propsObj, { type: 'datetime-local' as const });
-  if (isTextarea) Object.assign(propsObj, { type: 'textarea' as const });
-  if (isTime) Object.assign(propsObj, { type: 'time' as const });
-  return propsObj as Partial<QSelectProps & QInputProps>;
-}
-
-// Inicializar formulario con valores por defecto del diccionario
-function resetForm(): void {
-  Object.keys(form).forEach((k) => delete form[k]);
-  for (const field of dictionary.forms_save) {
-    form[field.vmodel] = field.value ?? (field.type === 'checkbox' ? false : '');
-  }
-  if (Object.prototype.hasOwnProperty.call(form, 'user_id')) {
-    const uid = authStore.user?.id ?? null;
-    if (uid) form['user_id'] = uid;
-  }
-  currentRowId.value = null;
-}
-
-// Mapear row -> form para edición
-function loadRowIntoForm(row: Row): void {
-  Object.keys(form).forEach((k) => delete form[k]);
-  for (const field of dictionary.forms_update) {
-    const apiKey = field.vmodel_api || field.vmodel;
-    const raw = (row as Record<string, unknown>)[apiKey];
-    if (field.type === 'datetime' && typeof raw === 'string') {
-      const [datePart, timePart = ''] = raw.split(' ');
-      const hhmm = timePart.slice(0, 5);
-      form[field.vmodel] = (datePart && hhmm ? `${datePart}T${hhmm}` : datePart) as FormValue;
-      continue;
-    }
-    if (field.type === 'checkbox') {
-      form[field.vmodel] = raw === 1 || raw === true;
-      continue;
-    }
-    if (field.type === 'select' && !field.vmodel_api && typeof raw === 'string') {
-      try {
-        const obj = JSON.parse(raw);
-        form[field.vmodel] = (obj.value as FormValue) ?? '';
-      } catch {
-        form[field.vmodel] = '';
-      }
-      continue;
-    }
-    const fromApi = raw;
-    const fromVModel = (row as Record<string, unknown>)[field.vmodel];
-    const val: unknown = fromApi ?? fromVModel;
-    form[field.vmodel] = (val as FormValue) ?? '';
-  }
-  const maybeId = (row as Record<string, unknown>)['id'];
-  currentRowId.value = typeof maybeId === 'number' ? maybeId : null;
-}
-
-function edit(row: Row): void {
-  editing.value = true;
-  loadRowIntoForm(row);
-  showDialog.value = true;
-}
-
-// FAB: abrir diálogo de nueva transacción usando UI store
-function openNewFab(): void {
-  editing.value = false;
-  resetForm();
-  ui.openNewTransactionDialog();
-}
-
-// Payload
-function buildPayload(): Record<string, unknown> {
-  const payload: Record<string, unknown> = {};
-  const fields = currentFormFields();
-  for (const field of fields) {
-    const apiKey = field.vmodel_api || field.vmodel;
-    payload[apiKey] = form[field.vmodel];
-  }
-  for (const field of fields) {
-    if (field.type === 'checkbox') {
-      const apiKey = field.vmodel_api || field.vmodel;
-      const val = payload[apiKey];
-      if (typeof val === 'boolean') {
-        payload[apiKey] = val ? 1 : 0;
-      }
-    }
-  }
-  for (const field of fields) {
-    if (field.type === 'select' && !field.vmodel_api) {
-      const apiKey = field.vmodel_api || field.vmodel;
-      const v = payload[apiKey];
-      if (v && typeof v === 'object' && 'value' in (v as Record<string, unknown>)) {
-        payload[apiKey] = (v as Record<string, unknown>).value;
-      }
-    }
-  }
-  if ('align' in payload && typeof payload.align === 'object' && payload.align != null) {
-    try {
-      payload.align = (payload.align as Record<string, unknown>).value;
-    } catch {
-      /* ignore align extraction */
-    }
-  }
-  for (const field of fields) {
-    if (field.type === 'datetime') {
-      const apiKey = field.vmodel_api || field.vmodel;
-      const val = payload[apiKey];
-      if (typeof val === 'string' && !val.endsWith(':00')) {
-        payload[apiKey] = `${val}:00`;
-      }
-    }
-  }
-  if (editing.value && currentRowId.value) {
-    payload['id'] = currentRowId.value;
-  }
-  // Ensure user scoping on save
-  return payload;
-}
-
-// Borrar
-async function remove(row: unknown): Promise<void> {
-  try {
-    const id = getNumberProp(row, 'id');
-    if (!id) {
-      $q.notify({ type: 'warning', message: 'ID no válido' });
-      return;
-    }
-    await api.delete(`/${dictionary.url_apis}/${id}`);
-    $q.notify({ type: 'negative', message: 'Registro eliminado' });
-    await runFetch(true);
-  } catch {
-    $q.notify({ type: 'negative', message: 'Error al eliminar' });
-  }
-}
-
-// Guardar
-async function save(): Promise<void> {
-  try {
-    const required: string[] = [];
-    const vmKeys = (editing.value ? dictionary.forms_update : dictionary.forms_save).map(
-      (f) => f.vmodel
-    );
-    if (vmKeys.includes('name') && !form['name']) required.push('Nombre');
-    if (vmKeys.includes('amount') && (form['amount'] === '' || form['amount'] === null))
-      required.push('Cantidad');
-    if (vmKeys.includes('date') && !form['date']) required.push('Fecha');
-    // nota: este CRUD no usa 'time' como campo independiente
-    if (required.length) {
-      $q.notify({ type: 'warning', message: `Faltan: ${required.join(', ')}` });
-      return;
-    }
-    const payload = buildPayload();
-    let affectedAccountId: number | null = null;
-    // Intentar obtener account_id del payload si existe
-    const rawAcc = payload['account_id'];
-    if (typeof rawAcc === 'number') affectedAccountId = rawAcc;
-    else if (typeof rawAcc === 'string') {
-      const n = Number(rawAcc);
-      if (Number.isFinite(n)) affectedAccountId = n;
-    }
-    if (editing.value && currentRowId.value) {
-      await api.put(`/${dictionary.url_apis}/${currentRowId.value}`, payload);
-      $q.notify({ type: 'positive', message: 'Actualizado correctamente' });
-    } else {
-      await api.post(`/${dictionary.url_apis}`, payload);
-      $q.notify({ type: 'positive', message: 'Creado correctamente' });
-    }
-    showDialog.value = false;
-    // Recalcular saldo de la cuenta afectada (cuando se conoce)
-    try {
-      if (affectedAccountId) {
-        await api.post(`/accounts/${affectedAccountId}/recalculate-account`, {
-          user_id: authStore.user?.id,
-        });
-        // Actualizar banner si corresponde
-        if (singleAccountSelected.value) await fetchSingleAccountBalance();
-        window.dispatchEvent(
-          new CustomEvent('ow:transactions:changed', {
-            detail: { account_id: affectedAccountId, reason: 'save' },
-          })
-        );
-      }
-    } catch {
-      // continuar aunque falle recálculo
-    }
-    await runFetch(true);
-  } catch (err: unknown) {
-    let message = 'Error al guardar';
-    if (err && typeof err === 'object') {
-      const maybe = err as { message?: unknown };
-      if (typeof maybe.message === 'string') message = maybe.message;
-    }
-    $q.notify({ type: 'negative', message });
-  }
-}
-
-// Guardado desde FAB lo maneja internamente el componente TransactionCreateDialog
-
-function getNumberProp(obj: unknown, key: string): number | undefined {
-  if (obj && typeof obj === 'object') {
-    const val = (obj as Record<string, unknown>)[key];
-    if (typeof val === 'number') return val;
-  }
-  return undefined;
-}
+// ...existing code...
 
 // QTable server-side
 type QTablePagination = {
@@ -1289,6 +1050,89 @@ function clearFilters(): void {
   }
   pagination.value.page = 1;
   void runFetch();
+}
+
+// ===== Métodos faltantes referenciados en template =====
+function openNewFab(): void {
+  ui.openNewTransactionDialog();
+}
+// Selección de componente para filtros dinámicos (solo soportamos select/input/checkbox básicos)
+function selectComponent(type: string) {
+  switch (type) {
+    case 'select':
+      return 'q-select';
+    case 'checkbox':
+      return 'q-checkbox';
+    case 'input':
+    default:
+      return 'q-input';
+  }
+}
+function fieldProps(field: CrudField) {
+  const base: Record<string, unknown> = {};
+  if (field.type === 'select') {
+    base.options = selectOptionsFiltered[field.vmodel] || [];
+    base.optionValue = 'id';
+    base.optionLabel = field.select_label || 'name';
+    base.clearable = true;
+    base.dense = true;
+    base.filled = true;
+    base.emitValue = true;
+    base.mapOptions = true;
+    base.useInput = true;
+    base.inputDebounce = 0;
+    base.onFilter = (val: string, done: (cb: () => void) => void) => {
+      const list = selectOptionsAll[field.vmodel] || [];
+      const needle = (val || '').toLowerCase();
+      done(() => {
+        selectOptionsFiltered[field.vmodel] = !needle
+          ? list
+          : list.filter((o) =>
+              toStringLabel(o[field.select_label || 'name'])
+                .toLowerCase()
+                .includes(needle)
+            );
+      });
+    };
+  } else if (field.type === 'checkbox') {
+    base.dense = true;
+  } else {
+    base.type = 'text';
+    base.dense = true;
+    base.filled = true;
+    if (field.placeholder) base.placeholder = field.placeholder;
+  }
+  base.label = field.label;
+  return base;
+}
+function edit(row: Record<string, unknown>) {
+  const idRaw = row && row['id'];
+  const id = Number(idRaw);
+  if (!Number.isFinite(id)) return;
+  ui.openEditTransactionDialog(id);
+}
+function remove(row: Record<string, unknown>) {
+  const idRaw = row && row['id'];
+  const id = Number(idRaw);
+  if (!Number.isFinite(id)) return;
+  $q.dialog({
+    title: 'Confirmar',
+    message: '¿Eliminar la transacción seleccionada?',
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    // Ejecutar asincrónicamente sin retornar promesa al manejador de onOk
+    void (async () => {
+      try {
+        await txStore.deleteTransaction(id);
+        $q.notify({ type: 'positive', message: 'Transacción eliminada' });
+        void runFetch(true);
+        if (singleAccountSelected.value) void fetchSingleAccountBalance();
+      } catch {
+        $q.notify({ type: 'negative', message: 'Error eliminando transacción' });
+      }
+    })();
+  });
 }
 
 function exportCSV(): void {

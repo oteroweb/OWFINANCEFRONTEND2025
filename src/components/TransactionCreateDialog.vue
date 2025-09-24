@@ -654,6 +654,7 @@ import { useTransactionTypesStore, type TransactionType } from 'stores/transacti
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import CategoriesTree from './CategoriesTree.vue';
+import { useTransactionForm } from 'src/composables/useTransactionForm';
 defineOptions({ name: 'TransactionCreateDialog' });
 
 const ui = useUiStore();
@@ -698,28 +699,24 @@ const form = ref<TransactionForm>(initialForm());
 // Flag para excluir la transacción del balance agregado de cuentas
 const includeInBalance = ref(true);
 
-// ----- Transaction Types -----
-const ttOptions = ref<{ label: string; value: string }[]>([]);
-async function loadTransactionTypes() {
-  try {
-    await ttypes.fetchTransactionTypes();
-    const bySlug = (s: string) =>
-      ttypes.types.find((t: TransactionType) => (t.slug || '').toLowerCase() === s);
-    const byName = (n: string) =>
-      ttypes.types.find((t: TransactionType) => t.name.toLowerCase().includes(n));
-    const income = bySlug('income') || byName('ingreso');
-    const expense = bySlug('expense') || byName('egreso');
-    const transfer = bySlug('transfer') || byName('transfer') || byName('transferencia');
-    const opts: { label: string; value: string }[] = [];
-    if (income) opts.push({ label: income.name, value: income.id });
-    if (expense) opts.push({ label: expense.name, value: expense.id });
-    if (transfer) opts.push({ label: transfer.name, value: transfer.id });
-    ttOptions.value = opts;
-    if (!form.value.transaction_type_id && income) form.value.transaction_type_id = income.id;
-  } catch (e) {
-    console.error(e);
-  }
-}
+// ----- Transaction Types & Shared Form Helpers (from composable) -----
+const {
+  ttOptions,
+  loadTransactionTypes,
+  // Providers
+  providerOptions,
+  providerLabel,
+  onProviderFilter,
+  ensureProvidersLoaded,
+  reloadProviders,
+  // Accounts
+  accountOptions,
+  allAccounts,
+  accountLabel,
+  onAccountFilter,
+  ensureAccountsLoaded,
+  reloadAccounts,
+} = useTransactionForm();
 void loadTransactionTypes();
 
 // ----- Taxes (fetch only) -----
@@ -750,45 +747,12 @@ async function fetchAvailableTaxes() {
 
 // taxes deferred: UI and logic removed
 
-// ----- Providers -----
-interface ProviderOption {
-  id: number;
-  name: string;
-  address?: string;
-}
-const providerOptions = ref<ProviderOption[]>([]);
-const allProviders = ref<ProviderOption[]>([]);
+// ----- Providers (inline add only; options/loaders come from composable) -----
 const showAddProviderDialog = ref(false);
 const newProviderName = ref('');
 const newProviderAddress = ref('');
 const providerErrors = ref<Record<string, string[]>>({});
 const providerSaving = ref(false);
-let providersLoaded = false;
-function providerLabel(p: { name?: string; address?: string }) {
-  if (!p) return '';
-  return p.address ? `${p.name} (${p.address})` : p.name || '';
-}
-function onProviderFilter(val: string, done: (cb: () => void) => void) {
-  const needle = (val || '').toLowerCase();
-  done(() => {
-    providerOptions.value = !needle
-      ? allProviders.value
-      : allProviders.value.filter((p) => (p.name || '').toLowerCase().includes(needle));
-  });
-}
-async function ensureProvidersLoaded() {
-  if (providersLoaded) return;
-  try {
-    const r = await api.get('/providers', { params: { user_id: auth.user?.id } });
-    const list = (r.data.data || r.data) as ProviderOption[];
-    allProviders.value = list || [];
-    providerOptions.value = list || [];
-    providersLoaded = true;
-  } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando proveedores' });
-    providersLoaded = false;
-  }
-}
 function triggerAddProviderDialog(val: string) {
   newProviderName.value = val;
   newProviderAddress.value = '';
@@ -817,7 +781,7 @@ async function addProvider() {
     });
     const p = resp.data?.data || resp.data;
     form.value.provider_id = p.id;
-    providersLoaded = false;
+    reloadProviders();
     await ensureProvidersLoaded();
     $q.notify({ type: 'positive', message: 'Proveedor creado' });
     resetProviderDialog();
@@ -869,15 +833,12 @@ interface AccountOption {
   currencyCode?: string;
   currencySymbol?: string;
 }
-const allAccounts = ref<AccountOption[]>([]);
-const accountOptions = ref<AccountOption[]>([]);
 const showAddAccountDialog = ref(false);
 const newAccountName = ref('');
 const newAccountInitial = ref<number | null>(null);
 const newAccountType = ref<number | null>(null);
 const newAccountCurrency = ref<number | null>(null);
 const lastAccountName = ref('');
-let accountsLoaded = false;
 let accountTypesLoaded = false;
 let currenciesLoaded = false;
 type BasicOption = { id: number; name: string };
@@ -894,61 +855,6 @@ const allAccountTypes = ref<BasicOption[]>([]);
 const currencyOptions = ref<CurrencyOption[]>([]);
 const allCurrencies = ref<CurrencyOption[]>([]);
 
-async function ensureAccountsLoaded() {
-  if (accountsLoaded) return;
-  try {
-    const res = await api.get('/accounts', { params: { user_id: auth.user?.id } });
-    type ApiCurrency = { id?: number; code?: string; symbol?: string };
-    type ApiAccount = {
-      id: number;
-      name: string;
-      initial?: number;
-      balance?: number;
-      current_balance?: number;
-      saldo?: number;
-      currency?: ApiCurrency;
-    };
-    const fetched = (res.data.data || res.data) as ApiAccount[];
-    const mapped = (fetched || []).map((a) => {
-      const rawBal =
-        a.balance ??
-        a.current_balance ??
-        a.saldo ??
-        (typeof a.initial === 'number' ? a.initial : 0);
-      const cur: ApiCurrency = a.currency || {};
-      return {
-        id: a.id,
-        name: a.name,
-        balance: Number(rawBal || 0),
-        currencyId: typeof cur.id === 'number' ? cur.id : null,
-        currencyCode: cur.code || '',
-        currencySymbol: cur.symbol || '',
-      } as AccountOption;
-    });
-    allAccounts.value = mapped;
-    accountOptions.value = mapped;
-    accountsLoaded = true;
-  } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando cuentas' });
-    accountsLoaded = false;
-    allAccounts.value = [];
-    accountOptions.value = [];
-  }
-}
-function accountLabel(a: AccountOption) {
-  if (!a) return '';
-  const bal = a.balance ?? 0;
-  const code = a.currencyCode ? ` ${a.currencyCode}` : '';
-  return `${a.name} (${bal}${code})`;
-}
-function onAccountFilter(val: string, done: (cb: () => void) => void) {
-  const needle = (val || '').toLowerCase();
-  done(() => {
-    accountOptions.value = !needle
-      ? allAccounts.value
-      : allAccounts.value.filter((a) => (a.name || '').toLowerCase().includes(needle));
-  });
-}
 async function addAccountInline() {
   try {
     if (!newAccountCurrency.value || !newAccountType.value) {
@@ -964,7 +870,7 @@ async function addAccountInline() {
     });
     const acc = resp.data?.data || resp.data;
     form.value.account_id = acc.id;
-    accountsLoaded = false;
+    reloadAccounts();
     await ensureAccountsLoaded();
     $q.notify({ type: 'positive', message: 'Cuenta creada' });
   } catch {
@@ -1958,7 +1864,9 @@ function saveTransaction() {
         $q.notify({ type: 'warning', message: 'Agrega al menos una línea válida' });
         return;
       }
-      const currentType = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
+      const currentType = ttypes.types.find(
+        (t: TransactionType) => t.id === form.value.transaction_type_id
+      );
       const currentSlug = (currentType?.slug || '').toLowerCase();
       const isExpense = currentSlug === 'expense';
       items = valid.map((r) => {
@@ -1982,12 +1890,14 @@ function saveTransaction() {
         if (isExpense) totalLine = -Math.abs(totalLine); // respetar signo negativo en gastos
         return {
           name: r.name,
-            amount: totalLine,
+          amount: totalLine,
           category_id: r.category_id,
         } as ItemPayload;
       });
     } else {
-      const currentType = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
+      const currentType = ttypes.types.find(
+        (t: TransactionType) => t.id === form.value.transaction_type_id
+      );
       const currentSlug = (currentType?.slug || '').toLowerCase();
       const isExpense = currentSlug === 'expense';
       const rawAmt = Number(form.value.amount || 0);
@@ -2018,7 +1928,7 @@ function saveTransaction() {
     if (isAdvancedAmount.value) {
       const itemsSum = items.reduce((s, it) => s + Number(it.amount || 0), 0);
       const norm = Number(itemsSum.toFixed(2));
-  const current = Number(payload.amount || 0);
+      const current = Number(payload.amount || 0);
       if (Number(current.toFixed(2)) !== norm) payload.amount = norm;
     }
     if (isAdvancedPayment.value) {
@@ -2117,7 +2027,9 @@ function saveTransaction() {
           const data = e.response.data;
           if (data.message) message = data.message;
           const errs: Record<string, string[]> =
-            (data?.errors as Record<string, string[]>) ?? (data?.data as Record<string, string[]>) ?? {};
+            (data?.errors as Record<string, string[]>) ??
+            (data?.data as Record<string, string[]>) ??
+            {};
           collectedFieldErrors = errs;
           const list: string[] = [];
           Object.keys(errs).forEach((k) => {

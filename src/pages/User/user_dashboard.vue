@@ -26,7 +26,7 @@
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
 
-defineOptions({ name: 'UserDashboard' });
+defineOptions({ name: 'user_dashboard' });
 const auth = useAuthStore();
 const ui = useUiStore();
 const widgets = ['Balance', 'Distribución', 'Presupuestos', 'Evolución', 'Vencimientos'];

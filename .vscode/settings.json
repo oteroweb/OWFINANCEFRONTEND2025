@@ -25,5 +25,6 @@
     "titleBar.inactiveBackground": "#f1a1e099",
     "titleBar.inactiveForeground": "#15202b99"
   },
-  "peacock.color": "#f1a1e0"
+  "peacock.color": "#f1a1e0",
+  "terminal.integrated.defaultProfile.linux": ""
 }

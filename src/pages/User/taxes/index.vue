@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'UserTaxesPage' });
+defineOptions({ name: 'user_taxes_page' });
 import CrudPage from 'components/CrudPage.vue';
 import { dictionary } from './dictionary';
 </script>
