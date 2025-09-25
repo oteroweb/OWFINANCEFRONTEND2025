@@ -224,6 +224,7 @@
                       </div>
                     </td>
                     <td class="text-right">
+                      xx
                       {{ Number(rowTotalBase(p)).toFixed(2) }}
                     </td>
                     <td>
@@ -376,11 +377,37 @@
                 filled
                 dense
               />
+              <div class="q-mt-xs text-right" v-if="Number(form.rate || 0) > 0">
+                <q-btn
+                  size="xs"
+                  flat
+                  dense
+                  color="primary"
+                  icon="swap_horiz"
+                  @click="invertMainRate"
+                  :label="'Invertir (' + Number(form.rate).toFixed(4) + ')'"
+                />
+              </div>
             </div>
             <div class="col-12 col-sm-4 flex items-center text-caption">
               <div>
-                <div class="text-bold">Resultado</div>
-                <div>{{ resultCurrencySymbol }}{{ Number(resultTotal).toFixed(2) }}</div>
+                <div class="row items-center no-wrap">
+                  <div class="text-bold q-mr-xs">{{ resultLabel }}</div>
+                  <q-icon name="info_outline" size="16px" class="text-grey-6">
+                    <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
+                      Conversión: monto de la cuenta / tasa = monto en moneda base.
+                      <div v-if="!showRateInput">No se requiere tasa (misma moneda).</div>
+                    </q-tooltip>
+                  </q-icon>
+                </div>
+                <div>
+                  {{ userCurrencySymbol || resultCurrencySymbol
+                  }}{{ Number(resultTotal).toFixed(2) }}
+                </div>
+                <div v-if="applyRateToTotal" class="text-grey-7">
+                  Original: {{ selectedAccount?.currencySymbol || ''
+                  }}{{ Math.abs(Number(form.amount || 0)).toFixed(2) }}
+                </div>
               </div>
             </div>
           </div>
@@ -492,9 +519,34 @@
             </div>
             <div class="row items-center q-mt-xs text-caption">
               <div class="col text-right">
-                Resultado total
-                <span v-if="applyRateToTotal" class="text-grey-7">(aplicando tasa)</span>:
-                {{ resultCurrencySymbol }}{{ Number(resultTotal).toFixed(2) }}
+                <div class="row items-center justify-end no-wrap q-gutter-xs">
+                  <div class="text-bold">{{ resultLabel }}</div>
+                  <q-icon name="info_outline" size="16px" class="text-grey-6">
+                    <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
+                      Conversión: subtotal con IVA / tasa = monto en moneda base.
+                      <div v-if="applyRateToTotal">Tasa aplicada al total.</div>
+                      <div v-else>No se aplica tasa (misma moneda).</div>
+                    </q-tooltip>
+                  </q-icon>
+                  <q-btn
+                    v-if="applyRateToTotal"
+                    size="xs"
+                    flat
+                    dense
+                    color="primary"
+                    icon="swap_horiz"
+                    @click="invertMainRate"
+                    :label="'1/' + Number(form.rate || 0).toFixed(4)"
+                  />
+                </div>
+                <div>
+                  {{ userCurrencySymbol || resultCurrencySymbol
+                  }}{{ Number(resultTotal).toFixed(2) }}
+                </div>
+                <div v-if="applyRateToTotal" class="text-grey-7">
+                  Subtotal original: {{ selectedAccount?.currencySymbol || ''
+                  }}{{ Number(invoiceSubtotal).toFixed(2) }}
+                </div>
               </div>
             </div>
           </div>
@@ -649,13 +701,16 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter, type LocationQuery } from 'vue-router';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
-import { useTransactionsStore } from 'stores/transactions';
+import { useTransactionsStore, type Transaction } from 'stores/transactions';
 import { useTransactionTypesStore, type TransactionType } from 'stores/transactionTypes';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import CategoriesTree from './CategoriesTree.vue';
 import { useTransactionForm } from 'src/composables/useTransactionForm';
 defineOptions({ name: 'TransactionCreateDialog' });
+
+// Optional: allow prefill from an existing transaction id (for duplicating)
+const props = defineProps<{ prefillTransactionId?: number | null }>();
 
 const ui = useUiStore();
 const auth = useAuthStore();
@@ -718,6 +773,34 @@ const {
   reloadAccounts,
 } = useTransactionForm();
 void loadTransactionTypes();
+
+// ---- Prefill from an existing transaction ----
+function mapTxToForm(tx: Transaction): void {
+  form.value = {
+    // no id: this is create, but we can keep id in case of UX; backend will create new
+    name: tx.name,
+    amount: Number(tx.amount ?? 0),
+    datetime: (tx.date || '').replace(' ', 'T'),
+    provider_id: tx.provider_id ?? null,
+    account_id: tx.account_id ?? null,
+    rate: tx.rate ? Number(tx.rate.value) : null,
+    transaction_type_id: tx.transaction_type_id ?? null,
+    account_from_id: null,
+    account_to_id: null,
+    url_file: tx.url_file || '',
+  };
+}
+async function resolveTxById(id: number): Promise<Transaction | null> {
+  const fromStore = tsStore.transactions.find((t) => t.id === id) || null;
+  if (fromStore) return fromStore;
+  try {
+    const resp = await api.get(`/transactions/${id}`);
+    const tx = (resp.data?.data || resp.data) as Transaction;
+    return tx || null;
+  } catch {
+    return null;
+  }
+}
 
 // ----- Taxes (fetch only) -----
 type Tax = { id: number; name: string; percent: number; active?: boolean };
@@ -987,6 +1070,21 @@ const userCurrencyCode = computed<string | null>(() => {
   if (suCur && typeof suCur.code === 'string') return suCur.code;
   return null;
 });
+// Símbolo de la moneda base (usuario)
+const userCurrencySymbol = computed<string>(() => {
+  const u = safeObj(auth.user as unknown);
+  const cur = safeObj(u?.currency);
+  if (cur && typeof cur.symbol === 'string') return cur.symbol;
+  const su = getStoredUser();
+  const suCur = safeObj(su?.currency);
+  if (suCur && typeof suCur.symbol === 'string') return suCur.symbol;
+  return '';
+});
+// Etiqueta dinámica para mostrar la moneda base del usuario en el resultado
+const resultLabel = computed(() => {
+  const code = userCurrencyCode.value || 'BASE';
+  return `Resultado (${code})`;
+});
 const currencyAlertShown = ref(false);
 watch(
   () => userCurrencyId.value,
@@ -1255,8 +1353,17 @@ const resultTotal = computed(() => {
   if (!applyRateToTotal.value) return base;
   const r = Number(form.value.rate || 0);
   if (!Number.isFinite(r) || r <= 0) return base;
-  return base * r;
+  // Interpret rate as: account currency amount / rate = user base amount
+  return base / r;
 });
+
+// Invertir tasa principal (1 / rate)
+function invertMainRate() {
+  const r = Number(form.value.rate || 0);
+  if (!Number.isFinite(r) || r <= 0) return;
+  const inv = 1 / r;
+  form.value.rate = Number(inv.toFixed(6));
+}
 
 // Projected balances after transaction
 const newBalance = computed(() => {
@@ -1360,7 +1467,8 @@ function rowRateLabel(p: PaymentRow) {
   const acc = rowAccount(p);
   const from = acc?.currencyCode || 'Cuenta';
   const to = userCurrencyCode.value || 'Usuario';
-  return `Tasa (${from}→${to})`;
+  // Clarify direction: amount(from)/rate = amount(to)
+  return `Tasa ${from}/${to}`;
 }
 function rowTaxPercent(p: PaymentRow): number {
   if (!p.applyTax || !p.tax_id) return 0;
@@ -1371,11 +1479,13 @@ function rowTotalBase(p: PaymentRow): number {
   const amt = Math.abs(Number(p.amount || 0));
   if (!Number.isFinite(amt) || amt <= 0) return 0;
   const pct = rowTaxPercent(p);
+  // Primero añadir impuesto si aplica (base * (1 + pct)) y luego convertir
   const withTax = amt * (1 + pct / 100);
   const needs = rowNeedsRate(p);
   const r = needs ? Number(p.rate || 0) : 1;
   if (needs && !(r > 0)) return 0;
-  return withTax * r;
+  // Interpretación: monto cuenta / rate = monto en moneda base usuario
+  return withTax / r;
 }
 const paymentsTotalBase = computed(() => payments.value.reduce((s, p) => s + rowTotalBase(p), 0));
 const paymentsMismatch = computed(() => {
@@ -1683,6 +1793,41 @@ watch(
   () => openIfNewFlag()
 );
 
+// Open and prefill by query (?prefill=ID) or prop (prefillTransactionId)
+function openIfPrefillFlag() {
+  const qv = route.query.prefill;
+  const idFromQuery = Array.isArray(qv) ? Number(qv[0]) : Number(qv);
+  const id = Number.isFinite(idFromQuery) ? idFromQuery : props.prefillTransactionId ?? null;
+  if (id && Number.isFinite(id)) {
+    ui.openNewTransactionDialog();
+    void prefillFromId(id);
+    // remove query param if present
+    if (qv != null) {
+      const next: LocationQuery = { ...route.query };
+      delete next.prefill;
+      void router.replace({ query: next });
+    }
+  }
+}
+async function prefillFromId(id: number) {
+  try {
+    await Promise.allSettled([
+      loadTransactionTypes(),
+      ensureProvidersLoaded(),
+      ensureAccountsLoaded(),
+    ]);
+    const tx = await resolveTxById(id);
+    if (tx) mapTxToForm(tx);
+  } catch {
+    // silent
+  }
+}
+onMounted(() => openIfPrefillFlag());
+watch(
+  () => route.query.prefill,
+  () => openIfPrefillFlag()
+);
+
 // Fetch available taxes whenever the dialog opens
 watch(
   () => ui.showDialogNewTransaction,
@@ -1697,6 +1842,13 @@ watch(
   () => ui.showDialogNewTransaction,
   async (open) => {
     if (!open) return;
+    // Prefill from UI store when opening (edit flow)
+    if (ui.prefillTransactionId && Number.isFinite(ui.prefillTransactionId)) {
+      // Opcional: precargar datos reales de la transacción
+      await prefillFromId(Number(ui.prefillTransactionId));
+      // limpiar para que no se repita
+      ui.prefillTransactionId = null;
+    }
     try {
       await ensureAccountsLoaded();
       const ids = Array.isArray(tsStore.selectedAccountIds)
@@ -1767,11 +1919,22 @@ function saveTransaction() {
       return;
     }
   } else if ((slug === 'income' || slug === 'expense') && !form.value.account_id) {
-    $q.notify({ type: 'warning', message: 'Selecciona una cuenta' });
-    return;
+    // Si estamos en pagos avanzados, no se requiere cuenta simple (se valida en payments)
+    if (!isAdvancedPayment.value) {
+      $q.notify({ type: 'warning', message: 'Selecciona una cuenta' });
+      return;
+    }
   }
   // Advanced payments validation for non-transfer
   if (slug !== 'transfer' && isAdvancedPayment.value) {
+    // Debe existir al menos un pago válido
+    const validPayments = payments.value.filter(
+      (p) => typeof p?.account_id === 'number' && Number(p?.amount || 0) > 0
+    );
+    if (validPayments.length === 0) {
+      $q.notify({ type: 'warning', message: 'Agrega al menos un pago válido.' });
+      return;
+    }
     // disallow duplicate accounts
     const seen = new Set<number>();
     for (const p of payments.value) {
@@ -1916,9 +2079,11 @@ function saveTransaction() {
       amount_tax: 0,
       date: dateStr,
       provider_id: form.value.provider_id,
+      // Cuando pagos avanzados está activo, NO enviar account_id simple
       account_id: isAdvancedPayment.value ? null : form.value.account_id ?? null,
       transaction_type_id: form.value.transaction_type_id ?? null,
       url_file: form.value.url_file || null,
+      // En pagos avanzados usar tasa por fila; la tasa global queda nula
       rate: isAdvancedPayment.value ? null : showRateInput.value ? form.value.rate ?? null : null,
       // taxes removed for now
       items,
@@ -1932,13 +2097,18 @@ function saveTransaction() {
       if (Number(current.toFixed(2)) !== norm) payload.amount = norm;
     }
     if (isAdvancedPayment.value) {
-      payload.payments = payments.value.map((p) => ({
-        account_id: p.account_id,
-        amount: Math.abs(Number(p.amount || 0)), // account currency
-        rate: rowNeedsRate(p as PaymentRow) ? Number(p.rate || 0) : null,
-        tax_id: p.applyTax ? p.tax_id : null,
-        note: p.note || null,
-      }));
+      // Solo incluir pagos válidos (>0 y con cuenta)
+      const mapped = payments.value
+        .filter((p) => typeof p?.account_id === 'number' && Number(p?.amount || 0) > 0)
+        .map((p) => ({
+          account_id: p.account_id,
+          amount: Math.abs(Number(p.amount || 0)), // account currency
+          rate: rowNeedsRate(p as PaymentRow) ? Number(p.rate || 0) : null,
+          tax_id: p.applyTax ? p.tax_id : null,
+          note: p.note || null,
+        }));
+      // Asegurar al menos un elemento en payments segun validación previa
+      payload.payments = mapped;
     }
   } else {
     payload = {

@@ -186,12 +186,11 @@ import { useUiStore } from 'stores/ui';
 import { useTransactionsStore } from 'stores/transactions';
 import { useTransactionTypesStore, type TransactionType } from 'stores/transactionTypes';
 import { api } from 'boot/axios';
-import { useQuasar } from 'quasar';
+import type { Transaction } from 'stores/transactions';
 
 const ui = useUiStore();
 const tsStore = useTransactionsStore();
 const ttypes = useTransactionTypesStore();
-const $q = useQuasar();
 // Tipar el formulario para evitar 'any'
 interface TransactionFormType {
   id?: number;
@@ -212,7 +211,7 @@ const form = ref<Partial<TransactionFormType>>({});
 const ttOptions = ref<{ label: string; value: string }[]>([]);
 async function loadTransactionTypes() {
   try {
-    await (ttypes as any).fetchTransactionTypes?.();
+    await ttypes.fetchTransactionTypes();
     const bySlug = (s: string) =>
       ttypes.types.find((t: TransactionType) => (t.slug || '').toLowerCase() === s);
     const byName = (n: string) =>
@@ -297,8 +296,19 @@ async function ensureAccountsLoaded() {
   if (accountsLoaded) return;
   try {
     const r = await api.get('/accounts');
-    const list = (r.data?.data || r.data) as any[];
-    allAccounts = (Array.isArray(list) ? list : []).map((a) => ({
+    // Tipar respuesta mínima para evitar any
+    interface RawAccount {
+      id: number;
+      name: string;
+      balance?: number;
+      balance_cached?: number;
+      currency?: { id?: number; code?: string; symbol?: string };
+      currency_symbol?: string;
+      currency_code?: string;
+      currency_id?: number;
+    }
+    const list = (r.data?.data || r.data) as RawAccount[];
+    allAccounts = (Array.isArray(list) ? list : []).map((a: RawAccount) => ({
       id: a.id,
       name: a.name,
       balance: Number(a.balance ?? a.balance_cached ?? 0),
@@ -368,9 +378,7 @@ const disableSave = computed(() => !form.value.name || !form.value.amount || !fo
 const saving = ref(false);
 const errorMsg = ref<string | null>(null);
 
-function mapTransactionToForm(
-  tx: import('stores/transactions').Transaction
-): Partial<TransactionFormType> {
+function mapTransactionToForm(tx: Transaction): Partial<TransactionFormType> {
   // Si la transacción es una transferencia, intentamos inferir cuentas desde relaciones si existieran (pending backend design)
   return {
     id: tx.id,
@@ -417,7 +425,7 @@ function persist(updatedForm: Partial<TransactionFormType>) {
   if (!updatedForm.id) return;
   const existing = tsStore.transactions.find((t) => t.id === updatedForm.id);
   if (!existing) return;
-  const payload = { ...existing };
+  const payload: Transaction = { ...existing };
   if (updatedForm.name !== undefined) payload.name = updatedForm.name || '';
   if (updatedForm.amount !== undefined && updatedForm.amount !== null)
     payload.amount = Number(updatedForm.amount);
@@ -430,7 +438,7 @@ function persist(updatedForm: Partial<TransactionFormType>) {
     // Mapear a rate_id si se define posteriormente
   }
   if (updatedForm.url_file !== undefined) payload.url_file = updatedForm.url_file || null;
-  void tsStore.updateTransaction(payload as any);
+  void tsStore.updateTransaction(payload);
   ui.closeEditTransactionDialog();
 }
 

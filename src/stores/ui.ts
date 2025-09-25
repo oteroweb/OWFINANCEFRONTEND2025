@@ -5,6 +5,7 @@ export const useUiStore = defineStore('ui', {
     showDialogNewTransaction: false as boolean,
     showDialogEditTransaction: false as boolean,
     editTransactionId: null as number | null,
+    prefillTransactionId: null as number | null,
   }),
   actions: {
     openNewTransactionDialog() {
@@ -17,8 +18,8 @@ export const useUiStore = defineStore('ui', {
       this.showDialogNewTransaction = !this.showDialogNewTransaction;
     },
     openEditTransactionDialog(id: number) {
-      this.editTransactionId = id;
-      this.showDialogEditTransaction = true;
+      this.prefillTransactionId = id;
+      this.showDialogNewTransaction = true;
     },
     closeEditTransactionDialog() {
       this.showDialogEditTransaction = false;

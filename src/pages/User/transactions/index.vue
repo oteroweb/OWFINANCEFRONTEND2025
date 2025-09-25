@@ -207,7 +207,7 @@
     <!-- Diálogos: usar genérico solo para EDITAR; para NUEVA transacción se usa TransactionCreateDialog (en UserLayout) -->
     <TransactionFormDialog
       v-model="ui.showDialogEditTransaction"
-      :id="ui.editTransactionId || undefined"
+      :id="ui.editTransactionId ?? null"
     />
 
     <!-- Botón flotante para crear transacción -->
