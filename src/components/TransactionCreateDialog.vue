@@ -107,6 +107,7 @@
                   v-model="isAdvancedPayment"
                   label="Pago avanzado (múltiples cuentas)"
                   dense
+                  @update:model-value="onToggleAdvancedPayment"
                 />
               </div>
             </div>
@@ -231,7 +232,6 @@
                       </div>
                     </td>
                     <td class="text-right">
-                      xx
                       {{ Number(rowTotalBase(p)).toFixed(2) }}
                     </td>
                     <td>
@@ -1472,6 +1472,77 @@ const isAdvancedPayment = ref(false);
 const payments = ref<PaymentRow[]>([
   { account_id: null, amount: null, rate: null, applyTax: false, tax_id: null, note: null },
 ]);
+// Gestiona el cambio entre pago simple y avanzado preservando la cuenta seleccionada
+async function onToggleAdvancedPayment(v: boolean) {
+  if (v) {
+    // Activando pagos avanzados: si hay una cuenta simple seleccionada, crear una fila con esa cuenta
+    const acc = form.value.account_id || null;
+    const amt = form.value.amount != null ? Math.abs(Number(form.value.amount)) : null;
+    payments.value = [
+      { account_id: acc, amount: amt, rate: null, applyTax: false, tax_id: null, note: null },
+    ];
+    // Limpiar la cuenta simple para evitar duplicidad en payload
+    // (cuando guardemos, account_id va nulo si isAdvancedPayment=true)
+    // pero mantenemos el valor visual en la fila
+    // No borramos el monto
+    form.value.account_id = null;
+    await ensureAccountsLoaded();
+  } else {
+    // Desactivando pagos avanzados: si hay varias cuentas seleccionadas, permitir escoger una
+    const chosen = payments.value
+      .map((p) => p?.account_id)
+      .filter((v): v is number => typeof v === 'number');
+    const unique = Array.from(new Set(chosen));
+    const setSimple = (accId: number | null) => {
+      form.value.account_id = accId;
+      // Al volver a simple, limpiamos filas y dejamos una por defecto
+      payments.value = [
+        { account_id: null, amount: null, rate: null, applyTax: false, tax_id: null, note: null },
+      ];
+    };
+    if (unique.length <= 1) {
+      const only = unique.length === 1 && typeof unique[0] === 'number' ? unique[0] : null;
+      setSimple(only);
+      return;
+    }
+    // Mostrar diálogo para elegir cuál mantener
+    const opts = unique
+      .map((id) => allAccounts.value.find((a) => a.id === id))
+      .filter((a): a is AccountOption => !!a);
+    await new Promise<void>((resolve) => {
+      $q.dialog({
+        title: 'Elegir cuenta a mantener',
+        message:
+          'Tienes múltiples cuentas en pagos avanzados. Selecciona cuál quieres mantener al volver a pago simple.',
+        options: {
+          type: 'radio',
+          model: String(opts[0]?.id ?? ''),
+          items: opts.map((a) => ({
+            label: `${a.name} (${a.currencyCode || ''})`,
+            value: String(a.id),
+          })),
+        },
+        cancel: true,
+        ok: { label: 'Aceptar' },
+        persistent: true,
+      })
+        .onOk((val: unknown) => {
+          const picked =
+            typeof val === 'string' ? Number(val) : typeof val === 'number' ? val : NaN;
+          const finalId: number | null = Number.isFinite(picked)
+            ? Number(picked)
+            : opts[0]?.id ?? null;
+          setSimple(finalId);
+          resolve();
+        })
+        .onCancel(() => {
+          // Si cancela, mantener en avanzado (revertir toggle)
+          isAdvancedPayment.value = true;
+          resolve();
+        });
+    });
+  }
+}
 const taxSelectOptions = computed(() =>
   (availableTaxes.value || []).map((t) => ({
     id: t.id,
@@ -1851,12 +1922,7 @@ watch(
   async (on) => {
     if (on) {
       await Promise.allSettled([ensureItemCategoriesLoaded(), fetchAvailableTaxes()]);
-      // Prefill categorías de líneas vacías con la categoría simple seleccionada (si existe)
-      if (simpleCategoryId.value) {
-        invoiceItems.value.forEach((r) => {
-          if (!r.categoryId) r.categoryId = simpleCategoryId.value || null;
-        });
-      }
+      // No prefijar categoría: mantener en blanco para que el usuario seleccione en cada línea
     }
   }
 );
@@ -1925,10 +1991,9 @@ watch(
 watch(
   () => simpleCategoryId.value,
   (cat) => {
-    if (!isAdvancedAmount.value || !cat) return;
-    invoiceItems.value.forEach((r) => {
-      if (!r.categoryId) r.categoryId = cat;
-    });
+    // Ya no sincronizamos la categoría simple con las filas de factura en modo avanzado
+    // para mantener los campos en blanco y que el usuario los complete manualmente.
+    void cat;
   }
 );
 
