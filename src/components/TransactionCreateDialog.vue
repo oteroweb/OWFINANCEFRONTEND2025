@@ -56,6 +56,7 @@
 
           <!-- Proveedor -->
           <q-select
+            v-if="!isTransfer"
             v-model="form.provider_id"
             :options="providerOptions"
             :onFilter="onProviderFilter"
@@ -433,7 +434,7 @@
           </div>
 
           <!-- Avanzado (detalle factura) -->
-          <div class="row items-center q-mt-sm">
+          <div v-if="!isTransfer" class="row items-center q-mt-sm">
             <div class="col-auto">
               <q-toggle v-model="isAdvancedAmount" label="Detalle (factura)" dense />
             </div>
@@ -441,7 +442,7 @@
               El monto se calcula desde las líneas
             </div>
           </div>
-          <div v-if="isAdvancedAmount" class="q-mt-xs">
+          <div v-if="!isTransfer && isAdvancedAmount" class="q-mt-xs">
             <q-markup-table dense flat bordered class="invoice-table">
               <thead>
                 <tr class="text-caption">
@@ -1821,8 +1822,13 @@ watch(
     const ty = ttypes.types.find((t: TransactionType) => t.id === id);
     const slug = (ty?.slug || '').toLowerCase();
     if (slug === 'transfer') {
+      // Al pasar a transferencia, forzar monto positivo y ocultar detalle de factura
       if (form.value.amount != null && form.value.amount < 0)
         form.value.amount = Math.abs(form.value.amount);
+      if (isAdvancedAmount.value) {
+        isAdvancedAmount.value = false;
+        invoiceItems.value = [{ item: '', quantity: 1, unitPrice: 0, exempt: false }];
+      }
       return;
     }
     if (form.value.amount == null) return;
@@ -1888,17 +1894,20 @@ function openIfPrefillFlag() {
 }
 async function prefillFromId(id: number) {
   try {
-    await Promise.allSettled([
-      loadTransactionTypes(),
-      ensureProvidersLoaded(),
-      ensureAccountsLoaded(),
-    ]);
+    // Cargar tipos y cuentas primero; proveedores solo si no es transferencia
+    await Promise.allSettled([loadTransactionTypes(), ensureAccountsLoaded()]);
     console.log('[prefill] iniciando prefill para id', id);
     const tx = await resolveTxById(id);
     if (tx) {
       console.log('[prefill] transacción recibida (antes de map)', tx);
       mapTxToForm(tx);
       console.log('[prefill] form después de map', form.value);
+      // Si el tipo no es transferencia, cargar proveedores para mostrar etiqueta correctamente
+      const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
+      const slug = (ty?.slug || '').toLowerCase();
+      if (slug !== 'transfer') {
+        await ensureProvidersLoaded();
+      }
     } else {
       console.warn('[prefill] transacción no encontrada', id);
     }
@@ -1938,6 +1947,8 @@ watch(
   async (open) => {
     if (!open) return;
     // Prefill from UI store when opening (edit flow)
+    // Limpiar proveedor al seleccionar transferencia
+    form.value.provider_id = null;
     if (ui.prefillTransactionId && Number.isFinite(ui.prefillTransactionId)) {
       // Opcional: precargar datos reales de la transacción
       await prefillFromId(Number(ui.prefillTransactionId));
