@@ -23,8 +23,8 @@
             inline
           />
 
-          <!-- Categoría de la transacción (simple: lista plana de todas las categorías) -->
-          <div v-if="!isTransfer && !isAdvancedAmount" class="row q-col-gutter-sm q-mt-sm">
+          <!-- Categoría de la transacción (simple). Ahora visible también en modo avanzado para usarla como categoría por defecto de las líneas -->
+          <div v-if="!isTransfer" class="row q-col-gutter-sm q-mt-sm">
             <div class="col">
               <q-select
                 v-model="simpleCategoryId"
@@ -43,8 +43,14 @@
                 @focus="ensureTxnCategoriesLoaded"
               />
             </div>
-            <div class="col-auto">
+            <div class="col-auto row items-center q-gutter-xs no-wrap">
               <q-btn dense outline color="primary" label="Ver todas" @click="openTxnCatsDialog" />
+              <q-icon v-if="isAdvancedAmount" name="info_outline" size="16px" class="text-grey-6">
+                <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
+                  En modo factura esta categoría se usa solo como valor por defecto para las líneas
+                  que no tengan categoría asignada.
+                </q-tooltip>
+              </q-icon>
             </div>
           </div>
 
@@ -1774,6 +1780,12 @@ watch(
   async (on) => {
     if (on) {
       await Promise.allSettled([ensureItemCategoriesLoaded(), fetchAvailableTaxes()]);
+      // Prefill categorías de líneas vacías con la categoría simple seleccionada (si existe)
+      if (simpleCategoryId.value) {
+        invoiceItems.value.forEach((r) => {
+          if (!r.categoryId) r.categoryId = simpleCategoryId.value || null;
+        });
+      }
     }
   }
 );
@@ -1826,6 +1838,17 @@ onMounted(() => openIfPrefillFlag());
 watch(
   () => route.query.prefill,
   () => openIfPrefillFlag()
+);
+
+// Si cambia la categoría simple y estamos en modo avanzado: asignar por defecto a filas sin categoría
+watch(
+  () => simpleCategoryId.value,
+  (cat) => {
+    if (!isAdvancedAmount.value || !cat) return;
+    invoiceItems.value.forEach((r) => {
+      if (!r.categoryId) r.categoryId = cat;
+    });
+  }
 );
 
 // Fetch available taxes whenever the dialog opens
@@ -2102,7 +2125,11 @@ function saveTransaction() {
         .filter((p) => typeof p?.account_id === 'number' && Number(p?.amount || 0) > 0)
         .map((p) => ({
           account_id: p.account_id,
-          amount: Math.abs(Number(p.amount || 0)), // account currency
+          // Mantener el signo coherente con el tipo de transacción principal.
+          // Si es gasto (expense) el backend normalmente espera valores negativos; ingresos positivos.
+          // Para transferencias no se usa este bloque.
+          amount:
+            slug === 'expense' ? -Math.abs(Number(p.amount || 0)) : Math.abs(Number(p.amount || 0)),
           rate: rowNeedsRate(p as PaymentRow) ? Number(p.rate || 0) : null,
           tax_id: p.applyTax ? p.tax_id : null,
           note: p.note || null,
