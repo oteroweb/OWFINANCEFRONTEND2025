@@ -780,10 +780,12 @@ const {
 } = useTransactionForm();
 void loadTransactionTypes();
 
-// ---- Prefill from an existing transaction ----
+// ---- Prefill (fase 1: simple) ----
+// Categoría principal de la transacción (cuando solo hay un item)
+const transactionCategoryId = ref<number | null>(null);
 function mapTxToForm(tx: Transaction): void {
+  transactionCategoryId.value = null;
   form.value = {
-    // no id: this is create, but we can keep id in case of UX; backend will create new
     name: tx.name,
     amount: Number(tx.amount ?? 0),
     datetime: (tx.date || '').replace(' ', 'T'),
@@ -795,15 +797,78 @@ function mapTxToForm(tx: Transaction): void {
     account_to_id: null,
     url_file: tx.url_file || '',
   };
+  // Items (invoice detail)
+  const maybeItems = (
+    tx as unknown as {
+      item_transactions?: Array<{
+        category_id: number | null;
+        name: string;
+        amount: number;
+        quantity?: number | string | null;
+        tax_id?: number | null;
+      }>;
+    }
+  ).item_transactions;
+  if (Array.isArray(maybeItems)) {
+    if (maybeItems.length > 1) {
+      isAdvancedAmount.value = true;
+      invoiceItems.value = maybeItems.map((it) => ({
+        item: it.name,
+        quantity: Number(it.quantity ?? 1) || 1,
+        unitPrice: Math.abs(Number(it.amount || 0)),
+        categoryId: it.category_id ?? null,
+        exempt: !it.tax_id,
+      }));
+    } else if (maybeItems.length === 1) {
+      transactionCategoryId.value = maybeItems[0]?.category_id ?? null;
+      isAdvancedAmount.value = false;
+      invoiceItems.value = [];
+    }
+  }
+  // Payments (advanced multi-source)
+  const maybePayments = (
+    tx as unknown as {
+      payment_transactions?: Array<{ account_id: number; amount: number; tax_id?: number | null }>;
+    }
+  ).payment_transactions;
+  if (Array.isArray(maybePayments)) {
+    if (maybePayments.length > 1) {
+      isAdvancedPayment.value = true;
+      // Limpiar cuenta simple
+      form.value.account_id = null;
+      payments.value = maybePayments.map((p) => ({
+        account_id: p.account_id,
+        amount: p.amount,
+        rate: null,
+        applyTax: false,
+        tax_id: p.tax_id ?? null,
+        note: null,
+      }));
+    } else {
+      isAdvancedPayment.value = false;
+      payments.value = [];
+    }
+  }
+  console.log('[prefill] mapTxToForm done', {
+    form: form.value,
+    transactionCategoryId: transactionCategoryId.value,
+    isAdvancedAmount: isAdvancedAmount.value,
+    invoiceItems: invoiceItems.value,
+    isAdvancedPayment: isAdvancedPayment.value,
+    payments: payments.value,
+  });
 }
+// Paso 1: función simple que SIEMPRE consulta la transacción por id y la muestra en consola
 async function resolveTxById(id: number): Promise<Transaction | null> {
-  const fromStore = tsStore.transactions.find((t) => t.id === id) || null;
-  if (fromStore) return fromStore;
+  console.log('[prefill] solicitando transacción', id);
   try {
     const resp = await api.get(`/transactions/${id}`);
-    const tx = (resp.data?.data || resp.data) as Transaction;
+    const raw = resp.data?.data ?? resp.data;
+    console.log('[prefill] respuesta cruda', raw);
+    const tx = raw as Transaction;
     return tx || null;
-  } catch {
+  } catch (e) {
+    console.error('[prefill] error obteniendo transacción', e);
     return null;
   }
 }
@@ -1828,8 +1893,15 @@ async function prefillFromId(id: number) {
       ensureProvidersLoaded(),
       ensureAccountsLoaded(),
     ]);
+    console.log('[prefill] iniciando prefill para id', id);
     const tx = await resolveTxById(id);
-    if (tx) mapTxToForm(tx);
+    if (tx) {
+      console.log('[prefill] transacción recibida (antes de map)', tx);
+      mapTxToForm(tx);
+      console.log('[prefill] form después de map', form.value);
+    } else {
+      console.warn('[prefill] transacción no encontrada', id);
+    }
   } catch {
     // silent
   }
