@@ -260,6 +260,35 @@ const columns = dictionary.columns.map((col) => ({
         },
       }
     : {}),
+  // Special display for account column: if account is null, show joined payment account names
+  ...(col.key === 'account.name'
+    ? {
+        format: (val: unknown, row: Row) => {
+          const direct = toStringLabel(val);
+          if (direct) return direct;
+          const pts = (row as Record<string, unknown>)['payment_transactions'];
+          if (Array.isArray(pts)) {
+            const names = pts
+              .map((p: unknown) => {
+                if (p && typeof p === 'object') {
+                  const pr = p as Record<string, unknown>;
+                  const n1 = pr['account_name'];
+                  if (typeof n1 === 'string' && n1.trim()) return n1.trim();
+                  const acc = pr['account'];
+                  if (acc && typeof acc === 'object') {
+                    const n2 = (acc as Record<string, unknown>)['name'];
+                    if (typeof n2 === 'string' && n2.trim()) return n2.trim();
+                  }
+                }
+                return '';
+              })
+              .filter((s: string) => !!s);
+            if (names.length) return names.join(', ');
+          }
+          return '';
+        },
+      }
+    : {}),
 }));
 
 const loading = ref(false);
@@ -824,6 +853,19 @@ function exportCSV(): void {
               v = col.field(row);
             } else {
               v = row[col.field];
+            }
+            // Apply column format if present
+            if (
+              typeof (col as unknown as { format?: (val: unknown, row: Row) => unknown }).format ===
+              'function'
+            ) {
+              try {
+                const fmt = (col as unknown as { format: (val: unknown, row: Row) => unknown })
+                  .format;
+                v = fmt(v, row);
+              } catch {
+                // ignore formatting errors for CSV
+              }
             }
             const val = typeof v === 'boolean' ? (v ? 'Sí' : 'No') : v ?? '';
             return JSON.stringify(val);

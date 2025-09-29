@@ -152,6 +152,19 @@
               </div>
             </q-td>
           </template>
+          <!-- Celda custom: Cuenta (apilar nombres cuando hay múltiples pagos) -->
+          <template v-slot:[`body-cell-account.name`]="props">
+            <q-td :props="props">
+              <div class="cell-stack">
+                <template v-if="props.row && props.row.account && props.row.account.name">
+                  <div>{{ props.row.account.name }}</div>
+                </template>
+                <template v-else>
+                  <div v-for="(n, idx) in paymentAccountNames(props.row)" :key="idx">{{ n }}</div>
+                </template>
+              </div>
+            </q-td>
+          </template>
         </q-table>
 
         <!-- Resumen inferior -->
@@ -383,6 +396,40 @@ const baseColumns = (dictionary.columns as CrudColumn[]).map((col) => ({
   field: col.key.includes('.') ? (row: Row) => getByPath(row, col.key) : col.key,
   align: col.type === 'boolean' ? ('center' as const) : ('left' as const),
   sortable: col.key !== 'actions',
+  // Special display for account column in user list: when account is null, show ALL payment account names
+  ...(col.key === 'account.name'
+    ? {
+        field: (row: Row) => {
+          // Try direct account.name if present
+          const acc = (row as Record<string, unknown>)['account'];
+          if (acc && typeof acc === 'object') {
+            const nm = (acc as Record<string, unknown>)['name'];
+            if (typeof nm === 'string' && nm.trim()) return nm.trim();
+          }
+          // Fallback to list all payment_transactions account names
+          const pts = (row as Record<string, unknown>)['payment_transactions'];
+          if (Array.isArray(pts)) {
+            const names = pts
+              .map((p: unknown) => {
+                if (p && typeof p === 'object') {
+                  const pr = p as Record<string, unknown>;
+                  const n1 = pr['account_name'];
+                  if (typeof n1 === 'string' && n1.trim()) return n1.trim();
+                  const acc2 = pr['account'];
+                  if (acc2 && typeof acc2 === 'object') {
+                    const n2 = (acc2 as Record<string, unknown>)['name'];
+                    if (typeof n2 === 'string' && n2.trim()) return n2.trim();
+                  }
+                }
+                return '';
+              })
+              .filter((s: string) => !!s);
+            if (names.length) return names.join(', ');
+          }
+          return '';
+        },
+      }
+    : {}),
   ...(col.type === 'boolean'
     ? { format: (val: unknown) => (val === true || val === 1 ? 'Sí' : 'No') }
     : {}),
@@ -597,6 +644,37 @@ const columns = computed<ColumnDef[]>(() => {
   else if (!clone.find((c) => c.name === 'running_balance')) clone.push(runningBalanceColumn);
   return clone;
 });
+
+// helper para extraer nombres de cuentas de pagos
+function paymentAccountNames(row: Record<string, unknown>): string[] {
+  if (!row) return [];
+  // Si hay account.name directo, retornar solo ese (caso simple)
+  const acc = row['account'];
+  if (acc && typeof acc === 'object') {
+    const nm = (acc as Record<string, unknown>)['name'];
+    if (typeof nm === 'string' && nm.trim()) return [nm.trim()];
+  }
+  const pts = row['payment_transactions'];
+  if (Array.isArray(pts)) {
+    const names = pts
+      .map((p: unknown) => {
+        if (p && typeof p === 'object') {
+          const pr = p as Record<string, unknown>;
+          const n1 = pr['account_name'];
+          if (typeof n1 === 'string' && n1.trim()) return n1.trim();
+          const acc2 = pr['account'];
+          if (acc2 && typeof acc2 === 'object') {
+            const n2 = (acc2 as Record<string, unknown>)['name'];
+            if (typeof n2 === 'string' && n2.trim()) return n2.trim();
+          }
+        }
+        return '';
+      })
+      .filter((s: string) => !!s);
+    return names;
+  }
+  return [];
+}
 
 // ===== Acciones de saldo (ajustar / recalcular) desde cabecera =====
 const showAdjustTop = ref(false);
@@ -1108,6 +1186,7 @@ function fieldProps(field: CrudField) {
 function edit(row: Record<string, unknown>) {
   const idRaw = row && row['id'];
   const id = Number(idRaw);
+  console.log(id, idRaw);
   if (!Number.isFinite(id)) return;
   ui.openEditTransactionDialog(id);
 }
@@ -1151,6 +1230,14 @@ function exportCSV(): void {
             } else {
               v = row[col.field];
             }
+            // aplicar format si existe para que el CSV refleje lo visible
+            if (typeof col.format === 'function') {
+              try {
+                v = col.format(v);
+              } catch {
+                // ignore
+              }
+            }
             const val = typeof v === 'boolean' ? (v ? 'Sí' : 'No') : v ?? '';
             return JSON.stringify(val);
           })
@@ -1181,5 +1268,8 @@ function exportCSV(): void {
 }
 .summary-col {
   min-width: 220px;
+}
+.cell-stack > div + div {
+  margin-top: 2px;
 }
 </style>

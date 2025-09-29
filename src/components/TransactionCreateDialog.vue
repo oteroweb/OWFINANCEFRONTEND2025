@@ -2017,6 +2017,10 @@ watch(
     if (ui.prefillTransactionId && Number.isFinite(ui.prefillTransactionId)) {
       // Opcional: precargar datos reales de la transacción
       await prefillFromId(Number(ui.prefillTransactionId));
+      await console.log(
+        '[prefill] prefill desde prop prefillTransactionId',
+        ui.prefillTransactionId
+      );
       // limpiar para que no se repita
       ui.prefillTransactionId = null;
     }
