@@ -57,15 +57,59 @@ import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
 import { TransactionCreateDialog } from 'components';
 import { PeriodFilterBar } from 'components/models';
+import { useUiStore } from 'stores/ui';
+import { useQuasar } from 'quasar';
 const auth = useAuthStore();
 const avatarUrl = computed(() => defaultAvatarUrl);
 const menuLinks = userMenuLinks;
+const ui = useUiStore();
+const $q = useQuasar();
+const router = useRouter();
 
 // (widgets removed for now; leave hooks ready if needed later)
 async function handleLogout() {
-  auth.logout();
-  const router = useRouter();
-  await router.push('/login');
+  // 1) Mostrar modal con botón OK y, al confirmarlo, proceder a cerrar sesión
+  try {
+    await new Promise<void>((resolve) => {
+      $q.dialog({
+        title: 'Cerrando sesión',
+        message: 'Tu sesión se cerrará ahora.',
+        ok: { label: 'OK', color: 'primary' },
+        persistent: true,
+      }).onOk(() => resolve());
+    });
+  } catch {
+    /* ignore dialog errors */
+  }
+
+  // 2) Mostrar overlay de carga mientras se ejecuta el logout y la navegación
+  try {
+    $q.loading.show({ message: 'Cerrando sesión…' });
+  } catch {
+    /* ignore loading errors */
+  }
+  // Cerrar diálogos que puedan disparar watchers (como el de transacciones)
+  try {
+    ui.closeNewTransactionDialog();
+  } catch {
+    /* ignore dialog close errors */
+  }
+  try {
+    auth.logout();
+    await router.replace('/login');
+  } catch {
+    try {
+      $q.notify({ type: 'negative', message: 'No se pudo redirigir al login' });
+    } catch {
+      /* ignore notify errors */
+    }
+  } finally {
+    try {
+      $q.loading.hide();
+    } catch {
+      /* ignore loading errors */
+    }
+  }
 }
 
 // Nueva transacción se invocará desde vistas específicas o accesos dedicados

@@ -1,6 +1,6 @@
 <template>
-  <q-dialog v-model="ui.showDialogNewTransaction" @hide="resetForm">
-    <q-card :style="cardStyle" class="q-pa-sm">
+  <q-dialog v-model="ui.showDialogNewTransaction" @hide="resetForm" @show="onDialogShow">
+    <q-card :style="cardStyle" class="q-pa-sm relative-position">
       <q-card-section class="q-pt-none">
         <div class="row items-center">
           <div class="col">
@@ -570,6 +570,9 @@
           </div>
         </q-form>
       </q-card-section>
+      <q-inner-loading :showing="dialogLoading">
+        <q-spinner size="32px" />
+      </q-inner-loading>
     </q-card>
   </q-dialog>
 
@@ -760,6 +763,8 @@ const initialForm = (): TransactionForm => ({
 const form = ref<TransactionForm>(initialForm());
 // Flag para excluir la transacción del balance agregado de cuentas
 const includeInBalance = ref(true);
+// Loading del diálogo mientras se precargan catálogos/prefill
+const dialogLoading = ref(false);
 
 // ----- Transaction Types & Shared Form Helpers (from composable) -----
 const {
@@ -861,6 +866,10 @@ function mapTxToForm(tx: Transaction): void {
 }
 // Paso 1: función simple que SIEMPRE consulta la transacción por id y la muestra en consola
 async function resolveTxById(id: number): Promise<Transaction | null> {
+  // 1) Intentar devolver desde caché local (Pinia) para render inmediato
+  const cached = tsStore.transactions.find((t) => t.id === id) || null;
+  if (cached) return cached;
+  // 2) Fallback a API
   console.log('[prefill] solicitando transacción', id);
   try {
     const resp = await api.get(`/transactions/${id}`);
@@ -871,6 +880,46 @@ async function resolveTxById(id: number): Promise<Transaction | null> {
   } catch (e) {
     console.error('[prefill] error obteniendo transacción', e);
     return null;
+  }
+}
+
+// Cuando se abre el diálogo, precargar datos necesarios para minimizar retrasos visuales
+async function onDialogShow() {
+  dialogLoading.value = true;
+  try {
+    // Cargar catálogos en paralelo (los métodos internos ya cachean/evitan duplicados)
+    const catalogPromises: Promise<unknown>[] = [
+      loadTransactionTypes(),
+      ensureProvidersLoaded(),
+      ensureAccountsLoaded(),
+      ensureItemCategoriesLoaded(),
+      ensureTxnCategoriesLoaded(),
+      fetchAvailableTaxes(),
+    ];
+    // Si se indicó un id para prellenar, cargarlo en paralelo
+    const maybePrefill = props.prefillTransactionId
+      ? resolveTxById(props.prefillTransactionId)
+      : Promise.resolve(null);
+  const [, tx] = await Promise.allSettled([
+      Promise.allSettled(catalogPromises),
+      maybePrefill,
+    ]).then((results) => {
+      // results: [settled(catalogs), settled(tx)]
+      const txSettled = results[1];
+      return [results[0], txSettled.status === 'fulfilled' ? txSettled.value : null] as const;
+    });
+    if (tx) {
+      mapTxToForm(tx);
+      // Tras mapear, actualizar balances visibles si procede
+      const ids = [
+        form.value.account_id,
+        form.value.account_from_id,
+        form.value.account_to_id,
+      ].filter((v): v is number => typeof v === 'number');
+      await Promise.allSettled(ids.map((id) => fetchAccountBalance(id)));
+    }
+  } finally {
+    dialogLoading.value = false;
   }
 }
 
@@ -1158,10 +1207,12 @@ const resultLabel = computed(() => {
   return `Resultado (${code})`;
 });
 const currencyAlertShown = ref(false);
+// Mostrar aviso de "Moneda requerida" solo cuando el diálogo esté abierto y el usuario autenticado
 watch(
-  () => userCurrencyId.value,
-  (v) => {
-    if (!v && !currencyAlertShown.value) {
+  [() => userCurrencyId.value, () => ui.showDialogNewTransaction, () => auth.isLoggedIn],
+  ([uid, isOpen, logged]) => {
+    if (!isOpen || !logged) return;
+    if (!uid && !currencyAlertShown.value) {
       $q.dialog({
         title: 'Moneda requerida',
         message: 'Configura una moneda predeterminada para conversiones correctas.',
@@ -1169,7 +1220,7 @@ watch(
       currencyAlertShown.value = true;
     }
   },
-  { immediate: true }
+  { immediate: false }
 );
 
 // ----- Invoice (advanced amount) -----
@@ -2017,10 +2068,7 @@ watch(
     if (ui.prefillTransactionId && Number.isFinite(ui.prefillTransactionId)) {
       // Opcional: precargar datos reales de la transacción
       await prefillFromId(Number(ui.prefillTransactionId));
-      await console.log(
-        '[prefill] prefill desde prop prefillTransactionId',
-        ui.prefillTransactionId
-      );
+      console.log('[prefill] prefill desde prop prefillTransactionId', ui.prefillTransactionId);
       // limpiar para que no se repita
       ui.prefillTransactionId = null;
     }
@@ -2406,6 +2454,7 @@ function resetForm() {
   ];
   simpleCategoryId.value = null;
   includeInBalance.value = true;
+  currencyAlertShown.value = false;
 }
 
 // Traduce mensajes de error de validación del backend a mensajes cortos en español usando
