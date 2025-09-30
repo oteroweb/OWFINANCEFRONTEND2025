@@ -289,7 +289,7 @@ function toStringLabel(val: unknown): string {
 const selectOptionsAll = reactive<Record<string, Array<Record<string, unknown>>>>({});
 const selectOptionsFiltered = reactive<Record<string, Array<Record<string, unknown>>>>({});
 // Imports MUST precede any statements (ESM rule); previously defineOptions was before imports causing vue-tsc errors.
-import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useQuasar, QInput, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
@@ -960,15 +960,16 @@ onMounted(async () => {
 
   await runFetch(true);
 
-  // Listen to transaction changes to refresh single account balance/banner
+  // Escuchar cambios en transacciones para refrescar la tabla SIEMPRE;
+  // si hay una sola cuenta seleccionada, además refrescamos el saldo/bandera.
   const handler = () => {
-    if (singleAccountSelected.value) {
-      // Refrescar datos y saldo actual de la cuenta
-      void runFetch(true);
-      void fetchSingleAccountBalance();
-    }
+    void runFetch(true);
+    if (singleAccountSelected.value) void fetchSingleAccountBalance();
   };
   window.addEventListener('ow:transactions:changed', handler);
+  onBeforeUnmount(() => {
+    window.removeEventListener('ow:transactions:changed', handler);
+  });
 });
 
 // Sidebar de cuentas: si hay exactamente una cuenta seleccionada en el widget,

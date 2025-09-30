@@ -18,9 +18,10 @@ Common fields
   - Transfer: converts from Origin account currency → Destination account currency
 
 Optional blocks
-- items?: Array<{ name: string; amount: number; category_id?: number|null }>
-  - Advanced invoice: line amounts include IVA for non-exempt lines; category_id is per line.
-  - Simple (no invoice): single item with amount = abs(amount) and optional category_id.
+- category_id?: number|null (categoría de la transacción)
+- items?: Array<{ name: string; amount: number; item_category_id?: number|null }>
+  - Advanced invoice: line amounts include IVA for non-exempt lines; item_category_id es por línea.
+  - Simple (no invoice): single item with amount = abs(amount) and optional item_category_id.
 - payments?: Array<{ account_id: number; amount: number; rate: number|null; tax_id: number|null; note: string|null }>
   - Only when “Pago avanzado” is enabled (Ingreso/Egreso). Omits top-level account_id and rate.
   - amount is in the payment account’s currency.
@@ -39,8 +40,9 @@ Same currency
   "url_file": null,
   "rate": null,
   "account_id": 3,
+  "category_id": 8,
   "items": [
-    { "name": "Venta", "amount": 1500, "category_id": 8 }
+    { "name": "Venta", "amount": 1500, "item_category_id": 8 }
   ]
 }
 
@@ -56,7 +58,7 @@ Cross-currency (User USD → Account VES)
   "rate": 36.5, // User→Cuenta
   "account_id": 7,
   "items": [
-    { "name": "Pago", "amount": 20, "category_id": null }
+    { "name": "Pago", "amount": 20, "item_category_id": null }
   ]
 }
 
@@ -72,9 +74,10 @@ Cross-currency (User USD → Account VES)
   "url_file": null,
   "rate": null,
   "account_id": 3,
+  "category_id": null,
   "items": [
-    { "name": "Producto A", "amount": 58.0, "category_id": 2 },
-    { "name": "Producto B", "amount": 58.0, "category_id": 5 }
+    { "name": "Producto A", "amount": 58.0, "item_category_id": 2 },
+    { "name": "Producto B", "amount": 58.0, "item_category_id": 5 }
   ]
 }
 
@@ -90,7 +93,8 @@ Cross-currency (User USD → Account VES)
   "transaction_type_id": "<income id>",
   "url_file": null,
   "rate": null,
-  "items": [ { "name": "Cobro", "amount": 100, "category_id": 8 } ],
+  "category_id": 8,
+  "items": [ { "name": "Cobro", "amount": 100, "item_category_id": 8 } ],
   "payments": [
     { "account_id": 3, "amount": 50, "rate": null, "tax_id": null, "note": null },
     { "account_id": 7, "amount": 10, "rate": 36.5, "tax_id": 11, "note": "IGTF" }

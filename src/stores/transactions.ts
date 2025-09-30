@@ -88,7 +88,7 @@ export const useTransactionsStore = defineStore('transactions', {
       window.dispatchEvent(new CustomEvent('ow:transactions:changed', { detail: { type: 'add', id: newTx.id } }))
       return response
     },
-    async updateTransaction(tx: Transaction): Promise<AxiosResponse> {
+    async updateTransaction(tx: Record<string, unknown> & { id: number }): Promise<AxiosResponse> {
       try {
         const response: AxiosResponse = await api.put(`/transactions/${tx.id}`, tx)
         const updated = response.data.data || response.data

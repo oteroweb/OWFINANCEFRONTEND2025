@@ -23,7 +23,7 @@
             inline
           />
 
-          <!-- Categoría de la transacción (simple). Ahora visible también en modo avanzado para usarla como categoría por defecto de las líneas -->
+          <!-- Categoría de la transacción (simple). Visible también en modo factura como valor por defecto para líneas sin categoría -->
           <div v-if="!isTransfer" class="row q-col-gutter-sm q-mt-sm">
             <div class="col">
               <q-select
@@ -39,7 +39,7 @@
                 use-input
                 clearable
                 input-debounce="300"
-                label="Categoría"
+                label="Categoría de la transacción"
                 @focus="ensureTxnCategoriesLoaded"
               />
             </div>
@@ -792,6 +792,7 @@ const transactionCategoryId = ref<number | null>(null);
 function mapTxToForm(tx: Transaction): void {
   transactionCategoryId.value = null;
   form.value = {
+    id: tx.id,
     name: tx.name,
     amount: Number(tx.amount ?? 0),
     datetime: (tx.date || '').replace(' ', 'T'),
@@ -807,7 +808,9 @@ function mapTxToForm(tx: Transaction): void {
   const maybeItems = (
     tx as unknown as {
       item_transactions?: Array<{
-        category_id: number | null;
+        // Backend puede devolver category_id o item_category_id
+        category_id?: number | null;
+        item_category_id?: number | null;
         name: string;
         amount: number;
         quantity?: number | string | null;
@@ -822,11 +825,21 @@ function mapTxToForm(tx: Transaction): void {
         item: it.name,
         quantity: Number(it.quantity ?? 1) || 1,
         unitPrice: Math.abs(Number(it.amount || 0)),
-        categoryId: it.category_id ?? null,
+        categoryId:
+          (typeof it.item_category_id === 'number' ? it.item_category_id : it.category_id) ?? null,
         exempt: !it.tax_id,
       }));
     } else if (maybeItems.length === 1) {
-      transactionCategoryId.value = maybeItems[0]?.category_id ?? null;
+      // Prefijar la categoría de la transacción. Preferir tx.category_id si existe, si no, usar la del único item
+      const txAny = tx as unknown as { category_id?: number | null };
+      const firstItem =
+        maybeItems[0] || ({} as { category_id?: number | null; item_category_id?: number | null });
+      const itemCat =
+        (typeof firstItem.item_category_id === 'number'
+          ? firstItem.item_category_id
+          : firstItem.category_id) ?? null;
+      simpleCategoryId.value =
+        (typeof txAny.category_id === 'number' ? txAny.category_id : itemCat) ?? null;
       isAdvancedAmount.value = false;
       invoiceItems.value = [];
     }
@@ -864,6 +877,9 @@ function mapTxToForm(tx: Transaction): void {
     payments: payments.value,
   });
 }
+
+// Flag: estamos editando si el formulario tiene un id cargado
+const isEdit = computed(() => typeof form.value.id === 'number' && Number.isFinite(form.value.id));
 // Paso 1: función simple que SIEMPRE consulta la transacción por id y la muestra en consola
 async function resolveTxById(id: number): Promise<Transaction | null> {
   // 1) Intentar devolver desde caché local (Pinia) para render inmediato
@@ -1731,7 +1747,7 @@ async function ensureItemCategoriesLoaded() {
     itemCategoryOptions.value = data || [];
     itemCategoriesLoaded = true;
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando categorías de item' });
+    $q.notify({ type: 'negative', message: 'Error cargando categorías de ítems' });
     itemCategoriesLoaded = false;
   }
 }
@@ -2229,13 +2245,16 @@ function saveTransaction() {
     account_id?: number | null;
     account_from_id?: number | null;
     account_to_id?: number | null;
-    items?: Array<{ name: string; amount: number; category_id?: number | null }>;
+    // Categoría de la transacción (diferente a la categoría por ítem)
+    category_id?: number | null;
+    // Detalle de ítems: usan item_category_id
+    items?: Array<{ name: string; amount: number; item_category_id?: number | null }>;
     payments?: PaymentPayload[];
     include_in_balance?: number; // 1 o 0
   };
   let payload: TransactionPayload;
   if (!isTrans) {
-    type ItemPayload = { name: string; amount: number; category_id?: number | null };
+    type ItemPayload = { name: string; amount: number; item_category_id?: number | null };
     let items: ItemPayload[] = [];
     if (isAdvancedAmount.value) {
       const valid = invoiceItems.value
@@ -2243,7 +2262,7 @@ function saveTransaction() {
           name: r.item || 'Item',
           qty: Number(r.quantity || 0),
           price: Number(r.unitPrice || 0),
-          category_id: r.categoryId ?? null,
+          item_category_id: r.categoryId ?? null,
         }))
         .filter((r) => r.qty > 0 && r.price >= 0);
       if (!valid.length) {
@@ -2277,7 +2296,8 @@ function saveTransaction() {
         return {
           name: r.name,
           amount: totalLine,
-          category_id: r.category_id,
+          // Si la línea no tiene categoría de ítem, usar la categoría de transacción como predeterminada
+          item_category_id: r.item_category_id ?? simpleCategoryId.value ?? null,
         } as ItemPayload;
       });
     } else {
@@ -2292,7 +2312,7 @@ function saveTransaction() {
         {
           name: form.value.name || 'Item',
           amount: normalized,
-          category_id: simpleCategoryId.value ?? null,
+          item_category_id: simpleCategoryId.value ?? null,
         },
       ];
     }
@@ -2309,6 +2329,7 @@ function saveTransaction() {
       // En pagos avanzados usar tasa por fila; la tasa global queda nula
       rate: isAdvancedPayment.value ? null : showRateInput.value ? form.value.rate ?? null : null,
       // taxes removed for now
+      category_id: simpleCategoryId.value ?? null,
       items,
       include_in_balance: includeInBalance.value ? 1 : 0,
     };
@@ -2353,10 +2374,25 @@ function saveTransaction() {
       include_in_balance: includeInBalance.value ? 1 : 0,
     };
   }
-  tsStore
-    .addTransaction(payload)
+  const doUpdate = isEdit.value;
+  const persist = async () => {
+    if (doUpdate) {
+      const id = form.value.id as number;
+      // Para actualización, enviar el mismo cuerpo (incluye category_id y items[item_category_id])
+      const body: Record<string, unknown> & { id: number } = {
+        id,
+        ...(payload as unknown as Record<string, unknown>),
+      };
+      return tsStore.updateTransaction(body);
+    }
+    return tsStore.addTransaction(payload as unknown as Record<string, unknown>);
+  };
+  persist()
     .then(async () => {
-      $q.notify({ type: 'positive', message: 'Transacción creada' });
+      $q.notify({
+        type: 'positive',
+        message: doUpdate ? 'Transacción actualizada' : 'Transacción creada',
+      });
       // Invalida cache de balances de cuentas afectadas y fuerza refetch
       const affected: number[] = [];
       if (form.value.account_id) affected.push(form.value.account_id);
@@ -2389,7 +2425,7 @@ function saveTransaction() {
       if (ids.length) {
         window.dispatchEvent(
           new CustomEvent('ow:transactions:changed', {
-            detail: { account_ids: ids, reason: 'create' },
+            detail: { account_ids: ids, reason: doUpdate ? 'update' : 'create' },
           })
         );
       }
@@ -2397,7 +2433,7 @@ function saveTransaction() {
       resetForm();
     })
     .catch((err: unknown) => {
-      let message = 'Error al crear transacción';
+      let message = doUpdate ? 'Error al actualizar transacción' : 'Error al crear transacción';
       let collectedFieldErrors: Record<string, string[]> | undefined;
       try {
         type ApiErrorData = {
@@ -2472,6 +2508,8 @@ function translateTransactionErrors(
     account_to_id: 'Cuenta destino',
     provider_id: 'Proveedor',
     transaction_type_id: 'Tipo de transacción',
+    category_id: 'Categoría de la transacción',
+    item_category_id: 'Categoría del ítem',
     rate: 'Tasa',
     date: 'Fecha',
     datetime: 'Fecha',
