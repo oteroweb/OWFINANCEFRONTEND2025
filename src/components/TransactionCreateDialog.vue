@@ -383,7 +383,7 @@
                 step="0.0001"
                 filled
                 dense
-              />mm
+              />
               <div class="q-mt-xs text-right" v-if="Number(form.rate || 0) > 0">
                 <q-btn
                   size="xs"
@@ -2351,38 +2351,41 @@ function saveTransaction() {
       amount_tax: 0,
       date: dateStr,
       provider_id: form.value.provider_id,
-      // Cuando pagos avanzados está activo, NO enviar account_id simple
-      account_id: isAdvancedPayment.value ? null : form.value.account_id ?? null,
+      // account_id ya no se envía: payments es el centro
+      account_id: null,
       transaction_type_id: form.value.transaction_type_id ?? null,
       url_file: form.value.url_file || null,
-      // En pagos avanzados usar tasa por fila; la tasa global queda nula
-      rate: isAdvancedPayment.value ? null : showRateInput.value ? form.value.rate ?? null : null,
+      // La tasa global no se envía en modo no-transfer; usar por pago cuando aplique
+      rate: null,
       // taxes removed for now
       category_id: simpleCategoryId.value ?? null,
       items,
       include_in_balance: !!includeInBalance.value,
     };
-    // Si no estamos en pagos avanzados, pero hay cruce de moneda (showRateInput),
-    // construir un único payment y omitir account_id y rate top-level para alinear con el backend
-    if (!isAdvancedPayment.value && showRateInput.value) {
-      const userAmt = Number(form.value.amount || 0);
-      const r = Number(form.value.rate || 0);
+    // Construcción de payments según modo
+    if (!isAdvancedPayment.value) {
+      // Modo simple: 1 payment → 1 item
       const accId = form.value.account_id ?? null;
-      if (accId && r > 0) {
+      if (accId) {
+        const userAmt = Number(form.value.amount || 0);
         const isExpense = slug === 'expense';
-        const accountAmount = Math.abs(userAmt) * r;
+        let accountAmount = Math.abs(userAmt);
+        let paymentRate: number | null = null;
+        if (showRateInput.value) {
+          const r = Number(form.value.rate || 0);
+          accountAmount = Math.abs(userAmt) * r;
+          paymentRate = r > 0 ? r : null;
+        }
         const paymentAmount = isExpense ? -Math.abs(accountAmount) : Math.abs(accountAmount);
         payload.payments = [
           {
             account_id: accId,
             amount: paymentAmount,
-            rate: r,
+            rate: paymentRate,
             tax_id: null,
             note: null,
           },
         ];
-        payload.account_id = null;
-        payload.rate = null;
       }
     }
     // Asegurar que el monto principal coincide exactamente con la suma de los items (evita error backend)
@@ -2425,6 +2428,27 @@ function saveTransaction() {
       // taxes removed for now
       include_in_balance: !!includeInBalance.value,
     };
+    // Transfer: 2 payments con signos opuestos
+    const rawAmt = Math.abs(Number(form.value.amount || 0));
+    const r = Number(form.value.rate || 0);
+    const fromAmt = -rawAmt; // origen siempre sale dinero
+    const toAmt = isCrossCurrency.value && r > 0 ? rawAmt * r : rawAmt; // destino recibe
+    payload.payments = [
+      {
+        account_id: form.value.account_from_id ?? null,
+        amount: fromAmt,
+        rate: null,
+        tax_id: null,
+        note: null,
+      },
+      {
+        account_id: form.value.account_to_id ?? null,
+        amount: toAmt,
+        rate: null,
+        tax_id: null,
+        note: null,
+      },
+    ];
   }
   const doUpdate = isEdit.value;
   const persist = async () => {

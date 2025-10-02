@@ -787,15 +787,17 @@ function buildQueryParams(): Record<string, unknown> {
       params[f.vmodel_api || f.vmodel] = val;
     }
   }
-  // Multi-cuenta: si hay más de una cuenta seleccionada en el sidebar, enviar account_ids (sin tocar la URL)
+  // Multi-cuenta: si hay más de una cuenta seleccionada en el sidebar,
+  // enviar solo payment_account_ids como CSV (p. ej. "1,2,3")
   if (Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length > 1) {
-    const csv = txStore.selectedAccountIds
-      .map((v: unknown) => {
-        const n = Number(v);
-        return Number.isFinite(n) ? String(n) : String(v);
-      })
-      .join(',');
-    if (csv) params['account_ids'] = csv;
+    const ids = txStore.selectedAccountIds.map((v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? String(n) : String(v);
+    });
+    const csv = ids.join(',');
+    if (csv) {
+      params['payment_account_ids'] = csv;
+    }
   }
   return params;
 }
@@ -1004,6 +1006,10 @@ watch(
 watch(
   () => (filters as Record<string, FilterValue>)['account_id'],
   (val) => {
+    // Si hay selección múltiple activa en el sidebar, no sobreescribirla desde el filtro del formulario
+    if (Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length > 1) {
+      return;
+    }
     const current = txStore.selectedAccountIds.map(String);
     const desired = val == null || val === '' ? [] : [String(val as unknown as string | number)];
     if (JSON.stringify(current) !== JSON.stringify(desired)) {

@@ -23,7 +23,7 @@ export const dictionary = {
   forms_filter: [
     { id: 0, col: 4, vmodel: 'provider_id', vmodel_api: 'provider_id', vmodel_url: 'providers', type: 'select', label: 'Proveedor', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 1, col: 4, vmodel: 'user_id', vmodel_api: 'user_id', vmodel_url: 'users', type: 'select', label: 'Usuario', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 2, col: 4, vmodel: 'account_id', vmodel_api: 'account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+  { id: 2, col: 4, vmodel: 'account_id', vmodel_api: 'payment_account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 3, col: 4, vmodel: 'transaction_type_id', vmodel_api: 'transaction_type_id', vmodel_url: 'transaction_types', type: 'select', label: 'Tipo de Transacción', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 4, col: 3, vmodel: 'date_from', vmodel_api: 'date_from', type: 'datetime', label: 'Fecha y hora desde', placeholder: 'YYYY-MM-DDTHH:mm', value: '' },
     { id: 5, col: 3, vmodel: 'date_to', vmodel_api: 'date_to', type: 'datetime', label: 'Fecha y hora hasta', placeholder: 'YYYY-MM-DDTHH:mm', value: '' }
@@ -63,7 +63,7 @@ export const dictionary = {
   { id: 6, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: true },
     { id: 7, vmodel: 'user_id', vmodel_api: 'user_id', vmodel_url: 'users', type: 'select', label: 'Usuario', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 8, vmodel: 'provider_id', vmodel_api: 'provider_id', vmodel_url: 'providers', type: 'select', label: 'Proveedor', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 9, vmodel: 'account_id', vmodel_api: 'account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+  { id: 9, vmodel: 'account_id', vmodel_api: 'account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 10, vmodel: 'transaction_type_id', vmodel_api: 'transaction_type_id', vmodel_url: 'transaction_types', type: 'select', label: 'Tipo de Transacción', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 11, vmodel: 'url_file', vmodel_api: 'url_file', type: 'input', label: 'URL del Archivo', placeholder: 'URL del archivo', value: '' }
   ],
@@ -81,7 +81,7 @@ export const dictionary = {
     { id: 6, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false },
     { id: 7, vmodel: 'user_id', vmodel_api: 'user_id', vmodel_url: 'users', type: 'select', label: 'Usuario', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 8, vmodel: 'provider_id', vmodel_api: 'provider_id', vmodel_url: 'providers', type: 'select', label: 'Proveedor', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 9, vmodel: 'account_id', vmodel_api: 'account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+  { id: 9, vmodel: 'account_id', vmodel_api: 'account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 10, vmodel: 'transaction_type_id', vmodel_api: 'transaction_type_id', vmodel_url: 'transaction_types', type: 'select', label: 'Tipo de Transacción', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 11, vmodel: 'url_file', vmodel_api: 'url_file', type: 'input', label: 'URL del Archivo', placeholder: 'URL del archivo', value: '' }
   ]

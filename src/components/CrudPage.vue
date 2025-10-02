@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { useQuasar, QInput, QSelect, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
 import type { QSelectProps, QInputProps } from 'quasar';
@@ -200,6 +200,10 @@ const $q = useQuasar();
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+
+// Identificar si este CRUD corresponde a transacciones para enlazar eventos globales
+const IS_TRANSACTIONS =
+  dictionary.url_apis === 'transactions' || /transaction/i.test(String(dictionary.url_apis || ''));
 
 // Estado
 type FilterValue = string | number | boolean | null | undefined;
@@ -532,6 +536,12 @@ async function remove(row: unknown): Promise<void> {
     }
     await api.delete(`/${dictionary.url_apis}/${id}`);
     $q.notify({ type: 'negative', message: 'Registro eliminado' });
+    // Notificar a otros contextos que las transacciones cambiaron
+    if (IS_TRANSACTIONS) {
+      window.dispatchEvent(
+        new CustomEvent('ow:transactions:changed', { detail: { type: 'delete', id } })
+      );
+    }
     await onRequest({ pagination: pagination.value });
   } catch (err) {
     $q.notify({ type: 'negative', message: 'Error al eliminar' });
@@ -567,9 +577,24 @@ async function save(): Promise<void> {
     if (editing.value && currentRowId.value) {
       res = await api.put(`/${dictionary.url_apis}/${currentRowId.value}`, payload);
       $q.notify({ type: 'positive', message: 'Actualizado correctamente' });
+      if (IS_TRANSACTIONS) {
+        window.dispatchEvent(
+          new CustomEvent('ow:transactions:changed', {
+            detail: { type: 'update', id: currentRowId.value },
+          })
+        );
+      }
     } else {
       res = await api.post(`/${dictionary.url_apis}`, payload);
       $q.notify({ type: 'positive', message: 'Creado correctamente' });
+      if (IS_TRANSACTIONS) {
+        const newId = (res?.data && typeof res.data === 'object' ? res.data.id : undefined) as
+          | number
+          | undefined;
+        window.dispatchEvent(
+          new CustomEvent('ow:transactions:changed', { detail: { type: 'add', id: newId } })
+        );
+      }
     }
     showDialog.value = false;
     await onRequest({ pagination: pagination.value });
@@ -769,6 +794,19 @@ onMounted(async () => {
   }
   // inicializar tabla con server request
   await onRequest({ pagination: pagination.value });
+
+  // Si este CRUD es para transacciones, escuchar cambios globales y refrescar
+  const onTxChanged = () => {
+    void onRequest({ pagination: pagination.value });
+  };
+  if (IS_TRANSACTIONS) {
+    window.addEventListener('ow:transactions:changed', onTxChanged);
+  }
+  onBeforeUnmount(() => {
+    if (IS_TRANSACTIONS) {
+      window.removeEventListener('ow:transactions:changed', onTxChanged);
+    }
+  });
 });
 
 // Re-fetch y sincronizar filtros (incluye search) con la URL
