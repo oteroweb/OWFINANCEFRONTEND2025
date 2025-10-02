@@ -882,21 +882,20 @@ function mapTxToForm(tx: Transaction): void {
 const isEdit = computed(() => typeof form.value.id === 'number' && Number.isFinite(form.value.id));
 // Paso 1: función simple que SIEMPRE consulta la transacción por id y la muestra en consola
 async function resolveTxById(id: number): Promise<Transaction | null> {
-  // 1) Intentar devolver desde caché local (Pinia) para render inmediato
-  const cached = tsStore.transactions.find((t) => t.id === id) || null;
-  if (cached) return cached;
-  // 2) Fallback a API
+  // Preferir SIEMPRE datos frescos del backend al editar para evitar objetos parciales/optimistas
   console.log('[prefill] solicitando transacción', id);
   try {
     const resp = await api.get(`/transactions/${id}`);
     const raw = resp.data?.data ?? resp.data;
     console.log('[prefill] respuesta cruda', raw);
     const tx = raw as Transaction;
-    return tx || null;
+    if (tx) return tx;
   } catch (e) {
     console.error('[prefill] error obteniendo transacción', e);
-    return null;
   }
+  // Fallback: devolver desde caché local (Pinia) si existe
+  const cached = tsStore.transactions.find((t) => t.id === id) || null;
+  return cached;
 }
 
 // Cuando se abre el diálogo, precargar datos necesarios para minimizar retrasos visuales
@@ -1432,6 +1431,17 @@ async function fetchAccountBalance(id: number) {
           currencyCode: prev.currencyCode || '',
           currencySymbol: prev.currencySymbol || '',
         };
+      }
+    }
+    // También actualizamos la opción del selector para refrescar el label mostrado
+    const optIdx = accountOptions.value.findIndex((a) => a.id === id);
+    if (optIdx >= 0) {
+      const prevOpt = accountOptions.value[optIdx] as AccountOption | undefined;
+      if (prevOpt) {
+        accountOptions.value[optIdx] = {
+          ...prevOpt,
+          balance: value,
+        } as AccountOption;
       }
     }
   } catch (e) {
@@ -2116,6 +2126,16 @@ watch(
           }
         }
       }
+      // Fuerza refresco del saldo cuando hay cuenta preseleccionada al abrir el diálogo
+      const toRefresh = [
+        form.value.account_id,
+        form.value.account_from_id,
+        form.value.account_to_id,
+      ].filter((v): v is number => typeof v === 'number');
+      toRefresh.forEach((id) => {
+        if (id in accountBalanceCache.value) delete accountBalanceCache.value[id];
+        void fetchAccountBalance(id);
+      });
     } catch (e) {
       console.warn('Prefill account failed', e);
     }
