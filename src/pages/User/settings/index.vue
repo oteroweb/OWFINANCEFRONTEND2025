@@ -647,7 +647,9 @@ async function ensureProfileCurrenciesLoaded() {
   if (profileAllCurrencies.value.length) return;
   profileCurrencyLoading.value = true;
   try {
-    const res = await api.get('/currencies', { params: { per_page: 1000, order_by: 'name', order_dir: 'asc' } });
+    const res = await api.get('/currencies', {
+      params: { per_page: 1000, order_by: 'name', order_dir: 'asc' },
+    });
     type Cur = { id: number; name: string; symbol?: string; code?: string };
     const extract = (payload: unknown): Cur[] => {
       const p = payload as { data?: unknown };
