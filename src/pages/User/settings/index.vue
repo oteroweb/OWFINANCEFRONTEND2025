@@ -41,6 +41,25 @@
             </div>
             <div class="row q-col-gutter-md">
               <div class="col-12 col-sm-6">
+                <q-select
+                  v-model="selectedCurrencyId"
+                  :options="profileCurrencyOptions"
+                  :loading="profileCurrencyLoading"
+                  option-label="nameLabel"
+                  option-value="id"
+                  emit-value
+                  map-options
+                  use-input
+                  :onFilter="onProfileCurrencyFilter"
+                  label="Moneda por defecto"
+                  outlined
+                  dense
+                  @focus="ensureProfileCurrenciesLoaded"
+                />
+              </div>
+            </div>
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-6">
                 <q-input
                   v-model="password"
                   label="Nueva contraseña"
@@ -542,6 +561,9 @@ async function saveProfile() {
       name: name.value,
       email: email.value,
       ...(password.value ? { password: password.value } : {}),
+      ...(typeof selectedCurrencyId.value === 'number'
+        ? { currency_id: selectedCurrencyId.value }
+        : {}),
     });
 
     // Upload avatar if selected
@@ -553,11 +575,36 @@ async function saveProfile() {
       });
     }
 
-    // Refresh local auth store
+    // Refresh local auth store (incluye moneda por defecto)
     if (auth.user) {
       auth.user.name = name.value;
       auth.user.email = email.value;
+      const cid = typeof selectedCurrencyId.value === 'number' ? selectedCurrencyId.value : null;
+      if (cid) {
+        (auth.user as unknown as LooseUser).currency_id = cid;
+        const cur = profileAllCurrencies.value.find((c) => c.id === cid);
+        if (cur) {
+          (auth.user as unknown as LooseUser).currency = {
+            id: cur.id,
+            name: cur.name,
+            code: cur.code ?? null,
+            symbol: cur.symbol ?? null,
+          };
+        }
+      }
       localStorage.setItem('user', JSON.stringify(auth.user));
+    }
+
+    // Notificar cambio global de moneda
+    try {
+      const detail = {
+        user_id: auth.user?.id ?? null,
+        currency_id: (auth.user as unknown as LooseUser)?.currency_id ?? null,
+        currency: (auth.user as unknown as LooseUser)?.currency ?? null,
+      };
+      window.dispatchEvent(new CustomEvent('ow:user:currency-changed', { detail }));
+    } catch {
+      /* silent */
     }
 
     Notify.create({ type: 'positive', message: 'Perfil actualizado' });
@@ -568,6 +615,92 @@ async function saveProfile() {
     saving.value = false;
   }
 }
+
+// ----- Moneda por defecto (perfil) -----
+type ProfileCurrencyOption = {
+  id: number;
+  name: string;
+  code?: string | undefined;
+  symbol?: string | undefined;
+  nameLabel: string;
+};
+type LooseUser = {
+  currency?: {
+    id?: number | null;
+    code?: string | null;
+    symbol?: string | null;
+    name?: string | null;
+  } | null;
+  currency_id?: number | null;
+};
+const profileCurrencyOptions = ref<ProfileCurrencyOption[]>([]);
+const profileAllCurrencies = ref<ProfileCurrencyOption[]>([]);
+const profileCurrencyLoading = ref(false);
+function getInitialCurrencyId(): number | null {
+  const u = (auth.user as unknown as LooseUser) || null;
+  const id = u?.currency?.id ?? u?.currency_id ?? null;
+  return typeof id === 'number' ? id : null;
+}
+const selectedCurrencyId = ref<number | null>(getInitialCurrencyId());
+
+async function ensureProfileCurrenciesLoaded() {
+  if (profileAllCurrencies.value.length) return;
+  profileCurrencyLoading.value = true;
+  try {
+    const res = await api.get('/currencies', { params: { per_page: 1000, order_by: 'name', order_dir: 'asc' } });
+    type Cur = { id: number; name: string; symbol?: string; code?: string };
+    const extract = (payload: unknown): Cur[] => {
+      const p = payload as { data?: unknown };
+      const d = p?.data;
+      if (Array.isArray(d)) return d as Cur[];
+      const obj = (d as { data?: unknown; items?: unknown }) || {};
+      if (Array.isArray(obj.data)) return obj.data as Cur[];
+      if (Array.isArray(obj.items)) return obj.items as Cur[];
+      // As fallback, if top-level is array
+      if (Array.isArray(payload)) return payload as Cur[];
+      return [] as Cur[];
+    };
+    const raw = extract(res.data);
+    const mapped: ProfileCurrencyOption[] = raw.map((c) => ({
+      id: c.id,
+      name: c.name,
+      symbol: c.symbol ?? undefined,
+      code: c.code ?? undefined,
+      nameLabel: c.symbol ? `${c.name} (${c.symbol})` : c.name,
+    }));
+    profileAllCurrencies.value = mapped;
+    profileCurrencyOptions.value = mapped;
+    if (selectedCurrencyId.value == null) {
+      const u = (auth.user as unknown as LooseUser) || null;
+      const id = u?.currency?.id ?? u?.currency_id ?? null;
+      selectedCurrencyId.value = typeof id === 'number' ? id : null;
+    }
+  } catch {
+    Notify.create({ type: 'negative', message: 'Error cargando monedas' });
+  } finally {
+    profileCurrencyLoading.value = false;
+  }
+}
+
+function onProfileCurrencyFilter(val: string, done: (cb: () => void) => void) {
+  const needle = (val || '').toLowerCase();
+  done(() => {
+    profileCurrencyOptions.value = !needle
+      ? profileAllCurrencies.value
+      : profileAllCurrencies.value.filter(
+          (o) =>
+            (o.name || '').toLowerCase().includes(needle) ||
+            (o.code || '').toLowerCase().includes(needle)
+        );
+  });
+}
+
+onMounted(() => {
+  if (tab.value === 'profile') void ensureProfileCurrenciesLoaded();
+});
+watch(tab, (t) => {
+  if (t === 'profile') void ensureProfileCurrenciesLoaded();
+});
 
 function onCreateAccount() {
   // Abrir el flujo existente de creación de cuentas (CrudPage/AccountDialog) si aplica

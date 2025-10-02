@@ -383,7 +383,7 @@
                 step="0.0001"
                 filled
                 dense
-              />
+              />mm
               <div class="q-mt-xs text-right" v-if="Number(form.rate || 0) > 0">
                 <q-btn
                   size="xs"
@@ -707,7 +707,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter, type LocationQuery } from 'vue-router';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
@@ -916,7 +916,7 @@ async function onDialogShow() {
     const maybePrefill = props.prefillTransactionId
       ? resolveTxById(props.prefillTransactionId)
       : Promise.resolve(null);
-  const [, tx] = await Promise.allSettled([
+    const [, tx] = await Promise.allSettled([
       Promise.allSettled(catalogPromises),
       maybePrefill,
     ]).then((results) => {
@@ -1324,13 +1324,24 @@ const isTransfer = computed(() => {
   const name = (ty?.name || '').toLowerCase();
   return slug === 'transfer' || name.includes('transfer');
 });
+// Helpers to safely compare currency identity
+function toNumId(v: unknown): number | null {
+  if (v == null) return null;
+  const n = Number(v as number | string);
+  return Number.isFinite(n) ? n : null;
+}
+function normCode(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  return s ? s.toLowerCase() : null;
+}
 const isCrossCurrency = computed(() => {
   if (!isTransfer.value) return false;
-  const from = originAccount.value?.currencyId;
-  const to = destAccount.value?.currencyId;
-  if (from && to) return from !== to;
-  const fromCode = originAccount.value?.currencyCode;
-  const toCode = destAccount.value?.currencyCode;
+  const fromId = toNumId(originAccount.value?.currencyId);
+  const toId = toNumId(destAccount.value?.currencyId);
+  if (fromId != null && toId != null) return fromId !== toId;
+  const fromCode = normCode(originAccount.value?.currencyCode);
+  const toCode = normCode(destAccount.value?.currencyCode);
   if (fromCode && toCode) return fromCode !== toCode;
   return false;
 });
@@ -1339,11 +1350,11 @@ const selectedAccountCurrencyCode = computed(() => selectedAccount.value?.curren
 const showRateInput = computed(() => {
   if (!isTransfer.value && isAdvancedPayment.value) return false; // rate per-row in advanced payments
   if (isTransfer.value) return isCrossCurrency.value;
-  const uid = userCurrencyId.value,
-    aid = selectedAccountCurrencyId.value;
-  if (uid && aid) return uid !== aid;
-  const ucode = userCurrencyCode.value,
-    acode = selectedAccountCurrencyCode.value;
+  const uid = toNumId(userCurrencyId.value);
+  const aid = toNumId(selectedAccountCurrencyId.value);
+  if (uid != null && aid != null) return uid !== aid;
+  const ucode = normCode(userCurrencyCode.value);
+  const acode = normCode(selectedAccountCurrencyCode.value);
   if (ucode && acode) return ucode !== acode;
   return false;
 });
@@ -1665,20 +1676,20 @@ function paymentAccountOptions(index: number) {
 }
 function rowNeedsRate(p: PaymentRow) {
   const acc = rowAccount(p);
-  const uid = userCurrencyId.value;
-  const aid = acc?.currencyId ?? null;
-  if (uid && aid) return uid !== aid;
-  const ucode = userCurrencyCode.value;
-  const acode = acc?.currencyCode;
+  const uid = toNumId(userCurrencyId.value);
+  const aid = toNumId(acc?.currencyId ?? null);
+  if (uid != null && aid != null) return uid !== aid;
+  const ucode = normCode(userCurrencyCode.value);
+  const acode = normCode(acc?.currencyCode);
   if (ucode && acode) return ucode !== acode;
   return false;
 }
 function rowRateLabel(p: PaymentRow) {
   const acc = rowAccount(p);
-  const from = acc?.currencyCode || 'Cuenta';
-  const to = userCurrencyCode.value || 'Usuario';
-  // Clarify direction: amount(from)/rate = amount(to)
-  return `Tasa ${from}/${to}`;
+  const from = userCurrencyCode.value || 'Usuario';
+  const to = acc?.currencyCode || 'Cuenta';
+  // Especificación: rate = User→Account; conversión: amount_account / rate = amount_user
+  return `Tasa (${from}→${to})`;
 }
 function rowTaxPercent(p: PaymentRow): number {
   if (!p.applyTax || !p.tax_id) return 0;
@@ -2144,6 +2155,12 @@ function saveTransaction() {
     form.value.amount = -Math.abs(form.value.amount);
   else if (slug === 'income' && form.value.amount && form.value.amount < 0)
     form.value.amount = Math.abs(form.value.amount);
+  // Concepto (name) requerido por backend
+  const nameTrim = (form.value.name || '').trim();
+  if (!nameTrim) {
+    $q.notify({ type: 'warning', message: 'Concepto es requerido' });
+    return;
+  }
   if (slug === 'transfer') {
     if (!form.value.account_from_id || !form.value.account_to_id) {
       $q.notify({ type: 'warning', message: 'Selecciona cuenta origen y destino' });
@@ -2208,7 +2225,8 @@ function saveTransaction() {
       return;
     }
   }
-  if (showRateInput.value && (!form.value.rate || Number(form.value.rate) <= 0)) {
+  // Si se detecta cruce (no transferencia) exigir tasa
+  if (showRateInput.value && !(Number(form.value.rate || 0) > 0)) {
     $q.notify({ type: 'warning', message: 'Ingresa la tasa de cambio' });
     return;
   }
@@ -2245,16 +2263,26 @@ function saveTransaction() {
     account_id?: number | null;
     account_from_id?: number | null;
     account_to_id?: number | null;
-    // Categoría de la transacción (diferente a la categoría por ítem)
+    // Categoría de la transacción
     category_id?: number | null;
-    // Detalle de ítems: usan item_category_id
-    items?: Array<{ name: string; amount: number; item_category_id?: number | null }>;
+    // Detalle de ítems: backend espera item_category_id por línea
+    items?: Array<{
+      name: string;
+      amount: number;
+      item_category_id?: number | null;
+      tax_id?: number | null;
+    }>;
     payments?: PaymentPayload[];
-    include_in_balance?: number; // 1 o 0
+    include_in_balance?: boolean;
   };
   let payload: TransactionPayload;
   if (!isTrans) {
-    type ItemPayload = { name: string; amount: number; item_category_id?: number | null };
+    type ItemPayload = {
+      name: string;
+      amount: number;
+      item_category_id?: number | null;
+      tax_id?: number | null;
+    };
     let items: ItemPayload[] = [];
     if (isAdvancedAmount.value) {
       const valid = invoiceItems.value
@@ -2296,7 +2324,7 @@ function saveTransaction() {
         return {
           name: r.name,
           amount: totalLine,
-          // Si la línea no tiene categoría de ítem, usar la categoría de transacción como predeterminada
+          // Si la línea no tiene categoría, usar la categoría simple como predeterminada
           item_category_id: r.item_category_id ?? simpleCategoryId.value ?? null,
         } as ItemPayload;
       });
@@ -2312,7 +2340,8 @@ function saveTransaction() {
         {
           name: form.value.name || 'Item',
           amount: normalized,
-          item_category_id: simpleCategoryId.value ?? null,
+          // En modo simple NO se envía categoría por ítem: dejar null
+          item_category_id: null,
         },
       ];
     }
@@ -2331,8 +2360,31 @@ function saveTransaction() {
       // taxes removed for now
       category_id: simpleCategoryId.value ?? null,
       items,
-      include_in_balance: includeInBalance.value ? 1 : 0,
+      include_in_balance: !!includeInBalance.value,
     };
+    // Si no estamos en pagos avanzados, pero hay cruce de moneda (showRateInput),
+    // construir un único payment y omitir account_id y rate top-level para alinear con el backend
+    if (!isAdvancedPayment.value && showRateInput.value) {
+      const userAmt = Number(form.value.amount || 0);
+      const r = Number(form.value.rate || 0);
+      const accId = form.value.account_id ?? null;
+      if (accId && r > 0) {
+        const isExpense = slug === 'expense';
+        const accountAmount = Math.abs(userAmt) * r;
+        const paymentAmount = isExpense ? -Math.abs(accountAmount) : Math.abs(accountAmount);
+        payload.payments = [
+          {
+            account_id: accId,
+            amount: paymentAmount,
+            rate: r,
+            tax_id: null,
+            note: null,
+          },
+        ];
+        payload.account_id = null;
+        payload.rate = null;
+      }
+    }
     // Asegurar que el monto principal coincide exactamente con la suma de los items (evita error backend)
     if (isAdvancedAmount.value) {
       const itemsSum = items.reduce((s, it) => s + Number(it.amount || 0), 0);
@@ -2371,7 +2423,7 @@ function saveTransaction() {
       url_file: form.value.url_file || null,
       rate: form.value.rate ?? null,
       // taxes removed for now
-      include_in_balance: includeInBalance.value ? 1 : 0,
+      include_in_balance: !!includeInBalance.value,
     };
   }
   const doUpdate = isEdit.value;
@@ -2492,6 +2544,26 @@ function resetForm() {
   includeInBalance.value = true;
   currencyAlertShown.value = false;
 }
+
+// ---- React to user currency changes globally ----
+function onUserCurrencyChanged() {
+  // Forzar recomputes que dependen de moneda de usuario y limpiar tasa si ya no se necesita
+  // Si el diálogo está abierto, avisar del cambio de moneda
+  if (ui.showDialogNewTransaction) {
+    $q.notify({ type: 'info', message: 'Moneda por defecto actualizada' });
+  }
+  // Si ya no se requiere tasa (misma moneda), limpiarla
+  if (!isTransfer.value && !isAdvancedPayment.value && !showRateInput.value) {
+    form.value.rate = null;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('ow:user:currency-changed', onUserCurrencyChanged as EventListener);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('ow:user:currency-changed', onUserCurrencyChanged as EventListener);
+});
 
 // Traduce mensajes de error de validación del backend a mensajes cortos en español usando
 // el nombre amigable del campo.

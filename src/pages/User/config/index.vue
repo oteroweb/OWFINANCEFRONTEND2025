@@ -40,6 +40,25 @@
             </div>
             <div class="row q-col-gutter-md">
               <div class="col-12 col-sm-6">
+                <q-select
+                  v-model="selectedCurrencyId"
+                  :options="currencyOptions"
+                  :loading="currencyLoading"
+                  option-label="nameLabel"
+                  option-value="id"
+                  emit-value
+                  map-options
+                  use-input
+                  :on-filter="onCurrencyFilter"
+                  label="Moneda por defecto"
+                  outlined
+                  dense
+                  @focus="ensureCurrenciesLoaded"
+                />
+              </div>
+            </div>
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-6">
                 <q-input
                   v-model="password"
                   label="Nueva contraseña"
@@ -82,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import CrudPage from 'components/CrudPage.vue';
 import { useAuthStore } from 'stores/auth';
 import { defaultAvatarUrl } from '../config';
@@ -107,6 +126,82 @@ const avatarFile = ref<File | null>(null);
 const avatarPreview = ref<string | null>(null);
 
 const saving = ref(false);
+
+// ----- Moneda por defecto -----
+type CurrencyOption = {
+  id: number;
+  name: string;
+  code?: string | undefined;
+  symbol?: string | undefined;
+  nameLabel: string;
+};
+const currencyOptions = ref<CurrencyOption[]>([]);
+const allCurrencies = ref<CurrencyOption[]>([]);
+const currencyLoading = ref(false);
+type LooseUser = {
+  currency?: { id?: number | null; code?: string | null; symbol?: string | null; name?: string | null } | null;
+  currency_id?: number | null;
+};
+function getInitialCurrencyId(): number | null {
+  const u = (auth.user as unknown as LooseUser) || null;
+  const id = (u?.currency?.id ?? u?.currency_id) ?? null;
+  return typeof id === 'number' ? id : null;
+}
+const selectedCurrencyId = ref<number | null>(getInitialCurrencyId());
+
+async function ensureCurrenciesLoaded() {
+  if (allCurrencies.value.length) return;
+  currencyLoading.value = true;
+  try {
+    const res = await api.get('/currencies', { params: { order_by: 'name', order_dir: 'asc' } });
+    const raw = (res.data?.data || res.data) as Array<{
+      id: number;
+      name: string;
+      symbol?: string;
+      code?: string;
+    }>;
+    const mapped: CurrencyOption[] = (raw || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      symbol: c.symbol ?? undefined,
+      code: c.code ?? undefined,
+      nameLabel: c.symbol ? `${c.name} (${c.symbol})` : c.name,
+    }));
+    allCurrencies.value = mapped;
+    currencyOptions.value = mapped;
+    // Prefijar si no hay seleccionado e info en usuario
+    if (selectedCurrencyId.value == null) {
+      const uid = getInitialCurrencyId();
+      selectedCurrencyId.value = typeof uid === 'number' ? uid : null;
+    }
+  } catch {
+    Notify.create({ type: 'negative', message: 'Error cargando monedas' });
+  } finally {
+    currencyLoading.value = false;
+  }
+}
+
+function onCurrencyFilter(val: string, done: (cb: () => void) => void) {
+  const needle = (val || '').toLowerCase();
+  done(() => {
+    currencyOptions.value = !needle
+      ? allCurrencies.value
+      : allCurrencies.value.filter((o) =>
+          (o.name || '').toLowerCase().includes(needle) || (o.code || '').toLowerCase().includes(needle)
+        );
+  });
+}
+
+onMounted(() => {
+  // Cargar monedas al entrar a la pestaña perfil o si ya está activa
+  if (tab.value === 'profile') void ensureCurrenciesLoaded();
+});
+watch(
+  () => tab.value,
+  (t) => {
+    if (t === 'profile') void ensureCurrenciesLoaded();
+  }
+);
 
 function pickAvatar() {
   fileInput.value?.click();
@@ -145,6 +240,9 @@ async function saveProfile() {
       name: name.value,
       email: email.value,
       ...(password.value ? { password: password.value } : {}),
+      ...(typeof selectedCurrencyId.value === 'number'
+        ? { currency_id: selectedCurrencyId.value }
+        : {}),
     });
 
     // Upload avatar if selected
@@ -156,10 +254,23 @@ async function saveProfile() {
       });
     }
 
-    // Refresh local auth store
+    // Refresh local auth store (incluye moneda por defecto)
     if (auth.user) {
       auth.user.name = name.value;
       auth.user.email = email.value;
+      const cid = typeof selectedCurrencyId.value === 'number' ? selectedCurrencyId.value : null;
+      if (cid) {
+        (auth.user as unknown as LooseUser).currency_id = cid;
+        const cur = allCurrencies.value.find((c) => c.id === cid);
+        if (cur) {
+          (auth.user as unknown as LooseUser).currency = {
+            id: cur.id,
+            name: cur.name,
+            code: cur.code ?? null,
+            symbol: cur.symbol ?? null,
+          };
+        }
+      }
       localStorage.setItem('user', JSON.stringify(auth.user));
     }
 
