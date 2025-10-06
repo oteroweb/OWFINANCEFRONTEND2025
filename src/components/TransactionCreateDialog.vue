@@ -149,10 +149,9 @@
                   <template v-if="needsRateForAccountBalance"
                     >Saldo después: requiere tasa</template
                   >
-                  <template v-else>
-                    <!-- iseditflag span -->
-                    <span v-if="isEdit"> (Editando)</span>
-                    Saldo después: {{ currencySymbol }}{{ Number(newBalance).toFixed(2) }}</template
+                  <template v-else
+                    >Saldo después: {{ currencySymbol
+                    }}{{ Number(newBalance).toFixed(2) }}</template
                   >
                 </div>
               </div>
@@ -1600,10 +1599,6 @@ function originalEffectForAccount(id?: number | null): number {
     .reduce((s, p) => s + Number(p.amount || 0), 0);
   return Number(sum || 0);
 }
-// Tolerancia para considerar sin cambio (centavos)
-function nearlyEqual(a: number, b: number, eps = 0.01): boolean {
-  return Math.abs(Number(a || 0) - Number(b || 0)) < eps;
-}
 function proposedSimplePaymentEffect(): number {
   // Efecto propuesto sobre la CUENTA seleccionada (monto en moneda de la cuenta con signo correcto)
   const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
@@ -1632,8 +1627,6 @@ const newBalance = computed(() => {
     const accId = isTransfer.value ? form.value.account_from_id : form.value.account_id;
     const original = originalEffectForAccount(accId || null);
     const proposed = includeInBalance.value ? -Math.abs(Number(form.value.amount || 0)) : 0;
-    const sameInclusion = includeInBalance.value === originalSnapshot.value.includeInBalance;
-    if (sameInclusion && nearlyEqual(original, proposed)) return bal; // sin cambio
     return bal - original + proposed;
   }
   if (isAdvancedPayment.value) {
@@ -1644,20 +1637,11 @@ const newBalance = computed(() => {
   const accId = form.value.account_id;
   const proposed = proposedSimplePaymentEffect();
   const canDelta = isEdit.value && originalSnapshot.value.payments.length > 0;
-  console.log(canDelta);
   if (!canDelta) {
-    // console.log(form, 'sdsd');
-    console.log(form.value.amount, 'sdsd');
-    console.log(form.value.amount == proposed, 'compare');
-    console.log(bal, 'currentBalance');
-    console.log(proposed, 'proposed');
-    if (form.value.amount == proposed) {
-      return '999';
-    }
+    // creación: no hay efecto original que revertir
+    return bal + proposed;
   }
   const original = originalEffectForAccount(accId);
-  const sameInclusion = includeInBalance.value === originalSnapshot.value.includeInBalance;
-  if (sameInclusion && nearlyEqual(original, proposed)) return bal; // sin cambio
   return bal - original + proposed;
 });
 const destNewBalance = computed(() => {
@@ -1677,8 +1661,6 @@ const destNewBalance = computed(() => {
   const canDelta = isEdit.value && originalSnapshot.value.payments.length > 0;
   if (!canDelta) return curr + proposed;
   const original = originalEffectForAccount(accId);
-  const sameInclusion = includeInBalance.value === originalSnapshot.value.includeInBalance;
-  if (sameInclusion && nearlyEqual(original, proposed)) return curr; // sin cambio
   return curr - original + proposed;
 });
 
