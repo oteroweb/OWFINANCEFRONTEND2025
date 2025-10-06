@@ -149,9 +149,10 @@
                   <template v-if="needsRateForAccountBalance"
                     >Saldo después: requiere tasa</template
                   >
-                  <template v-else
-                    >Saldo después: {{ currencySymbol
-                    }}{{ Number(newBalance).toFixed(2) }}</template
+                  <template v-else>
+                    <!-- iseditflag span -->
+                    <span v-if="isEdit"> (Editando)</span>
+                    Saldo después: {{ currencySymbol }}{{ Number(newBalance).toFixed(2) }}</template
                   >
                 </div>
               </div>
@@ -791,8 +792,9 @@ void loadTransactionTypes();
 const transactionCategoryId = ref<number | null>(null);
 function mapTxToForm(tx: Transaction): void {
   transactionCategoryId.value = null;
-  form.value = {
-    id: tx.id,
+  const txIdRaw = (tx as unknown as { id?: number | string | null }).id;
+  const txIdNum = Number(txIdRaw as number | string);
+  const baseForm: TransactionForm = {
     name: tx.name,
     amount: Number(tx.amount ?? 0),
     datetime: (tx.date || '').replace(' ', 'T'),
@@ -804,6 +806,10 @@ function mapTxToForm(tx: Transaction): void {
     account_to_id: null,
     url_file: tx.url_file || '',
   };
+  if (Number.isFinite(txIdNum) && txIdNum > 0) {
+    Object.assign(baseForm, { id: Number(txIdNum) });
+  }
+  form.value = baseForm;
   // Items (invoice detail)
   const maybeItems = (
     tx as unknown as {
@@ -850,6 +856,36 @@ function mapTxToForm(tx: Transaction): void {
       payment_transactions?: Array<{ account_id: number; amount: number; tax_id?: number | null }>;
     }
   ).payment_transactions;
+  // Snapshot original para previsualizar delta y refrescar saldos correctamente al actualizar
+  try {
+    const origInclude = (() => {
+      const v = (tx as unknown as { include_in_balance?: boolean }).include_in_balance;
+      return typeof v === 'boolean' ? v : true;
+    })();
+    const typeId = tx.transaction_type_id ?? null;
+    const type = typeId ? ttypes.types.find((t: TransactionType) => t.id === typeId) : undefined;
+    const typeSlug = (type?.slug || type?.name || '').toLowerCase();
+    const origPayments = Array.isArray(maybePayments)
+      ? maybePayments.map((p) => ({
+          account_id: Number(p.account_id),
+          amount: Number(p.amount || 0),
+          rate: null as number | null,
+        }))
+      : [];
+    originalSnapshot.value = {
+      includeInBalance: origInclude,
+      typeSlug,
+      isTransfer: typeSlug === 'transfer' || (type?.name || '').toLowerCase().includes('transfer'),
+      payments: origPayments,
+    };
+  } catch {
+    originalSnapshot.value = {
+      includeInBalance: true,
+      typeSlug: '',
+      isTransfer: false,
+      payments: [],
+    };
+  }
   if (Array.isArray(maybePayments)) {
     if (maybePayments.length > 1) {
       isAdvancedPayment.value = true;
@@ -866,6 +902,11 @@ function mapTxToForm(tx: Transaction): void {
     } else {
       isAdvancedPayment.value = false;
       payments.value = [];
+      // Caso de 1 pago: usar la cuenta del pago para el selector simple
+      const only = maybePayments[0];
+      if (only && typeof only.account_id === 'number') {
+        form.value.account_id = only.account_id;
+      }
     }
   }
   console.log('[prefill] mapTxToForm done', {
@@ -879,7 +920,11 @@ function mapTxToForm(tx: Transaction): void {
 }
 
 // Flag: estamos editando si el formulario tiene un id cargado
-const isEdit = computed(() => typeof form.value.id === 'number' && Number.isFinite(form.value.id));
+const isEdit = computed(() => {
+  const anyId = (form.value as unknown as { id?: unknown }).id;
+  const n = Number(anyId as number | string);
+  return Number.isFinite(n) && n > 0;
+});
 // Paso 1: función simple que SIEMPRE consulta la transacción por id y la muestra en consola
 async function resolveTxById(id: number): Promise<Transaction | null> {
   // Preferir SIEMPRE datos frescos del backend al editar para evitar objetos parciales/optimistas
@@ -902,6 +947,13 @@ async function resolveTxById(id: number): Promise<Transaction | null> {
 async function onDialogShow() {
   dialogLoading.value = true;
   try {
+    // Al abrir, asumir creación por defecto y limpiar snapshot; si luego se carga un tx se sobreescribe
+    originalSnapshot.value = {
+      includeInBalance: true,
+      typeSlug: '',
+      isTransfer: false,
+      payments: [],
+    };
     // Cargar catálogos en paralelo (los métodos internos ya cachean/evitan duplicados)
     const catalogPromises: Promise<unknown>[] = [
       loadTransactionTypes(),
@@ -1344,6 +1396,19 @@ const isCrossCurrency = computed(() => {
   if (fromCode && toCode) return fromCode !== toCode;
   return false;
 });
+// ----- Snapshot original de la transacción (para delta en edición y post-save) -----
+type OriginalSnapshot = {
+  includeInBalance: boolean;
+  typeSlug: string;
+  isTransfer: boolean;
+  payments: Array<{ account_id: number; amount: number; rate: number | null }>; // amounts en moneda de la cuenta
+};
+const originalSnapshot = ref<OriginalSnapshot>({
+  includeInBalance: true,
+  typeSlug: '',
+  isTransfer: false,
+  payments: [],
+});
 const selectedAccountCurrencyId = computed(() => selectedAccount.value?.currencyId ?? null);
 const selectedAccountCurrencyCode = computed(() => selectedAccount.value?.currencyCode ?? null);
 const showRateInput = computed(() => {
@@ -1526,25 +1591,95 @@ function invertMainRate() {
 }
 
 // Projected balances after transaction
+// Helpers para preview de edición
+function originalEffectForAccount(id?: number | null): number {
+  if (!id) return 0;
+  if (!originalSnapshot.value.includeInBalance) return 0; // la original no alteró saldo
+  const sum = originalSnapshot.value.payments
+    .filter((p) => p && p.account_id === id)
+    .reduce((s, p) => s + Number(p.amount || 0), 0);
+  return Number(sum || 0);
+}
+// Tolerancia para considerar sin cambio (centavos)
+function nearlyEqual(a: number, b: number, eps = 0.01): boolean {
+  return Math.abs(Number(a || 0) - Number(b || 0)) < eps;
+}
+function proposedSimplePaymentEffect(): number {
+  // Efecto propuesto sobre la CUENTA seleccionada (monto en moneda de la cuenta con signo correcto)
+  const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
+  const slug = (ty?.slug || '').toLowerCase();
+  const isExpense = slug === 'expense';
+  const userAmtAbs = Math.abs(Number(form.value.amount || 0));
+  let accAmt = userAmtAbs;
+  if (showRateInput.value) {
+    const r = Number(form.value.rate || 0);
+    if (r > 0) accAmt = userAmtAbs * r;
+  }
+  const signed = isExpense ? -Math.abs(accAmt) : Math.abs(accAmt);
+  return includeInBalance.value ? signed : 0; // si no se incluye, efecto propuesto = 0
+}
 const newBalance = computed(() => {
-  const amt = Number(form.value.amount || 0);
   const bal = Number(currentBalance.value || 0);
   const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
   const slug = (ty?.slug || '').toLowerCase();
-  if (!includeInBalance.value) return bal; // si no se incluye, no altera preview
-  if (slug === 'transfer') return bal - Math.abs(amt);
-  if (slug === 'income') return bal + Math.abs(amt);
-  if (slug === 'expense') return bal - Math.abs(amt);
-  return bal;
+  // Transferencias tienen preview específico por origen/destino; aquí mostramos origen/seleccionada con delta
+  if (slug === 'transfer') {
+    const canDelta = isEdit.value && originalSnapshot.value.payments.length > 0;
+    if (!canDelta) {
+      // creación: efecto propuesto origen = -abs(amount)
+      return bal - Math.abs(Number(form.value.amount || 0));
+    }
+    const accId = isTransfer.value ? form.value.account_from_id : form.value.account_id;
+    const original = originalEffectForAccount(accId || null);
+    const proposed = includeInBalance.value ? -Math.abs(Number(form.value.amount || 0)) : 0;
+    const sameInclusion = includeInBalance.value === originalSnapshot.value.includeInBalance;
+    if (sameInclusion && nearlyEqual(original, proposed)) return bal; // sin cambio
+    return bal - original + proposed;
+  }
+  if (isAdvancedPayment.value) {
+    // En modo avanzado no mostramos preview agregado por cuenta simple; mantener balance actual
+    return bal;
+  }
+  // Modo simple ingreso/egreso: aplicar DELTA = propuesto - original (sobre esta cuenta)
+  const accId = form.value.account_id;
+  const proposed = proposedSimplePaymentEffect();
+  const canDelta = isEdit.value && originalSnapshot.value.payments.length > 0;
+  console.log(canDelta);
+  if (!canDelta) {
+    // console.log(form, 'sdsd');
+    console.log(form.value.amount, 'sdsd');
+    console.log(form.value.amount == proposed, 'compare');
+    console.log(bal, 'currentBalance');
+    console.log(proposed, 'proposed');
+    if (form.value.amount == proposed) {
+      return '999';
+    }
+  }
+  const original = originalEffectForAccount(accId);
+  const sameInclusion = includeInBalance.value === originalSnapshot.value.includeInBalance;
+  if (sameInclusion && nearlyEqual(original, proposed)) return bal; // sin cambio
+  return bal - original + proposed;
 });
 const destNewBalance = computed(() => {
-  if (!(form.value.account_to_id && form.value.amount != null)) return destCurrentBalance.value;
+  const accId = form.value.account_to_id;
   const curr = destCurrentBalance.value;
-  if (!includeInBalance.value) return curr; // la exclusión aplica también a destino
-  if (!isCrossCurrency.value) return curr + Math.abs(Number(form.value.amount || 0));
-  const r = Number(form.value.rate || 0);
-  if (!(r > 0)) return curr; // needs rate
-  return curr + Math.abs(Number(form.value.amount || 0)) * r;
+  if (!accId || form.value.amount == null) return curr;
+  // Efecto propuesto destino en transferencia: +abs(amount) (o convertido)
+  let proposed = 0;
+  if (includeInBalance.value) {
+    if (!isCrossCurrency.value) proposed = Math.abs(Number(form.value.amount || 0));
+    else {
+      const r = Number(form.value.rate || 0);
+      if (r > 0) proposed = Math.abs(Number(form.value.amount || 0)) * r;
+      else return curr; // requiere tasa
+    }
+  }
+  const canDelta = isEdit.value && originalSnapshot.value.payments.length > 0;
+  if (!canDelta) return curr + proposed;
+  const original = originalEffectForAccount(accId);
+  const sameInclusion = includeInBalance.value === originalSnapshot.value.includeInBalance;
+  if (sameInclusion && nearlyEqual(original, proposed)) return curr; // sin cambio
+  return curr - original + proposed;
 });
 
 // ----- Advanced Payments (multiple accounts) -----
@@ -2479,6 +2614,12 @@ function saveTransaction() {
         id,
         ...(payload as unknown as Record<string, unknown>),
       };
+      // Compatibilidad: algunos backends esperan "payment_transactions" en update
+      if ((payload as { payments?: unknown[] }).payments) {
+        (body as Record<string, unknown>)['payment_transactions'] = (
+          payload as { payments?: unknown[] }
+        ).payments;
+      }
       return tsStore.updateTransaction(body);
     }
     return tsStore.addTransaction(payload as unknown as Record<string, unknown>);
@@ -2491,6 +2632,16 @@ function saveTransaction() {
       });
       // Invalida cache de balances de cuentas afectadas y fuerza refetch
       const affected: number[] = [];
+      // Incluir cuentas originales (antes de editar) para recalcular saldos removidos/ajustados
+      try {
+        if (originalSnapshot.value && Array.isArray(originalSnapshot.value.payments)) {
+          originalSnapshot.value.payments.forEach((p) => {
+            if (typeof p?.account_id === 'number') affected.push(p.account_id);
+          });
+        }
+      } catch {
+        /* noop */
+      }
       if (form.value.account_id) affected.push(form.value.account_id);
       if (form.value.account_from_id) affected.push(form.value.account_from_id);
       if (form.value.account_to_id) affected.push(form.value.account_to_id);
@@ -2587,6 +2738,12 @@ function resetForm() {
   simpleCategoryId.value = null;
   includeInBalance.value = true;
   currencyAlertShown.value = false;
+  originalSnapshot.value = {
+    includeInBalance: true,
+    typeSlug: '',
+    isTransfer: false,
+    payments: [],
+  };
 }
 
 // ---- React to user currency changes globally ----
