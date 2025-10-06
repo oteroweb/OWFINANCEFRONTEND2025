@@ -798,6 +798,15 @@ function mapTxToForm(tx: Transaction): void {
   transactionCategoryId.value = null;
   const txIdRaw = (tx as unknown as { id?: number | string | null }).id;
   const txIdNum = Number(txIdRaw as number | string);
+  // Normalize transaction_type_id to string to match store shape
+  const rawTypeId = (tx as unknown as { transaction_type_id?: string | number | null })
+    .transaction_type_id;
+  const normalizedTypeId: string | null =
+    typeof rawTypeId === 'number'
+      ? String(rawTypeId)
+      : typeof rawTypeId === 'string'
+      ? rawTypeId
+      : null;
   const baseForm: TransactionForm = {
     name: tx.name,
     amount: Number(tx.amount ?? 0),
@@ -805,7 +814,7 @@ function mapTxToForm(tx: Transaction): void {
     provider_id: tx.provider_id ?? null,
     account_id: tx.account_id ?? null,
     rate: tx.rate ? Number(tx.rate.value) : null,
-    transaction_type_id: tx.transaction_type_id ?? null,
+    transaction_type_id: normalizedTypeId,
     account_from_id: null,
     account_to_id: null,
     url_file: tx.url_file || '',
@@ -866,9 +875,19 @@ function mapTxToForm(tx: Transaction): void {
       const v = (tx as unknown as { include_in_balance?: boolean }).include_in_balance;
       return typeof v === 'boolean' ? v : true;
     })();
-    const typeId = tx.transaction_type_id ?? null;
+    // Robustly infer type slug: try store by id, then tx.transaction_type.slug/name
+    const typeId = normalizedTypeId;
     const type = typeId ? ttypes.types.find((t: TransactionType) => t.id === typeId) : undefined;
-    const typeSlug = (type?.slug || type?.name || '').toLowerCase();
+    let typeSlug = (type?.slug || type?.name || '').toLowerCase();
+    if (!type && (!typeSlug || typeSlug.length === 0)) {
+      const txAny = tx as unknown as {
+        transaction_type?: { id?: unknown; name?: unknown; slug?: unknown } | null;
+      };
+      const tt = txAny.transaction_type || null;
+      const slug = (tt && typeof tt.slug === 'string' ? tt.slug : '') || '';
+      const name = (tt && typeof tt.name === 'string' ? tt.name : '') || '';
+      typeSlug = (slug || name).toLowerCase();
+    }
     const origPayments = Array.isArray(maybePayments)
       ? maybePayments.map((p) => ({
           account_id: Number(p.account_id),
@@ -890,26 +909,69 @@ function mapTxToForm(tx: Transaction): void {
       payments: [],
     };
   }
+  // Determine if this is a transfer and prefill accounts accordingly
+  const typeById = normalizedTypeId
+    ? ttypes.types.find((t: TransactionType) => t.id === normalizedTypeId)
+    : undefined;
+  const typeSlug = (typeById?.slug || typeById?.name || '').toLowerCase();
+  const isTransferType =
+    typeSlug === 'transfer' || (typeById?.name || '').toLowerCase().includes('transfer');
   if (Array.isArray(maybePayments)) {
-    if (maybePayments.length > 1) {
-      isAdvancedPayment.value = true;
-      // Limpiar cuenta simple
-      form.value.account_id = null;
-      payments.value = maybePayments.map((p) => ({
-        account_id: p.account_id,
-        amount: p.amount,
-        rate: null,
-        applyTax: false,
-        tax_id: p.tax_id ?? null,
-        note: null,
-      }));
-    } else {
+    if (isTransferType) {
+      // Prefer explicit from/to from API if present; else infer from payments sign
+      const anyTx = tx as unknown as {
+        account_from_id?: unknown;
+        account_to_id?: unknown;
+      };
+      const fromIdRaw = anyTx.account_from_id;
+      const toIdRaw = anyTx.account_to_id;
+      let fromId: number | null =
+        typeof fromIdRaw === 'number'
+          ? fromIdRaw
+          : typeof fromIdRaw === 'string'
+          ? Number(fromIdRaw)
+          : null;
+      let toId: number | null =
+        typeof toIdRaw === 'number'
+          ? toIdRaw
+          : typeof toIdRaw === 'string'
+          ? Number(toIdRaw)
+          : null;
+      if (!(Number.isFinite(fromId as number) && (fromId as number) > 0)) {
+        const neg = maybePayments.find((p) => Number(p.amount || 0) < 0);
+        if (neg) fromId = Number(neg.account_id);
+      }
+      if (!(Number.isFinite(toId as number) && (toId as number) > 0)) {
+        const pos = maybePayments.find((p) => Number(p.amount || 0) > 0);
+        if (pos) toId = Number(pos.account_id);
+      }
+      form.value.account_from_id = Number.isFinite(Number(fromId)) ? Number(fromId) : null;
+      form.value.account_to_id = Number.isFinite(Number(toId)) ? Number(toId) : null;
+      // Ensure transfer UI path: no advanced payments, no simple account
       isAdvancedPayment.value = false;
       payments.value = [];
-      // Caso de 1 pago: usar la cuenta del pago para el selector simple
-      const only = maybePayments[0];
-      if (only && typeof only.account_id === 'number') {
-        form.value.account_id = only.account_id;
+      form.value.account_id = null;
+    } else {
+      if (maybePayments.length > 1) {
+        isAdvancedPayment.value = true;
+        // Limpiar cuenta simple
+        form.value.account_id = null;
+        payments.value = maybePayments.map((p) => ({
+          account_id: p.account_id,
+          amount: p.amount,
+          rate: null,
+          applyTax: false,
+          tax_id: p.tax_id ?? null,
+          note: null,
+        }));
+      } else {
+        isAdvancedPayment.value = false;
+        payments.value = [];
+        // Caso de 1 pago: usar la cuenta del pago para el selector simple
+        const only = maybePayments[0];
+        if (only && typeof only.account_id === 'number') {
+          form.value.account_id = only.account_id;
+        }
       }
     }
   }
