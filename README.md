@@ -41,3 +41,12 @@ quasar build
 ### Customize the configuration
 
 See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+
+
+### Git Pull in Windows
+
+eval $(ssh-agent -s)
+
+ssh-add ~/.ssh/id_rsa
+
+git pull

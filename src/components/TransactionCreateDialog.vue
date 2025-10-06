@@ -149,10 +149,15 @@
                   <template v-if="needsRateForAccountBalance"
                     >Saldo después: requiere tasa</template
                   >
-                  <template v-else
-                    >Saldo después: {{ currencySymbol
-                    }}{{ Number(newBalance).toFixed(2) }}</template
-                  >
+                  <template v-else>
+                    <span v-if="!isEdit"
+                      >Saldo después: {{ currencySymbol }}{{ Number(newBalance).toFixed(2) }}</span
+                    >
+                    <span v-else
+                      >Se esta editando: {{ currencySymbol
+                      }}{{ Number(differenceBalance).toFixed(2) }}</span
+                    >
+                  </template>
                 </div>
               </div>
             </div>
@@ -1613,6 +1618,37 @@ function proposedSimplePaymentEffect(): number {
   const signed = isExpense ? -Math.abs(accAmt) : Math.abs(accAmt);
   return includeInBalance.value ? signed : 0; // si no se incluye, efecto propuesto = 0
 }
+const differenceBalance = computed(() => {
+  const bal = Number(currentBalance.value || 0);
+  const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
+  const slug = (ty?.slug || '').toLowerCase();
+  // Transferencias tienen preview específico por origen/destino; aquí mostramos origen/seleccionada con delta
+  if (slug === 'transfer') {
+    const canDelta = isEdit.value && originalSnapshot.value.payments.length > 0;
+    if (!canDelta) {
+      // creación: efecto propuesto origen = -abs(amount)
+      return bal - Math.abs(Number(form.value.amount || 0));
+    }
+    const accId = isTransfer.value ? form.value.account_from_id : form.value.account_id;
+    const original = originalEffectForAccount(accId || null);
+    const proposed = includeInBalance.value ? -Math.abs(Number(form.value.amount || 0)) : 0;
+    return bal - original + proposed;
+  }
+  if (isAdvancedPayment.value) {
+    // En modo avanzado no mostramos preview agregado por cuenta simple; mantener balance actual
+    return bal;
+  }
+  // Modo simple ingreso/egreso: aplicar DELTA = propuesto - original (sobre esta cuenta)
+  const accId = form.value.account_id;
+  const proposed = proposedSimplePaymentEffect();
+  const canDelta = isEdit.value && originalSnapshot.value.payments.length > 0;
+  if (!canDelta) {
+    // creación: no hay efecto original que revertir
+    return bal + proposed;
+  }
+  const original = originalEffectForAccount(accId);
+  return bal - original + proposed;
+});
 const newBalance = computed(() => {
   const bal = Number(currentBalance.value || 0);
   const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
