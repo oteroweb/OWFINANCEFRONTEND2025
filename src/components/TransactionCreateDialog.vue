@@ -213,6 +213,42 @@
                           />
                         </div>
                       </div>
+                      <div class="row items-center justify-between q-mt-xs" v-if="rowNeedsRate(p)">
+                        <div class="col-auto">
+                          <q-btn
+                            size="xs"
+                            flat
+                            dense
+                            color="secondary"
+                            icon="history"
+                            :loading="isRowRateLoading(i)"
+                            @click="useCurrentRateForRow(i)"
+                            label="Usar actual"
+                          />
+                        </div>
+                        <div class="col text-right text-caption text-grey-7">
+                          <span v-if="rowRateInfo(i)">
+                            {{ Number(rowRateInfo(i)?.rate || 0).toFixed(4) }} —
+                            {{ rowRateInfo(i)?.date }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="row items-center q-mt-xs" v-if="rowNeedsRate(p)">
+                        <div class="col-auto">
+                          <q-checkbox
+                            v-model="p.rateMarkCurrent"
+                            dense
+                            label="Marcar como actual"
+                          />
+                        </div>
+                        <div class="col-auto">
+                          <q-checkbox
+                            v-model="p.rateMarkOfficial"
+                            dense
+                            label="Marcar como oficial"
+                          />
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <div class="row items-center q-col-gutter-xs">
@@ -399,6 +435,34 @@
                   @click="invertMainRate"
                   :label="'Invertir (' + Number(form.rate).toFixed(4) + ')'"
                 />
+              </div>
+              <!-- Rate helpers: use current + show date + mark as current (non-transfer simple) -->
+              <div class="row items-center justify-between q-mt-xs">
+                <div class="col-auto">
+                  <q-btn
+                    size="xs"
+                    flat
+                    dense
+                    color="secondary"
+                    icon="history"
+                    :loading="rateLoadingSimple"
+                    @click="useCurrentRateForSelectedAccount()"
+                    label="Usar actual"
+                  />
+                </div>
+                <div class="col text-right text-caption text-grey-7">
+                  <span v-if="simpleRateInfo">
+                    Actual: {{ Number(simpleRateInfo.rate).toFixed(4) }} — {{ simpleRateInfo.date }}
+                  </span>
+                </div>
+              </div>
+              <div class="row items-center q-mt-xs">
+                <div class="col-auto">
+                  <q-checkbox v-model="form.rateMarkCurrent" dense label="Marcar como actual" />
+                </div>
+                <div class="col-auto">
+                  <q-checkbox v-model="form.rateMarkOfficial" dense label="Marcar como oficial" />
+                </div>
               </div>
             </div>
             <div class="col-12 col-sm-4 flex items-center text-caption">
@@ -745,6 +809,10 @@ interface TransactionForm {
   provider_id: number | null;
   account_id: number | null;
   rate?: number | null;
+  // UI: marcar tasa como actual (no-transfer simple)
+  rateMarkCurrent?: boolean | null;
+  // UI: marcar tasa como oficial (no-transfer simple)
+  rateMarkOfficial?: boolean | null;
   transaction_type_id?: string | null;
   account_from_id?: number | null;
   account_to_id?: number | null;
@@ -760,6 +828,8 @@ const initialForm = (): TransactionForm => ({
   provider_id: null,
   account_id: null,
   rate: null,
+  rateMarkCurrent: null,
+  rateMarkOfficial: null,
   transaction_type_id: null,
   account_from_id: null,
   account_to_id: null,
@@ -814,6 +884,7 @@ function mapTxToForm(tx: Transaction): void {
     provider_id: tx.provider_id ?? null,
     account_id: tx.account_id ?? null,
     rate: tx.rate ? Number(tx.rate.value) : null,
+    rateMarkCurrent: null,
     transaction_type_id: normalizedTypeId,
     account_from_id: null,
     account_to_id: null,
@@ -866,9 +937,27 @@ function mapTxToForm(tx: Transaction): void {
   // Payments (advanced multi-source)
   const maybePayments = (
     tx as unknown as {
-      payment_transactions?: Array<{ account_id: number; amount: number; tax_id?: number | null }>;
+      payment_transactions?: Array<Record<string, unknown>>;
     }
   ).payment_transactions;
+  // Helper: extract numeric rate value from payment shapes: p.rate (num), p.rate_value, p.rate.value
+  function extractPaymentRate(p: Record<string, unknown> | undefined | null): number | null {
+    if (!p || typeof p !== 'object') return null;
+    const direct = (p as { rate?: unknown }).rate;
+    if (typeof direct === 'number') return direct > 0 ? direct : null;
+    if (direct && typeof (direct as { value?: unknown }).value === 'number') {
+      const v = (direct as { value?: number }).value as number;
+      return v > 0 ? v : null;
+    }
+    const alt = (p as { rate_value?: unknown }).rate_value;
+    if (typeof alt === 'number') return alt > 0 ? alt : null;
+    const altStr = (p as { rate_value?: unknown }).rate_value;
+    if (typeof altStr === 'string') {
+      const n = Number(altStr);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }
+    return null;
+  }
   // Snapshot original para previsualizar delta y refrescar saldos correctamente al actualizar
   try {
     const origInclude = (() => {
@@ -956,21 +1045,47 @@ function mapTxToForm(tx: Transaction): void {
         isAdvancedPayment.value = true;
         // Limpiar cuenta simple
         form.value.account_id = null;
-        payments.value = maybePayments.map((p) => ({
-          account_id: p.account_id,
-          amount: p.amount,
-          rate: null,
-          applyTax: false,
-          tax_id: p.tax_id ?? null,
-          note: null,
-        }));
+        payments.value = maybePayments.map((pRaw) => {
+          const p = pRaw as unknown as { account_id?: unknown; amount?: unknown; tax_id?: unknown };
+          const rateVal = extractPaymentRate(pRaw);
+          return {
+            account_id:
+              typeof p.account_id === 'number' ? p.account_id : Number(p.account_id || 0) || null,
+            amount: typeof p.amount === 'number' ? p.amount : Number(p.amount || 0) || null,
+            rate: rateVal,
+            applyTax: false,
+            tax_id: (typeof p.tax_id === 'number' ? p.tax_id : Number(p.tax_id || 0)) || null,
+            note: null,
+          } as PaymentRow;
+        });
       } else {
         isAdvancedPayment.value = false;
         payments.value = [];
         // Caso de 1 pago: usar la cuenta del pago para el selector simple
-        const only = maybePayments[0];
+        const only = maybePayments[0] as Record<string, unknown>;
         if (only && typeof only.account_id === 'number') {
           form.value.account_id = only.account_id;
+        }
+        // Prefill: en edición, el monto de entrada es en moneda de la cuenta (usar payment.amount)
+        try {
+          const amtAny = (only as { amount?: unknown }).amount;
+          const amtNum = typeof amtAny === 'number' ? amtAny : Number(amtAny as number | string);
+          if (Number.isFinite(amtNum)) {
+            const typeById2 = normalizedTypeId
+              ? ttypes.types.find((t: TransactionType) => t.id === normalizedTypeId)
+              : undefined;
+            const slug2 = (typeById2?.slug || typeById2?.name || '').toLowerCase();
+            const isExp =
+              slug2 === 'expense' || (typeById2?.name || '').toLowerCase().includes('egreso');
+            form.value.amount = isExp ? -Math.abs(amtNum) : Math.abs(amtNum);
+          }
+        } catch {
+          // ignore
+        }
+        // Prefill tasa usada en el pago si existe
+        const rateVal = extractPaymentRate(only);
+        if (typeof rateVal === 'number' && rateVal > 0) {
+          form.value.rate = rateVal;
         }
       }
     }
@@ -1050,6 +1165,8 @@ async function onDialogShow() {
         form.value.account_to_id,
       ].filter((v): v is number => typeof v === 'number');
       await Promise.allSettled(ids.map((id) => fetchAccountBalance(id)));
+      // Prefill rates if needed when editing
+      await prefillCurrentRatesIfNeeded();
     }
   } finally {
     dialogLoading.value = false;
@@ -1591,18 +1708,22 @@ watch(
   () => form.value.account_id,
   (id) => {
     if (id) void fetchAccountBalance(id);
+    // If editing and rate missing, try to prefill current
+    if (ui.showDialogNewTransaction && id) void prefillCurrentRatesIfNeeded();
   }
 );
 watch(
   () => form.value.account_from_id,
   (id) => {
     if (id) void fetchAccountBalance(id);
+    if (ui.showDialogNewTransaction && id) void prefillCurrentRatesIfNeeded();
   }
 );
 watch(
   () => form.value.account_to_id,
   (id) => {
     if (id) void fetchAccountBalance(id);
+    if (ui.showDialogNewTransaction && id) void prefillCurrentRatesIfNeeded();
   }
 );
 // También al abrir el diálogo (si ya viene preseleccionada)
@@ -1648,6 +1769,178 @@ const resultTotal = computed(() => {
   return base / r;
 });
 
+// ----- User current rate helpers (fetch + cache) -----
+type CurrentRateInfo = { rate: number; date: string };
+const currentRateCache = ref<Record<string, CurrentRateInfo>>({}); // key: userId|currencyId
+const rateLoadingSimple = ref(false);
+function currentRateKey(userId: number | null | undefined, currencyId: number | null | undefined) {
+  return `${userId || '0'}|${currencyId || '0'}`;
+}
+async function fetchUserCurrentRate(
+  currencyId: number | null | undefined
+): Promise<CurrentRateInfo | null> {
+  const uid =
+    typeof (auth.user as unknown as { id?: number })?.id === 'number'
+      ? (auth.user as unknown as { id: number }).id
+      : null;
+  if (!uid || !currencyId) return null;
+  const key = currentRateKey(uid, currencyId);
+  const cached = currentRateCache.value[key];
+  if (cached) return cached;
+  try {
+    // Expected backend support: GET /user_currencies?user_id&currency_id&is_current=1&limit=1
+    const res = await api.get('/user_currencies', {
+      params: { user_id: uid, currency_id: currencyId, is_current: 1, limit: 1 },
+    });
+    const data = (res.data?.data || res.data || []) as Array<{
+      current_rate?: number | string;
+      updated_at?: string;
+      created_at?: string;
+      is_current?: boolean;
+    }>;
+    const first = Array.isArray(data) && data.length ? data[0] : null;
+    const rateNum = first && first.current_rate != null ? Number(first.current_rate) : NaN;
+    if (!first || !Number.isFinite(rateNum) || rateNum <= 0) return null;
+    const date = (first.updated_at || first.created_at || '').slice(0, 10);
+    const info: CurrentRateInfo = { rate: rateNum, date };
+    currentRateCache.value[key] = info;
+    return info;
+  } catch {
+    return null;
+  }
+}
+const simpleRateInfo = computed<CurrentRateInfo | null>(() => {
+  if (isTransfer.value || isAdvancedPayment.value) return null;
+  const acc = selectedAccount.value;
+  if (!acc || !acc.currencyId) return null;
+  const uid =
+    typeof (auth.user as unknown as { id?: number })?.id === 'number'
+      ? (auth.user as unknown as { id: number }).id
+      : null;
+  const key = currentRateKey(uid, acc.currencyId);
+  return currentRateCache.value[key] || null;
+});
+// Read default rate from auth.user.rates (provided on login)
+function getAuthDefaultRateForCurrencyCode(code: unknown): number | null {
+  const cc = typeof code === 'string' ? code.toLowerCase() : null;
+  if (!cc) return null;
+  const fromAuth = safeObj(auth.user as unknown);
+  const ratesA = Array.isArray((fromAuth as Record<string, unknown>)?.rates)
+    ? ((fromAuth as Record<string, unknown>).rates as Array<Record<string, unknown>>)
+    : [];
+  const foundA = ratesA.find(
+    (r) => (typeof r.name === 'string' ? r.name.toLowerCase() : '') === cc
+  );
+  if (foundA && typeof foundA.value === 'number' && foundA.value > 0) return Number(foundA.value);
+  // fallback to stored user
+  const su = getStoredUser();
+  const ratesB = Array.isArray((su as Record<string, unknown>)?.rates)
+    ? ((su as Record<string, unknown>).rates as Array<Record<string, unknown>>)
+    : [];
+  const foundB = ratesB.find(
+    (r) => (typeof r.name === 'string' ? r.name.toLowerCase() : '') === cc
+  );
+  if (foundB && typeof foundB.value === 'number' && foundB.value > 0) return Number(foundB.value);
+  return null;
+}
+async function useCurrentRateForSelectedAccount() {
+  if (isTransfer.value || isAdvancedPayment.value) return;
+  const acc = selectedAccount.value;
+  if (!acc || !acc.currencyId) return;
+  // Try auth default first by currency code
+  const rAuth = getAuthDefaultRateForCurrencyCode(acc.currencyCode);
+  if (typeof rAuth === 'number' && rAuth > 0) {
+    form.value.rate = rAuth;
+    return;
+  }
+  // Fallback to server current (with date)
+  rateLoadingSimple.value = true;
+  try {
+    const info = await fetchUserCurrentRate(acc.currencyId);
+    if (info && Number(info.rate) > 0) {
+      form.value.rate = Number(info.rate);
+    }
+  } finally {
+    rateLoadingSimple.value = false;
+  }
+}
+
+// Auto-prefill helper used on edit/open
+async function prefillCurrentRatesIfNeeded() {
+  // Simple (non-transfer)
+  if (!isTransfer.value && !isAdvancedPayment.value && showRateInput.value) {
+    if (!(Number(form.value.rate || 0) > 0)) {
+      const acc = selectedAccount.value;
+      if (acc) {
+        const rAuth = getAuthDefaultRateForCurrencyCode(acc.currencyCode);
+        if (typeof rAuth === 'number' && rAuth > 0) form.value.rate = rAuth;
+        else if (acc.currencyId) {
+          const info = await fetchUserCurrentRate(acc.currencyId);
+          if (info && Number(info.rate) > 0) form.value.rate = Number(info.rate);
+        }
+      }
+    }
+  }
+  // Advanced rows
+  if (!isTransfer.value && isAdvancedPayment.value) {
+    const tasks: Promise<unknown>[] = [];
+    payments.value.forEach((p, i) => {
+      if (!p) return;
+      if (rowNeedsRate(p) && !(Number(p.rate || 0) > 0)) {
+        const acc = rowAccount(i);
+        if (acc) {
+          const rAuth = getAuthDefaultRateForCurrencyCode(acc.currencyCode);
+          if (typeof rAuth === 'number' && rAuth > 0) {
+            const row = payments.value[i];
+            if (row) row.rate = rAuth;
+          } else if (acc.currencyId) {
+            tasks.push(
+              fetchUserCurrentRate(acc.currencyId).then((info) => {
+                if (info && Number(info.rate) > 0) {
+                  const row = payments.value[i];
+                  if (row) row.rate = Number(info.rate);
+                }
+              })
+            );
+          }
+        }
+      }
+    });
+    if (tasks.length) await Promise.allSettled(tasks);
+  }
+  // Transfer: derive Origen→Destino from two current rates if missing
+  if (isTransfer.value && isCrossCurrency.value && !(Number(form.value.rate || 0) > 0)) {
+    const fromAcc = originAccount.value;
+    const toAcc = destAccount.value;
+    const rAuthFrom = getAuthDefaultRateForCurrencyCode(fromAcc?.currencyCode);
+    const rAuthTo = getAuthDefaultRateForCurrencyCode(toAcc?.currencyCode);
+    if (
+      typeof rAuthFrom === 'number' &&
+      rAuthFrom > 0 &&
+      typeof rAuthTo === 'number' &&
+      rAuthTo > 0
+    ) {
+      const rOD = rAuthTo / rAuthFrom;
+      if (Number.isFinite(rOD) && rOD > 0) form.value.rate = Number(rOD.toFixed(6));
+    } else {
+      const fromCur = fromAcc?.currencyId || null;
+      const toCur = toAcc?.currencyId || null;
+      if (fromCur && toCur) {
+        const [rUtoO, rUtoD] = await Promise.all([
+          fetchUserCurrentRate(fromCur),
+          fetchUserCurrentRate(toCur),
+        ]);
+        const vO = rUtoO && Number(rUtoO.rate) > 0 ? Number(rUtoO.rate) : NaN;
+        const vD = rUtoD && Number(rUtoD.rate) > 0 ? Number(rUtoD.rate) : NaN;
+        if (Number.isFinite(vO) && Number.isFinite(vD) && vO > 0) {
+          const rOD2 = vD / vO; // Origen→Destino
+          if (Number.isFinite(rOD2) && rOD2 > 0) form.value.rate = Number(rOD2.toFixed(6));
+        }
+      }
+    }
+  }
+}
+
 // Invertir tasa principal (1 / rate)
 function invertMainRate() {
   const r = Number(form.value.rate || 0);
@@ -1667,17 +1960,12 @@ function originalEffectForAccount(id?: number | null): number {
   return Number(sum || 0);
 }
 function proposedSimplePaymentEffect(): number {
-  // Efecto propuesto sobre la CUENTA seleccionada (monto en moneda de la cuenta con signo correcto)
+  // Efecto propuesto sobre la CUENTA seleccionada (monto ingresado se interpreta en moneda de la cuenta)
   const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
   const slug = (ty?.slug || '').toLowerCase();
   const isExpense = slug === 'expense';
-  const userAmtAbs = Math.abs(Number(form.value.amount || 0));
-  let accAmt = userAmtAbs;
-  if (showRateInput.value) {
-    const r = Number(form.value.rate || 0);
-    if (r > 0) accAmt = userAmtAbs * r;
-  }
-  const signed = isExpense ? -Math.abs(accAmt) : Math.abs(accAmt);
+  const accAmtAbs = Math.abs(Number(form.value.amount || 0)); // monto en moneda de la cuenta
+  const signed = isExpense ? -Math.abs(accAmtAbs) : Math.abs(accAmtAbs);
   return includeInBalance.value ? signed : 0; // si no se incluye, efecto propuesto = 0
 }
 const differenceBalance = computed(() => {
@@ -1770,10 +2058,21 @@ type PaymentRow = {
   applyTax: boolean;
   tax_id: number | null;
   note?: string | null;
+  rateMarkCurrent?: boolean | null;
+  rateMarkOfficial?: boolean | null;
 };
 const isAdvancedPayment = ref(false);
 const payments = ref<PaymentRow[]>([
-  { account_id: null, amount: null, rate: null, applyTax: false, tax_id: null, note: null },
+  {
+    account_id: null,
+    amount: null,
+    rate: null,
+    applyTax: false,
+    tax_id: null,
+    note: null,
+    rateMarkCurrent: null,
+    rateMarkOfficial: null,
+  },
 ]);
 // Gestiona el cambio entre pago simple y avanzado preservando la cuenta seleccionada
 async function onToggleAdvancedPayment(v: boolean) {
@@ -1782,7 +2081,16 @@ async function onToggleAdvancedPayment(v: boolean) {
     const acc = form.value.account_id || null;
     const amt = form.value.amount != null ? Math.abs(Number(form.value.amount)) : null;
     payments.value = [
-      { account_id: acc, amount: amt, rate: null, applyTax: false, tax_id: null, note: null },
+      {
+        account_id: acc,
+        amount: amt,
+        rate: null,
+        applyTax: false,
+        tax_id: null,
+        note: null,
+        rateMarkCurrent: null,
+        rateMarkOfficial: null,
+      },
     ];
     // Limpiar la cuenta simple para evitar duplicidad en payload
     // (cuando guardemos, account_id va nulo si isAdvancedPayment=true)
@@ -1800,7 +2108,16 @@ async function onToggleAdvancedPayment(v: boolean) {
       form.value.account_id = accId;
       // Al volver a simple, limpiamos filas y dejamos una por defecto
       payments.value = [
-        { account_id: null, amount: null, rate: null, applyTax: false, tax_id: null, note: null },
+        {
+          account_id: null,
+          amount: null,
+          rate: null,
+          applyTax: false,
+          tax_id: null,
+          note: null,
+          rateMarkCurrent: null,
+          rateMarkOfficial: null,
+        },
       ];
     };
     if (unique.length <= 1) {
@@ -1861,6 +2178,8 @@ function addPayment() {
     applyTax: false,
     tax_id: null,
     note: null,
+    rateMarkCurrent: null,
+    rateMarkOfficial: null,
   });
 }
 function removePayment(i: number) {
@@ -1965,6 +2284,42 @@ watch(
     paymentRowOptions.value = {};
   }
 );
+
+// Row current rate helpers
+const rowRateLoading = ref<Record<number, boolean>>({});
+function isRowRateLoading(index: number) {
+  return !!rowRateLoading.value[index];
+}
+function rowRateInfo(index: number): CurrentRateInfo | null {
+  const acc = rowAccount(index);
+  if (!acc || !acc.currencyId) return null;
+  const uid =
+    typeof (auth.user as unknown as { id?: number })?.id === 'number'
+      ? (auth.user as unknown as { id: number }).id
+      : null;
+  const key = currentRateKey(uid, acc.currencyId);
+  return currentRateCache.value[key] || null;
+}
+async function useCurrentRateForRow(index: number) {
+  const acc = rowAccount(index);
+  if (!acc || !acc.currencyId) return;
+  const rAuth = getAuthDefaultRateForCurrencyCode(acc.currencyCode);
+  if (typeof rAuth === 'number' && rAuth > 0) {
+    const p = payments.value[index];
+    if (p) p.rate = rAuth;
+    return;
+  }
+  rowRateLoading.value = { ...rowRateLoading.value, [index]: true };
+  try {
+    const info = await fetchUserCurrentRate(acc.currencyId);
+    if (info && Number(info.rate) > 0) {
+      const p = payments.value[index];
+      if (p) p.rate = Number(info.rate);
+    }
+  } finally {
+    rowRateLoading.value = { ...rowRateLoading.value, [index]: false };
+  }
+}
 
 // ----- Item categories (for invoice rows) -----
 type ItemCategory = { id: number; name: string };
@@ -2216,6 +2571,7 @@ watch(
   () => showRateInput.value,
   (need) => {
     if (!need) form.value.rate = null;
+    else if (ui.showDialogNewTransaction) void prefillCurrentRatesIfNeeded();
   }
 );
 
@@ -2483,6 +2839,8 @@ function saveTransaction() {
     account_id: number | null;
     amount: number; // in account currency
     rate: number | null; // to user base currency
+    rate_is_current?: boolean | null; // mark provided rate as current
+    rate_is_official?: boolean | null; // mark provided rate as official
     tax_id: number | null;
     note: string | null;
   };
@@ -2564,17 +2922,21 @@ function saveTransaction() {
         } as ItemPayload;
       });
     } else {
+      // Modo simple: el monto ingresado es en moneda de la cuenta; convertir a moneda del usuario usando la tasa (User→Cuenta)
       const currentType = ttypes.types.find(
         (t: TransactionType) => t.id === form.value.transaction_type_id
       );
       const currentSlug = (currentType?.slug || '').toLowerCase();
       const isExpense = currentSlug === 'expense';
-      const rawAmt = Number(form.value.amount || 0);
-      const normalized = isExpense ? -Math.abs(rawAmt) : Math.abs(rawAmt);
+      const accAmtAbs = Math.abs(Number(form.value.amount || 0)); // monto en moneda de la cuenta
+      const rateVal = Number(form.value.rate || 0);
+      const needsConv = showRateInput.value && rateVal > 0;
+      const userAmtAbs = needsConv ? accAmtAbs / rateVal : accAmtAbs; // convertir a moneda usuario
+      const normalizedUser = isExpense ? -Math.abs(userAmtAbs) : Math.abs(userAmtAbs);
       items = [
         {
           name: form.value.name || 'Item',
-          amount: normalized,
+          amount: normalizedUser,
           // En modo simple NO se envía categoría por ítem: dejar null
           item_category_id: null,
         },
@@ -2582,7 +2944,10 @@ function saveTransaction() {
     }
     payload = {
       name: form.value.name,
-      amount: form.value.amount ?? 0,
+      // En modo simple, amount debe estar en moneda del usuario (no de la cuenta)
+      amount: !isAdvancedAmount.value
+        ? Number(items.reduce((s, it) => s + Number(it.amount || 0), 0).toFixed(2))
+        : form.value.amount ?? 0,
       amount_tax: 0,
       date: dateStr,
       provider_id: form.value.provider_id,
@@ -2602,21 +2967,22 @@ function saveTransaction() {
       // Modo simple: 1 payment → 1 item
       const accId = form.value.account_id ?? null;
       if (accId) {
-        const userAmt = Number(form.value.amount || 0);
+        // El payment.amount se expresa en moneda de la cuenta (tal como lo ingresó el usuario)
+        const accAmt = Number(form.value.amount || 0);
         const isExpense = slug === 'expense';
-        let accountAmount = Math.abs(userAmt);
-        let paymentRate: number | null = null;
-        if (showRateInput.value) {
-          const r = Number(form.value.rate || 0);
-          accountAmount = Math.abs(userAmt) * r;
-          paymentRate = r > 0 ? r : null;
-        }
-        const paymentAmount = isExpense ? -Math.abs(accountAmount) : Math.abs(accountAmount);
+        const paymentRate: number | null = showRateInput.value
+          ? Number(form.value.rate || 0) > 0
+            ? Number(form.value.rate)
+            : null
+          : null;
+        const paymentAmount = isExpense ? -Math.abs(accAmt) : Math.abs(accAmt);
         payload.payments = [
           {
             account_id: accId,
             amount: paymentAmount,
             rate: paymentRate,
+            rate_is_current: !!form.value.rateMarkCurrent || null,
+            rate_is_official: !!form.value.rateMarkOfficial || null,
             tax_id: null,
             note: null,
           },
@@ -2642,6 +3008,8 @@ function saveTransaction() {
           amount:
             slug === 'expense' ? -Math.abs(Number(p.amount || 0)) : Math.abs(Number(p.amount || 0)),
           rate: rowNeedsRate(p as PaymentRow) ? Number(p.rate || 0) : null,
+          rate_is_current: rowNeedsRate(p as PaymentRow) ? !!p.rateMarkCurrent || null : null,
+          rate_is_official: rowNeedsRate(p as PaymentRow) ? !!p.rateMarkOfficial || null : null,
           tax_id: p.applyTax ? p.tax_id : null,
           note: p.note || null,
         }));
@@ -2649,9 +3017,38 @@ function saveTransaction() {
       payload.payments = mapped;
     }
   } else {
+    // Compute transfer amount (top-level) as the positive leg in user currency
+    const rawAmt = Math.abs(Number(form.value.amount || 0));
+    const fromAcc = originAccount.value;
+    const userToOrigin = (() => {
+      const rAuth = getAuthDefaultRateForCurrencyCode(fromAcc?.currencyCode);
+      if (typeof rAuth === 'number' && rAuth > 0) return rAuth;
+      const curId = fromAcc?.currencyId || null;
+      if (curId) {
+        const uid =
+          typeof (auth.user as unknown as { id?: number })?.id === 'number'
+            ? (auth.user as unknown as { id: number }).id
+            : null;
+        const key = currentRateKey(uid, curId);
+        const info = currentRateCache.value[key];
+        if (info && Number(info.rate) > 0) return Number(info.rate);
+      }
+      // same currency as user
+      const uCode = (userCurrencyCode.value || '').toLowerCase();
+      const oCode = (fromAcc?.currencyCode || '').toLowerCase();
+      if (uCode && oCode && uCode === oCode) return 1;
+      return null;
+    })();
+    const amountPositiveUser = (() => {
+      if (!isCrossCurrency.value) return rawAmt; // same currency
+      if (typeof userToOrigin === 'number' && userToOrigin > 0) return rawAmt / userToOrigin;
+      // last resort: if cannot resolve, fallback to rawAmt (may be corrected by backend)
+      return rawAmt;
+    })();
     payload = {
       name: form.value.name,
-      amount: form.value.amount ?? 0,
+      // Transfer: amount = positive leg in user currency (per backend doc)
+      amount: Number(amountPositiveUser.toFixed(2)),
       amount_tax: 0,
       date: dateStr,
       provider_id: form.value.provider_id,
@@ -2659,19 +3056,23 @@ function saveTransaction() {
       account_to_id: form.value.account_to_id ?? null,
       transaction_type_id: form.value.transaction_type_id ?? null,
       url_file: form.value.url_file || null,
-      rate: form.value.rate ?? null,
+      // No enviar tasa global
+      rate: null,
       // taxes removed for now
       include_in_balance: !!includeInBalance.value,
     };
     // Transfer: 2 payments con signos opuestos
-    const rawAmt = Math.abs(Number(form.value.amount || 0));
-    const r = Number(form.value.rate || 0);
     const fromAmt = -rawAmt; // origen siempre sale dinero
-    const toAmt = isCrossCurrency.value && r > 0 ? rawAmt * r : rawAmt; // destino recibe
+    // Si hay cruce de monedas y existen tasas actuales o ingresadas por lado, toAmt debería venir calculado por UI.
+    // Mantenemos la lógica visual actual: si no hay tasa global, usamos el mismo importe al destino (mismo valor) y
+    // en validación el backend tomará las current. Si quieres consistencia total, podríamos derivar r_O→D de dos tasas U→O y U→D.
+    const rGlobal = Number(form.value.rate || 0);
+    const toAmt = isCrossCurrency.value && rGlobal > 0 ? rawAmt * rGlobal : rawAmt; // destino recibe
     payload.payments = [
       {
         account_id: form.value.account_from_id ?? null,
         amount: fromAmt,
+        // opcional: si el usuario ingresó tasa Usuario→Origen vía UI avanzada, enviar aquí
         rate: null,
         tax_id: null,
         note: null,
@@ -2679,6 +3080,7 @@ function saveTransaction() {
       {
         account_id: form.value.account_to_id ?? null,
         amount: toAmt,
+        // opcional: si el usuario ingresó tasa Usuario→Destino vía UI avanzada, enviar aquí
         rate: null,
         tax_id: null,
         note: null,
@@ -2813,7 +3215,16 @@ function resetForm() {
   invoiceItems.value = [{ item: '', quantity: 1, unitPrice: 0 }];
   isAdvancedPayment.value = false;
   payments.value = [
-    { account_id: null, amount: null, rate: null, applyTax: false, tax_id: null, note: null },
+    {
+      account_id: null,
+      amount: null,
+      rate: null,
+      applyTax: false,
+      tax_id: null,
+      note: null,
+      rateMarkCurrent: null,
+      rateMarkOfficial: null,
+    },
   ];
   simpleCategoryId.value = null;
   includeInBalance.value = true;
