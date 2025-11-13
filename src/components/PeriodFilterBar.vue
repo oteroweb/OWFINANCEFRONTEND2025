@@ -1,6 +1,7 @@
 <template>
   <div class="period-bar q-px-md q-py-sm bg-white text-dark shadow-1">
-    <div class="inner row items-center no-wrap">
+    <!-- Desktop / tablets: tabs visibles -->
+    <div v-if="!isMobile" class="inner row items-center no-wrap">
       <div class="tabs-scroll row no-wrap items-center q-gutter-xs">
         <q-btn
           v-for="t in tabs"
@@ -18,9 +19,9 @@
       </div>
       <div class="spacer" />
       <div class="nav row items-center q-gutter-xs">
-        <q-btn dense flat icon="chevron_left" @click="period.shift(-1)" />
+        <q-btn dense flat icon="chevron_left" :disable="!canShift" @click="period.shift(-1)" />
         <div class="label text-body2 text-weight-bold">{{ period.label }}</div>
-        <q-btn dense flat icon="chevron_right" @click="period.shift(1)" />
+        <q-btn dense flat icon="chevron_right" :disable="!canShift" @click="period.shift(1)" />
         <q-btn
           v-if="period.state.type === 'custom'"
           dense
@@ -29,6 +30,35 @@
           size="sm"
           @click="openCustom()"
         />
+      </div>
+    </div>
+
+    <!-- Móvil: selector desplegable y flechas -->
+    <div v-else class="inner row items-center no-wrap">
+      <div class="row items-center q-gutter-xs" style="flex: 1 1 auto">
+        <q-btn dense flat icon="chevron_left" :disable="!canShift" @click="period.shift(-1)" />
+        <q-select
+          v-model="selectedType"
+          :options="selectOptions"
+          dense
+          outlined
+          emit-value
+          map-options
+          class="col-grow mobile-select"
+          @update:model-value="onSelectType"
+        />
+        <q-btn dense flat icon="chevron_right" :disable="!canShift" @click="period.shift(1)" />
+        <q-btn
+          v-if="period.state.type === 'custom'"
+          dense
+          flat
+          icon="edit_calendar"
+          size="sm"
+          @click="openCustom()"
+        />
+      </div>
+      <div class="label ellipsis text-body2 text-weight-bold q-ml-sm" style="max-width: 55%">
+        {{ period.label }}
       </div>
     </div>
   </div>
@@ -62,8 +92,12 @@
 
 <script setup lang="ts">
 import { usePeriodStore, type PeriodType } from 'stores/period';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useQuasar } from 'quasar';
 const period = usePeriodStore();
+const $q = useQuasar();
+const isMobile = computed(() => $q.screen.lt.md);
+const canShift = computed(() => period.state.type !== 'all');
 
 interface TabDef {
   label: string;
@@ -80,6 +114,17 @@ const tabs: TabDef[] = [
   { label: 'Diario', type: 'day' },
   { label: 'Personalizado', type: 'custom' },
 ];
+
+// Opciones para selector móvil
+const selectOptions = tabs.map((t) => ({ label: t.label, value: t.type }));
+const selectedType = ref<PeriodType>(period.state.type);
+function onSelectType(val: PeriodType) {
+  if (val === 'custom') {
+    openCustom();
+    return;
+  }
+  period.setType(val);
+}
 
 const showCustom = ref(false);
 const tmpFrom = ref('');
@@ -161,5 +206,8 @@ function applyCustom() {
 }
 .period-tab {
   min-width: 90px;
+}
+.mobile-select :deep(.q-field__native) {
+  text-transform: none;
 }
 </style>
