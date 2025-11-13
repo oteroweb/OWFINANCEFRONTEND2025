@@ -1,8 +1,31 @@
 <template>
-  <q-card flat class="q-pa-sm no-borders-card ow-accounts-widget" data-ow="accounts-widget">
+  <q-card
+    flat
+    :class="[
+      'q-pa-sm',
+      'no-borders-card',
+      'ow-accounts-widget',
+      { 'ow-accounts-widget--collapsed': collapsed },
+    ]"
+    data-ow="accounts-widget"
+  >
     <div class="row items-center justify-between q-mb-sm" data-ow="toolbar">
-      <div class="text-subtitle2">Mis cuentas</div>
-      <div class="row items-center q-gutter-xs" data-ow="toolbar-actions">
+      <div class="row items-center q-gutter-xs">
+        <q-btn
+          dense
+          flat
+          round
+          size="sm"
+          :icon="collapsed ? 'chevron_right' : 'expand_more'"
+          aria-label="Toggle cuentas"
+          @click="collapsed = !collapsed"
+        />
+        <div class="text-subtitle2">Mis cuentas</div>
+        <q-badge v-if="collapsed" color="primary" outline class="q-ml-xs">
+          {{ ticked.length ? ticked.length + ' / ' + allCount : allCount }}
+        </q-badge>
+      </div>
+      <div class="row items-center q-gutter-xs" data-ow="toolbar-actions" v-show="!collapsed">
         <q-checkbox
           size="sm"
           :model-value="ticked.length > 0 && ticked.length === allCount"
@@ -34,91 +57,94 @@
       </div>
     </div>
 
-    <q-skeleton v-if="loading" type="text" :thickness="8" class="q-mb-sm" />
-    <template v-else>
-      <q-list dense class="no-borders-list" data-ow="view-all-list">
-        <q-item
-          clickable
-          v-ripple
-          @click="selectAllAccounts"
-          class="q-py-xs"
-          data-ow="view-all-item"
-        >
-          <q-item-section>
-            <span class="text-primary">Ver todas mis cuentas</span>
-          </q-item-section>
-        </q-item>
-      </q-list>
-      <div
-        v-for="section in sections"
-        :key="'sec-' + section.id"
-        class="q-mt-sm ow-accounts-widget__section"
-        :data-ow-section-id="String(section.id)"
-      >
-        <div
-          class="section-header bg-primary text-white q-px-sm q-py-xs"
-          data-ow="section-header"
-          :data-ow-section-id="String(section.id)"
-        >
-          <q-icon name="folder" size="16px" class="q-mr-sm" />
-          <span class="text-caption text-weight-medium">{{ section.label }}</span>
-        </div>
-        <q-list
-          class="no-border-top no-borders-list"
-          data-ow="section-accounts"
-          :data-ow-section-id="String(section.id)"
-        >
+    <q-skeleton v-if="loading && !collapsed" type="text" :thickness="8" class="q-mb-sm" />
+    <transition name="fade">
+      <!-- Wrap all conditional content in a single root element to satisfy <transition> requirement -->
+      <div v-if="!collapsed && !loading" class="ow-accounts-widget__content" data-ow="content">
+        <q-list dense class="no-borders-list" data-ow="view-all-list">
           <q-item
-            v-for="acc in section.accounts"
-            :key="'acc-' + acc.id"
             clickable
             v-ripple
-            dense
-            class="acc-row ow-accounts-widget__account-row"
-            @click="toggleTick(acc.id)"
-            data-ow="account-item"
-            :data-ow-account-id="String(acc.id)"
+            @click="selectAllAccounts"
+            class="q-py-xs"
+            data-ow="view-all-item"
           >
-            <q-item-section avatar class="ow-accounts-widget__icon">
-              <q-icon name="account_balance" size="20px" data-ow="account-icon" />
-            </q-item-section>
-            <q-item-section class="min-w-0 ow-accounts-widget__label" data-ow="account-label">
-              <div class="ellipsis ow-accounts-widget__label-text">
-                {{ acc.label }}
-                <span v-if="acc.balance !== undefined && acc.balance !== null">
-                  ({{ formatBalance(acc) }})
-                </span>
-              </div>
-            </q-item-section>
-            <q-item-section side top data-ow="account-side">
-              <div class="row items-center q-gutter-xs" data-ow="account-side-row">
-                <!-- Acciones de cuenta -->
-                <q-btn dense flat round icon="more_vert" @click.stop>
-                  <q-menu anchor="bottom right" self="top right">
-                    <q-list dense>
-                      <q-item clickable v-close-popup @click.stop="openAdjustDialog(acc.id, acc)">
-                        <q-item-section>Ajustar saldo</q-item-section>
-                      </q-item>
-                      <q-item clickable v-close-popup @click.stop="recalcBalance(acc.id)">
-                        <q-item-section>Recalcular saldo</q-item-section>
-                      </q-item>
-                    </q-list>
-                  </q-menu>
-                </q-btn>
-                <!-- Selector -->
-                <q-checkbox
-                  size="sm"
-                  :model-value="isTicked(acc.id)"
-                  @update:model-value="(v) => setTick(acc.id, v)"
-                  @click.stop
-                  data-ow="account-checkbox"
-                />
-              </div>
+            <q-item-section>
+              <span class="text-primary">Ver todas mis cuentas</span>
             </q-item-section>
           </q-item>
         </q-list>
+        <div
+          v-for="section in sections"
+          :key="'sec-' + section.id"
+          class="q-mt-sm ow-accounts-widget__section"
+          :data-ow-section-id="String(section.id)"
+        >
+          <div
+            class="section-header bg-primary text-white q-px-sm q-py-xs"
+            data-ow="section-header"
+            :data-ow-section-id="String(section.id)"
+          >
+            <q-icon name="folder" size="16px" class="q-mr-sm" />
+            <span class="text-caption text-weight-medium">{{ section.label }}</span>
+          </div>
+          <q-list
+            class="no-border-top no-borders-list"
+            data-ow="section-accounts"
+            :data-ow-section-id="String(section.id)"
+          >
+            <q-item
+              v-for="acc in section.accounts"
+              :key="'acc-' + acc.id"
+              clickable
+              v-ripple
+              dense
+              class="acc-row ow-accounts-widget__account-row"
+              @click="toggleTick(acc.id)"
+              data-ow="account-item"
+              :data-ow-account-id="String(acc.id)"
+            >
+              <q-item-section avatar class="ow-accounts-widget__icon">
+                <q-icon name="account_balance" size="20px" data-ow="account-icon" />
+              </q-item-section>
+              <q-item-section class="min-w-0 ow-accounts-widget__label" data-ow="account-label">
+                <div class="ellipsis ow-accounts-widget__label-text">
+                  {{ acc.label }}
+                  <span v-if="acc.balance !== undefined && acc.balance !== null">
+                    ({{ formatBalance(acc) }})
+                  </span>
+                </div>
+              </q-item-section>
+              <q-item-section side top data-ow="account-side">
+                <div class="row items-center q-gutter-xs" data-ow="account-side-row">
+                  <!-- Acciones de cuenta -->
+                  <q-btn dense flat round icon="more_vert" @click.stop>
+                    <q-menu anchor="bottom right" self="top right">
+                      <q-list dense>
+                        <q-item clickable v-close-popup @click.stop="openAdjustDialog(acc.id, acc)">
+                          <q-item-section>Ajustar saldo</q-item-section>
+                        </q-item>
+                        <q-item clickable v-close-popup @click.stop="recalcBalance(acc.id)">
+                          <q-item-section>Recalcular saldo</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-menu>
+                  </q-btn>
+                  <!-- Selector -->
+                  <q-checkbox
+                    size="sm"
+                    :model-value="isTicked(acc.id)"
+                    @update:model-value="(v) => setTick(acc.id, v)"
+                    @click.stop
+                    data-ow="account-checkbox"
+                  />
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </div>
       </div>
-    </template>
+    </transition>
   </q-card>
   <!-- Dialogo ajustar saldo -->
   <q-dialog v-model="showAdjust">
@@ -188,6 +214,8 @@ const hasAccounts = computed(() => allAccountIds.value.length > 0);
 const allCount = computed(() => allAccountIds.value.length);
 const txStore = useTransactionsStore();
 const $q = useQuasar();
+// Estado colapsado del widget (podría persistirse en localStorage si se desea)
+const collapsed = ref(false);
 
 type AccountItem = {
   id: string | number;
