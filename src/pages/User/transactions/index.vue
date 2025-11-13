@@ -98,10 +98,7 @@
                 <span v-else>
                   <div class="balance-main-line">{{ formatSingleAccountBalanceMain() }}</div>
                   <div v-if="showSecondaryUsdBalance" class="balance-sub-line">
-                    USD: {{ formatSingleAccountBalanceUsd() }}
-                    <span v-if="rateLabelUsed()" class="rate-chip"
-                      >(tasa {{ rateLabelUsed() }})</span
-                    >
+                    {{ formatSingleAccountBalanceConversionLine() }}
                   </div>
                 </span>
               </div>
@@ -125,17 +122,17 @@
           v-model:pagination="pagination"
           @request="onRequest"
         >
-          <!-- Celda custom: Monto (principal en moneda de la cuenta, secundario en USD si aplica) -->
+          <!-- Celda custom: Monto (línea principal: moneda de la cuenta, línea secundaria: moneda por defecto del usuario) -->
           <template v-slot:body-cell-amount="props">
             <q-td :props="props" align="right">
               <div class="amount-main">{{ formatAmountInAccountCurrency(props.row) }}</div>
               <div v-if="showUsdUnderAmounts" class="amount-sub">
-                USD: {{ formatAmountInUsd(props.row) }}
+                {{ formatAmountConversionLine(props.row) }}
               </div>
             </q-td>
           </template>
 
-          <!-- Celda custom: Balance corrido con colores + línea USD condicional -->
+          <!-- Celda custom: Balance corrido con colores + línea secundaria en moneda por defecto -->
           <template v-slot:body-cell-running_balance="props">
             <q-td :props="props" align="right">
               <div class="balance-stack">
@@ -145,7 +142,7 @@
                   }}</span>
                 </div>
                 <div v-if="showUsdInRunningBalance" class="amount-sub">
-                  USD: {{ formatRunningBalanceUsdForRow(props.row) }}
+                  {{ formatRunningBalanceConversionLine(props.row) }}
                 </div>
               </div>
             </q-td>
@@ -638,23 +635,107 @@ function formatSingleAccountBalanceMain(): string {
   const amt = singleAccountBalance.value ?? 0;
   return formatWithCodeSuffix(code, amt);
 }
+// Mostrar segunda línea del banner cuando la moneda de la cuenta difiere de la moneda por defecto del usuario
 const showSecondaryUsdBalance = computed(
   () =>
     singleAccountSelected.value &&
-    (singleAccountCurrencyCode.value || 'USD') !== 'USD' &&
-    (defaultCurrencyCode.value || 'USD') === 'USD'
+    (singleAccountCurrencyCode.value || 'USD') !== (defaultCurrencyCode.value || 'USD')
 );
+// Chips de tasas configuradas por el usuario (authStore.user)
+// type UserRateChip = {
+//   code: string;
+//   current_rate: number;
+//   is_current?: boolean;
+//   is_official?: boolean;
+// };
+// const userRateChips = computed<UserRateChip[]>(() => {
+//   const u = (authStore as unknown as Record<string, unknown>)['user'] as
+//     | Record<string, unknown>
+//     | undefined;
+//   const out: Record<string, UserRateChip> = {};
+//   const pushList = (arr: unknown) => {
+//     if (!Array.isArray(arr)) return;
+//     for (const it of arr) {
+//       if (!it || typeof it !== 'object') continue;
+//       const obj = it as Record<string, unknown>;
+//       const cur = obj['currency'] as Record<string, unknown> | undefined;
+//       const codeRaw = cur && typeof cur === 'object' ? cur['code'] : obj['code'];
+//       const code = typeof codeRaw === 'string' && codeRaw ? codeRaw.toUpperCase() : null;
+//       const rate = Number(obj['current_rate']);
+//       if (!code || !Number.isFinite(rate) || rate <= 0) continue;
+//       const is_current = obj['is_current'] === true || obj['is_current'] === 1;
+//       const is_official = obj['is_official'] === true || obj['is_official'] === 1;
+//       out[code] = { code, current_rate: rate, is_current, is_official };
+//     }
+//   };
+//   if (u && typeof u === 'object') {
+//     pushList(u['rates']);
+//     pushList(u['currency_rates']);
+//     pushList(u['current_currency_rates']);
+//   }
+//   return Object.values(out).sort((a, b) => a.code.localeCompare(b.code));
+// });
+// Valores base para la fórmula (códigos, montos y tasas)
+// const srcCodeDisplay = computed(() => (singleAccountCurrencyCode.value || 'USD').toUpperCase());
+// const dstCodeDisplay = computed(() => (defaultCurrencyCode.value || 'USD').toUpperCase());
+// const singleAccountBalanceAmount = computed(() => singleAccountBalance.value ?? 0);
+// const srcRateDisplay = computed<number | null>(() => getRatePerUsd(srcCodeDisplay.value) ?? null);
+// const dstRateDisplay = computed<number | null>(() => getRatePerUsd(dstCodeDisplay.value) ?? null);
 // Eliminado isValidRate (ya no se usa; la tasa se resuelve por user rates o endpoint actual)
-function formatSingleAccountBalanceUsd(): string {
+// Formateo de divisa con símbolo (con fallback si Intl falla)
+function formatCurrencyAmount(code: string, amount: number): string {
+  const cc = (code || 'USD').toUpperCase();
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: cc,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    // Fallback genérico
+    return formatWithCodeSuffix(cc, amount);
+  }
+}
+// Helper para determinar un código de moneda de fallback que prioriza la preferencia del usuario
+// antes de caer finalmente en 'USD'. Evita repetir '|| "USD"' disperso en la lógica visual.
+const fallbackCurrencyCode = () =>
+  (defaultCurrencyCode.value ||
+    singleAccountCurrencyCode.value ||
+    'USD'
+  ).toUpperCase();
+function formatSingleAccountBalanceConversionLine(): string {
+  // Muestra una fórmula clara: <DST>: <SRC amount> / <tasa SRC> [× <tasa DST>] = <DST amount>
+  // Caso común: DST = USD => <USD>: <SRC amount> / <tasa SRC> = <USD amount>
   const bal = singleAccountBalance.value ?? 0;
-  const rate = Number(singleAccountRate.value || 0);
-  const usd = rate > 0 ? bal / rate : bal;
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    currencyDisplay: 'narrowSymbol',
-    minimumFractionDigits: 2,
-  }).format(usd);
+  // Moneda fuente: la de la cuenta seleccionada; si falta, usar fallback (que prioriza default del usuario)
+  const srcCode = (singleAccountCurrencyCode.value || fallbackCurrencyCode()).toUpperCase();
+  // Moneda destino: siempre la preferida del usuario; si no existe aún, fallback común
+  const dstCode = (defaultCurrencyCode.value || fallbackCurrencyCode()).toUpperCase();
+  if (srcCode === dstCode) return '';
+  const rSrc = getRatePerUsd(srcCode); // unidades SRC por 1 USD
+  const rDst = getRatePerUsd(dstCode) ?? 1; // unidades DST por 1 USD (USD=1)
+  const fmtRate = (n: number) =>
+    n >= 1 ? Number(n.toFixed(2)).toString() : Number(n.toFixed(6)).toString();
+
+  // Si tenemos rSrc, mostramos la división explícita; si no, solo mostramos el resultado convertido.
+  const usdAmount = rSrc && rSrc > 0 ? bal / rSrc : bal; // SRC -> USD (si no hay rSrc, asumimos 1)
+  const dstAmount = usdAmount * rDst;
+
+  if (rSrc && rSrc > 0) {
+    if (dstCode === 'USD') {
+      return `${dstCode}: ${formatCurrencyAmount(srcCode, bal)} / ${fmtRate(
+        rSrc
+      )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+    }
+    // General: SRC -> USD -> DST
+    return `${dstCode}: ${formatCurrencyAmount(srcCode, bal)} / ${fmtRate(rSrc)} × ${fmtRate(
+      rDst
+    )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+  }
+  // Fallback sin rSrc fiable: mostrar solo el monto convertido (si es posible)
+  const converted = convertAmountBetweenCurrencies(bal, srcCode, dstCode);
+  return `${dstCode}: ${formatCurrencyAmount(dstCode, converted)}`;
 }
 // reactivo a selección de cuenta
 watch(
@@ -678,7 +759,59 @@ function getUserRateForCode(code: unknown): number | null {
     const r = storeWithHelper.getCurrentRateForCurrency(cc);
     if (typeof r === 'number' && r > 0) return r;
   }
+  // Fallback: buscar en authStore.user.* listas (rates, currency_rates, current_currency_rates)
+  const u = (authStore as unknown as Record<string, unknown>)['user'] as
+    | Record<string, unknown>
+    | undefined;
+  const pickFrom = (arr: unknown): number | null => {
+    if (!Array.isArray(arr)) return null;
+    for (const it of arr) {
+      if (!it || typeof it !== 'object') continue;
+      const obj = it as Record<string, unknown>;
+      const cur = obj['currency'] as Record<string, unknown> | undefined;
+      const codeRaw = cur && typeof cur === 'object' ? cur['code'] : obj['code'];
+      const codeStr = typeof codeRaw === 'string' ? codeRaw.toUpperCase() : '';
+      if (codeStr === cc.toUpperCase()) {
+        const n = Number(obj['current_rate']);
+        if (Number.isFinite(n) && n > 0) return n;
+      }
+    }
+    return null;
+  };
+  if (u && typeof u === 'object') {
+    // Prioridad: current_currency_rates > rates > currency_rates
+    const fromCurrent = pickFrom(u['current_currency_rates']);
+    if (fromCurrent) return fromCurrent;
+    const fromRates = pickFrom(u['rates']);
+    if (fromRates) return fromRates;
+    const fromCurrencyRates = pickFrom(u['currency_rates']);
+    if (fromCurrencyRates) return fromCurrencyRates;
+  }
   return null;
+}
+
+// Helpers de conversión entre monedas basadas en tasas del usuario (todas relativas a USD)
+function getRatePerUsd(code: string | null | undefined): number | null {
+  if (!code) return null;
+  const cc = String(code).toUpperCase();
+  if (cc === 'USD') return 1;
+  const r = getUserRateForCode(cc);
+  return typeof r === 'number' && r > 0 ? r : null;
+}
+function convertAmountBetweenCurrencies(amount: number, srcCode: string, dstCode: string): number {
+  if (!Number.isFinite(amount)) return 0;
+  const src = (srcCode || 'USD').toUpperCase();
+  const dst = (dstCode || 'USD').toUpperCase();
+  if (src === dst) return amount;
+  const rSrc = getRatePerUsd(src);
+  const rDst = getRatePerUsd(dst);
+  if (rSrc && rDst) {
+    const usd = amount / rSrc; // src -> USD
+    return usd * rDst; // USD -> dst
+  }
+  if (rSrc && dst === 'USD') return amount / rSrc; // src -> USD
+  if (src === 'USD' && rDst) return amount * rDst; // USD -> dst
+  return amount; // sin tasas disponibles, sin conversión
 }
 async function fetchUserCurrentRate(currencyId: number | null): Promise<number | null> {
   const uid = authStore.user && typeof authStore.user.id === 'number' ? authStore.user.id : null;
@@ -750,7 +883,16 @@ function computeRunningBalances(): void {
     return;
   }
   const list = rows.value.slice();
-  const amounts = list.map((r) => parseNumber((r as Record<string, unknown>)['amount']));
+  // Para una sola cuenta: delta = suma de payments de ESA cuenta con el signo de la transacción
+  const amounts = list.map((r) => {
+    if (singleAccountSelected.value) {
+      const sumPayments = totalPaymentsForRow(r);
+      const usdAmt = parseNumber((r as Record<string, unknown>)['amount']);
+      const sign = usdAmt < 0 ? -1 : 1;
+      return sign * sumPayments;
+    }
+    return parseNumber((r as Record<string, unknown>)['amount']);
+  });
   const descending = pagination.value.descending;
   const sortBy = pagination.value.sortBy;
   if (sortBy !== 'date') {
@@ -1311,26 +1453,99 @@ function formatMoney(n: number): string {
 // (Obsoleto) helpers previos shouldConvertToUsd / amountInUsd reemplazados por showUsdUnderAmounts + formatAmountInUsd
 // NUEVOS helpers para celda amount (principal = moneda cuenta, secundario USD)
 const showUsdUnderAmounts = computed(
-  () => singleAccountSelected.value && (singleAccountCurrencyCode.value || 'USD') !== 'USD'
+  () =>
+    singleAccountSelected.value &&
+    (singleAccountCurrencyCode.value || 'USD') !== (defaultCurrencyCode.value || 'USD')
 );
-function formatAmountInAccountCurrency(row: Row): string {
-  const amt = toNumeric((row as Record<string, unknown>)['amount']) ?? 0;
-  const code = singleAccountSelected.value ? singleAccountCurrencyCode.value || 'USD' : 'USD';
-  return formatWithCodeSuffix(code, amt);
+// Suma de payments en la moneda de la cuenta seleccionada;
+// si no hay selección única, retorna 0 (usaremos amount en USD como fallback)
+function totalPaymentsForRow(row: Row): number {
+  const pts = (row as Record<string, unknown>)['payment_transactions'];
+  if (!Array.isArray(pts)) return 0;
+  const targetCurrencyId = singleAccountSelected.value ? singleAccountCurrencyId.value : null;
+  let sum = 0;
+  for (const p of pts) {
+    if (p && typeof p === 'object') {
+      const pr = p as Record<string, unknown>;
+      const amt = toNumeric(pr['amount']) ?? 0;
+      if (!singleAccountSelected.value) {
+        sum += amt;
+        continue;
+      }
+      // Detectar moneda del payment: account.currency_id -> rate.currency_id -> user_currency.currency_id
+      let pCurrencyId: number | null = null;
+      const acc = pr['account'];
+      if (acc && typeof acc === 'object') {
+        const cid = (acc as Record<string, unknown>)['currency_id'];
+        const num = typeof cid === 'number' ? cid : toNumeric(cid);
+        if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
+      }
+      if (pCurrencyId == null) {
+        const rateObj = pr['rate'];
+        if (rateObj && typeof rateObj === 'object') {
+          const rcid = (rateObj as Record<string, unknown>)['currency_id'];
+          const num = typeof rcid === 'number' ? rcid : toNumeric(rcid);
+          if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
+        }
+      }
+      if (pCurrencyId == null) {
+        const uc = pr['user_currency'];
+        if (uc && typeof uc === 'object') {
+          const ucid = (uc as Record<string, unknown>)['currency_id'];
+          const num = typeof ucid === 'number' ? ucid : toNumeric(ucid);
+          if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
+        }
+      }
+      if (pCurrencyId == null) {
+        const accId = Number(pr['account_id']);
+        if (accId === (singleAccountId.value ?? NaN)) sum += amt;
+      } else if (targetCurrencyId == null || pCurrencyId === targetCurrencyId) {
+        sum += amt;
+      }
+    }
+  }
+  return sum;
 }
-function formatAmountInUsd(row: Row): string {
+// Formatos de la celda Amount
+function formatAmountInAccountCurrency(row: Row): string {
+  const code = singleAccountSelected.value ? singleAccountCurrencyCode.value || 'USD' : 'USD';
+  let amount = 0;
+  if (singleAccountSelected.value) {
+    amount = totalPaymentsForRow(row);
+  } else {
+    amount = toNumeric((row as Record<string, unknown>)['amount']) ?? 0; // USD
+  }
+  return formatWithCodeSuffix(code, amount);
+}
+function formatAmountConversionLine(row: Row): string {
   if (!showUsdUnderAmounts.value) return '';
-  const amt = toNumeric((row as Record<string, unknown>)['amount']) ?? 0;
-  const rateNum =
-    Number(singleAccountRate.value || 0) ||
-    Number(getUserRateForCode(singleAccountCurrencyCode.value) || 0);
-  const usd = rateNum > 0 ? amt / rateNum : amt;
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    currencyDisplay: 'narrowSymbol',
-    minimumFractionDigits: 2,
-  }).format(usd);
+  const srcCode = (singleAccountCurrencyCode.value || 'USD').toUpperCase();
+  const dstCode = (defaultCurrencyCode.value || 'USD').toUpperCase();
+  if (srcCode === dstCode) return '';
+  const base = totalPaymentsForRow(row);
+  const txUsd = parseNumber((row as Record<string, unknown>)['amount']);
+  const sign = txUsd < 0 ? -1 : 1;
+  const srcAmount = sign * Math.abs(base);
+  const rSrc = getRatePerUsd(srcCode);
+  const rDst = getRatePerUsd(dstCode) ?? 1;
+  const fmtRate = (n: number) =>
+    n >= 1 ? Number(n.toFixed(2)).toString() : Number(n.toFixed(6)).toString();
+
+  const usdAmount = rSrc && rSrc > 0 ? srcAmount / rSrc : srcAmount;
+  const dstAmount = usdAmount * rDst;
+
+  if (rSrc && rSrc > 0) {
+    if (dstCode === 'USD') {
+      return `${dstCode}: ${formatCurrencyAmount(srcCode, srcAmount)} / ${fmtRate(
+        rSrc
+      )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+    }
+    return `${dstCode}: ${formatCurrencyAmount(srcCode, srcAmount)} / ${fmtRate(rSrc)} × ${fmtRate(
+      rDst
+    )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+  }
+  const converted = convertAmountBetweenCurrencies(srcAmount, srcCode, dstCode);
+  return `${dstCode}: ${formatCurrencyAmount(dstCode, converted)}`;
 }
 
 // Helpers para celda balance corrido sin usar TS en el template
@@ -1366,33 +1581,37 @@ const showUsdInRunningBalance = computed(
     singleAccountSelected.value &&
     (singleAccountCurrencyCode.value || 'USD') !== (defaultCurrencyCode.value || 'USD')
 );
-function formatRunningBalanceUsdForRow(row: Row): string {
+function formatRunningBalanceConversionLine(row: Row): string {
   const id = (row as AnyRecord)['id'] as string | number | undefined;
   const key = id ?? rows.value.indexOf(row);
   const val = runningBalanceMap.value[key];
   if (val == null) return '';
-  // Conversión a USD con tasa de usuario
-  const rateNum =
-    Number(singleAccountRate.value || 0) ||
-    Number(getUserRateForCode(singleAccountCurrencyCode.value) || 0);
-  const usd = rateNum > 0 ? val / rateNum : val;
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    currencyDisplay: 'narrowSymbol',
-    minimumFractionDigits: 2,
-  }).format(usd);
+  const srcCode = (singleAccountCurrencyCode.value || 'USD').toUpperCase();
+  const dstCode = (defaultCurrencyCode.value || 'USD').toUpperCase();
+  if (srcCode === dstCode) return '';
+  const rSrc = getRatePerUsd(srcCode);
+  const rDst = getRatePerUsd(dstCode) ?? 1;
+  const fmtRate = (n: number) =>
+    n >= 1 ? Number(n.toFixed(2)).toString() : Number(n.toFixed(6)).toString();
+
+  const usdAmount = rSrc && rSrc > 0 ? val / rSrc : val;
+  const dstAmount = usdAmount * rDst;
+
+  if (rSrc && rSrc > 0) {
+    if (dstCode === 'USD') {
+      return `${dstCode}: ${formatCurrencyAmount(srcCode, val)} / ${fmtRate(
+        rSrc
+      )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+    }
+    return `${dstCode}: ${formatCurrencyAmount(srcCode, val)} / ${fmtRate(rSrc)} × ${fmtRate(
+      rDst
+    )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+  }
+  const converted = convertAmountBetweenCurrencies(val, srcCode, dstCode);
+  return `${dstCode}: ${formatCurrencyAmount(dstCode, converted)}`;
 }
 
-function rateLabelUsed(): string {
-  const r = Number(
-    singleAccountRate.value || 0 || getUserRateForCode(singleAccountCurrencyCode.value) || 0
-  );
-  if (!(r > 0)) return '';
-  // Mostrar con hasta 6 decimales cuando aplique
-  if (r >= 1) return String(Number(r.toFixed(2))); // 2 decimales para tasas >= 1
-  return String(Number(r.toFixed(6))); // más precisión para tasas pequeñas
-}
+// (removido) rateLabelUsed: se reemplazó por formatSingleAccountBalanceConversionLine()
 
 function clearFilters(): void {
   filters.search = '';
