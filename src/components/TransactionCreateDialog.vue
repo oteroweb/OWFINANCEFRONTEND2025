@@ -1820,27 +1820,36 @@ const simpleRateInfo = computed<CurrentRateInfo | null>(() => {
   const key = currentRateKey(uid, acc.currencyId);
   return currentRateCache.value[key] || null;
 });
-// Read default rate from auth.user.rates (provided on login)
+// Rate from auth store helper (preferred). Falls back to legacy shapes if needed.
 function getAuthDefaultRateForCurrencyCode(code: unknown): number | null {
-  const cc = typeof code === 'string' ? code.toLowerCase() : null;
+  const cc = typeof code === 'string' ? code : null;
   if (!cc) return null;
-  const fromAuth = safeObj(auth.user as unknown);
-  const ratesA = Array.isArray((fromAuth as Record<string, unknown>)?.rates)
-    ? ((fromAuth as Record<string, unknown>).rates as Array<Record<string, unknown>>)
-    : [];
-  const foundA = ratesA.find(
-    (r) => (typeof r.name === 'string' ? r.name.toLowerCase() : '') === cc
-  );
-  if (foundA && typeof foundA.value === 'number' && foundA.value > 0) return Number(foundA.value);
-  // fallback to stored user
-  const su = getStoredUser();
-  const ratesB = Array.isArray((su as Record<string, unknown>)?.rates)
-    ? ((su as Record<string, unknown>).rates as Array<Record<string, unknown>>)
-    : [];
-  const foundB = ratesB.find(
-    (r) => (typeof r.name === 'string' ? r.name.toLowerCase() : '') === cc
-  );
-  if (foundB && typeof foundB.value === 'number' && foundB.value > 0) return Number(foundB.value);
+  // Prefer store helper when available (reads rates/current_currency_rates/currency_rates)
+  const storeWithHelper = auth as unknown as {
+    getCurrentRateForCurrency?: (c: string) => number | null;
+  };
+  if (typeof storeWithHelper.getCurrentRateForCurrency === 'function') {
+    const r = storeWithHelper.getCurrentRateForCurrency(cc);
+    if (typeof r === 'number' && r > 0) return r;
+  }
+  // Legacy fallback (rare): search in user.rates with { name, value }
+  try {
+    type RatesList = Array<Record<string, unknown>>;
+    let list: RatesList = [];
+    const u = auth.user as unknown;
+    if (u && typeof u === 'object') {
+      const obj = u as Record<string, unknown>;
+      const rr = obj['rates'];
+      if (Array.isArray(rr)) list = rr as RatesList;
+    }
+    const found = list.find(
+      (r) => (typeof r.name === 'string' ? r.name.toLowerCase() : '') === cc.toLowerCase()
+    );
+    const val = typeof found?.value === 'number' ? found.value : Number(found?.value ?? 0);
+    if (val > 0) return val;
+  } catch {
+    /* ignore */
+  }
   return null;
 }
 async function useCurrentRateForSelectedAccount() {
@@ -2193,7 +2202,14 @@ watch(
     // when a payment no longer needs a rate, clear it
     payments.value.forEach((p) => {
       if (!p) return;
-      if (!rowNeedsRate(p)) p.rate = null;
+      if (!rowNeedsRate(p)) {
+        p.rate = null;
+      } else if (!(Number(p.rate || 0) > 0)) {
+        // Autocompletar con la tasa actual del usuario si está disponible
+        const acc = rowAccount(p);
+        const def = getAuthDefaultRateForCurrencyCode(acc?.currencyCode);
+        if (typeof def === 'number' && def > 0) p.rate = def;
+      }
     });
   }
 );
@@ -2228,12 +2244,14 @@ function rowNeedsRate(p: PaymentRow) {
   if (ucode && acode) return ucode !== acode;
   return false;
 }
+// Rate helpers: compare with user's default rate to decide if we must send override
+// helpers no longer needed after always-sending-rate adjustment
 function rowRateLabel(p: PaymentRow) {
   const acc = rowAccount(p);
   const from = userCurrencyCode.value || 'Usuario';
   const to = acc?.currencyCode || 'Cuenta';
   // Especificación: rate = User→Account; conversión: amount_account / rate = amount_user
-  return `Tasa (${from}→${to})`;
+  return `Tasa xx(${from}→${to})`;
 }
 function rowTaxPercent(p: PaymentRow): number {
   if (!p.applyTax || !p.tax_id) return 0;
@@ -2839,8 +2857,9 @@ function saveTransaction() {
     account_id: number | null;
     amount: number; // in account currency
     rate: number | null; // to user base currency
-    rate_is_current?: boolean | null; // mark provided rate as current
-    rate_is_official?: boolean | null; // mark provided rate as official
+    // Compatibility keys some backends expect
+    is_current?: boolean | null;
+    is_official?: boolean | null;
     tax_id: number | null;
     note: string | null;
   };
@@ -2852,7 +2871,6 @@ function saveTransaction() {
     provider_id: number | null;
     transaction_type_id?: string | null;
     url_file: string | null;
-    rate: number | null;
     account_id?: number | null;
     account_from_id?: number | null;
     account_to_id?: number | null;
@@ -2955,8 +2973,6 @@ function saveTransaction() {
       account_id: null,
       transaction_type_id: form.value.transaction_type_id ?? null,
       url_file: form.value.url_file || null,
-      // La tasa global no se envía en modo no-transfer; usar por pago cuando aplique
-      rate: null,
       // taxes removed for now
       category_id: simpleCategoryId.value ?? null,
       items,
@@ -2976,13 +2992,23 @@ function saveTransaction() {
             : null
           : null;
         const paymentAmount = isExpense ? -Math.abs(accAmt) : Math.abs(accAmt);
+        const accInfo = allAccounts.value.find((a) => a.id === accId) || null;
+        const defRate = getAuthDefaultRateForCurrencyCode(accInfo?.currencyCode);
+        const finalRate = (() => {
+          if (!rowNeedsRate({ account_id: accId } as PaymentRow)) return null;
+          // Siempre enviar una tasa válida: preferir la ingresada, sino la por defecto del usuario
+          const chosen = Number(paymentRate || 0);
+          if (chosen > 0) return chosen;
+          const fallback = Number(defRate || 0);
+          return fallback > 0 ? fallback : null;
+        })();
         payload.payments = [
           {
             account_id: accId,
             amount: paymentAmount,
-            rate: paymentRate,
-            rate_is_current: !!form.value.rateMarkCurrent || null,
-            rate_is_official: !!form.value.rateMarkOfficial || null,
+            rate: finalRate,
+            is_current: finalRate ? !!form.value.rateMarkCurrent || null : null,
+            is_official: finalRate ? !!form.value.rateMarkOfficial || null : null,
             tax_id: null,
             note: null,
           },
@@ -3000,19 +3026,30 @@ function saveTransaction() {
       // Solo incluir pagos válidos (>0 y con cuenta)
       const mapped = payments.value
         .filter((p) => typeof p?.account_id === 'number' && Number(p?.amount || 0) > 0)
-        .map((p) => ({
-          account_id: p.account_id,
-          // Mantener el signo coherente con el tipo de transacción principal.
-          // Si es gasto (expense) el backend normalmente espera valores negativos; ingresos positivos.
-          // Para transferencias no se usa este bloque.
-          amount:
-            slug === 'expense' ? -Math.abs(Number(p.amount || 0)) : Math.abs(Number(p.amount || 0)),
-          rate: rowNeedsRate(p as PaymentRow) ? Number(p.rate || 0) : null,
-          rate_is_current: rowNeedsRate(p as PaymentRow) ? !!p.rateMarkCurrent || null : null,
-          rate_is_official: rowNeedsRate(p as PaymentRow) ? !!p.rateMarkOfficial || null : null,
-          tax_id: p.applyTax ? p.tax_id : null,
-          note: p.note || null,
-        }));
+        .map((p) => {
+          const accPay = allAccounts.value.find((a) => a.id === p.account_id) || null;
+          const defRate = getAuthDefaultRateForCurrencyCode(accPay?.currencyCode);
+          const chosenRateRaw = rowNeedsRate(p as PaymentRow) ? Number(p.rate || 0) : null;
+          const sendRate = (() => {
+            if (!rowNeedsRate(p as PaymentRow)) return null;
+            // Siempre enviar una tasa válida para que backend la tome en cuenta
+            if (chosenRateRaw && chosenRateRaw > 0) return chosenRateRaw;
+            const fb = Number(defRate || 0);
+            return fb > 0 ? fb : null;
+          })();
+          return {
+            account_id: p.account_id,
+            amount:
+              slug === 'expense'
+                ? -Math.abs(Number(p.amount || 0))
+                : Math.abs(Number(p.amount || 0)),
+            rate: sendRate,
+            is_current: sendRate ? !!p.rateMarkCurrent || null : null,
+            is_official: sendRate ? !!p.rateMarkOfficial || null : null,
+            tax_id: p.applyTax ? p.tax_id : null,
+            note: p.note || null,
+          };
+        });
       // Asegurar al menos un elemento en payments segun validación previa
       payload.payments = mapped;
     }
@@ -3056,8 +3093,6 @@ function saveTransaction() {
       account_to_id: form.value.account_to_id ?? null,
       transaction_type_id: form.value.transaction_type_id ?? null,
       url_file: form.value.url_file || null,
-      // No enviar tasa global
-      rate: null,
       // taxes removed for now
       include_in_balance: !!includeInBalance.value,
     };
@@ -3096,12 +3131,7 @@ function saveTransaction() {
         id,
         ...(payload as unknown as Record<string, unknown>),
       };
-      // Compatibilidad: algunos backends esperan "payment_transactions" en update
-      if ((payload as { payments?: unknown[] }).payments) {
-        (body as Record<string, unknown>)['payment_transactions'] = (
-          payload as { payments?: unknown[] }
-        ).payments;
-      }
+      // Enviar solo "payments"; no duplicar como payment_transactions en update
       return tsStore.updateTransaction(body);
     }
     return tsStore.addTransaction(payload as unknown as Record<string, unknown>);
@@ -3112,6 +3142,30 @@ function saveTransaction() {
         type: 'positive',
         message: doUpdate ? 'Transacción actualizada' : 'Transacción creada',
       });
+      // Refrescar tasas del usuario tras crear/actualizar para mantener el store al día
+      try {
+        const storeWithRefresh = auth as unknown as {
+          refreshProfile?: () => Promise<void>;
+          refreshUserCurrencies?: () => Promise<void>;
+        };
+        if (typeof storeWithRefresh.refreshProfile === 'function') {
+          await storeWithRefresh.refreshProfile();
+        } else if (typeof storeWithRefresh.refreshUserCurrencies === 'function') {
+          await storeWithRefresh.refreshUserCurrencies();
+        } else {
+          // Fallback manual si no existen acciones
+          try {
+            const res = await api.get('/users/profile');
+            const data = (res.data?.data || res.data) as Record<string, unknown>;
+            (auth as unknown as { user: unknown }).user = data as unknown;
+            localStorage.setItem('user', JSON.stringify(data));
+          } catch {
+            /* ignore */
+          }
+        }
+      } catch {
+        /* ignore refresh errors */
+      }
       // Invalida cache de balances de cuentas afectadas y fuerza refetch
       const affected: number[] = [];
       // Incluir cuentas originales (antes de editar) para recalcular saldos removidos/ajustados

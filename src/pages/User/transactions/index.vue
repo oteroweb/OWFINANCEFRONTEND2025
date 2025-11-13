@@ -95,7 +95,15 @@
                 <template v-if="singleAccountBalanceLoading">
                   <q-spinner size="16px" class="q-mr-xs" />
                 </template>
-                <span v-else>{{ formatSingleAccountBalanceDisplay() }}</span>
+                <span v-else>
+                  <div class="balance-main-line">{{ formatSingleAccountBalanceMain() }}</div>
+                  <div v-if="showSecondaryUsdBalance" class="balance-sub-line">
+                    USD: {{ formatSingleAccountBalanceUsd() }}
+                    <span v-if="rateLabelUsed()" class="rate-chip"
+                      >(tasa {{ rateLabelUsed() }})</span
+                    >
+                  </div>
+                </span>
               </div>
               <div
                 class="col text-right text-caption text-grey-7"
@@ -117,6 +125,31 @@
           v-model:pagination="pagination"
           @request="onRequest"
         >
+          <!-- Celda custom: Monto (principal en moneda de la cuenta, secundario en USD si aplica) -->
+          <template v-slot:body-cell-amount="props">
+            <q-td :props="props" align="right">
+              <div class="amount-main">{{ formatAmountInAccountCurrency(props.row) }}</div>
+              <div v-if="showUsdUnderAmounts" class="amount-sub">
+                USD: {{ formatAmountInUsd(props.row) }}
+              </div>
+            </q-td>
+          </template>
+
+          <!-- Celda custom: Balance corrido con colores + línea USD condicional -->
+          <template v-slot:body-cell-running_balance="props">
+            <q-td :props="props" align="right">
+              <div class="balance-stack">
+                <div>
+                  <span :class="balanceCellClass(props.row)">{{
+                    formatRunningBalanceForRow(props.row)
+                  }}</span>
+                </div>
+                <div v-if="showUsdInRunningBalance" class="amount-sub">
+                  USD: {{ formatRunningBalanceUsdForRow(props.row) }}
+                </div>
+              </div>
+            </q-td>
+          </template>
           <template v-slot:body-cell-actions="props">
             <q-td align="right">
               <q-btn flat round icon="edit" color="primary" @click="edit(props.row)" />
@@ -293,7 +326,7 @@ import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRoute } from 'vue-router';
 import { useQuasar, QInput, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
-// import { useAuthStore } from 'stores/auth';
+import { useAuthStore } from 'stores/auth';
 import { dictionary as dictionaryDef } from './dictionary';
 import { AccountsSidebarWidget, TransactionFormDialog } from 'components';
 import { useTransactionsStore } from 'stores/transactions';
@@ -303,10 +336,12 @@ defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
 const route = useRoute();
-// const authStore = useAuthStore(); // actualmente no usado
+const authStore = useAuthStore();
+const defaultCurrencyCode = computed(() => authStore.defaultCurrencyCode);
 const txStore = useTransactionsStore();
 const ui = useUiStore();
 const periodStore = usePeriodStore();
+// (rates chips removed from this page; now shown globally in layout/dashboard)
 
 // Tipos del diccionario para ayuda local
 interface CrudField {
@@ -390,11 +425,36 @@ function getByPath(obj: unknown, path: string): unknown {
   }, obj);
 }
 
+// Totalizar cantidad desde item_transactions[].quantity
+function getTotalQuantity(row: Row): number {
+  const arr = (row as Record<string, unknown>)['item_transactions'];
+  if (!Array.isArray(arr)) return 0;
+  let sum = 0;
+  for (const it of arr) {
+    if (it && typeof it === 'object') {
+      const q = (it as Record<string, unknown>)['quantity'];
+      const n = typeof q === 'number' ? q : toNumeric(q);
+      if (typeof n === 'number' && Number.isFinite(n)) sum += n;
+    }
+  }
+  return sum;
+}
+
 const baseColumns = (dictionary.columns as CrudColumn[]).map((col) => ({
   name: col.key === 'actions' ? 'actions' : col.key,
   label: col.name,
-  field: col.key.includes('.') ? (row: Row) => getByPath(row, col.key) : col.key,
-  align: col.type === 'boolean' ? ('center' as const) : ('left' as const),
+  field:
+    col.key === 'quantity'
+      ? (row: Row) => getTotalQuantity(row)
+      : col.key.includes('.')
+      ? (row: Row) => getByPath(row, col.key)
+      : col.key,
+  align:
+    col.key === 'quantity'
+      ? ('right' as const)
+      : col.type === 'boolean'
+      ? ('center' as const)
+      : ('left' as const),
   sortable: col.key !== 'actions',
   // Special display for account column in user list: when account is null, show ALL payment account names
   ...(col.key === 'account.name'
@@ -482,6 +542,10 @@ const singleAccountBalanceLoading = ref(false);
 // Moneda asociada a la cuenta seleccionada
 const singleAccountCurrencySymbol = ref<string>('$');
 const singleAccountCurrencyAlign = ref<'left' | 'right'>('left');
+const singleAccountCurrencyCode = ref<string>('USD');
+const singleAccountCurrencyId = ref<number | null>(null);
+const singleAccountRate = ref<number | null>(null);
+const singleAccountRateLoading = ref(false);
 // Helper para convertir valores numéricos que llegan como string o number
 function toNumeric(val: unknown): number | null {
   if (typeof val === 'number' && Number.isFinite(val)) return val;
@@ -503,7 +567,8 @@ async function fetchSingleAccountBalance(): Promise<void> {
   }
   try {
     singleAccountBalanceLoading.value = true;
-    const resp = await api.get(`/accounts/${id}`);
+    // Algunos endpoints requieren user_id para dar balances correctos
+    const resp = await api.get(`/accounts/${id}`, { params: { user_id: authStore.user?.id } });
     const data = (resp.data?.data ?? resp.data) as Record<string, unknown> | undefined;
     let bal: number | null = null;
     if (data && typeof data === 'object') {
@@ -515,17 +580,23 @@ async function fetchSingleAccountBalance(): Promise<void> {
       // Capturar moneda si existe
       if (source['currency'] && typeof source['currency'] === 'object') {
         const cur = source['currency'] as Record<string, unknown>;
+        const cid = typeof cur['id'] === 'number' ? cur['id'] : toNumeric(cur['id']);
+        singleAccountCurrencyId.value =
+          typeof cid === 'number' && Number.isFinite(cid) ? cid : null;
         const sym = typeof cur['symbol'] === 'string' ? cur['symbol'] : '$';
         const alignRaw = typeof cur['align'] === 'string' ? cur['align'].toLowerCase() : 'left';
         singleAccountCurrencySymbol.value = sym || '$';
         singleAccountCurrencyAlign.value = alignRaw === 'right' ? 'right' : 'left';
+        const code = typeof cur['code'] === 'string' ? cur['code'] : 'USD';
+        singleAccountCurrencyCode.value = code || 'USD';
       }
+      // Preferir balance en vivo por encima del balance_cached
       const candidateKeys = [
-        'balance_cached',
         'balance',
-        'balance_calculado',
         'current_balance',
+        'balance_calculado',
         'saldo',
+        'balance_cached',
         'initial',
       ];
       for (const k of candidateKeys) {
@@ -548,17 +619,42 @@ async function fetchSingleAccountBalance(): Promise<void> {
     singleAccountBalanceLoading.value = false;
   }
 }
-// Formato específico del saldo de la cuenta seleccionada: -400$
-function formatSingleAccountBalanceDisplay(): string {
-  const val = singleAccountBalance.value ?? 0;
-  const sym = singleAccountCurrencySymbol.value || '$';
-  const align = singleAccountCurrencyAlign.value;
-  const absStr = Math.abs(val).toFixed(2).replace(/\.00$/, '');
-  const sign = val < 0 ? '-' : '';
-  // Requerimiento: símbolo al final (ej: -400$) independientemente del align, pero lo dejamos
-  // preparado por si luego se quiere usar align para variar.
-  if (align === 'left') return `${sign}${absStr}${sym}`;
-  return `${sign}${absStr}${sym}`;
+// Helpers de formato con código de moneda
+// (Obsoleto) formatMoneyWith quedado como referencia; sustituido por formatWithCodeSuffix
+// Formato con código ISO explícito, p. ej. "3.568,99 VES"
+function formatNumberPlain(n: number): string {
+  return new Intl.NumberFormat(undefined, {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(n || 0));
+}
+function formatWithCodeSuffix(code: string, amount: number): string {
+  return `${formatNumberPlain(amount)} ${code}`;
+}
+function formatSingleAccountBalanceMain(): string {
+  // Mostrar siempre balance en moneda de la cuenta + código ISO explícito
+  const code = singleAccountCurrencyCode.value || 'USD';
+  const amt = singleAccountBalance.value ?? 0;
+  return formatWithCodeSuffix(code, amt);
+}
+const showSecondaryUsdBalance = computed(
+  () =>
+    singleAccountSelected.value &&
+    (singleAccountCurrencyCode.value || 'USD') !== 'USD' &&
+    (defaultCurrencyCode.value || 'USD') === 'USD'
+);
+// Eliminado isValidRate (ya no se usa; la tasa se resuelve por user rates o endpoint actual)
+function formatSingleAccountBalanceUsd(): string {
+  const bal = singleAccountBalance.value ?? 0;
+  const rate = Number(singleAccountRate.value || 0);
+  const usd = rate > 0 ? bal / rate : bal;
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: 2,
+  }).format(usd);
 }
 // reactivo a selección de cuenta
 watch(
@@ -568,6 +664,77 @@ watch(
     else singleAccountBalance.value = null;
   },
   { immediate: true }
+);
+// Resolver tasa del usuario para la moneda de la cuenta seleccionada
+// safeObj no longer needed after refactor
+// Usar authStore.getCurrentRateForCurrency para obtener la tasa actual del usuario para un código ISO
+function getUserRateForCode(code: unknown): number | null {
+  const cc = typeof code === 'string' ? code : null;
+  if (!cc) return null;
+  const storeWithHelper = authStore as unknown as {
+    getCurrentRateForCurrency?: (c: string) => number | null;
+  };
+  if (typeof storeWithHelper.getCurrentRateForCurrency === 'function') {
+    const r = storeWithHelper.getCurrentRateForCurrency(cc);
+    if (typeof r === 'number' && r > 0) return r;
+  }
+  return null;
+}
+async function fetchUserCurrentRate(currencyId: number | null): Promise<number | null> {
+  const uid = authStore.user && typeof authStore.user.id === 'number' ? authStore.user.id : null;
+  if (!uid || !currencyId) return null;
+  try {
+    singleAccountRateLoading.value = true;
+    const res = await api.get('/user_currencies', {
+      params: { user_id: uid, currency_id: currencyId, is_current: 1, limit: 1 },
+    });
+    // La API puede devolver directamente un array o un objeto paginado con data.data[]
+    const body = res.data as unknown;
+    let list: Array<{ current_rate?: number | string }> = [];
+    if (Array.isArray(body)) {
+      list = body as Array<{ current_rate?: number | string }>;
+    } else if (body && typeof body === 'object') {
+      const obj = body as Record<string, unknown>;
+      const d1 = obj['data'];
+      if (Array.isArray(d1)) {
+        list = d1 as Array<{ current_rate?: number | string }>;
+      } else if (d1 && typeof d1 === 'object') {
+        const inner = d1 as Record<string, unknown>;
+        const d2 = inner['data'];
+        if (Array.isArray(d2)) list = d2 as Array<{ current_rate?: number | string }>;
+      }
+    }
+    const first = Array.isArray(list) && list.length ? list[0] : null;
+    const rateNum = first && first.current_rate != null ? Number(first.current_rate) : NaN;
+    if (Number.isFinite(rateNum) && rateNum > 0) return rateNum;
+    return null;
+  } catch {
+    return null;
+  } finally {
+    singleAccountRateLoading.value = false;
+  }
+}
+async function resolveSingleAccountRate(): Promise<void> {
+  // Si la cuenta es USD, no necesitamos tasa
+  if ((singleAccountCurrencyCode.value || 'USD') === 'USD') {
+    singleAccountRate.value = 1;
+    return;
+  }
+  // Primero intenta de auth.user.rates
+  const rAuth = getUserRateForCode(singleAccountCurrencyCode.value);
+  if (typeof rAuth === 'number' && rAuth > 0) {
+    singleAccountRate.value = rAuth;
+    return;
+  }
+  // Fallback: pedir la tasa actual al backend usando currencyId
+  const rateSrv = await fetchUserCurrentRate(singleAccountCurrencyId.value);
+  if (typeof rateSrv === 'number' && rateSrv > 0) singleAccountRate.value = rateSrv;
+}
+watch(
+  () => [singleAccountId.value, singleAccountCurrencyCode.value, singleAccountCurrencyId.value],
+  () => {
+    void resolveSingleAccountRate();
+  }
 );
 const showRunningBalanceColumn = computed(
   () => singleAccountSelected.value && pagination.value.sortBy === 'date'
@@ -629,6 +796,9 @@ const runningBalanceColumn: ColumnDef = {
     const key = id ?? rows.value.indexOf(row);
     const val = runningBalanceMap.value[key];
     if (val == null) return '';
+    // Mostrar en la moneda de la cuenta cuando hay selección única
+    if (singleAccountSelected.value)
+      return formatWithCodeSuffix(singleAccountCurrencyCode.value || 'USD', val);
     return formatMoney(val);
   },
   align: 'right' as const,
@@ -969,8 +1139,17 @@ onMounted(async () => {
     if (singleAccountSelected.value) void fetchSingleAccountBalance();
   };
   window.addEventListener('ow:transactions:changed', handler);
+  // Escuchar selección explícita de cuentas (AccountsTree emite ow:accounts:selected)
+  const accountsSelectedHandler = () => {
+    // Ejecutar fetch inmediato de saldo para evitar ver 0 hasta que se carguen transacciones
+    if (singleAccountSelected.value) void fetchSingleAccountBalance();
+    // Forzar carga rápida de transacciones (sin esperar debounce)
+    void runFetch(true);
+  };
+  window.addEventListener('ow:accounts:selected', accountsSelectedHandler);
   onBeforeUnmount(() => {
     window.removeEventListener('ow:transactions:changed', handler);
+    window.removeEventListener('ow:accounts:selected', accountsSelectedHandler);
   });
 });
 
@@ -1128,6 +1307,93 @@ function formatMoney(n: number): string {
   }).format(val);
 }
 
+// ===== Formato de celdas de Cantidad (principal moneda cuenta, secundario USD si difiere) =====
+// (Obsoleto) helpers previos shouldConvertToUsd / amountInUsd reemplazados por showUsdUnderAmounts + formatAmountInUsd
+// NUEVOS helpers para celda amount (principal = moneda cuenta, secundario USD)
+const showUsdUnderAmounts = computed(
+  () => singleAccountSelected.value && (singleAccountCurrencyCode.value || 'USD') !== 'USD'
+);
+function formatAmountInAccountCurrency(row: Row): string {
+  const amt = toNumeric((row as Record<string, unknown>)['amount']) ?? 0;
+  const code = singleAccountSelected.value ? singleAccountCurrencyCode.value || 'USD' : 'USD';
+  return formatWithCodeSuffix(code, amt);
+}
+function formatAmountInUsd(row: Row): string {
+  if (!showUsdUnderAmounts.value) return '';
+  const amt = toNumeric((row as Record<string, unknown>)['amount']) ?? 0;
+  const rateNum =
+    Number(singleAccountRate.value || 0) ||
+    Number(getUserRateForCode(singleAccountCurrencyCode.value) || 0);
+  const usd = rateNum > 0 ? amt / rateNum : amt;
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: 2,
+  }).format(usd);
+}
+
+// Helpers para celda balance corrido sin usar TS en el template
+function balanceCellClass(row: Row): Array<string> {
+  const amt = parseNumber((row as AnyRecord)['amount']);
+  if (isTransferRow(row)) return ['balance-cell', 'balance-transfer'];
+  return ['balance-cell', amt >= 0 ? 'balance-positive' : 'balance-negative'];
+}
+function formatRunningBalanceForRow(row: Row): string {
+  const id = (row as AnyRecord)['id'] as string | number | undefined;
+  const key = id ?? rows.value.indexOf(row);
+  const val = runningBalanceMap.value[key];
+  if (val == null) return '';
+  // Mostrar siempre en la moneda de la cuenta si hay selección única; de lo contrario USD
+  if (singleAccountSelected.value) {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: singleAccountCurrencyCode.value || 'USD',
+        currencyDisplay: 'narrowSymbol',
+        minimumFractionDigits: 2,
+      }).format(val);
+    } catch {
+      return `${val.toFixed(2)} ${singleAccountCurrencyCode.value || 'USD'}`;
+    }
+  }
+  return formatMoney(val);
+}
+
+// Mostrar USD bajo el balance sólo si hay una cuenta seleccionada y su moneda difiere de la por defecto
+const showUsdInRunningBalance = computed(
+  () =>
+    singleAccountSelected.value &&
+    (singleAccountCurrencyCode.value || 'USD') !== (defaultCurrencyCode.value || 'USD')
+);
+function formatRunningBalanceUsdForRow(row: Row): string {
+  const id = (row as AnyRecord)['id'] as string | number | undefined;
+  const key = id ?? rows.value.indexOf(row);
+  const val = runningBalanceMap.value[key];
+  if (val == null) return '';
+  // Conversión a USD con tasa de usuario
+  const rateNum =
+    Number(singleAccountRate.value || 0) ||
+    Number(getUserRateForCode(singleAccountCurrencyCode.value) || 0);
+  const usd = rateNum > 0 ? val / rateNum : val;
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: 2,
+  }).format(usd);
+}
+
+function rateLabelUsed(): string {
+  const r = Number(
+    singleAccountRate.value || 0 || getUserRateForCode(singleAccountCurrencyCode.value) || 0
+  );
+  if (!(r > 0)) return '';
+  // Mostrar con hasta 6 decimales cuando aplique
+  if (r >= 1) return String(Number(r.toFixed(2))); // 2 decimales para tasas >= 1
+  return String(Number(r.toFixed(6))); // más precisión para tasas pequeñas
+}
+
 function clearFilters(): void {
   filters.search = '';
   for (const f of dictionary.forms_filter) {
@@ -1278,5 +1544,46 @@ function exportCSV(): void {
 }
 .cell-stack > div + div {
   margin-top: 2px;
+}
+/* Estilos para Balance y Cantidad según requerimiento */
+.balance-cell {
+  font-size: 14px;
+}
+.balance-positive {
+  color: #2e7d32; /* verde */
+  font-weight: 600;
+}
+.balance-negative {
+  color: #c62828; /* rojo */
+  font-weight: 600;
+}
+.balance-transfer {
+  color: #000; /* negro */
+  font-weight: 700; /* negritas */
+}
+.amount-main {
+  font-variant-numeric: tabular-nums;
+}
+.amount-sub {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.balance-main-line {
+  line-height: 1.1;
+}
+.balance-sub-line {
+  line-height: 1.1;
+  font-size: 12px;
+  opacity: 0.9;
+}
+.balance-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.rate-chip {
+  font-size: 11px;
+  opacity: 0.8;
+  margin-left: 6px;
 }
 </style>

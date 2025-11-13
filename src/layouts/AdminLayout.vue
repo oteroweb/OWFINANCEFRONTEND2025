@@ -2,7 +2,12 @@
   <q-layout view="hHh lpR fFf">
     <q-header elevated>
       <q-toolbar>
-        <q-toolbar-title>Admin Panel</q-toolbar-title>
+        <q-toolbar-title>
+          Admin Panel
+          <q-badge v-if="defaultCurrencyCode" color="primary" class="q-ml-sm" outline>{{
+            defaultCurrencyCode
+          }}</q-badge>
+        </q-toolbar-title>
         <q-btn label="Logout" color="negative" @click="handleLogout" flat class="q-ml-md" />
       </q-toolbar>
     </q-header>
@@ -59,13 +64,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 
 const router = useRouter();
 const auth = useAuthStore();
 const drawer = ref(true);
+const defaultCurrencyCode = computed(() => auth.defaultCurrencyCode);
 
 async function handleLogout() {
   auth.logout();

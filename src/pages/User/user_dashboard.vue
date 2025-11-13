@@ -14,6 +14,18 @@
         />
       </div>
     </div>
+    <!-- Moneda por defecto + tasas actuales -->
+    <div class="row items-center q-gutter-xs q-mt-sm rates-row">
+      <q-chip dense color="grey-2" text-color="dark" class="text-weight-medium">
+        {{ defaultCurrencyCode || 'USD' }}
+      </q-chip>
+      <template v-for="r in currentRates" :key="r.code">
+        <q-chip dense color="blue-1" text-color="primary" class="rate-chip-item">
+          {{ r.code }}: {{ r.rateLabel }}
+          <q-badge v-if="r.is_official" color="teal" class="q-ml-xs">oficial</q-badge>
+        </q-chip>
+      </template>
+    </div>
     <q-separator spaced />
     <div class="dashboard-grid">
       <q-card v-for="w in widgets" :key="w" class="widget">
@@ -25,11 +37,13 @@
 <script setup lang="ts">
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
+import { useUserRates } from 'src/composables/useUserRates';
 
 defineOptions({ name: 'user_dashboard' });
 const auth = useAuthStore();
 const ui = useUiStore();
 const widgets = ['Balance', 'Distribución', 'Presupuestos', 'Evolución', 'Vencimientos'];
+const { defaultCurrencyCode, currentRates } = useUserRates();
 </script>
 <style scoped>
 .dashboard-grid {
@@ -39,5 +53,11 @@ const widgets = ['Balance', 'Distribución', 'Presupuestos', 'Evolución', 'Venc
 }
 .widget {
   min-height: 100px;
+}
+.rates-row .q-chip {
+  height: 24px;
+}
+.rate-chip-item {
+  white-space: nowrap;
 }
 </style>

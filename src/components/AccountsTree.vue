@@ -99,6 +99,7 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
 import { Notify } from 'quasar';
+import { useTransactionsStore } from 'stores/transactions';
 
 type NodeType = 'folder' | 'account';
 
@@ -124,6 +125,7 @@ export default defineComponent({
     'delete-folder',
   ],
   setup(_, { emit, expose }) {
+    const txStore = useTransactionsStore();
     // Top-level nodes; we keep a special folder id 'root' labeled 'Sin asignar'
     const UNASSIGNED_ID = 'root';
     const tree = ref<TreeNode[]>([
@@ -304,6 +306,19 @@ export default defineComponent({
     function onSelect(node: TreeNode) {
       selectedNodeId.value = node.id;
       selectedIsFolder.value = node.type === 'folder' && node.id !== UNASSIGNED_ID;
+      // Cuando se selecciona una cuenta, sincronizar selección global para que otras vistas (transacciones)
+      // reaccionen y actualicen su balance/tabla.
+      if (node.type === 'account') {
+        txStore.setSelectedAccountIds([node.id]);
+        emit('view-account', { id: node.id, label: node.label });
+        try {
+          window.dispatchEvent(
+            new CustomEvent('ow:accounts:selected', { detail: { ids: [node.id] } })
+          );
+        } catch {
+          /* ignore */
+        }
+      }
     }
 
     function onRequestDeleteFolder() {

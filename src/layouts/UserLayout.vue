@@ -11,6 +11,7 @@
             <span class="name text-weight-medium">{{ auth.user?.name || 'Usuario' }}</span>
             <span class="sep">•</span>
             <span class="email">{{ auth.user?.email }}</span>
+            <span v-if="defaultCurrencyCode" class="currency-chip">{{ defaultCurrencyCode }}</span>
           </div>
         </div>
 
@@ -36,6 +37,20 @@
           <q-btn flat round dense icon="logout" @click="handleLogout" />
         </div>
       </q-toolbar>
+      <!-- Moneda por defecto + tasas actuales del usuario -->
+      <div class="bg-primary text-white q-px-md q-pb-sm q-pt-xs rates-strip">
+        <div class="row items-center q-gutter-xs no-wrap scroll-x">
+          <q-chip dense color="white" text-color="primary" class="text-weight-medium">
+            {{ defaultCurrencyCode || 'USD' }}
+          </q-chip>
+          <template v-for="r in currentRates" :key="r.code">
+            <q-chip dense color="white" text-color="primary" class="rate-chip-item">
+              {{ r.code }}: {{ r.rateLabel }}
+              <q-badge v-if="r.is_official" color="teal" class="q-ml-xs">oficial</q-badge>
+            </q-chip>
+          </template>
+        </div>
+      </div>
       <!-- Barra de periodos global -->
       <div class="bg-white text-dark">
         <PeriodFilterBar />
@@ -59,8 +74,10 @@ import { TransactionCreateDialog } from 'components';
 import { PeriodFilterBar } from 'components/models';
 import { useUiStore } from 'stores/ui';
 import { useQuasar } from 'quasar';
+import { useUserRates } from 'src/composables/useUserRates';
 const auth = useAuthStore();
 const avatarUrl = computed(() => defaultAvatarUrl);
+const { defaultCurrencyCode, currentRates } = useUserRates();
 const menuLinks = userMenuLinks;
 const ui = useUiStore();
 const $q = useQuasar();
@@ -113,6 +130,7 @@ async function handleLogout() {
 }
 
 // Nueva transacción se invocará desde vistas específicas o accesos dedicados
+// Moneda por defecto global disponible en defaultCurrencyCode
 </script>
 
 <style scoped>
@@ -143,6 +161,26 @@ async function handleLogout() {
 }
 .user-line .sep {
   opacity: 0.6;
+}
+.currency-chip {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  backdrop-filter: saturate(180%) blur(4px);
+}
+.rates-strip .q-chip {
+  height: 22px;
+}
+.scroll-x {
+  overflow-x: auto;
+}
+.rate-chip-item {
+  white-space: nowrap;
 }
 .actions {
   margin-left: auto;
