@@ -700,10 +700,7 @@ function formatCurrencyAmount(code: string, amount: number): string {
 // Helper para determinar un código de moneda de fallback que prioriza la preferencia del usuario
 // antes de caer finalmente en 'USD'. Evita repetir '|| "USD"' disperso en la lógica visual.
 const fallbackCurrencyCode = () =>
-  (defaultCurrencyCode.value ||
-    singleAccountCurrencyCode.value ||
-    'USD'
-  ).toUpperCase();
+  (defaultCurrencyCode.value || singleAccountCurrencyCode.value || 'USD').toUpperCase();
 function formatSingleAccountBalanceConversionLine(): string {
   // Muestra una fórmula clara: <DST>: <SRC amount> / <tasa SRC> [× <tasa DST>] = <DST amount>
   // Caso común: DST = USD => <USD>: <SRC amount> / <tasa SRC> = <USD amount>
@@ -1517,35 +1514,137 @@ function formatAmountInAccountCurrency(row: Row): string {
   }
   return formatWithCodeSuffix(code, amount);
 }
+// ==== Conversión secundaria del Monto usando tasas internas por payment ====
+// Extrae la tasa interna efectiva de un payment (prioridades: rate.current_rate, rate_value, user_currency.current_rate)
+function extractInternalRate(payment: Record<string, unknown>): number | null {
+  const rateObj = payment['rate'];
+  if (rateObj && typeof rateObj === 'object') {
+    const r = Number((rateObj as Record<string, unknown>)['current_rate']);
+    if (Number.isFinite(r) && r > 0) return r;
+  }
+  const rateVal = Number(payment['rate_value']);
+  if (Number.isFinite(rateVal) && rateVal > 0) return rateVal;
+  const userCur = payment['user_currency'];
+  if (userCur && typeof userCur === 'object') {
+    const r2 = Number((userCur as Record<string, unknown>)['current_rate']);
+    if (Number.isFinite(r2) && r2 > 0) return r2;
+  }
+  return null;
+}
+interface InternalPaymentTerm {
+  amount: number;
+  rate: number;
+}
+function collectInternalTerms(row: Row): InternalPaymentTerm[] {
+  const out: InternalPaymentTerm[] = [];
+  const pts = (row as Record<string, unknown>)['payment_transactions'];
+  if (!Array.isArray(pts)) return out;
+  const targetCurrencyId = singleAccountSelected.value ? singleAccountCurrencyId.value : null;
+  const txUsd = parseNumber((row as Record<string, unknown>)['amount']);
+  const sign = txUsd < 0 ? -1 : 1; // mantener signo coherente con amount USD
+  for (const p of pts) {
+    if (!p || typeof p !== 'object') continue;
+    const pr = p as Record<string, unknown>;
+    // Filtrar por moneda de la cuenta seleccionada igual que totalPaymentsForRow
+    let pCurrencyId: number | null = null;
+    const acc = pr['account'];
+    if (acc && typeof acc === 'object') {
+      const cid = (acc as Record<string, unknown>)['currency_id'];
+      const num = typeof cid === 'number' ? cid : toNumeric(cid);
+      if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
+    }
+    if (pCurrencyId == null) {
+      const rateO = pr['rate'];
+      if (rateO && typeof rateO === 'object') {
+        const rcid = (rateO as Record<string, unknown>)['currency_id'];
+        const num = typeof rcid === 'number' ? rcid : toNumeric(rcid);
+        if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
+      }
+    }
+    if (pCurrencyId == null) {
+      const uc = pr['user_currency'];
+      if (uc && typeof uc === 'object') {
+        const ucid = (uc as Record<string, unknown>)['currency_id'];
+        const num = typeof ucid === 'number' ? ucid : toNumeric(ucid);
+        if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
+      }
+    }
+    if (singleAccountSelected.value) {
+      if (pCurrencyId != null && pCurrencyId !== targetCurrencyId) continue;
+      if (pCurrencyId == null) {
+        const accId = Number(pr['account_id']);
+        if (accId !== (singleAccountId.value ?? NaN)) continue;
+      }
+    }
+    const amt = toNumeric(pr['amount']) ?? 0;
+    const rate = extractInternalRate(pr);
+    if (rate && rate > 0) {
+      out.push({ amount: sign * amt, rate });
+    }
+  }
+  return out;
+}
 function formatAmountConversionLine(row: Row): string {
   if (!showUsdUnderAmounts.value) return '';
-  const srcCode = (singleAccountCurrencyCode.value || 'USD').toUpperCase();
-  const dstCode = (defaultCurrencyCode.value || 'USD').toUpperCase();
+  const srcCode = (singleAccountCurrencyCode.value || fallbackCurrencyCode()).toUpperCase();
+  const dstCode = (defaultCurrencyCode.value || fallbackCurrencyCode()).toUpperCase();
   if (srcCode === dstCode) return '';
-  const base = totalPaymentsForRow(row);
-  const txUsd = parseNumber((row as Record<string, unknown>)['amount']);
-  const sign = txUsd < 0 ? -1 : 1;
-  const srcAmount = sign * Math.abs(base);
-  const rSrc = getRatePerUsd(srcCode);
+  const terms = collectInternalTerms(row);
   const rDst = getRatePerUsd(dstCode) ?? 1;
   const fmtRate = (n: number) =>
     n >= 1 ? Number(n.toFixed(2)).toString() : Number(n.toFixed(6)).toString();
 
-  const usdAmount = rSrc && rSrc > 0 ? srcAmount / rSrc : srcAmount;
-  const dstAmount = usdAmount * rDst;
-
-  if (rSrc && rSrc > 0) {
-    if (dstCode === 'USD') {
+  if (terms.length === 0) {
+    // Fallback a lógica previa (usuario) cuando no hay tasas internas
+    const base = totalPaymentsForRow(row);
+    const txUsd = parseNumber((row as Record<string, unknown>)['amount']);
+    const sign = txUsd < 0 ? -1 : 1;
+    const srcAmount = sign * Math.abs(base);
+    const rSrc = getRatePerUsd(srcCode);
+    if (rSrc && rSrc > 0) {
+      const usdAmount = srcAmount / rSrc;
+      const dstAmount = usdAmount * rDst;
+      if (dstCode === 'USD') {
+        return `${dstCode}: ${formatCurrencyAmount(srcCode, srcAmount)} / ${fmtRate(
+          rSrc
+        )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+      }
       return `${dstCode}: ${formatCurrencyAmount(srcCode, srcAmount)} / ${fmtRate(
         rSrc
+      )} × ${fmtRate(rDst)} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+    }
+    const converted = convertAmountBetweenCurrencies(srcAmount, srcCode, dstCode);
+    return `${dstCode}: ${formatCurrencyAmount(dstCode, converted)}`;
+  }
+
+  // Calcular USD sumando cada término amount/rate
+  let usdTotal = 0;
+  for (const t of terms) usdTotal += t.amount / t.rate;
+  const dstAmount = dstCode === 'USD' ? usdTotal : usdTotal * rDst;
+
+  if (terms.length === 1) {
+    const t = terms[0]!; // length checked
+    if (dstCode === 'USD') {
+      return `${dstCode}: ${formatCurrencyAmount(srcCode, t.amount)} / ${fmtRate(
+        t.rate
       )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
     }
-    return `${dstCode}: ${formatCurrencyAmount(srcCode, srcAmount)} / ${fmtRate(rSrc)} × ${fmtRate(
+    return `${dstCode}: ${formatCurrencyAmount(srcCode, t.amount)} / ${fmtRate(t.rate)} × ${fmtRate(
       rDst
     )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
   }
-  const converted = convertAmountBetweenCurrencies(srcAmount, srcCode, dstCode);
-  return `${dstCode}: ${formatCurrencyAmount(dstCode, converted)}`;
+
+  // Fórmula abreviada para múltiples tasas: Σ(amt_i / rate_i)
+  const termsStr = terms
+    .map((t) => `${formatCurrencyAmount(srcCode, t.amount)} / ${fmtRate(t.rate)}`)
+    .join(' + ');
+  if (dstCode === 'USD') {
+    return `${dstCode}: Σ(${termsStr}) = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+  }
+  return `${dstCode}: Σ(${termsStr}) × ${fmtRate(rDst)} = ${formatCurrencyAmount(
+    dstCode,
+    dstAmount
+  )}`;
 }
 
 // Helpers para celda balance corrido sin usar TS en el template
@@ -1586,17 +1685,35 @@ function formatRunningBalanceConversionLine(row: Row): string {
   const key = id ?? rows.value.indexOf(row);
   const val = runningBalanceMap.value[key];
   if (val == null) return '';
-  const srcCode = (singleAccountCurrencyCode.value || 'USD').toUpperCase();
-  const dstCode = (defaultCurrencyCode.value || 'USD').toUpperCase();
+  const srcCode = (singleAccountCurrencyCode.value || fallbackCurrencyCode()).toUpperCase();
+  const dstCode = (defaultCurrencyCode.value || fallbackCurrencyCode()).toUpperCase();
   if (srcCode === dstCode) return '';
-  const rSrc = getRatePerUsd(srcCode);
-  const rDst = getRatePerUsd(dstCode) ?? 1;
+  // Intento simple: usar la tasa interna SI todos los payments de esta fila comparten la misma rate interna (>0)
+  const terms = collectInternalTerms(row);
+  const uniqueRates = Array.from(new Set(terms.map((t) => t.rate)));
   const fmtRate = (n: number) =>
     n >= 1 ? Number(n.toFixed(2)).toString() : Number(n.toFixed(6)).toString();
+  const rDst = getRatePerUsd(dstCode) ?? 1;
 
+  if (terms.length > 0 && uniqueRates.length === 1) {
+    const internalRate = uniqueRates[0]!; // existe por length === 1
+    // Convertimos el balance completo usando esa tasa homogénea (aproximación si varió históricamente)
+    const usdApprox = val / internalRate;
+    const dstAmount = dstCode === 'USD' ? usdApprox : usdApprox * rDst;
+    if (dstCode === 'USD') {
+      return `${dstCode}: ${formatCurrencyAmount(srcCode, val)} / ${fmtRate(
+        internalRate
+      )} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+    }
+    return `${dstCode}: ${formatCurrencyAmount(srcCode, val)} / ${fmtRate(
+      internalRate
+    )} × ${fmtRate(rDst)} = ${formatCurrencyAmount(dstCode, dstAmount)}`;
+  }
+
+  // Fallback a la lógica de tasa de usuario (como antes) si no hay una única tasa interna
+  const rSrc = getRatePerUsd(srcCode);
   const usdAmount = rSrc && rSrc > 0 ? val / rSrc : val;
-  const dstAmount = usdAmount * rDst;
-
+  const dstAmount = dstCode === 'USD' ? usdAmount : usdAmount * rDst;
   if (rSrc && rSrc > 0) {
     if (dstCode === 'USD') {
       return `${dstCode}: ${formatCurrencyAmount(srcCode, val)} / ${fmtRate(
