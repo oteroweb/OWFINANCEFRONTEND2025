@@ -1,6 +1,7 @@
-// import type { RouteRecordRaw } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from 'stores/auth'
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     component: () => import('layouts/MainLayout.vue'), // <-- usa layout
@@ -59,6 +60,23 @@ const routes = [
     path: '/',
     redirect: '/login',
   },
+  // Friendly alias: decide dashboard based on auth role; fallback to login
+  {
+    path: '/dashboard',
+    redirect: () => {
+      const auth = useAuthStore()
+      if (!auth.token) auth.loadFromStorage()
+      if (!auth.isLoggedIn) return '/login'
+      if (auth.role === 'admin') return '/admin'
+      if (auth.role === 'user') return '/user/home'
+      return '/login'
+    }
+  },
+  // Catch-all 404
+  {
+    path: '/:catchAll(.*)*',
+    component: () => import('pages/ErrorNotFound.vue')
+  }
 ];
 
 export default routes;

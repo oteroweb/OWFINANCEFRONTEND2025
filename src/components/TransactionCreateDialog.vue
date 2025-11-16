@@ -634,7 +634,7 @@
               color="primary"
               label="Guardar"
               type="submit"
-              :disable="isSaveDisabled || (isAdvancedPayment && paymentsMismatch)"
+              :disable="isSaveDisabled || (!isTransfer && isAdvancedPayment && paymentsMismatch)"
             />
           </div>
         </q-form>
@@ -3076,10 +3076,37 @@ function saveTransaction() {
       if (uCode && oCode && uCode === oCode) return 1;
       return null;
     })();
+    // Try to derive positive leg in USER currency prioritizing Destino when posible
+    const userToDest = (() => {
+      const toAcc = destAccount.value;
+      const rAuth = getAuthDefaultRateForCurrencyCode(toAcc?.currencyCode);
+      if (typeof rAuth === 'number' && rAuth > 0) return rAuth;
+      const curId = toAcc?.currencyId || null;
+      if (curId) {
+        const uid =
+          typeof (auth.user as unknown as { id?: number })?.id === 'number'
+            ? (auth.user as unknown as { id: number }).id
+            : null;
+        const key = currentRateKey(uid, curId);
+        const info = currentRateCache.value[key];
+        if (info && Number(info.rate) > 0) return Number(info.rate);
+      }
+      const uCode = (userCurrencyCode.value || '').toLowerCase();
+      const dCode = (toAcc?.currencyCode || '').toLowerCase();
+      if (uCode && dCode && uCode === dCode) return 1;
+      return null;
+    })();
     const amountPositiveUser = (() => {
       if (!isCrossCurrency.value) return rawAmt; // same currency
+      // If we have both Dest rate and O->D, prefer using Dest to compute positive leg in USER currency
+      const rOD = Number(form.value.rate || 0);
+      if (rOD > 0 && typeof userToDest === 'number' && userToDest > 0) {
+        return (rawAmt * rOD) / userToDest;
+      }
       if (typeof userToOrigin === 'number' && userToOrigin > 0) return rawAmt / userToOrigin;
-      // last resort: if cannot resolve, fallback to rawAmt (may be corrected by backend)
+      if (typeof userToDest === 'number' && userToDest > 0)
+        return (rawAmt * (rOD > 0 ? rOD : 1)) / userToDest;
+      // last resort: fallback to rawAmt (backend may correct)
       return rawAmt;
     })();
     payload = {

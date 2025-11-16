@@ -38,12 +38,26 @@ type ApiEnvelope<T = unknown> = {
   errors?: { [k: string]: unknown } | null
 }
 
+let isHandling401 = false
+
 api.interceptors.response.use(
   (response: AxiosResponse<ApiEnvelope>) => {
     const payload: ApiEnvelope | undefined = response?.data
     if (payload && typeof payload === 'object') {
       const statusText = typeof payload.status === 'string' ? payload.status.toUpperCase() : null
       const codeNum = typeof payload.code === 'number' ? payload.code : null
+
+      // Handle 401 even if backend wraps it in a 200 envelope
+      if (codeNum === 401 && !isHandling401) {
+        isHandling401 = true
+        const auth = useAuthStore()
+        auth.logout()
+        // Force navigation to login
+        if (typeof window !== 'undefined' && window.location?.pathname !== '/login') {
+          window.location.assign('/login')
+        }
+      }
+
       if (statusText === 'FAILED' || (codeNum !== null && codeNum >= 400)) {
         const err = new Error(payload.message || 'Request failed') as Error & {
           isApiError?: boolean
@@ -64,6 +78,19 @@ api.interceptors.response.use(
     const anyErr = error as { response?: AxiosResponse<ApiEnvelope>; message?: string }
     const res = anyErr?.response
     const payload = res?.data
+
+    // If HTTP status is 401, clear auth and redirect
+    const httpCode = res?.status
+    const payloadCode = typeof payload?.code === 'number' ? payload?.code : undefined
+    if (!isHandling401 && (httpCode === 401 || payloadCode === 401)) {
+      isHandling401 = true
+      const auth = useAuthStore()
+      auth.logout()
+      if (typeof window !== 'undefined' && window.location?.pathname !== '/login') {
+        window.location.assign('/login')
+      }
+    }
+
     if (payload && typeof payload === 'object') {
       const err = new Error(payload.message || anyErr.message || 'Request failed') as Error & {
         isApiError?: boolean
@@ -73,7 +100,7 @@ api.interceptors.response.use(
       err.api = {
         code: typeof payload.code === 'number' ? payload.code : res?.status,
         message: payload.message ?? 'Request failed',
-  errors: payload.data || payload.errors || null
+        errors: payload.data || payload.errors || null
       }
       return Promise.reject(err as Error)
     }

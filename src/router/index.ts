@@ -11,6 +11,10 @@ export default route(function () {
 
   router.beforeEach((to, from, next) => {
     const auth = useAuthStore()
+    // Ensure store is hydrated from localStorage in case boot hasn't yet
+    if (!auth.token) {
+      auth.loadFromStorage()
+    }
     // If trying to access login while already authenticated, redirect to home
     if (to.path === '/login' && auth.isLoggedIn) {
       if (auth.role === 'admin') {
