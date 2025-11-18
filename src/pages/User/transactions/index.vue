@@ -880,13 +880,11 @@ function computeRunningBalances(): void {
     return;
   }
   const list = rows.value.slice();
-  // Para una sola cuenta: delta = suma de payments de ESA cuenta con el signo de la transacción
+  // Para una sola cuenta: delta = suma de payments de ESA cuenta (los payments ya tienen el signo correcto)
   const amounts = list.map((r) => {
     if (singleAccountSelected.value) {
       const sumPayments = totalPaymentsForRow(r);
-      const usdAmt = parseNumber((r as Record<string, unknown>)['amount']);
-      const sign = usdAmt < 0 ? -1 : 1;
-      return sign * sumPayments;
+      return sumPayments;
     }
     return parseNumber((r as Record<string, unknown>)['amount']);
   });
@@ -1410,12 +1408,21 @@ function parseNumber(val: unknown): number {
   return 0;
 }
 function isTransferRow(row: Row): boolean {
+  // Prefer explicit type id when available
+  const typeId = Number((row as AnyRecord)['transaction_type_id']);
+  if (Number.isFinite(typeId) && typeId === 4) return true;
   const tt = (row as AnyRecord)['transaction_type'] as AnyRecord | undefined;
-  let rawName: unknown = '';
-  if (tt && typeof tt === 'object') rawName = (tt as Record<string, unknown>)['name'];
-  const name = typeof rawName === 'string' ? rawName : '';
-  const low = name.toLowerCase();
-  return low.includes('transfer') || low.includes('traspaso');
+  let name = '';
+  let slug = '';
+  if (tt && typeof tt === 'object') {
+    const tto = tt as Record<string, unknown>;
+    const rn = tto['name'];
+    const rs = tto['slug'];
+    name = typeof rn === 'string' ? rn : '';
+    slug = typeof rs === 'string' ? rs : '';
+  }
+  const low = `${name} ${slug}`.toLowerCase();
+  return low.includes('transfer') || low.includes('traspaso') || low.includes('transferencia');
 }
 const summary = computed(() => {
   let gastos = 0;
@@ -1459,47 +1466,23 @@ const showUsdUnderAmounts = computed(
 function totalPaymentsForRow(row: Row): number {
   const pts = (row as Record<string, unknown>)['payment_transactions'];
   if (!Array.isArray(pts)) return 0;
-  const targetCurrencyId = singleAccountSelected.value ? singleAccountCurrencyId.value : null;
+  // Cuando no hay una sola cuenta seleccionada, devolvemos la suma simple (signos incluidos)
+  if (!singleAccountSelected.value)
+    return pts.reduce((acc, p) => acc + (toNumeric((p as AnyRecord)['amount']) ?? 0), 0);
+  // Con una sola cuenta: sumar SOLO los payments de esa cuenta, ignorando moneda
+  const targetAccountId = Number(singleAccountId.value ?? NaN);
   let sum = 0;
   for (const p of pts) {
-    if (p && typeof p === 'object') {
-      const pr = p as Record<string, unknown>;
-      const amt = toNumeric(pr['amount']) ?? 0;
-      if (!singleAccountSelected.value) {
-        sum += amt;
-        continue;
-      }
-      // Detectar moneda del payment: account.currency_id -> rate.currency_id -> user_currency.currency_id
-      let pCurrencyId: number | null = null;
+    if (!p || typeof p !== 'object') continue;
+    const pr = p as Record<string, unknown>;
+    const amt = toNumeric(pr['amount']) ?? 0;
+    // account_id directo o anidado
+    let paId = toNumeric(pr['account_id']);
+    if (paId == null) {
       const acc = pr['account'];
-      if (acc && typeof acc === 'object') {
-        const cid = (acc as Record<string, unknown>)['currency_id'];
-        const num = typeof cid === 'number' ? cid : toNumeric(cid);
-        if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
-      }
-      if (pCurrencyId == null) {
-        const rateObj = pr['rate'];
-        if (rateObj && typeof rateObj === 'object') {
-          const rcid = (rateObj as Record<string, unknown>)['currency_id'];
-          const num = typeof rcid === 'number' ? rcid : toNumeric(rcid);
-          if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
-        }
-      }
-      if (pCurrencyId == null) {
-        const uc = pr['user_currency'];
-        if (uc && typeof uc === 'object') {
-          const ucid = (uc as Record<string, unknown>)['currency_id'];
-          const num = typeof ucid === 'number' ? ucid : toNumeric(ucid);
-          if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
-        }
-      }
-      if (pCurrencyId == null) {
-        const accId = Number(pr['account_id']);
-        if (accId === (singleAccountId.value ?? NaN)) sum += amt;
-      } else if (targetCurrencyId == null || pCurrencyId === targetCurrencyId) {
-        sum += amt;
-      }
+      if (acc && typeof acc === 'object') paId = toNumeric((acc as AnyRecord)['id']);
     }
+    if (typeof paId === 'number' && Number.isFinite(paId) && paId === targetAccountId) sum += amt;
   }
   return sum;
 }
@@ -1531,6 +1514,31 @@ function extractInternalRate(payment: Record<string, unknown>): number | null {
   }
   return null;
 }
+
+// Helpers para detectar la posición del payment seleccionado en transferencias
+function paymentAccountId(p: Record<string, unknown>): number | null {
+  const direct = toNumeric(p['account_id']);
+  if (typeof direct === 'number' && Number.isFinite(direct)) return direct;
+  const acc = p['account'];
+  if (acc && typeof acc === 'object') {
+    const id = toNumeric((acc as Record<string, unknown>)['id']);
+    if (typeof id === 'number' && Number.isFinite(id)) return id;
+  }
+  return null;
+}
+function selectedPaymentIndex(row: Row): number {
+  if (!singleAccountSelected.value || !isTransferRow(row)) return -1;
+  const pts = (row as Record<string, unknown>)['payment_transactions'];
+  if (!Array.isArray(pts)) return -1;
+  const selId = singleAccountId.value;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    if (!p || typeof p !== 'object') continue;
+    const id = paymentAccountId(p as Record<string, unknown>);
+    if (id != null && id === selId) return i; // 0 = origen, 1 = destino
+  }
+  return -1;
+}
 interface InternalPaymentTerm {
   amount: number;
   rate: number;
@@ -1539,47 +1547,33 @@ function collectInternalTerms(row: Row): InternalPaymentTerm[] {
   const out: InternalPaymentTerm[] = [];
   const pts = (row as Record<string, unknown>)['payment_transactions'];
   if (!Array.isArray(pts)) return out;
-  const targetCurrencyId = singleAccountSelected.value ? singleAccountCurrencyId.value : null;
+  const selIdx = selectedPaymentIndex(row);
   const txUsd = parseNumber((row as Record<string, unknown>)['amount']);
-  const sign = txUsd < 0 ? -1 : 1; // mantener signo coherente con amount USD
+  const sign = txUsd < 0 ? -1 : 1; // usado solo cuando NO hay cuenta única
+  const targetAccountId = Number(singleAccountId.value ?? NaN);
   for (const p of pts) {
     if (!p || typeof p !== 'object') continue;
     const pr = p as Record<string, unknown>;
-    // Filtrar por moneda de la cuenta seleccionada igual que totalPaymentsForRow
-    let pCurrencyId: number | null = null;
-    const acc = pr['account'];
-    if (acc && typeof acc === 'object') {
-      const cid = (acc as Record<string, unknown>)['currency_id'];
-      const num = typeof cid === 'number' ? cid : toNumeric(cid);
-      if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
-    }
-    if (pCurrencyId == null) {
-      const rateO = pr['rate'];
-      if (rateO && typeof rateO === 'object') {
-        const rcid = (rateO as Record<string, unknown>)['currency_id'];
-        const num = typeof rcid === 'number' ? rcid : toNumeric(rcid);
-        if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
-      }
-    }
-    if (pCurrencyId == null) {
-      const uc = pr['user_currency'];
-      if (uc && typeof uc === 'object') {
-        const ucid = (uc as Record<string, unknown>)['currency_id'];
-        const num = typeof ucid === 'number' ? ucid : toNumeric(ucid);
-        if (typeof num === 'number' && Number.isFinite(num)) pCurrencyId = num;
-      }
-    }
+    // Filtrar por cuenta cuando hay selección única
     if (singleAccountSelected.value) {
-      if (pCurrencyId != null && pCurrencyId !== targetCurrencyId) continue;
-      if (pCurrencyId == null) {
-        const accId = Number(pr['account_id']);
-        if (accId !== (singleAccountId.value ?? NaN)) continue;
+      let paId = toNumeric(pr['account_id']);
+      if (paId == null) {
+        const acc = pr['account'];
+        if (acc && typeof acc === 'object') paId = toNumeric((acc as AnyRecord)['id']);
       }
+      if (!(typeof paId === 'number' && Number.isFinite(paId) && paId === targetAccountId))
+        continue;
     }
     const amt = toNumeric(pr['amount']) ?? 0;
-    const rate = extractInternalRate(pr);
+    let rate = extractInternalRate(pr);
     if (rate && rate > 0) {
-      out.push({ amount: sign * amt, rate });
+      // Lógica especial para transferencias en selección de una sola cuenta:
+      // - Si el payment seleccionado es destino (índice 1), invertir la tasa para que
+      //   amount / (1/rate) = amount * rate
+      if (singleAccountSelected.value && isTransferRow(row) && selIdx === 1) {
+        rate = 1 / rate;
+      }
+      out.push({ amount: singleAccountSelected.value ? amt : sign * amt, rate });
     }
   }
   return out;
@@ -1596,10 +1590,7 @@ function formatAmountConversionLine(row: Row): string {
 
   if (terms.length === 0) {
     // Fallback a lógica previa (usuario) cuando no hay tasas internas
-    const base = totalPaymentsForRow(row);
-    const txUsd = parseNumber((row as Record<string, unknown>)['amount']);
-    const sign = txUsd < 0 ? -1 : 1;
-    const srcAmount = sign * Math.abs(base);
+    const srcAmount = totalPaymentsForRow(row);
     const rSrc = getRatePerUsd(srcCode);
     if (rSrc && rSrc > 0) {
       const usdAmount = srcAmount / rSrc;

@@ -5,10 +5,28 @@
         <div class="text-h6">Login</div>
       </q-card-section>
 
-      <form @submit.prevent="submit">
+      <form @submit.prevent="submit" autocomplete="on">
         <q-card-section>
-          <q-input v-model="email" label="Email" type="text" />
-          <q-input v-model="password" label="Password" type="password" class="q-mt-sm" />
+          <q-input
+            v-model="email"
+            label="Email"
+            type="email"
+            name="email"
+            autocomplete="username"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
+            inputmode="email"
+            autofocus
+          />
+          <q-input
+            v-model="password"
+            label="Password"
+            type="password"
+            class="q-mt-sm"
+            name="password"
+            autocomplete="current-password"
+          />
         </q-card-section>
 
         <q-card-actions align="right">

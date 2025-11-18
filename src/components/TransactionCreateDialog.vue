@@ -396,7 +396,7 @@
                 <span v-if="!isCrossCurrency">Destino = actual + importe</span>
                 <span v-else>
                   <span v-if="form.rate && Number(form.rate) > 0"
-                    >Destino = actual + (importe × tasa)</span
+                    >Destino = actual + (importe ÷ tasa)</span
                   >
                   <span v-else>(falta tasa para calcular)</span>
                 </span>
@@ -2049,7 +2049,8 @@ const destNewBalance = computed(() => {
     if (!isCrossCurrency.value) proposed = Math.abs(Number(form.value.amount || 0));
     else {
       const r = Number(form.value.rate || 0);
-      if (r > 0) proposed = Math.abs(Number(form.value.amount || 0)) * r;
+      // Tasa Origen→Destino (ej: VES→USD = 290) implica destino = origen / tasa
+      if (r > 0) proposed = Math.abs(Number(form.value.amount || 0)) / r;
       else return curr; // requiere tasa
     }
   }
@@ -2386,6 +2387,7 @@ const allTxnCategoriesFlat = ref<TxnCategoryOption[]>([]);
 const txnCategoryOptions = ref<TxnCategoryOption[]>([]);
 
 async function ensureTxnCategoriesLoaded() {
+  // Permitir refetch forzado cuando se pasa force=true
   if (allTxnCategoriesTree.value) return;
   try {
     // Use the categories tree with user_id and flatten as: "Nombre (Padre)"
@@ -2443,6 +2445,17 @@ async function ensureTxnCategoriesLoaded() {
     allTxnCategoriesFlat.value = [];
     txnCategoryOptions.value = [];
   }
+}
+
+// Refresco explícito de categorías cuando se agrega una nueva categoría externamente
+async function refreshTxnCategories(force = false) {
+  if (force) {
+    allTxnCategoriesTree.value = null; // invalidar cache para permitir ensure...
+  }
+  // Siempre intentar cargar (si ya estaban cargadas y force==false no rehace request)
+  await ensureTxnCategoriesLoaded();
+  // Si estaban cargadas previamente y no se invalidó, igual actualizamos estructuras planas
+  if (allTxnCategoriesTree.value && !force) flattenTxnCategories();
 }
 
 function flattenTxnCategories() {
@@ -2510,6 +2523,17 @@ function onCatsTreeSelect(payload: {
     showTxnCatsDialog.value = false;
   }
 }
+
+// Escuchar evento global emitido al crear/editar categorías en otros módulos
+// Convención esperada: window.dispatchEvent(new CustomEvent('ow:categories:changed'))
+function onGlobalCategoriesChanged() {
+  void refreshTxnCategories(true);
+}
+window.addEventListener('ow:categories:changed', onGlobalCategoriesChanged);
+
+onBeforeUnmount(() => {
+  window.removeEventListener('ow:categories:changed', onGlobalCategoriesChanged);
+});
 
 // ----- IVA anchoring (Exento toggle) -----
 // If row.exempt is false (no exento) and we recognize an IVA 16% in availableTaxes, we could tag it here for a future per-item tax payload.
@@ -3129,7 +3153,9 @@ function saveTransaction() {
     // Mantenemos la lógica visual actual: si no hay tasa global, usamos el mismo importe al destino (mismo valor) y
     // en validación el backend tomará las current. Si quieres consistencia total, podríamos derivar r_O→D de dos tasas U→O y U→D.
     const rGlobal = Number(form.value.rate || 0);
-    const toAmt = isCrossCurrency.value && rGlobal > 0 ? rawAmt * rGlobal : rawAmt; // destino recibe
+    // Tasa UI es Origen→Destino (ej: VES→USD = 290 significa 1 USD = 290 VES),
+    // por lo tanto el monto destino se obtiene dividiendo: destino = origen / tasa
+    const toAmt = isCrossCurrency.value && rGlobal > 0 ? rawAmt / rGlobal : rawAmt; // destino recibe
     payload.payments = [
       {
         account_id: form.value.account_from_id ?? null,
