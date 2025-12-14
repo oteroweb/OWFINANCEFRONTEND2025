@@ -1488,13 +1488,34 @@ function totalPaymentsForRow(row: Row): number {
 }
 // Formatos de la celda Amount
 function formatAmountInAccountCurrency(row: Row): string {
-  const code = singleAccountSelected.value ? singleAccountCurrencyCode.value || 'USD' : 'USD';
-  let amount = 0;
+  // Caso 1: una sola cuenta seleccionada -> mostrar suma de sus payments en su propia moneda
   if (singleAccountSelected.value) {
-    amount = totalPaymentsForRow(row);
-  } else {
-    amount = toNumeric((row as Record<string, unknown>)['amount']) ?? 0; // USD
+    const code = singleAccountCurrencyCode.value || 'USD';
+    const amount = totalPaymentsForRow(row);
+    return formatWithCodeSuffix(code, amount);
   }
+  // Caso 2: sin cuenta seleccionada o selección múltiple
+  //   - Si es transferencia: detectar moneda por defecto del usuario y mostrar el monto del payment con esa moneda
+  //   - En otros tipos: mantener el comportamiento previo (amount en USD)
+  const isTransfer = isTransferRow(row);
+  if (isTransfer) {
+    const defCode = (defaultCurrencyCode.value || 'USD').toUpperCase();
+    const pts = (row as Record<string, unknown>)['payment_transactions'];
+    if (Array.isArray(pts) && pts.length) {
+      const match = pts.find((p: unknown) => {
+        if (!p || typeof p !== 'object') return false;
+        const code = paymentCurrencyCode(p as Record<string, unknown>);
+        return (code || '').toUpperCase() === defCode;
+      }) as Record<string, unknown> | undefined;
+      if (match) {
+        const amt = toNumeric(match['amount']) ?? 0;
+        return formatWithCodeSuffix(defCode, amt);
+      }
+    }
+  }
+  // Fallback general (no transferencia o no se encontró payment con moneda por defecto): usar USD del registro
+  const code = 'USD';
+  const amount = toNumeric((row as Record<string, unknown>)['amount']) ?? 0; // USD
   return formatWithCodeSuffix(code, amount);
 }
 // ==== Conversión secundaria del Monto usando tasas internas por payment ====
@@ -1511,6 +1532,38 @@ function extractInternalRate(payment: Record<string, unknown>): number | null {
   if (userCur && typeof userCur === 'object') {
     const r2 = Number((userCur as Record<string, unknown>)['current_rate']);
     if (Number.isFinite(r2) && r2 > 0) return r2;
+  }
+  return null;
+}
+
+// Extrae el código ISO de moneda asociado a un payment
+function paymentCurrencyCode(payment: Record<string, unknown>): string | null {
+  // 1) Campo directo payment.currency.code
+  const cur = payment['currency'];
+  if (cur && typeof cur === 'object') {
+    const code = (cur as Record<string, unknown>)['code'];
+    if (typeof code === 'string' && code.trim()) return code.trim().toUpperCase();
+  }
+  // 2) payment.currency_code
+  const codeDirect = payment['currency_code'];
+  if (typeof codeDirect === 'string' && codeDirect.trim()) return codeDirect.trim().toUpperCase();
+  // 3) payment.account.currency.code
+  const acc = payment['account'];
+  if (acc && typeof acc === 'object') {
+    const accCur = (acc as Record<string, unknown>)['currency'];
+    if (accCur && typeof accCur === 'object') {
+      const code = (accCur as Record<string, unknown>)['code'];
+      if (typeof code === 'string' && code.trim()) return code.trim().toUpperCase();
+    }
+  }
+  // 4) payment.user_currency.currency.code
+  const ucur = payment['user_currency'];
+  if (ucur && typeof ucur === 'object') {
+    const ucurCur = (ucur as Record<string, unknown>)['currency'];
+    if (ucurCur && typeof ucurCur === 'object') {
+      const code = (ucurCur as Record<string, unknown>)['code'];
+      if (typeof code === 'string' && code.trim()) return code.trim().toUpperCase();
+    }
   }
   return null;
 }

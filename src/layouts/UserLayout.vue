@@ -12,6 +12,7 @@
           aria-label="Abrir menú"
           @click="drawerOpen = true"
         />
+
         <!-- Perfil -->
         <div class="profile-mini row items-center no-wrap q-gutter-sm">
           <q-avatar size="34px" class="bg-white text-primary">
@@ -19,13 +20,13 @@
           </q-avatar>
           <div class="user-line ellipsis">
             <span class="name text-weight-medium">{{ auth.user?.name || 'Usuario' }}</span>
-            <span class="sep">•</span>
-            <span class="email">{{ auth.user?.email }}</span>
-            <span v-if="defaultCurrencyCode" class="currency-chip">{{ defaultCurrencyCode }}</span>
+            <span v-if="!$q.screen.lt.md" class="sep">•</span>
+            <span v-if="!$q.screen.lt.md" class="email">{{ auth.user?.email }}</span>
+            <span v-if="defaultCurrencyCode" class="currency-chip q-ml-sm">{{
+              defaultCurrencyCode
+            }}</span>
           </div>
         </div>
-
-        <!-- Menú retirado de la izquierda -->
 
         <q-space />
 
@@ -47,10 +48,14 @@
           <q-btn flat round dense icon="logout" aria-label="Cerrar sesión" @click="handleLogout" />
         </div>
       </q-toolbar>
+
       <!-- Moneda por defecto + tasas actuales del usuario -->
       <div class="bg-primary text-white q-px-md q-pb-sm q-pt-xs rates-strip">
-        <div class="row items-center q-gutter-xs no-wrap scroll-x">
-          <q-chip dense color="white" text-color="primary" class="text-weight-medium">
+        <div
+          class="row items-center q-gutter-xs no-wrap"
+          :class="{ 'scroll-x': !$q.screen.lt.md, 'justify-center': $q.screen.lt.md }"
+        >
+          <q-chip dense color="white" text-color="primary" class="text-weight-medium gt-xs">
             {{ defaultCurrencyCode || 'USD' }}
           </q-chip>
           <template v-for="r in currentRates" :key="r.code">
@@ -140,7 +145,7 @@
           :key="link.to"
           :name="link.to"
           :icon="link.icon"
-          :label="truncateLabel(link.title)"
+          :label="link.title"
         />
       </q-tabs>
     </q-footer>
@@ -185,11 +190,6 @@ function onBottomNav(val: string) {
     router.push(val).catch(() => undefined);
   }
 }
-function truncateLabel(t: string): string {
-  if (!t) return '';
-  return t.length > 12 ? t.slice(0, 10) + '…' : t;
-}
-
 // (widgets removed for now; leave hooks ready if needed later)
 async function handleLogout() {
   // 1) Mostrar modal con botón OK y, al confirmarlo, proceder a cerrar sesión
@@ -306,8 +306,9 @@ async function handleLogout() {
   padding-right: 8px;
 }
 .bottom-nav-tabs :deep(.q-tab__content) {
-  padding: 2px 2px 4px;
-  min-height: 44px;
+  padding: 0px 0px;
+  margin: 0px;
+  min-height: 52px;
 }
 /* Hacer que cada tab ocupe el mismo ancho y minimizar espacios */
 .bottom-nav-tabs :deep(.q-tabs__content) {
@@ -317,6 +318,7 @@ async function handleLogout() {
   flex: 1 1 0;
   min-width: 0;
   max-width: 100%;
+  padding: 0 2px;
 }
 .bottom-nav-tabs :deep(.q-tab__content) {
   width: 100%;
