@@ -41,6 +41,7 @@ interface User {
   phone?: string | null
   email_verified_at?: string | null
   balance?: number
+  monthly_income?: number | null
   currency_id?: number
   client_id?: number | null
   active?: number | boolean

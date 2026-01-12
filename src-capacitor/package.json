@@ -1,0 +1,13 @@
+{
+  "name": "owfinancefrontend2025",
+  "version": "0.0.1",
+  "description": "Ow Finance Frontend",
+  "author": "oteroweb <oterolopez1990@gmail.com>",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  }
+}

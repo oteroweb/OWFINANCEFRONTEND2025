@@ -1,5 +1,13 @@
 <template>
   <q-page padding>
+    <!-- Panel de ingreso mensual y disponible -->
+    <MonthlyIncomePanel
+      ref="incomePanelRef"
+      v-model:use-real-income="useRealIncome"
+      :total-assigned="totalAssignedAmount"
+      class="q-mb-md"
+    />
+
     <q-card flat bordered>
       <q-card-section class="header-grid">
         <div class="header-title">
@@ -237,6 +245,34 @@
                               />
                             </template>
                           </div>
+
+                          <!-- Panel de ingreso disponible y ajuste rápido -->
+                          <div class="jar-quick-summary q-mt-md">
+                            <div class="summary-row">
+                              <div class="summary-label">
+                                <q-icon name="account_balance_wallet" size="16px" class="q-mr-xs" />
+                                Ingreso disponible:
+                              </div>
+                              <div class="summary-value">
+                                {{ formatCurrency(calculateJarSuggestion(jar)) }}
+                                <q-tooltip>
+                                  Basado en {{ jar.type === 'percent' ? `${jar.percent}% de tus ingresos` : 'monto fijo' }}
+                                </q-tooltip>
+                              </div>
+                            </div>
+                            <q-btn
+                              v-if="jar.id"
+                              outline
+                              dense
+                              no-caps
+                              color="primary"
+                              icon="tune"
+                              label="Ajustar disponible"
+                              class="full-width q-mt-xs"
+                              @click="openAdjustmentModal(jar.id)"
+                            />
+                          </div>
+
                           <div
                             class="jar-dropzone q-mt-md"
                             :class="{ 'is-drop-target': jarDropOverIndex === idx }"
@@ -287,6 +323,35 @@
                             >
                               Suelta categorías aquí
                             </div>
+                          </div>
+
+                          <!-- NUEVO: Balance card -->
+                          <div v-if="jar.id && jarBalances[jar.id]" class="q-mt-md">
+                            <JarCard
+                              :jar="jar"
+                              :balance="
+                                (() => {
+                                  const bal = jarBalances[jar.id]?.balance.value;
+                                  return bal
+                                    ? {
+                                        asignado: bal.asignado,
+                                        gastado: bal.gastado,
+                                        ajuste: bal.ajuste,
+                                        balance: bal.balance,
+                                        porcentaje_utilizado: bal.porcentaje_utilizado,
+                                      }
+                                    : null;
+                                })()
+                              "
+                              :loading="jarBalances[jar.id]?.loading.value ?? false"
+                              :error="jarBalances[jar.id]?.error.value ?? null"
+                              :porcentaje-utilizado="
+                                jarBalances[jar.id]?.porcentajeUtilizado.value ?? 0
+                              "
+                              :status-balance="jarBalances[jar.id]?.statusBalance.value ?? 'low'"
+                              @adjust="openAdjustmentModal(jar.id)"
+                              @reset="handleResetAdjustment(jar.id)"
+                            />
                           </div>
                         </div>
                       </div>
@@ -424,6 +489,17 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- NUEVO: Adjustment modal -->
+    <AdjustmentModal
+      v-model="showAdjustmentModal"
+      :jar="
+        currentJarAdjustment ? jarElements.find((j) => j.id === currentJarAdjustment) ?? null : null
+      "
+      :current-balance="jarBalances[currentJarAdjustment || -1]?.balance?.value?.balance || 0"
+      :previous-adjustment="jarBalances[currentJarAdjustment || -1]?.balance?.value?.ajuste ?? 0"
+      @save="handleSaveAdjustment"
+    />
   </q-page>
 </template>
 
@@ -435,6 +511,11 @@ import { api } from 'boot/axios';
 import { useJarsStore } from 'stores/jars';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import Draggable from 'vuedraggable';
+import { useJarBalance } from 'src/composables/useJarBalance';
+import { useCalculatedIncome } from 'src/composables/useCalculatedIncome';
+import JarCard from 'components/JarCard.vue';
+import AdjustmentModal from 'components/AdjustmentModal.vue';
+import MonthlyIncomePanel from 'components/MonthlyIncomePanel.vue';
 
 defineOptions({ name: 'JarsOverviewPage' });
 
@@ -480,6 +561,38 @@ const jarElements = ref<Jar[]>([]);
 const jarsStore = useJarsStore();
 const serverJarIds = ref<Set<number>>(new Set());
 const saving = ref(false);
+const useRealIncome = ref(false);
+const incomePanelRef = ref<{ refresh: () => Promise<void> } | null>(null);
+
+// Income composable for calculating suggested amounts
+const { expectedIncome, calculatedIncome } = useCalculatedIncome();
+
+// Helper function to calculate suggested amount for a jar
+function calculateJarSuggestion(jar: Jar): number {
+  if (!jar.active) return 0;
+
+  // Use real income if toggle is on, otherwise use expected
+  const income = useRealIncome.value ? calculatedIncome.value : expectedIncome.value;
+  
+  if (income === 0) return 0;
+
+  if (jar.type === 'percent') {
+    return (income * (jar.percent || 0)) / 100;
+  }
+
+  // For fixed amount jars
+  return jar.fixedAmount || 0;
+}
+
+// Format currency helper
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
+
 // Exclusivo solo si existe exactamente un único jar de porcentaje ACTIVO y es 100%
 function isExactlyOnePercent100(): boolean {
   const percents = (jarElements.value || []).filter(
@@ -501,6 +614,12 @@ const saveDisabled = computed(
 // Drag state for per-jar dropzones
 const jarDropOverIndex = ref<number | null>(null);
 const invalidCategoryDropIndex = ref<number | null>(null);
+
+// Balance management
+const jarBalances = ref<Record<number, ReturnType<typeof useJarBalance>>>({});
+const showAdjustmentModal = ref(false);
+const currentJarAdjustment = ref<number | null>(null);
+const loadedBalances = ref<Set<number>>(new Set());
 
 // Tree ref (typed with exposed API) and map of categories for quick lookup on drop
 type CategoriesTreeExposed = {
@@ -704,6 +823,16 @@ const hasFixedJar = computed(() =>
 const hasActivePercentJars = computed(() =>
   (jarElements.value || []).some((j) => j.type === 'percent' && (j.active ?? true))
 );
+
+/**
+ * Calcula el total asignado actual a todos los cántaros basado en sus balances
+ */
+const totalAssignedAmount = computed(() => {
+  return Object.values(jarBalances.value).reduce((total, balanceComposable) => {
+    const assigned = balanceComposable?.balance?.value?.asignado || 0;
+    return total + assigned;
+  }, 0);
+});
 
 // Segments for horizontal bar: active percent jars, plus empty remainder up to 100%
 const hbarSegments = computed(() => {
@@ -945,23 +1074,43 @@ function applyTemplate(tpl: JarTemplate) {
 
 async function loadJarData() {
   try {
-    // Prefer backend if available
-    const userId = auth.user?.id;
-    const url = userId ? `/users/${userId}/jars` : '/jars';
-    const res = await api.get(url, { params: { per_page: 100 } });
-    // Soportar múltiples formas de envoltorio: array directo, { data: [] }, o { data: { data: [] } }
+    // Backend identifica usuario por token, sin necesidad de userId en URL
+    console.log('[JarData] Loading jars...');
+    console.log(
+      '[JarData] Auth token:',
+      auth.token ? `Present (${auth.token.substring(0, 20)}...)` : 'MISSING!'
+    );
+    console.log('[JarData] Auth logged in:', auth.isLoggedIn);
+
+    const res = await api.get('/jars', { params: { per_page: 100 } });
+    console.log('[JarData] Response received:', res.data);
+
+    // Manejar estructura: { status, code, data: [...] } o { status, code, data: { data: [...], ... } }
     type AnyObj = { [k: string]: unknown };
-    const top = res.data as AnyObj | JarAPI[] | undefined;
-    const topData = top && (top as AnyObj).data;
-    const paginated =
-      topData && typeof topData === 'object' && Array.isArray((topData as AnyObj).data)
-        ? ((topData as AnyObj).data as unknown[])
-        : null;
-    const arr = Array.isArray(topData)
-      ? (topData as unknown[])
-      : Array.isArray(top)
-      ? (top as unknown[])
-      : paginated || [];
+    const apiResponse = res.data as AnyObj;
+
+    // Extraer el array de jars de la respuesta paginada
+    let arr: unknown[] = [];
+
+    // Si tiene estructura { data: [...] } (array directo en data)
+    if (Array.isArray(apiResponse.data)) {
+      arr = apiResponse.data;
+      console.log('[JarData] Extracted from direct data array:', arr.length, 'jars');
+    }
+    // Si tiene estructura { data: { data: [...] } } (paginada con wrapper)
+    else if (apiResponse.data && typeof apiResponse.data === 'object') {
+      const paginatedData = apiResponse.data as AnyObj;
+      if (Array.isArray(paginatedData.data)) {
+        arr = paginatedData.data;
+        console.log('[JarData] Extracted from nested data.data:', arr.length, 'jars');
+      }
+    }
+    // Si es un array directo (respuesta raíz)
+    else if (Array.isArray(apiResponse)) {
+      arr = apiResponse;
+      console.log('[JarData] Extracted from direct response array:', arr.length, 'jars');
+    }
+
     const rawList: JarAPI[] = (arr as JarAPI[]).slice();
     rawList.sort((a, b) => {
       const aAct =
@@ -1001,6 +1150,12 @@ async function loadJarData() {
         : [];
       return j;
     });
+    console.log('[JarData] Mapped jars:', mapped.length, 'jars');
+    console.log(
+      '[JarData] jar list:',
+      mapped.map((j) => ({ id: j.id, name: j.name }))
+    );
+
     // Track server IDs to detect deletions on save
     serverJarIds.value = new Set<number>(
       rawList
@@ -1009,10 +1164,18 @@ async function loadJarData() {
     );
     // Sin datos de muestra: si no hay, queda vacío
     jarElements.value = mapped;
+    console.log('[JarData] jarElements.value assigned, length:', jarElements.value.length);
+    console.log(
+      '[JarData] Load complete - balances will be loaded on-demand when user interacts with jars'
+    );
   } catch (e) {
     // Sin demo ni notificación intrusiva
     jarElements.value = [];
-    console.error('loadJarData error', e);
+    console.error('[JarData] Error loading jars:', e);
+    if (e instanceof Error) {
+      console.error('[JarData] Error message:', e.message);
+      console.error('[JarData] Full error:', JSON.stringify(e));
+    }
   }
 }
 
@@ -1028,7 +1191,7 @@ async function loadCategoriesTree() {
       children?: RemoteNode[];
     };
     const res = await api.get('/categories/tree', {
-      params: { per_page: 1000, user_id: auth.user?.id },
+      params: { per_page: 1000 },
     });
     const data = (res.data as { data?: unknown }).data;
     const raw: RemoteNode[] = Array.isArray(data)
@@ -1168,6 +1331,93 @@ function filterOutAssignedNodes(nodes: CatNodeInput[], assigned: Set<string>): C
     return out;
   };
   return recur(nodes);
+}
+
+/**
+ * Carga balance para un jar específico (se llama bajo demanda cuando user interactúa con el jar)
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function loadJarBalance(jarId: number) {
+  if (!jarBalances.value[jarId]) {
+    jarBalances.value[jarId] = useJarBalance(jarId);
+  }
+
+  try {
+    const balanceComposable = jarBalances.value[jarId];
+    await balanceComposable.cargarTodo();
+    loadedBalances.value.add(jarId);
+  } catch (err) {
+    console.error(`Error loading balance for jar ${jarId}:`, err);
+  }
+}
+
+/**
+ * Abre modal de ajuste para un jar
+ */
+function openAdjustmentModal(jarId: number) {
+  currentJarAdjustment.value = jarId;
+  showAdjustmentModal.value = true;
+}
+
+/**
+ * Guarda un ajuste y actualiza el balance
+ */
+async function handleSaveAdjustment(data: { monto: number; descripcion?: string }) {
+  if (currentJarAdjustment.value === null) return;
+
+  const balanceComposable = jarBalances.value[currentJarAdjustment.value];
+  if (!balanceComposable) return;
+
+  try {
+    await balanceComposable.crearAjuste(data);
+    $q.notify({
+      type: 'positive',
+      message: 'Ajuste guardado exitosamente',
+    });
+    showAdjustmentModal.value = false;
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: err instanceof Error ? err.message : 'Error al guardar ajuste',
+    });
+  }
+}
+
+/**
+ * Resetea el ajuste de un jar con confirmación
+ */
+function handleResetAdjustment(jarId: number) {
+  const balanceComposable = jarBalances.value[jarId];
+  if (!balanceComposable) return;
+
+  $q.dialog({
+    title: 'Confirmar reset',
+    message: '¿Estás seguro de resetear el ajuste de este cántaro?',
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    try {
+      balanceComposable
+        .resetearAjuste()
+        .then(() => {
+          $q.notify({
+            type: 'positive',
+            message: 'Ajuste reseteado',
+          });
+        })
+        .catch((err) => {
+          $q.notify({
+            type: 'negative',
+            message: err instanceof Error ? err.message : 'Error al resetear',
+          });
+        });
+    } catch (err) {
+      $q.notify({
+        type: 'negative',
+        message: err instanceof Error ? err.message : 'Error al resetear',
+      });
+    }
+  });
 }
 
 function onJarDragOver(idx: number) {
@@ -1501,7 +1751,7 @@ async function saveChanges() {
     });
 
     // POST único con todo el arreglo (el backend debe sincronizar altas/bajas/cambios)
-    const res = await api.post(`/users/${userId}/jars/save`, { jars: jarsPayload });
+    const res = await api.post(`/jars/save`, { jars: jarsPayload });
 
     // Intentar actualizar IDs locales desde la respuesta si están presentes
     type SaveResp =
@@ -1603,6 +1853,22 @@ watch(
     );
   },
   { deep: true, immediate: true }
+);
+
+// Sincronizar balances con store
+watch(
+  () =>
+    Object.values(jarBalances.value)
+      .map((b) => b?.balance?.value)
+      .filter((b) => b != null),
+  (balances) => {
+    balances.forEach((balance) => {
+      if (balance && balance.jar_id) {
+        jarsStore.setJarBalance(balance.jar_id, balance);
+      }
+    });
+  },
+  { deep: true }
 );
 </script>
 
@@ -2003,5 +2269,39 @@ watch(
   grid-auto-flow: row;
   grid-template-columns: repeat(auto-fit, minmax(120px, max-content));
   gap: 6px;
+}
+
+/* Quick summary panel for jar income display */
+.jar-quick-summary {
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.08) 0%, rgba(156, 39, 176, 0.12) 100%);
+  border: 2px solid rgba(156, 39, 176, 0.3);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(156, 39, 176, 0.87);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+}
+
+.summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.87);
 }
 </style>

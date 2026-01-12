@@ -6,6 +6,7 @@ export type RateChip = {
   rate: number;
   updated_at?: string;
   rateLabel: string;
+  is_official?: boolean;
 };
 
 // Helper: numeric label with precision depending on magnitude
