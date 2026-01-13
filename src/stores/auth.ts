@@ -82,11 +82,19 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(email: string, password: string) {
       try {
-        const response = await api.post('/login', {
+        console.log('🔐 Intentando login:', { 
+          email, 
+          apiBaseURL: import.meta.env.VITE_API_BASE_URL,
+          endpoint: '/auth/login'
+        });
+        
+        const response = await api.post('/auth/login', {
           email,
           password,
           device_name: 'quasar-spa'
-        })
+        });
+        
+        console.log('✅ Respuesta del servidor:', response.status, response.data);
         // Nueva estructura de respuesta (según ejemplo): token + data (user info & related arrays)
         const body = response.data as Record<string, unknown>
         this.token = (body['token'] as string) || null
@@ -100,7 +108,7 @@ export const useAuthStore = defineStore('auth', {
           this.user = legacy as unknown as User || null
         }
 
-        // Guarda en localStorage
+        // Guarda en localStorage para recordar sesión
         localStorage.setItem('token', this.token || '')
         localStorage.setItem('user', JSON.stringify(this.user))
 
@@ -109,13 +117,21 @@ export const useAuthStore = defineStore('auth', {
       } catch (error: unknown) {
         interface AxiosError {
           response?: {
+            status?: number;
             data?: {
               message?: string;
             };
           };
+          message?: string;
         }
         const err = error as AxiosError;
-        throw new Error(err.response?.data?.message || 'Error de inicio de sesión');
+        console.error('❌ Login error completo:', {
+          message: err.message,
+          status: err.response?.status,
+          data: err.response?.data,
+          apiURL: import.meta.env.VITE_API_BASE_URL
+        });
+        throw new Error(err.response?.data?.message || err.message || 'Error de inicio de sesión');
       }
     },
     /** Refresca el perfil del usuario (incluye tasas actuales) y persiste en localStorage */

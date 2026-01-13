@@ -60,10 +60,11 @@ async function submit() {
       alert('Rol desconocido');
     }
   } catch (error: unknown) {
+    console.error('Error completo de login:', error);
     if (error instanceof Error) {
-      alert(error.message || 'Error al iniciar sesión');
+      alert(error.message || 'Error al iniciar sesión. Verifica tu conexión y credenciales.');
     } else {
-      alert('Error al iniciar sesión');
+      alert('Error al iniciar sesión. Verifica tu conexión y credenciales.');
     }
   }
 }

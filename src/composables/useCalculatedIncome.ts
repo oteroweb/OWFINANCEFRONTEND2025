@@ -17,13 +17,15 @@ export function useCalculatedIncome() {
   const loading = ref(false);
   const error = ref<string | null>(null);
   const calculatedIncome = ref(0);
+  const expectedIncomeValue = ref(0); // Store historical expected income
   const lastUpdated = ref<Date | null>(null);
 
   /**
    * Ingreso esperado (configurado manualmente por usuario)
+   * Puede ser el valor histórico o el actual
    */
   const expectedIncome = computed(() => {
-    return auth.user?.monthly_income || 0;
+    return expectedIncomeValue.value || auth.user?.monthly_income || 0;
   });
 
   /**
@@ -84,20 +86,31 @@ export function useCalculatedIncome() {
   /**
    * Obtiene el ingreso calculado del backend
    * Endpoint: GET /api/v1/jars/income-summary
+   * @param month Opcional: mes en formato YYYY-MM para consultas históricas
    */
-  async function fetchCalculatedIncome() {
+  async function fetchCalculatedIncome(month?: string) {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await api.get('/jars/income-summary');
+      const params = month ? { month } : {};
+      console.log('[useCalculatedIncome] Fetching with params:', params);
+      const response = await api.get('/jars/income-summary', { params });
       const data = response.data;
 
       // El backend puede devolver data directo o data.data
       const summary = data.data || data;
 
+      console.log('[useCalculatedIncome] Received summary:', summary);
+
       calculatedIncome.value = summary.calculated_income || 0;
+      expectedIncomeValue.value = summary.expected_income || 0;
       lastUpdated.value = new Date();
+
+      console.log('[useCalculatedIncome] Updated values:', {
+        calculated: calculatedIncome.value,
+        expected: expectedIncomeValue.value,
+      });
 
       return summary;
     } catch (e: unknown) {
@@ -111,10 +124,11 @@ export function useCalculatedIncome() {
   }
 
   /**
-   * Refresca los datos (útil después de crear/editar transacciones)
+   * Refresca los datos de ingresos calculados (útil después de crear/editar transacciones)
+   * @param month Opcional: mes en formato YYYY-MM para consultas históricas
    */
-  async function refresh() {
-    return fetchCalculatedIncome();
+  async function refresh(month?: string) {
+    return fetchCalculatedIncome(month);
   }
 
   return {

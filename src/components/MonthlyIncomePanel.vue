@@ -6,8 +6,61 @@
         <!-- Columna 1: Ingreso Esperado -->
         <div class="income-column">
           <div class="text-overline">💰 Ingreso Esperado</div>
-          <div class="text-h5">{{ formatCurrency(expectedIncome) }}</div>
-          <div class="text-caption" v-if="expectedIncome === 0">
+          <div class="text-h5 flex items-center q-gutter-sm">
+            <template v-if="!editingExpectedIncome">
+              {{ formatCurrency(expectedIncome) }}
+              <q-btn
+                flat
+                dense
+                round
+                size="sm"
+                icon="edit"
+                color="white"
+                @click="startEditingExpectedIncome"
+              >
+                <q-tooltip>Editar ingreso esperado</q-tooltip>
+              </q-btn>
+            </template>
+            <template v-else>
+              <q-input
+                v-model.number="newExpectedIncome"
+                type="number"
+                dense
+                dark
+                outlined
+                class="expected-income-input"
+                :prefix="auth.user?.currency?.symbol || '$'"
+                :loading="savingExpectedIncome"
+                @keyup.enter="saveExpectedIncome"
+                @keyup.escape="cancelEditingExpectedIncome"
+                autofocus
+              >
+                <template #append>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    icon="check"
+                    color="positive"
+                    @click="saveExpectedIncome"
+                    :disable="savingExpectedIncome"
+                  />
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    icon="close"
+                    color="negative"
+                    @click="cancelEditingExpectedIncome"
+                    :disable="savingExpectedIncome"
+                  />
+                </template>
+              </q-input>
+            </template>
+          </div>
+          <div class="text-caption" v-if="expectedIncome === 0 && !editingExpectedIncome">
             <router-link to="/user/config" class="text-white text-bold">
               Configura aquí
             </router-link>
@@ -138,20 +191,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed, onMounted, watch, ref } from 'vue';
 import { useAuthStore } from 'stores/auth';
 import { useCalculatedIncome } from 'src/composables/useCalculatedIncome';
+import { api } from 'src/boot/axios';
+import { Notify } from 'quasar';
 
 interface Props {
   totalAssigned: number;
   showWarnings?: boolean;
   autoRefresh?: boolean;
+  month?: string; // Mes en formato YYYY-MM
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showWarnings: true,
   autoRefresh: true,
 });
+
+// Emit para notificar al padre cuando se actualiza el ingreso
+const emit = defineEmits<{
+  incomeUpdated: [];
+}>();
 
 // Modelo para toggle de ingreso esperado/real
 const useRealIncome = defineModel<boolean>('useRealIncome', { default: false });
@@ -167,6 +228,85 @@ const {
   statusMessage,
   fetchCalculatedIncome,
 } = useCalculatedIncome();
+
+// Estado para edición del ingreso esperado
+const editingExpectedIncome = ref(false);
+const newExpectedIncome = ref<number>(0);
+const savingExpectedIncome = ref(false);
+
+function startEditingExpectedIncome() {
+  newExpectedIncome.value = expectedIncome.value;
+  editingExpectedIncome.value = true;
+}
+
+function cancelEditingExpectedIncome() {
+  editingExpectedIncome.value = false;
+  newExpectedIncome.value = 0;
+}
+
+async function saveExpectedIncome() {
+  if (savingExpectedIncome.value) return;
+
+  if (!newExpectedIncome.value || newExpectedIncome.value <= 0) {
+    Notify.create({
+      type: 'negative',
+      message: 'El ingreso esperado debe ser mayor a 0',
+      position: 'top',
+    });
+    return;
+  }
+
+  savingExpectedIncome.value = true;
+
+  try {
+    const payload: { monthly_income: number; month?: string } = {
+      monthly_income: newExpectedIncome.value,
+    };
+
+    // Enviar el mes si está disponible
+    if (props.month) {
+      payload.month = props.month;
+    }
+
+    console.log('[MonthlyIncomePanel] Saving income:', payload);
+
+    const response = await api.put('/user/profile', payload);
+
+    console.log('[MonthlyIncomePanel] Save response:', response.data);
+
+    // Solo actualizar el store si estamos editando el mes actual
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (!props.month || props.month === currentMonth) {
+      if (auth.user) {
+        auth.user.monthly_income = newExpectedIncome.value;
+      }
+    }
+
+    // Refrescar los datos calculados para el mes específico
+    await fetchCalculatedIncome(props.month);
+
+    // Emitir evento para que el padre actualice sus datos
+    emit('incomeUpdated');
+
+    Notify.create({
+      type: 'positive',
+      message: 'Ingreso esperado actualizado correctamente',
+      position: 'top',
+    });
+
+    editingExpectedIncome.value = false;
+  } catch (error) {
+    console.error('Error updating expected income:', error);
+    Notify.create({
+      type: 'negative',
+      message: 'Error al actualizar el ingreso esperado',
+      position: 'top',
+    });
+  } finally {
+    savingExpectedIncome.value = false;
+  }
+}
 
 /**
  * Ingreso activo (según toggle)
@@ -226,7 +366,7 @@ function formatCurrency(amount: number): string {
 // Cargar ingresos calculados al montar
 onMounted(() => {
   if (props.autoRefresh) {
-    void fetchCalculatedIncome();
+    void fetchCalculatedIncome(props.month);
   }
 });
 
@@ -235,12 +375,23 @@ defineExpose({
   refresh: fetchCalculatedIncome,
 });
 
+// Watch para refrescar cuando cambie el mes
+watch(
+  () => props.month,
+  (newMonth) => {
+    if (props.autoRefresh) {
+      console.log('[MonthlyIncomePanel] Month changed to:', newMonth);
+      void fetchCalculatedIncome(newMonth);
+    }
+  }
+);
+
 // Watch para refrescar cuando cambie el usuario
 watch(
   () => auth.user?.id,
   () => {
     if (props.autoRefresh) {
-      void fetchCalculatedIncome();
+      void fetchCalculatedIncome(props.month);
     }
   }
 );
@@ -309,5 +460,19 @@ watch(
   flex-direction: column;
   align-items: center;
   font-size: 0.75rem;
+}
+
+.expected-income-input {
+  max-width: 200px;
+
+  :deep(.q-field__control) {
+    height: 40px;
+  }
+
+  :deep(.q-field__native) {
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
 }
 </style>

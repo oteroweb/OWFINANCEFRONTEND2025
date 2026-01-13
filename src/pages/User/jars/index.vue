@@ -5,7 +5,9 @@
       ref="incomePanelRef"
       v-model:use-real-income="useRealIncome"
       :total-assigned="totalAssignedAmount"
+      :month="currentMonth"
       class="q-mb-md"
+      @income-updated="handleIncomeUpdated"
     />
 
     <q-card flat bordered>
@@ -506,6 +508,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from 'stores/auth';
+import { usePeriodStore } from 'stores/period';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { useJarsStore } from 'stores/jars';
@@ -557,6 +560,7 @@ type CatNodeInput = {
 
 const $q = useQuasar();
 const auth = useAuthStore();
+const periodStore = usePeriodStore();
 const jarElements = ref<Jar[]>([]);
 const jarsStore = useJarsStore();
 const serverJarIds = ref<Set<number>>(new Set());
@@ -564,8 +568,23 @@ const saving = ref(false);
 const useRealIncome = ref(false);
 const incomePanelRef = ref<{ refresh: () => Promise<void> } | null>(null);
 
+// Get current month in YYYY-MM format from period store
+const currentMonth = computed(() => {
+  if (periodStore.state.type === 'month') {
+    const anchorDate = new Date(periodStore.state.anchor + 'T00:00:00');
+    const year = anchorDate.getFullYear();
+    const month = String(anchorDate.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  }
+  // Default to current month if not in month mode
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+});
+
 // Income composable for calculating suggested amounts
-const { expectedIncome, calculatedIncome } = useCalculatedIncome();
+const { expectedIncome, calculatedIncome, fetchCalculatedIncome } = useCalculatedIncome();
 
 // Helper function to calculate suggested amount for a jar
 function calculateJarSuggestion(jar: Jar): number {
@@ -573,7 +592,7 @@ function calculateJarSuggestion(jar: Jar): number {
 
   // Use real income if toggle is on, otherwise use expected
   const income = useRealIncome.value ? calculatedIncome.value : expectedIncome.value;
-  
+
   if (income === 0) return 0;
 
   if (jar.type === 'percent') {
@@ -1223,6 +1242,26 @@ async function loadCategoriesTree() {
   }
 }
 
+/**
+ * Maneja la actualización del ingreso esperado desde el panel
+ */
+async function handleIncomeUpdated() {
+  console.log('[Jars] Income updated, refreshing jar data...');
+
+  const month = currentMonth.value;
+
+  // Refrescar ingresos calculados
+  await fetchCalculatedIncome(month);
+
+  // Refrescar todos los balances de jars que ya fueron cargados
+  for (const jarId of loadedBalances.value) {
+    const balanceComposable = jarBalances.value[jarId];
+    if (balanceComposable) {
+      await balanceComposable.cargarTodo();
+    }
+  }
+}
+
 function setCategories(nodes: CatNodeInput[], updateMaster = true) {
   // Carga el árbol en el componente y construye un mapa rápido
   // 1) Deduplicar por id, preservando el primer nodo y fusionando hijos para carpetas
@@ -1720,86 +1759,59 @@ async function saveChanges() {
     /* noop */
   }
   try {
-    // Identificar si hay exactamente un jar % ACTIVO al 100% para forzar exclusividad
-    const percentJars = (jarElements.value || []).filter(
-      (j) => j.type === 'percent' && (j.active ?? true)
-    );
-    const exclusiveJarUid =
-      percentJars.length === 1 && Math.round(Number(percentJars[0]?.percent) || 0) === 100
-        ? percentJars[0]!.uid
-        : null;
-
-    // Construir payload bulk
+    // Construir payload con todos los jars (el backend sincronizará: crea, actualiza, elimina)
     const jarsPayload = jarElements.value.map((j, idx) => {
-      const category_ids = (j.categories || []).map((c) => {
-        const n = Number(c.id);
-        return Number.isFinite(n) ? n : String(c.id);
-      });
-      const p: Record<string, unknown> = {
-        id: j.id ?? null,
+      const category_ids = (j.categories || []).map((c) => Number(c.id));
+
+      const payload: Record<string, unknown> = {
         name: j.name,
         type: j.type,
-        percent: j.type === 'percent' ? Number(j.percent || 0) : undefined,
-        fixed_amount: j.type === 'fixed' ? Number(j.fixedAmount || 0) : undefined,
         color: j.color,
         sort_order: idx + 1,
-        is_active: j.active ?? true ? 1 : 0,
-        category_ids,
+        active: j.active ?? true,
+        category_ids, // Categorías asignadas (drag-drop)
       };
-      if (exclusiveJarUid && j.uid === exclusiveJarUid) p.exclusive = true;
-      return p;
+
+      // Incluir ID si existe (para actualización)
+      if (j.id) {
+        payload.id = j.id;
+      }
+
+      // Incluir valores según tipo
+      if (j.type === 'percent') {
+        payload.percent = Number(j.percent || 0);
+      } else if (j.type === 'fixed') {
+        payload.fixed_amount = Number(j.fixedAmount || 0);
+      }
+
+      return payload;
     });
 
-    // POST único con todo el arreglo (el backend debe sincronizar altas/bajas/cambios)
-    const res = await api.post(`/jars/save`, { jars: jarsPayload });
+    // Enviar todo en una sola petición - el backend sincroniza todo
+    const res = await api.post('/jars/bulk-sync', { jars: jarsPayload });
 
-    // Intentar actualizar IDs locales desde la respuesta si están presentes
-    type SaveResp =
-      | { jars?: Array<{ temp_index?: number; id?: number }>; data?: unknown }
-      | { data?: { jars?: Array<{ temp_index?: number; id?: number }> } }
-      | Array<{ id?: number }>
-      | { ids?: Array<number> };
-    const payload = res.data as SaveResp & { data?: unknown };
-    let returned: Array<{ id?: number; temp_index?: number }> = [];
-    if (Array.isArray(payload)) returned = payload as Array<{ id?: number }>;
-    else if (Array.isArray((payload as { jars?: unknown[] }).jars))
-      returned = ((payload as { jars?: unknown[] }).jars || []) as Array<{
-        id?: number;
-        temp_index?: number;
-      }>;
-    else if (
-      payload?.data &&
-      typeof payload.data === 'object' &&
-      Array.isArray((payload.data as { jars?: unknown[] }).jars)
-    )
-      returned = ((payload.data as { jars?: unknown[] }).jars || []) as Array<{
-        id?: number;
-        temp_index?: number;
-      }>;
-
-    // Mapear ids si hay el mismo tamaño o viene temp_index
-    if (returned.length) {
-      if (returned.length === jarElements.value.length) {
-        jarElements.value.forEach((j, i) => {
-          const rid = returned[i]?.id;
-          if (typeof rid === 'number') j.id = rid;
-        });
-      } else {
-        returned.forEach((r) => {
-          const i = typeof r.temp_index === 'number' ? r.temp_index : -1;
-          if (i >= 0 && i < jarElements.value.length && typeof r.id === 'number') {
-            jarElements.value[i]!.id = r.id;
-          }
-        });
-      }
+    // Actualizar IDs de jars nuevos desde la respuesta
+    const returnedJars = res.data?.data?.jars || [];
+    if (returnedJars.length === jarElements.value.length) {
+      jarElements.value.forEach((j, i) => {
+        if (!j.id && returnedJars[i]?.id) {
+          j.id = returnedJars[i].id;
+        }
+      });
     }
 
-    // Opcional: refrescar desde backend por consistencia
+    // Refrescar datos desde backend para sincronizar estado completo
     await loadJarData();
-    $q.notify({ type: 'positive', message: 'Cántaros guardados' });
+    $q.notify({ type: 'positive', message: 'Cántaros guardados correctamente' });
   } catch (e) {
     console.error('saveChanges error', e);
-    $q.notify({ type: 'negative', message: 'Error al guardar cántaros' });
+    const errorMsg =
+      (e && typeof e === 'object' && 'response' in e &&
+       e.response && typeof e.response === 'object' && 'data' in e.response &&
+       e.response.data && typeof e.response.data === 'object' && 'message' in e.response.data)
+        ? String(e.response.data.message)
+        : 'Error al guardar cántaros';
+    $q.notify({ type: 'negative', message: errorMsg });
   } finally {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1835,6 +1847,32 @@ onMounted(() => {
     });
   });
 });
+
+// Watch for period changes to refresh data (only when in month mode)
+watch(
+  () => periodStore.state.anchor,
+  async (newAnchor, oldAnchor) => {
+    if (periodStore.state.type !== 'month' || newAnchor === oldAnchor) return;
+
+    const month = currentMonth.value;
+    console.log('[Jars] Month changed to:', month);
+
+    // Refresh income data for the selected month
+    await fetchCalculatedIncome(month);
+
+    // Note: No need to call incomePanelRef.refresh() because the watch on props.month
+    // in MonthlyIncomePanel will automatically trigger when :month prop changes
+
+    // Refresh all jar balances for the selected month
+    for (const jarId of Object.keys(jarBalances.value)) {
+      const id = Number(jarId);
+      if (jarBalances.value[id]) {
+        await jarBalances.value[id].cargarTodo();
+      }
+    }
+  },
+  { immediate: false }
+);
 
 // keep sidebar jar in sync (exclusive to this view)
 watch(
@@ -2185,12 +2223,21 @@ watch(
 
 /* Sticky categories column on desktop */
 @media (min-width: 1024px) {
+  .aside-col {
+    /* ensure the aside doesn't create a new stacking/scrolling context */
+    overflow: visible;
+  }
+
   .sticky-categories {
+    position: -webkit-sticky;
     position: sticky;
-    top: 16px;
+    /* leave room for top header + small gap */
+    top: 88px;
     align-self: flex-start;
-    height: calc(100vh - 32px);
+    height: calc(100vh - 96px);
     /* ensure the card fills and its content can scroll */
+    z-index: 12;
+    will-change: transform;
   }
   .sticky-categories-card {
     display: flex;
@@ -2198,8 +2245,11 @@ watch(
     height: 100%;
   }
   .sticky-categories-card .q-card__section:last-child {
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     flex: 1 1 auto;
+    padding-right: 8px; /* prevent scroll pinch from overlapping content */
   }
 }
 
@@ -2303,5 +2353,50 @@ watch(
   font-size: 18px;
   font-weight: 700;
   color: rgba(0, 0, 0, 0.87);
+}
+</style>
+
+<style>
+/* Unscoped styles for sticky categories sidebar */
+
+/* Ensure q-page allows overflow for sticky positioning */
+.q-page {
+  overflow: visible !important;
+}
+
+@media (min-width: 1024px) {
+  /* Sticky positioning for the aside column (parent level) */
+  .aside-col {
+    position: sticky;
+    top: 140px; /* More space to avoid header overlap */
+    align-self: flex-start; /* Align to top of flex container */
+    max-height: calc(100vh - 156px); /* Account for top gap */
+    z-index: 1000; /* High z-index to stay above everything */
+  }
+
+  /* Categories container adjusts to parent */
+  .sticky-categories {
+    height: 100%;
+  }
+
+  .sticky-categories-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: calc(100vh - 200px);
+  }
+
+  .sticky-categories-card .q-card__section:first-child {
+    flex: 0 0 auto; /* Title section doesn't grow */
+  }
+
+  .sticky-categories-card .q-card__section:last-child {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 0;
+    min-height: 0;
+    padding-right: 8px;
+  }
 }
 </style>
