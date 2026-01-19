@@ -150,12 +150,12 @@
       </q-tabs>
     </q-footer>
 
-    <TransactionCreateDialog />
+    <TransactionCreateDialog v-if="ui.showDialogNewTransaction" />
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
@@ -238,6 +238,14 @@ async function handleLogout() {
 
 // Nueva transacción se invocará desde vistas específicas o accesos dedicados
 // Moneda por defecto global disponible en defaultCurrencyCode
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  // Asegurar que el diálogo se cierre al desmontar el layout
+  if (ui.showDialogNewTransaction) {
+    ui.closeNewTransactionDialog();
+  }
+});
 </script>
 
 <style scoped>

@@ -1,9 +1,5 @@
 <template>
-  <q-dialog
-    :model-value="modelValue"
-    @update:model-value="emit('update:modelValue', $event)"
-    @before-hide="resetForm"
-  >
+  <q-dialog v-model="model" @before-hide="resetForm">
     <q-card style="min-width: 400px; max-width: 500px">
       <!-- Header -->
       <q-toolbar>
@@ -151,6 +147,12 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<Emits>();
+
+// Proxy for v-model (modelValue) so dialog can use v-model="model"
+const model = computed({
+  get: () => props.modelValue,
+  set: (v: boolean) => emit('update:modelValue', v),
+});
 
 const $q = useQuasar();
 

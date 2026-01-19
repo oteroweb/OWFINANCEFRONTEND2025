@@ -6,6 +6,7 @@
       <q-tabs v-model="tab" dense class="text-primary" align="left" inline-label>
         <q-tab name="profile" icon="person" label="Perfil" />
         <q-tab name="finance" icon="account_balance" label="Finanzas" />
+        <q-tab name="categories" icon="category" label="Categorías" />
         <q-tab name="accounts" icon="account_balance_wallet" label="Cuentas" />
         <q-tab name="taxes" icon="percent" label="Impuestos" />
       </q-tabs>
@@ -159,11 +160,12 @@
                 emit-value
                 map-options
                 use-input
-                :on-filter="onCurrencyFilter"
+                input-debounce="300"
                 label="Moneda"
                 outlined
                 dense
                 @focus="ensureCurrenciesLoaded"
+                @filter="onCurrencyFilter"
               >
                 <template #prepend>
                   <q-icon name="payments" />
@@ -308,8 +310,59 @@
           </div>
         </q-tab-panel>
 
+        <q-tab-panel name="categories">
+          <div class="q-gutter-md">
+            <q-card flat bordered class="q-pa-md bg-purple-1">
+              <div class="row items-center q-gutter-md">
+                <q-icon name="category" size="48px" color="purple-7" />
+                <div>
+                  <div class="text-h6 text-purple-9">Gestión de Categorías</div>
+                  <div class="text-body2 text-purple-8">
+                    Administra tus categorías y organízalas en carpetas jerárquicas para clasificar tus transacciones y cantaros
+                  </div>
+                </div>
+              </div>
+            </q-card>
+
+            <q-card flat bordered style="min-height: 500px; height: 600px; display: flex; flex-direction: column;">
+              <CategoriesTree 
+                :readonly="false" 
+                :nodes="categoriesTreeNodes" 
+                :category-jar-map="categoryToJarMap"
+                ref="categoriesTreeRef" 
+                style="flex: 1; height: 100%;" 
+              />
+            </q-card>
+          </div>
+        </q-tab-panel>
+
         <q-tab-panel name="accounts">
-          <CrudPage :dictionary="accountsDictionary" />
+          <div class="q-gutter-md">
+            <q-card flat bordered class="q-pa-md bg-orange-1">
+              <div class="row items-center q-gutter-md">
+                <q-icon name="account_balance_wallet" size="48px" color="orange-7" />
+                <div>
+                  <div class="text-h6 text-orange-9">Gestión de Cuentas</div>
+                  <div class="text-body2 text-orange-8">
+                    Administra tus cuentas bancarias, tarjetas y otros medios de pago en forma de árbol organizado
+                  </div>
+                </div>
+              </div>
+            </q-card>
+
+            <q-card flat bordered style="min-height: 500px;">
+              <AccountsTree
+                :tree="accountsTreeNodes"
+                :selected-node-id="selectedAccountNodeId"
+                @select="onSelectAccountNode"
+                @create-account="onCreateAccount"
+                @delete-folder="onDeleteAccountFolder"
+                @folder-created="onAccountFolderCreated"
+                @folder-deleted="onAccountFolderDeleted"
+                @account-moved="onAccountMoved"
+              />
+            </q-card>
+          </div>
         </q-tab-panel>
 
         <q-tab-panel name="taxes">
@@ -323,9 +376,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import CrudPage from 'components/CrudPage.vue';
+import CategoriesTree from 'components/CategoriesTree.vue';
+import AccountsTree from 'components/AccountsTree.vue';
 import { useAuthStore } from 'stores/auth';
 import { defaultAvatarUrl } from '../config';
-import { dictionary as accountsDictionary } from '../accounts/dictionary';
 import { dictionary as taxesDictionary } from '../taxes/dictionary';
 import { api } from 'boot/axios';
 import { Notify } from 'quasar';
@@ -333,7 +387,7 @@ import { Notify } from 'quasar';
 defineOptions({ name: 'user_config_page' });
 
 const auth = useAuthStore();
-const tab = ref<'profile' | 'finance' | 'accounts' | 'taxes'>('profile');
+const tab = ref<'profile' | 'finance' | 'categories' | 'accounts' | 'taxes'>('profile');
 
 const name = ref(auth.user?.name || '');
 const email = ref(auth.user?.email || '');
@@ -347,6 +401,114 @@ const avatarFile = ref<File | null>(null);
 const avatarPreview = ref<string | null>(null);
 
 const saving = ref(false);
+
+// ----- Categories Tree -----
+type CategoryNode = {
+  id: number | string;
+  label: string;
+  is_folder: boolean;
+  children?: CategoryNode[];
+  [key: string]: unknown;
+};
+
+type Jar = {
+  id: number;
+  name: string;
+  categories?: { id: string | number; name: string }[];
+};
+
+const categoriesTreeNodes = ref<CategoryNode[]>([]);
+const categoriesTreeRef = ref<InstanceType<typeof CategoriesTree> | null>(null);
+const jars = ref<Jar[]>([]);
+const categoryToJarMap = ref<Record<string | number, string>>({});
+
+async function loadJars() {
+  try {
+    console.log('🔄 Iniciando carga de jars...');
+    const res = await api.get('/jars', { params: { per_page: 100 } });
+    console.log('📦 Respuesta de /jars:', res.data);
+    const rawJars = res.data?.data || res.data || [];
+    jars.value = rawJars;
+    
+    // Crear mapa de categoría a jar
+    const map: Record<string | number, string> = {};
+    for (const jar of rawJars) {
+      console.log('🏺 Procesando jar:', jar.name, 'categorías:', jar.categories);
+      if (jar.categories && Array.isArray(jar.categories)) {
+        for (const cat of jar.categories) {
+          map[cat.id] = jar.name;
+        }
+      }
+    }
+    categoryToJarMap.value = map;
+    console.log('✅ Jars cargados:', rawJars.length, 'jars. Mapa de categorías:', map);
+  } catch (e) {
+    console.error('❌ Error loading jars:', e);
+    Notify.create({ type: 'negative', message: 'Error cargando cántaros' });
+  }
+}
+
+async function loadCategoriesTree() {
+  try {
+    const res = await api.get('/categories/tree');
+    // Backend devuelve data.nodes
+    const rawNodes = res.data?.data?.nodes || res.data?.nodes || res.data?.data || res.data || [];
+    console.log('📊 Categorías cargadas:', rawNodes);
+    categoriesTreeNodes.value = rawNodes;
+  } catch (e) {
+    console.error('Error loading categories tree:', e);
+    Notify.create({ type: 'negative', message: 'Error cargando categorías' });
+  }
+}
+
+// ----- Accounts Tree -----
+type AccountNode = {
+  id: number | string;
+  label: string;
+  is_folder: boolean;
+  children?: AccountNode[];
+  [key: string]: unknown;
+};
+
+const accountsTreeNodes = ref<AccountNode[]>([]);
+const selectedAccountNodeId = ref<number | string | null>(null);
+
+async function loadAccountsTree() {
+  try {
+    const res = await api.get('/accounts/tree');
+    // Backend devuelve data.nodes
+    const rawNodes = res.data?.data?.nodes || res.data?.nodes || res.data?.data || res.data || [];
+    console.log('💳 Cuentas cargadas:', rawNodes);
+    accountsTreeNodes.value = rawNodes;
+  } catch (e) {
+    console.error('Error loading accounts tree:', e);
+    Notify.create({ type: 'negative', message: 'Error cargando cuentas' });
+  }
+}
+
+function onSelectAccountNode(nodeId: number | string | null) {
+  selectedAccountNodeId.value = nodeId;
+}
+
+function onCreateAccount() {
+  Notify.create({ type: 'info', message: 'Crear cuenta - Por implementar' });
+}
+
+function onDeleteAccountFolder() {
+  Notify.create({ type: 'info', message: 'Eliminar carpeta - Por implementar' });
+}
+
+function onAccountFolderCreated() {
+  void loadAccountsTree();
+}
+
+function onAccountFolderDeleted() {
+  void loadAccountsTree();
+}
+
+function onAccountMoved() {
+  void loadAccountsTree();
+}
 
 // ----- Moneda por defecto -----
 type CurrencyOption = {
@@ -420,14 +582,24 @@ function onCurrencyFilter(val: string, done: (cb: () => void) => void) {
   });
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Cargar monedas al entrar a la pestaña perfil o si ya está activa
   if (tab.value === 'profile') void ensureCurrenciesLoaded();
+  if (tab.value === 'categories') {
+    await loadJars();
+    await loadCategoriesTree();
+  }
+  if (tab.value === 'accounts') void loadAccountsTree();
 });
 watch(
   () => tab.value,
-  (t) => {
+  async (t) => {
     if (t === 'profile') void ensureCurrenciesLoaded();
+    if (t === 'categories') {
+      await loadJars();
+      await loadCategoriesTree();
+    }
+    if (t === 'accounts') void loadAccountsTree();
   }
 );
 

@@ -333,7 +333,8 @@
                               :jar="jar"
                               :balance="
                                 (() => {
-                                  const bal = jarBalances[jar.id]?.balance.value;
+                                  const balanceRef = jarBalances[jar.id]?.balance;
+                                  const bal = balanceRef?.value;
                                   return bal
                                     ? {
                                         asignado: bal.asignado,
@@ -345,12 +346,12 @@
                                     : null;
                                 })()
                               "
-                              :loading="jarBalances[jar.id]?.loading.value ?? false"
-                              :error="jarBalances[jar.id]?.error.value ?? null"
+                              :loading="jarBalances[jar.id]?.loading?.value ?? false"
+                              :error="jarBalances[jar.id]?.error?.value ?? null"
                               :porcentaje-utilizado="
-                                jarBalances[jar.id]?.porcentajeUtilizado.value ?? 0
+                                jarBalances[jar.id]?.porcentajeUtilizado?.value ?? 0
                               "
-                              :status-balance="jarBalances[jar.id]?.statusBalance.value ?? 'low'"
+                              :status-balance="jarBalances[jar.id]?.statusBalance?.value ?? 'low'"
                               @adjust="openAdjustmentModal(jar.id)"
                               @reset="handleResetAdjustment(jar.id)"
                             />
@@ -1393,15 +1394,34 @@ async function loadJarBalance(jarId: number) {
 /**
  * Abre modal de ajuste para un jar
  */
-function openAdjustmentModal(jarId: number) {
+async function openAdjustmentModal(jarId: number) {
   currentJarAdjustment.value = jarId;
+
+  // Ensure composable exists and load balance + history from backend
+  if (!jarBalances.value[jarId]) {
+    jarBalances.value[jarId] = useJarBalance(jarId);
+  }
+
+  const balanceComposable = jarBalances.value[jarId];
+  try {
+    await balanceComposable.cargarTodo();
+    loadedBalances.value.add(jarId);
+  } catch (err) {
+    console.error(`Error cargando balance para modal ajuste (jar ${jarId}):`, err);
+    $q.notify({
+      type: 'negative',
+      message: err instanceof Error ? err.message : 'Error cargando balance',
+    });
+    // still open modal so user can see UI, but guard save handler will no-op if no composable
+  }
+
   showAdjustmentModal.value = true;
 }
 
 /**
  * Guarda un ajuste y actualiza el balance
  */
-async function handleSaveAdjustment(data: { monto: number; descripcion?: string }) {
+async function handleSaveAdjustment(data: { valorObjetivo: number; descripcion?: string }) {
   if (currentJarAdjustment.value === null) return;
 
   const balanceComposable = jarBalances.value[currentJarAdjustment.value];
@@ -1409,6 +1429,10 @@ async function handleSaveAdjustment(data: { monto: number; descripcion?: string 
 
   try {
     await balanceComposable.crearAjuste(data);
+
+    // Recargar el balance desde el backend para asegurar consistencia
+    await balanceComposable.cargarBalance();
+
     $q.notify({
       type: 'positive',
       message: 'Ajuste guardado exitosamente',

@@ -88,6 +88,14 @@
             >
               <q-icon :name="node.type === 'folder' ? 'folder' : node.icon || 'sell'" size="18px" />
               <div class="ellipsis col">{{ node.label }}</div>
+              <q-badge
+                v-if="node.type === 'category' && categoryJarMap && categoryJarMap[node.id]"
+                color="blue-6"
+                class="q-ml-xs"
+                :label="categoryJarMap[node.id]"
+              >
+                <q-tooltip>Cántaro: {{ categoryJarMap[node.id] }}</q-tooltip>
+              </q-badge>
             </div>
           </template>
         </q-tree>
@@ -126,6 +134,14 @@
                   size="18px"
                 />
                 <div class="ellipsis col">{{ node.label }}</div>
+                <q-badge
+                  v-if="node.type === 'category' && categoryJarMap && categoryJarMap[node.id]"
+                  color="blue-6"
+                  class="q-ml-xs"
+                  :label="categoryJarMap[node.id]"
+                >
+                  <q-tooltip>Cántaro: {{ categoryJarMap[node.id] }}</q-tooltip>
+                </q-badge>
               </div>
             </template>
           </q-tree>
@@ -157,6 +173,8 @@ export default defineComponent({
     columns: { type: Number, default: 1 },
     // Optional: nodes provided directly from parent
     nodes: { type: Array as PropType<unknown[]>, default: null },
+    // Optional: map of category_id -> jar_name
+    categoryJarMap: { type: Object as PropType<Record<string | number, string>>, default: () => ({}) },
   },
   emits: [
     'create-category',
@@ -562,6 +580,7 @@ export default defineComponent({
     watch(
       () => props.nodes,
       (val) => {
+        console.log('🌳 CategoriesTree recibió nodes:', val);
         if (Array.isArray(val)) {
           // Treat array items as NodeInput
           setTree(val as unknown as NodeInput[]);
@@ -657,6 +676,7 @@ export default defineComponent({
 }
 .tree-scroll {
   height: 100%;
+  min-height: 400px;
   flex: 1 1 auto;
 }
 @media (max-width: 1023px) {

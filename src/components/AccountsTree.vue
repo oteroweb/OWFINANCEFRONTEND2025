@@ -47,7 +47,7 @@
           <q-icon name="arrow_upward" size="18px" />
           <div class="ellipsis col text-primary">Mover a raíz</div>
         </div>
-        <q-tree :nodes="tree" node-key="id" default-expand-all no-transition>
+        <q-tree :nodes="treeData" node-key="id" default-expand-all no-transition>
           <template #default-header="{ node }">
             <div
               class="row items-center no-wrap q-gutter-x-sm tree-node"
@@ -97,7 +97,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent, ref, watch } from 'vue';
+import type { PropType } from 'vue';
 import { Notify } from 'quasar';
 import { useTransactionsStore } from 'stores/transactions';
 
@@ -115,6 +116,8 @@ export default defineComponent({
   props: {
     // Si la API no soporta eliminar carpetas, ocultar el botón desde el padre
     canDeleteFolder: { type: Boolean, default: false },
+    // Tree data from parent (optional)
+    tree: { type: Array as PropType<unknown[]>, default: null },
   },
   emits: [
     'create-account',
@@ -124,11 +127,11 @@ export default defineComponent({
     'edit-account',
     'delete-folder',
   ],
-  setup(_, { emit, expose }) {
+  setup(props, { emit, expose }) {
     const txStore = useTransactionsStore();
     // Top-level nodes; we keep a special folder id 'root' labeled 'Sin asignar'
     const UNASSIGNED_ID = 'root';
-    const tree = ref<TreeNode[]>([
+    const treeData = ref<TreeNode[]>([
       { id: UNASSIGNED_ID, label: 'Sin asignar', type: 'folder', children: [] },
     ]);
 
@@ -174,8 +177,8 @@ export default defineComponent({
       if (!sourceId) return;
       if (target.type !== 'folder' || target.id === sourceId) return;
 
-      const sourceInfo = findNodeWithParent(tree.value, sourceId);
-      const targetInfo = findNodeWithParent(tree.value, target.id);
+      const sourceInfo = findNodeWithParent(treeData.value, sourceId);
+      const targetInfo = findNodeWithParent(treeData.value, target.id);
       if (!sourceInfo || !targetInfo) return;
 
       const { node: srcNode, parent: srcParent } = sourceInfo;
@@ -209,8 +212,8 @@ export default defineComponent({
         srcParent.children = (srcParent.children || []).filter((n) => n.id !== srcNode.id);
       } else {
         // was root-level
-        const idx = tree.value.findIndex((n) => n.id === srcNode.id);
-        if (idx !== -1) tree.value.splice(idx, 1);
+        const idx = treeData.value.findIndex((n) => n.id === srcNode.id);
+        if (idx !== -1) treeData.value.splice(idx, 1);
       }
 
       // add to target folder
@@ -243,7 +246,7 @@ export default defineComponent({
       const sourceId = ev.dataTransfer?.getData('text/plain') || dragNodeId.value;
       dragOverRoot.value = false;
       if (!sourceId) return;
-      const sourceInfo = findNodeWithParent(tree.value, String(sourceId));
+      const sourceInfo = findNodeWithParent(treeData.value, String(sourceId));
       if (!sourceInfo) return;
       const { node: srcNode, parent: srcParent } = sourceInfo;
       // Do not allow moving the special 'Sin asignar' node
@@ -253,8 +256,8 @@ export default defineComponent({
       if (srcParent) {
         srcParent.children = (srcParent.children || []).filter((n) => n.id !== srcNode.id);
       } else {
-        const idx = tree.value.findIndex((n) => n.id === srcNode.id);
-        if (idx !== -1) tree.value.splice(idx, 1);
+        const idx = treeData.value.findIndex((n) => n.id === srcNode.id);
+        if (idx !== -1) treeData.value.splice(idx, 1);
       }
 
       if (srcNode.type === 'account') {
@@ -271,8 +274,8 @@ export default defineComponent({
         });
       } else {
         // Folders moved to root become top-level siblings of 'Sin asignar'
-        tree.value.push(srcNode);
-        const sortOrder = tree.value.length - 1;
+        treeData.value.push(srcNode);
+        const sortOrder = treeData.value.length - 1;
         emit('move-node', {
           node_id: srcNode.id,
           new_parent_id: 'root', // parent_id null at backend
@@ -324,7 +327,7 @@ export default defineComponent({
     function onRequestDeleteFolder() {
       // Only allow when the selected node is a non-root folder
       if (!selectedIsFolder.value || !selectedNodeId.value) return;
-      const info = findNodeWithParent(tree.value, selectedNodeId.value);
+      const info = findNodeWithParent(treeData.value, selectedNodeId.value);
       if (!info) return;
       const node = info.node;
       if (node.type !== 'folder' || node.id === 'root') return;
@@ -383,7 +386,7 @@ export default defineComponent({
       if (parentId === 'root') {
         parentNode = getOrCreateUnassigned();
       } else {
-        const parentInfo = parentId ? findNodeWithParent(tree.value, parentId) : null;
+        const parentInfo = parentId ? findNodeWithParent(treeData.value, parentId) : null;
         parentNode = parentInfo?.node || null;
       }
       const node: TreeNode = { id: account.id, label: account.label, type: 'account' };
@@ -391,7 +394,7 @@ export default defineComponent({
         parentNode.children = parentNode.children || [];
         parentNode.children.push(node);
       } else {
-        tree.value.push(node);
+        treeData.value.push(node);
       }
     }
 
@@ -402,32 +405,32 @@ export default defineComponent({
     ) {
       // parentId === 'root' or null => top-level folder (sibling of "Sin asignar")
       const isTopLevel = !parentId || parentId === UNASSIGNED_ID;
-      const parentInfo = !isTopLevel && parentId ? findNodeWithParent(tree.value, parentId) : null;
+      const parentInfo = !isTopLevel && parentId ? findNodeWithParent(treeData.value, parentId) : null;
       const parentNode = parentInfo?.node || null;
       const node: TreeNode = { id: folder.id, label: folder.label, type: 'folder', children: [] };
       if (!isTopLevel && parentNode && parentNode.type === 'folder') {
         parentNode.children = parentNode.children || [];
         parentNode.children.push(node);
       } else {
-        tree.value.push(node);
+        treeData.value.push(node);
       }
     }
 
     // Helper to update a node label (account or folder)
     function updateNodeLabel(id: string, label: string) {
-      const info = findNodeWithParent(tree.value, id);
+      const info = findNodeWithParent(treeData.value, id);
       if (info) info.node.label = label;
     }
 
     function removeNode(id: string) {
-      const info = findNodeWithParent(tree.value, id);
+      const info = findNodeWithParent(treeData.value, id);
       if (!info) return;
       const { parent } = info;
       if (parent) {
         parent.children = (parent.children || []).filter((n) => n.id !== id);
       } else {
-        const idx = tree.value.findIndex((n) => n.id === id);
-        if (idx !== -1) tree.value.splice(idx, 1);
+        const idx = treeData.value.findIndex((n) => n.id === id);
+        if (idx !== -1) treeData.value.splice(idx, 1);
       }
     }
     // Replace entire tree with provided nodes (typed, no any)
@@ -471,12 +474,12 @@ export default defineComponent({
         children: orphanAccounts,
       };
 
-      tree.value = [unassigned, ...folders];
+      treeData.value = [unassigned, ...folders];
     }
 
     function getOrCreateUnassigned(): TreeNode {
       // Find existing 'Sin asignar' at top-level; if missing, create it
-      const existing = tree.value.find((n) => n.id === UNASSIGNED_ID && n.type === 'folder');
+      const existing = treeData.value.find((n) => n.id === UNASSIGNED_ID && n.type === 'folder');
       if (existing) return existing;
       const un: TreeNode = {
         id: UNASSIGNED_ID,
@@ -484,7 +487,7 @@ export default defineComponent({
         type: 'folder',
         children: [],
       };
-      tree.value.unshift(un);
+      treeData.value.unshift(un);
       return un;
     }
 
@@ -510,12 +513,24 @@ export default defineComponent({
       return el;
     }
 
+    // Watch for tree prop changes from parent
+    watch(
+      () => props.tree,
+      (val) => {
+        console.log('🏦 AccountsTree recibió tree:', val);
+        if (Array.isArray(val)) {
+          setTree(val as unknown as NodeInput[]);
+        }
+      },
+      { immediate: true, deep: true }
+    );
+
     // Expose methods to parent via template ref
     expose({ addAccountToFolder, addFolderToParent, updateNodeLabel, removeNode, setTree });
 
     return {
       UNASSIGNED_ID,
-      tree,
+      treeData,
       showNewFolder,
       newFolderName,
       openNewFolderDialog,

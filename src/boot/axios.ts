@@ -112,6 +112,15 @@ api.interceptors.response.use(
 export default defineBoot(({ app }) => {
   app.config.globalProperties.$axios = axios
   app.config.globalProperties.$api = api
+  // Log API base URL at startup to help debugging network issues on devices
+  if (typeof console !== 'undefined') {
+    try {
+      // Show the resolved baseURL used by the axios instance
+      console.info('[Boot][Axios] api.baseURL =', api.defaults.baseURL)
+    } catch {
+      // ignore
+    }
+  }
   // Load stored auth token and user on startup for session persistence
   const auth = useAuthStore()
   auth.loadFromStorage()
