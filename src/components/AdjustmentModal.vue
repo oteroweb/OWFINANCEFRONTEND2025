@@ -31,24 +31,23 @@
 
         <!-- Form -->
         <div class="adjustment-form q-gutter-md">
-          <!-- Monto input -->
+          <!-- Monto input - MODO ABSOLUTO -->
           <q-input
-            v-model.number="form.monto"
+            v-model.number="form.valorObjetivo"
             type="number"
-            label="Monto a ajustar"
-            hint="Positivo para agregar, negativo para restar"
+            label="Balance objetivo"
+            hint="Ingresa el balance final que deseas"
             outlined
             dense
             step="0.01"
             :rules="[
               (v) => (v !== null && v !== undefined) || 'Requerido',
-              (v) => v !== 0 || 'No puede ser cero',
-              (v) => validateAmount(v) || 'Fondos insuficientes',
+              (v) => v >= 0 || 'El balance no puede ser negativo',
             ]"
             @keyup.enter="handleSave"
           >
             <template #prepend>
-              <q-icon name="attach_money" />
+              <q-icon name="account_balance" />
             </template>
           </q-input>
 
@@ -56,7 +55,7 @@
           <q-input
             v-model="form.descripcion"
             label="Descripción (opcional)"
-            hint="Ej: 'Transferencia desde otra cuenta'"
+            hint="Ej: 'Ajuste por transferencia externa'"
             outlined
             dense
             type="textarea"
@@ -69,35 +68,28 @@
 
           <!-- Preview de nuevo balance -->
           <div class="balance-preview q-pa-md rounded-borders bg-grey-2">
-            <div class="text-caption text-grey-7 q-mb-xs">Nuevo balance:</div>
+            <div class="text-caption text-grey-7 q-mb-xs">Balance objetivo:</div>
             <div class="text-h6" :class="previewBalanceClass">
-              {{ formatCurrency(previewBalance) }}
+              {{ formatCurrency(form.valorObjetivo ?? currentBalance) }}
             </div>
-            <div v-if="previewChange" class="text-caption text-grey-6 q-mt-xs">
-              <span :class="previewChange > 0 ? 'text-positive' : 'text-negative'">
-                {{ previewChange > 0 ? '+' : '' }}{{ formatCurrency(previewChange) }}
+            <div v-if="ajusteCalculado !== 0" class="text-caption text-grey-6 q-mt-xs">
+              Diferencia:
+              <span :class="ajusteCalculado > 0 ? 'text-positive' : 'text-negative'">
+                {{ ajusteCalculado > 0 ? '+' : '' }}{{ formatCurrency(ajusteCalculado) }}
               </span>
             </div>
           </div>
 
           <!-- Tipo de ajuste (información) -->
-          <div class="adjustment-type q-pa-md rounded-borders bg-blue-1">
+          <div v-if="ajusteCalculado !== 0" class="adjustment-type q-pa-md rounded-borders bg-blue-1">
             <div class="text-subtitle2 text-blue-9">
-              {{ adjustmentType === 'addition' ? '➕ Agregar' : '➖ Restar' }}
+              {{ ajusteCalculado > 0 ? '➕ Incrementar' : '➖ Reducir' }}
             </div>
             <div class="text-caption text-blue-8">
-              {{ adjustmentTypeDescription }}
-            </div>
-          </div>
-
-          <!-- Validación de fondos insuficientes -->
-          <div
-            v-if="!isValidAmount && (form.monto ?? 0) < 0"
-            class="q-pa-md rounded-borders bg-negative text-white"
-          >
-            <div class="text-body2">⚠️ Fondos insuficientes</div>
-            <div class="text-caption q-mt-xs">
-              Puedes restar máximo {{ formatCurrency(Math.abs(maxSubtraction)) }}
+              {{ ajusteCalculado > 0
+                ? `Se agregará ${formatCurrency(Math.abs(ajusteCalculado))} al balance actual`
+                : `Se restará ${formatCurrency(Math.abs(ajusteCalculado))} del balance actual`
+              }}
             </div>
           </div>
         </div>
@@ -135,7 +127,7 @@ interface Props {
 
 interface Emits {
   'update:modelValue': [value: boolean];
-  save: [data: { monto: number; descripcion?: string }];
+  save: [data: { valorObjetivo: number; descripcion?: string }];
 }
 
 defineOptions({
@@ -158,11 +150,19 @@ const $q = useQuasar();
 
 // Form state
 const form = ref({
-  monto: null as number | null,
+  valorObjetivo: null as number | null,
   descripcion: '',
 });
 
 const saving = ref(false);
+
+/**
+ * Calcula el ajuste necesario (diferencia entre objetivo y actual)
+ */
+const ajusteCalculado = computed(() => {
+  if (form.value.valorObjetivo === null) return 0;
+  return form.value.valorObjetivo - props.currentBalance;
+});
 
 /**
  * Formatea número como moneda
@@ -176,75 +176,10 @@ function formatCurrency(amount: number): string {
 }
 
 /**
- * Valida que el monto no exceda fondos disponibles
- */
-function validateAmount(amount: number | null): boolean {
-  if (amount === null || Number.isNaN(amount)) return false;
-
-  // Si es positivo, siempre es válido
-  if (amount > 0) return true;
-
-  // Si es negativo, no puede exceder balance actual
-  const newBalance = props.currentBalance + amount;
-  return newBalance >= 0;
-}
-
-/**
- * Checa si es suma o resta
- */
-const adjustmentType = computed(() => {
-  if (!form.value.monto) return null;
-  return form.value.monto > 0 ? 'addition' : 'subtraction';
-});
-
-/**
- * Descripción del tipo de ajuste
- */
-const adjustmentTypeDescription = computed(() => {
-  switch (adjustmentType.value) {
-    case 'addition':
-      return 'Estás agregando dinero al balance de este cántaro';
-    case 'subtraction':
-      return 'Estás restando dinero del balance de este cántaro';
-    default:
-      return '';
-  }
-});
-
-/**
- * Monto máximo que se puede restar
- */
-const maxSubtraction = computed(() => props.currentBalance);
-
-/**
- * Checa si el monto es válido
- */
-const isValidAmount = computed(() => {
-  if (form.value.monto === null || Number.isNaN(form.value.monto)) return false;
-  return validateAmount(form.value.monto);
-});
-
-/**
  * Checa si el formulario está completo y válido
  */
 const isValidForm = computed(() => {
-  return form.value.monto !== null && form.value.monto !== 0 && isValidAmount.value;
-});
-
-/**
- * Calcula el nuevo balance después del ajuste
- */
-const previewBalance = computed(() => {
-  if (!form.value.monto) return props.currentBalance;
-  return props.currentBalance + form.value.monto;
-});
-
-/**
- * Cambio respecto al balance actual
- */
-const previewChange = computed(() => {
-  if (!form.value.monto) return 0;
-  return form.value.monto;
+  return form.value.valorObjetivo !== null && form.value.valorObjetivo >= 0;
 });
 
 /**
@@ -260,9 +195,9 @@ const currentBalanceClass = computed(() => {
  * Clase CSS para el preview balance
  */
 const previewBalanceClass = computed(() => {
-  const preview = previewBalance.value;
-  if (preview < 0) return 'text-negative';
-  if (preview === 0) return 'text-warning';
+  const val = form.value.valorObjetivo ?? props.currentBalance;
+  if (val < 0) return 'text-negative';
+  if (val === 0) return 'text-warning';
   return 'text-positive';
 });
 
@@ -272,14 +207,14 @@ const previewBalanceClass = computed(() => {
 async function handleSave() {
   if (!isValidForm.value) return;
 
-  if (form.value.monto === null) return;
-
-  // Confirmación para operaciones grandes
-  if (Math.abs(form.value.monto) > 1000) {
+  // Si el ajuste reduce el balance, pedir confirmación
+  if (ajusteCalculado.value < 0) {
     const confirm = await new Promise((resolve) => {
       $q.dialog({
-        title: 'Confirmar ajuste grande',
-        message: `¿Estás seguro de ajustar ${formatCurrency(form.value.monto || 0)}?`,
+        title: 'Confirmar reducción',
+        message: `Estás reduciendo el balance de ${formatCurrency(
+          props.currentBalance
+        )} a ${formatCurrency(form.value.valorObjetivo ?? 0)}. ¿Continuar?`,
         cancel: true,
         persistent: true,
       })
@@ -293,8 +228,9 @@ async function handleSave() {
   saving.value = true;
 
   try {
-    const payload: { monto: number; descripcion?: string } = {
-      monto: form.value.monto || 0,
+    // Enviar el valor objetivo directamente - el backend calcula la diferencia
+    const payload: { valorObjetivo: number; descripcion?: string } = {
+      valorObjetivo: form.value.valorObjetivo!,
     };
     if (form.value.descripcion) {
       payload.descripcion = form.value.descripcion;
@@ -310,7 +246,7 @@ async function handleSave() {
  */
 function resetForm() {
   form.value = {
-    monto: null,
+    valorObjetivo: null,
     descripcion: '',
   };
 }
@@ -323,6 +259,9 @@ watch(
   (val) => {
     if (!val) {
       resetForm();
+    } else {
+      // Inicializar con el balance actual
+      form.value.valorObjetivo = props.currentBalance;
     }
   }
 );

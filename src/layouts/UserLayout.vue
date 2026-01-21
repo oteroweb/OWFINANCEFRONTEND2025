@@ -150,7 +150,15 @@
       </q-tabs>
     </q-footer>
 
-    <TransactionCreateDialog v-if="ui.showDialogNewTransaction" />
+    <TransactionCreateDialog
+      v-if="ui.showDialogNewTransaction"
+      :prefill-transaction-id="ui.prefillTransactionId"
+    />
+
+    <!-- Botón flotante global para nueva transacción -->
+    <q-page-sticky position="bottom-right" :offset="[18, 18]">
+      <q-btn fab color="primary" icon="add" @click="ui.openNewTransactionDialog()" />
+    </q-page-sticky>
   </q-layout>
 </template>
 

@@ -18,9 +18,10 @@ export const useUiStore = defineStore('ui', {
       this.showDialogNewTransaction = !this.showDialogNewTransaction;
     },
     openEditTransactionDialog(id: number) {
-      // Reutilizar el mismo diálogo de creación para editar (prefill + PUT en guardado)
       this.prefillTransactionId = id;
       this.showDialogNewTransaction = true;
+      this.showDialogEditTransaction = false;
+      this.editTransactionId = null;
     },
     closeEditTransactionDialog() {
       this.showDialogEditTransaction = false;

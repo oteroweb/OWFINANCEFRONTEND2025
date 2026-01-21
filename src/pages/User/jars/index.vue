@@ -10,6 +10,74 @@
       @income-updated="handleIncomeUpdated"
     />
 
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section>
+        <div class="text-subtitle2">Configuración global de cántaros</div>
+        <div class="text-caption text-grey-7">
+          Define el inicio de contabilidad y valores por defecto.
+        </div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <div class="row q-col-gutter-md items-center">
+          <div class="col-12 col-sm-4">
+            <q-input
+              v-model="jarSettings.global_start_date"
+              type="date"
+              dense
+              filled
+              label="Inicio de contabilidad (global)"
+            />
+          </div>
+          <div class="col-12 col-sm-4">
+            <q-toggle
+              v-model="jarSettings.default_allow_negative"
+              dense
+              color="primary"
+              label="Permitir negativos por defecto"
+            />
+          </div>
+          <div class="col-12 col-sm-4">
+            <q-input
+              v-model.number="jarSettings.default_negative_limit"
+              type="number"
+              dense
+              filled
+              label="Límite negativo por defecto"
+              prefix="$"
+              :disable="!jarSettings.default_allow_negative"
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div class="col-12 col-sm-4">
+            <q-select
+              v-model="jarSettings.default_reset_cycle"
+              :options="resetCycleOptions"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              dense
+              filled
+              label="Ciclo por defecto"
+            />
+          </div>
+          <div class="col-12 col-sm-4">
+            <q-input
+              v-model.number="jarSettings.default_reset_cycle_day"
+              type="number"
+              dense
+              filled
+              label="Día del ciclo por defecto"
+              min="1"
+              max="28"
+            />
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+
     <q-card flat bordered>
       <q-card-section class="header-grid">
         <div class="header-title">
@@ -130,6 +198,21 @@
                               color="primary"
                               :label="jar.active ? 'Activo' : 'Inactivo'"
                             />
+                            <q-btn-toggle
+                              v-model="jar.refresh_mode"
+                              :options="refreshModeOptions"
+                              dense
+                              unelevated
+                              toggle-color="secondary"
+                              color="grey-4"
+                              size="sm"
+                            >
+                              <q-tooltip>
+                                <div class="text-bold">Modo de refresco:</div>
+                                <div>• Reset: Empieza de cero cada mes</div>
+                                <div>• Acumulativo: Arrastra saldo del mes anterior</div>
+                              </q-tooltip>
+                            </q-btn-toggle>
                             <q-btn-toggle
                               v-model="jar.type"
                               :options="jarTypeOptions"
@@ -262,6 +345,15 @@
                                 </q-tooltip>
                               </div>
                             </div>
+                            <div class="summary-row" v-if="jar.id">
+                              <div class="summary-label">
+                                <q-icon name="savings" size="16px" class="q-mr-xs" />
+                                Disponible actual:
+                              </div>
+                              <div class="summary-value text-primary">
+                                {{ formatCurrency(getJarBalanceValue(jar.id)?.balance || 0) }}
+                              </div>
+                            </div>
                             <q-btn
                               v-if="jar.id"
                               outline
@@ -273,7 +365,102 @@
                               class="full-width q-mt-xs"
                               @click="openAdjustmentModal(jar.id)"
                             />
+                            <q-btn
+                              v-if="jar.id"
+                              outline
+                              dense
+                              no-caps
+                              color="accent"
+                              icon="payments"
+                              label="Registrar uso"
+                              class="full-width q-mt-xs"
+                              @click="openWithdrawalModal(jar.id)"
+                            />
                           </div>
+
+                          <q-expansion-item
+                            dense
+                            class="q-mt-sm"
+                            label="Opciones avanzadas"
+                            header-class="text-caption text-grey-7"
+                          >
+                            <div class="row q-col-gutter-sm">
+                              <div class="col-12 col-md-4">
+                                <q-input
+                                  v-model="jar.start_date"
+                                  type="date"
+                                  dense
+                                  filled
+                                  label="Inicio del cántaro"
+                                />
+                              </div>
+                              <div class="col-12 col-md-4">
+                                <q-toggle
+                                  v-model="jar.use_global_start_date"
+                                  dense
+                                  color="primary"
+                                  label="Usar fecha global"
+                                />
+                              </div>
+                              <div class="col-12 col-md-4">
+                                <q-select
+                                  v-model="jar.reset_cycle"
+                                  :options="resetCycleOptions"
+                                  option-label="label"
+                                  option-value="value"
+                                  emit-value
+                                  map-options
+                                  dense
+                                  filled
+                                  label="Ciclo de reinicio"
+                                />
+                              </div>
+                              <div class="col-12 col-md-4">
+                                <q-input
+                                  v-model.number="jar.reset_cycle_day"
+                                  type="number"
+                                  dense
+                                  filled
+                                  label="Día del ciclo"
+                                  min="1"
+                                  max="28"
+                                />
+                              </div>
+                              <div class="col-12 col-md-4">
+                                <q-toggle
+                                  v-model="jar.allow_negative_balance"
+                                  dense
+                                  color="primary"
+                                  label="Permitir negativo"
+                                />
+                              </div>
+                              <div class="col-12 col-md-4">
+                                <q-input
+                                  v-model.number="jar.negative_limit"
+                                  type="number"
+                                  dense
+                                  filled
+                                  label="Límite negativo"
+                                  prefix="$"
+                                  min="0"
+                                  step="0.01"
+                                  :disable="!jar.allow_negative_balance"
+                                />
+                              </div>
+                              <div class="col-12 col-md-4">
+                                <q-input
+                                  v-model.number="jar.target_amount"
+                                  type="number"
+                                  dense
+                                  filled
+                                  label="Meta/objetivo"
+                                  prefix="$"
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </div>
+                            </div>
+                          </q-expansion-item>
 
                           <div
                             class="jar-dropzone q-mt-md"
@@ -333,8 +520,7 @@
                               :jar="jar"
                               :balance="
                                 (() => {
-                                  const balanceRef = jarBalances[jar.id]?.balance;
-                                  const bal = balanceRef?.value;
+                                  const bal = getJarBalanceValue(jar.id);
                                   return bal
                                     ? {
                                         asignado: bal.asignado,
@@ -346,12 +532,12 @@
                                     : null;
                                 })()
                               "
-                              :loading="jarBalances[jar.id]?.loading?.value ?? false"
-                              :error="jarBalances[jar.id]?.error?.value ?? null"
+                              :loading="getJarLoadingValue(jar.id)"
+                              :error="getJarErrorValue(jar.id)"
                               :porcentaje-utilizado="
-                                jarBalances[jar.id]?.porcentajeUtilizado?.value ?? 0
+                                getJarPctValue(jar.id)
                               "
-                              :status-balance="jarBalances[jar.id]?.statusBalance?.value ?? 'low'"
+                              :status-balance="getJarStatusValue(jar.id)"
                               @adjust="openAdjustmentModal(jar.id)"
                               @reset="handleResetAdjustment(jar.id)"
                             />
@@ -499,10 +685,58 @@
       :jar="
         currentJarAdjustment ? jarElements.find((j) => j.id === currentJarAdjustment) ?? null : null
       "
-      :current-balance="jarBalances[currentJarAdjustment || -1]?.balance?.value?.balance || 0"
-      :previous-adjustment="jarBalances[currentJarAdjustment || -1]?.balance?.value?.ajuste ?? 0"
+      :current-balance="getJarBalanceValue(currentJarAdjustment || -1)?.balance || 0"
+      :previous-adjustment="getJarBalanceValue(currentJarAdjustment || -1)?.ajuste ?? 0"
       @save="handleSaveAdjustment"
     />
+
+    <q-dialog v-model="showWithdrawalModal">
+      <q-card style="min-width: 360px; max-width: 520px">
+        <q-card-section>
+          <div class="text-h6">Registrar uso del cántaro</div>
+          <div class="text-caption text-grey-7">
+            Balance actual: {{
+              formatCurrency(
+                getJarBalanceValue(currentJarWithdrawal || -1)?.balance || 0
+              )
+            }}
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-section>
+          <div class="column q-gutter-sm">
+            <q-input
+              v-model.number="withdrawalForm.amount"
+              type="number"
+              dense
+              filled
+              label="Monto a usar"
+              prefix="$"
+              min="0"
+              step="0.01"
+            />
+            <q-input
+              v-model="withdrawalForm.description"
+              dense
+              filled
+              label="Descripción"
+              maxlength="255"
+            />
+            <q-input
+              v-model="withdrawalForm.date"
+              type="date"
+              dense
+              filled
+              label="Fecha"
+            />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" v-close-popup />
+          <q-btn color="primary" label="Guardar" @click="handleSaveWithdrawal" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -531,6 +765,14 @@ type Jar = {
   percent?: number | undefined;
   fixedAmount?: number | undefined;
   type: 'percent' | 'fixed';
+  refresh_mode?: 'reset' | 'accumulative';
+  allow_negative_balance?: boolean;
+  negative_limit?: number | null;
+  start_date?: string | null;
+  use_global_start_date?: boolean;
+  reset_cycle?: 'none' | 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+  reset_cycle_day?: number;
+  target_amount?: number | null;
   color?: string | undefined;
   categories?: Array<{ id: string; label: string }>;
   active?: boolean;
@@ -544,11 +786,29 @@ type JarAPI = {
   type?: string;
   fixed_amount?: number;
   amount?: number;
+  refresh_mode?: string;
+  allow_negative_balance?: boolean | null;
+  negative_limit?: number | null;
+  start_date?: string | null;
+  use_global_start_date?: boolean | null;
+  reset_cycle?: string | null;
+  reset_cycle_day?: number | null;
+  target_amount?: number | null;
   categories?: Array<{ id: string | number; name?: string; label?: string }>;
   color?: string | null;
   sort_order?: number | null;
   active?: number | boolean | null;
   is_active?: number | boolean | null;
+};
+
+type JarSettings = {
+  id?: number;
+  user_id?: number;
+  global_start_date?: string | null;
+  default_allow_negative?: boolean;
+  default_negative_limit?: number | null;
+  default_reset_cycle?: 'none' | 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+  default_reset_cycle_day?: number;
 };
 
 type CatNodeInput = {
@@ -568,6 +828,14 @@ const serverJarIds = ref<Set<number>>(new Set());
 const saving = ref(false);
 const useRealIncome = ref(false);
 const incomePanelRef = ref<{ refresh: () => Promise<void> } | null>(null);
+const jarSettingsLoaded = ref(false);
+const jarSettings = ref<JarSettings>({
+  global_start_date: null,
+  default_allow_negative: false,
+  default_negative_limit: null,
+  default_reset_cycle: 'none',
+  default_reset_cycle_day: 1,
+});
 
 // Get current month in YYYY-MM format from period store
 const currentMonth = computed(() => {
@@ -640,6 +908,13 @@ const jarBalances = ref<Record<number, ReturnType<typeof useJarBalance>>>({});
 const showAdjustmentModal = ref(false);
 const currentJarAdjustment = ref<number | null>(null);
 const loadedBalances = ref<Set<number>>(new Set());
+const showWithdrawalModal = ref(false);
+const currentJarWithdrawal = ref<number | null>(null);
+const withdrawalForm = ref({
+  amount: 0,
+  description: '',
+  date: new Date().toISOString().slice(0, 10),
+});
 
 // Tree ref (typed with exposed API) and map of categories for quick lookup on drop
 type CategoriesTreeExposed = {
@@ -708,6 +983,14 @@ function mkJar(name: string, percent: number, type: 'percent' | 'fixed', id?: nu
     name,
     percent,
     type,
+    refresh_mode: 'reset', // Default to reset mode
+    allow_negative_balance: false,
+    negative_limit: null,
+    start_date: null,
+    use_global_start_date: true,
+    reset_cycle: 'none',
+    reset_cycle_day: 1,
+    target_amount: null,
     color: undefined,
     categories: [],
     active: true,
@@ -809,6 +1092,38 @@ function jarChipBind(j: TemplateJar) {
   // palette token or empty
   return { color: bg || 'grey-6', textColor: 'white' } as const;
 }
+
+function unwrapMaybeRef<T>(val: { value: T } | T | null | undefined): T | null {
+  if (val && typeof val === 'object' && 'value' in val) {
+    return (val as { value: T }).value;
+  }
+  return (val as T) ?? null;
+}
+
+function getJarBalanceValue(jarId: number) {
+  const entry = jarBalances.value[jarId];
+  return unwrapMaybeRef(entry?.balance ?? null);
+}
+
+function getJarLoadingValue(jarId: number) {
+  const entry = jarBalances.value[jarId];
+  return unwrapMaybeRef(entry?.loading ?? null) ?? false;
+}
+
+function getJarErrorValue(jarId: number) {
+  const entry = jarBalances.value[jarId];
+  return unwrapMaybeRef(entry?.error ?? null);
+}
+
+function getJarPctValue(jarId: number) {
+  const entry = jarBalances.value[jarId];
+  return unwrapMaybeRef(entry?.porcentajeUtilizado ?? null) ?? 0;
+}
+
+function getJarStatusValue(jarId: number) {
+  const entry = jarBalances.value[jarId];
+  return unwrapMaybeRef(entry?.statusBalance ?? null) ?? 'low';
+}
 function categoryChipBind(
   cat: string | { id?: string | number; name?: string; color?: string | null }
 ) {
@@ -901,6 +1216,22 @@ function onFixedAmountChange() {
 const jarTypeOptions: Array<{ label: string; value: 'percent' | 'fixed' }> = [
   { label: '% Porcentaje', value: 'percent' },
   { label: '$ Monto Fijo', value: 'fixed' },
+];
+
+const refreshModeOptions: Array<{ label: string; value: 'reset' | 'accumulative'; icon?: string }> = [
+  { label: 'Reset', value: 'reset', icon: 'refresh' },
+  { label: 'Acumulativo', value: 'accumulative', icon: 'add_circle' },
+];
+
+const resetCycleOptions: Array<{
+  label: string;
+  value: 'none' | 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+}> = [
+  { label: 'Sin reinicio', value: 'none' },
+  { label: 'Mensual', value: 'monthly' },
+  { label: 'Trimestral', value: 'quarterly' },
+  { label: 'Semestral', value: 'semiannual' },
+  { label: 'Anual', value: 'annual' },
 ];
 
 function onJarTypeChange(idx: number) {
@@ -1092,6 +1423,37 @@ function applyTemplate(tpl: JarTemplate) {
 
 // jarFillGradient removed (unused)
 
+async function loadJarSettings() {
+  try {
+    const res = await api.get('/jars/settings');
+    const data = res.data?.data || {};
+    jarSettings.value = {
+      id: data.id,
+      user_id: data.user_id,
+      global_start_date: data.global_start_date ?? null,
+      default_allow_negative: data.default_allow_negative ?? false,
+      default_negative_limit: data.default_negative_limit ?? null,
+      default_reset_cycle: data.default_reset_cycle ?? 'none',
+      default_reset_cycle_day: data.default_reset_cycle_day ?? 1,
+    };
+    jarSettingsLoaded.value = true;
+  } catch (e) {
+    console.warn('[JarSettings] Error loading settings:', e);
+    jarSettingsLoaded.value = false;
+  }
+}
+
+async function saveJarSettings() {
+  if (!jarSettingsLoaded.value) return;
+  await api.put('/jars/settings', {
+    global_start_date: jarSettings.value.global_start_date || null,
+    default_allow_negative: jarSettings.value.default_allow_negative ?? false,
+    default_negative_limit: jarSettings.value.default_negative_limit ?? null,
+    default_reset_cycle: jarSettings.value.default_reset_cycle ?? 'none',
+    default_reset_cycle_day: jarSettings.value.default_reset_cycle_day ?? 1,
+  });
+}
+
 async function loadJarData() {
   try {
     // Backend identifica usuario por token, sin necesidad de userId en URL
@@ -1160,6 +1522,18 @@ async function loadJarData() {
       );
       if (t === 'fixed') j.fixedAmount = Number(r.fixed_amount ?? r.amount ?? 0);
       if (r.color) j.color = r.color || undefined;
+
+      // Set refresh_mode from backend, default to 'reset'
+      j.refresh_mode = r.refresh_mode === 'accumulative' ? 'accumulative' : 'reset';
+
+      j.allow_negative_balance = Boolean(r.allow_negative_balance ?? false);
+      j.negative_limit = r.negative_limit ?? null;
+      j.start_date = r.start_date ?? null;
+      j.use_global_start_date = r.use_global_start_date ?? true;
+      j.reset_cycle = (r.reset_cycle as Jar['reset_cycle']) ?? 'none';
+      j.reset_cycle_day = r.reset_cycle_day ?? 1;
+      j.target_amount = r.target_amount ?? null;
+
       const act = (r as { is_active?: unknown }).is_active ?? (r as { active?: unknown }).active;
       if (act != null) j.active = Number(act) === 1 || act === true;
       j.categories = Array.isArray(r.categories)
@@ -1188,6 +1562,10 @@ async function loadJarData() {
     console.log(
       '[JarData] Load complete - balances will be loaded on-demand when user interacts with jars'
     );
+
+    // Load balances for visible jars for the selected month
+    const idsToLoad = mapped.map((j) => j.id).filter((id): id is number => typeof id === 'number');
+    await Promise.all(idsToLoad.map((id) => loadJarBalance(id)));
   } catch (e) {
     // Sin demo ni notificación intrusiva
     jarElements.value = [];
@@ -1250,6 +1628,7 @@ async function handleIncomeUpdated() {
   console.log('[Jars] Income updated, refreshing jar data...');
 
   const month = currentMonth.value;
+  const balanceDate = `${month}-01`;
 
   // Refrescar ingresos calculados
   await fetchCalculatedIncome(month);
@@ -1258,7 +1637,7 @@ async function handleIncomeUpdated() {
   for (const jarId of loadedBalances.value) {
     const balanceComposable = jarBalances.value[jarId];
     if (balanceComposable) {
-      await balanceComposable.cargarTodo();
+      await balanceComposable.cargarTodo(balanceDate);
     }
   }
 }
@@ -1376,7 +1755,6 @@ function filterOutAssignedNodes(nodes: CatNodeInput[], assigned: Set<string>): C
 /**
  * Carga balance para un jar específico (se llama bajo demanda cuando user interactúa con el jar)
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function loadJarBalance(jarId: number) {
   if (!jarBalances.value[jarId]) {
     jarBalances.value[jarId] = useJarBalance(jarId);
@@ -1384,7 +1762,8 @@ async function loadJarBalance(jarId: number) {
 
   try {
     const balanceComposable = jarBalances.value[jarId];
-    await balanceComposable.cargarTodo();
+    const balanceDate = `${currentMonth.value}-01`;
+    await balanceComposable.cargarTodo(balanceDate);
     loadedBalances.value.add(jarId);
   } catch (err) {
     console.error(`Error loading balance for jar ${jarId}:`, err);
@@ -1397,6 +1776,9 @@ async function loadJarBalance(jarId: number) {
 async function openAdjustmentModal(jarId: number) {
   currentJarAdjustment.value = jarId;
 
+  // Open modal immediately; load data asynchronously
+  showAdjustmentModal.value = true;
+
   // Ensure composable exists and load balance + history from backend
   if (!jarBalances.value[jarId]) {
     jarBalances.value[jarId] = useJarBalance(jarId);
@@ -1404,7 +1786,19 @@ async function openAdjustmentModal(jarId: number) {
 
   const balanceComposable = jarBalances.value[jarId];
   try {
-    await balanceComposable.cargarTodo();
+    const balanceDate = `${currentMonth.value}-01`;
+    console.log('[Jars][AdjustModal] Loading balance', { jarId, balanceDate });
+    await balanceComposable.cargarTodo(balanceDate);
+    console.log('[Jars][AdjustModal] Balance loaded', {
+      jarId,
+      balance: balanceComposable.balance?.value,
+    });
+    if (!balanceComposable.balance?.value) {
+      console.warn('[Jars][AdjustModal] Balance missing after load', {
+        jarId,
+        error: balanceComposable.error?.value,
+      });
+    }
     loadedBalances.value.add(jarId);
   } catch (err) {
     console.error(`Error cargando balance para modal ajuste (jar ${jarId}):`, err);
@@ -1415,7 +1809,31 @@ async function openAdjustmentModal(jarId: number) {
     // still open modal so user can see UI, but guard save handler will no-op if no composable
   }
 
-  showAdjustmentModal.value = true;
+}
+
+async function openWithdrawalModal(jarId: number) {
+  currentJarWithdrawal.value = jarId;
+  withdrawalForm.value = {
+    amount: 0,
+    description: '',
+    date: new Date().toISOString().slice(0, 10),
+  };
+
+  // Open modal immediately; load data asynchronously
+  showWithdrawalModal.value = true;
+
+  if (!jarBalances.value[jarId]) {
+    jarBalances.value[jarId] = useJarBalance(jarId);
+  }
+
+  const balanceComposable = jarBalances.value[jarId];
+  try {
+    const balanceDate = `${currentMonth.value}-01`;
+    await balanceComposable.cargarBalance(balanceDate);
+    loadedBalances.value.add(jarId);
+  } catch (err) {
+    console.error(`Error cargando balance para uso (jar ${jarId}):`, err);
+  }
 }
 
 /**
@@ -1428,10 +1846,20 @@ async function handleSaveAdjustment(data: { valorObjetivo: number; descripcion?:
   if (!balanceComposable) return;
 
   try {
-    await balanceComposable.crearAjuste(data);
+    const balanceDate = `${currentMonth.value}-01`;
+    console.log('[Jars][AdjustModal] Saving adjustment', {
+      jarId: currentJarAdjustment.value,
+      balanceDate,
+      target: data.valorObjetivo,
+    });
+    await balanceComposable.crearAjuste({ ...data, date: balanceDate });
 
     // Recargar el balance desde el backend para asegurar consistencia
-    await balanceComposable.cargarBalance();
+    await balanceComposable.cargarBalance(balanceDate);
+    console.log('[Jars][AdjustModal] Balance reloaded', {
+      jarId: currentJarAdjustment.value,
+      balance: balanceComposable.balance?.value,
+    });
 
     $q.notify({
       type: 'positive',
@@ -1442,6 +1870,39 @@ async function handleSaveAdjustment(data: { valorObjetivo: number; descripcion?:
     $q.notify({
       type: 'negative',
       message: err instanceof Error ? err.message : 'Error al guardar ajuste',
+    });
+  }
+}
+
+async function handleSaveWithdrawal() {
+  if (currentJarWithdrawal.value === null) return;
+  const jarId = currentJarWithdrawal.value;
+
+  const amount = Number(withdrawalForm.value.amount || 0);
+  if (!amount || Number.isNaN(amount) || amount <= 0) {
+    $q.notify({ type: 'warning', message: 'Ingresa un monto válido' });
+    return;
+  }
+
+  try {
+    await api.post(`/jars/${jarId}/withdraw`, {
+      amount,
+      description: withdrawalForm.value.description || null,
+      date: withdrawalForm.value.date || null,
+    });
+
+    const balanceComposable = jarBalances.value[jarId];
+    if (balanceComposable) {
+      const balanceDate = `${currentMonth.value}-01`;
+      await balanceComposable.cargarBalance(balanceDate);
+    }
+
+    $q.notify({ type: 'positive', message: 'Uso registrado exitosamente' });
+    showWithdrawalModal.value = false;
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: err instanceof Error ? err.message : 'Error al registrar uso',
     });
   }
 }
@@ -1783,6 +2244,8 @@ async function saveChanges() {
     /* noop */
   }
   try {
+    await saveJarSettings();
+
     // Construir payload con todos los jars (el backend sincronizará: crea, actualiza, elimina)
     const jarsPayload = jarElements.value.map((j, idx) => {
       const category_ids = (j.categories || []).map((c) => Number(c.id));
@@ -1791,6 +2254,14 @@ async function saveChanges() {
         name: j.name,
         type: j.type,
         color: j.color,
+        refresh_mode: j.refresh_mode || 'reset', // Incluir modo de refresco
+        allow_negative_balance: j.allow_negative_balance ?? false,
+        negative_limit: j.negative_limit ?? null,
+        start_date: j.start_date ?? null,
+        use_global_start_date: j.use_global_start_date ?? true,
+        reset_cycle: j.reset_cycle ?? 'none',
+        reset_cycle_day: j.reset_cycle_day ?? 1,
+        target_amount: j.target_amount ?? null,
         sort_order: idx + 1,
         active: j.active ?? true,
         category_ids, // Categorías asignadas (drag-drop)
@@ -1848,7 +2319,7 @@ async function saveChanges() {
 }
 
 onMounted(() => {
-  void Promise.all([loadJarData(), loadCategoriesTree()]).then(() => {
+  void Promise.all([loadJarSettings(), loadJarData(), loadCategoriesTree()]).then(() => {
     // Remueve del árbol las categorías ya asignadas a algún cántaro
     const assigned = new Set<string>();
     for (const j of jarElements.value) {
@@ -1891,7 +2362,8 @@ watch(
     for (const jarId of Object.keys(jarBalances.value)) {
       const id = Number(jarId);
       if (jarBalances.value[id]) {
-        await jarBalances.value[id].cargarTodo();
+        const balanceDate = `${month}-01`;
+        await jarBalances.value[id].cargarTodo(balanceDate);
       }
     }
   },

@@ -782,6 +782,7 @@ import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore, type Transaction } from 'stores/transactions';
 import { useTransactionTypesStore, type TransactionType } from 'stores/transactionTypes';
+import { usePeriodStore } from 'stores/period';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import CategoriesTree from './CategoriesTree.vue';
@@ -795,6 +796,7 @@ const ui = useUiStore();
 const auth = useAuthStore();
 const tsStore = useTransactionsStore();
 const ttypes = useTransactionTypesStore();
+const periodStore = usePeriodStore();
 const $q = useQuasar();
 const route = useRoute();
 const router = useRouter();
@@ -2712,6 +2714,16 @@ watch(
   () => ui.showDialogNewTransaction,
   async (open) => {
     if (!open) return;
+    // Prefill datetime with selected month (when creating a new transaction)
+    if (!ui.prefillTransactionId && !isEdit.value && periodStore.state.type === 'month') {
+      const anchor = periodStore.state.anchor; // YYYY-MM-DD
+      if (anchor) {
+        const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(11, 16);
+        form.value.datetime = `${anchor}T${nowLocal}`;
+      }
+    }
     // Prefill from UI store when opening (edit flow)
     // Limpiar proveedor al seleccionar transferencia
     form.value.provider_id = null;

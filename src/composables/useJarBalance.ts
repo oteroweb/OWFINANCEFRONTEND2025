@@ -10,6 +10,7 @@ export type JarBalance = {
   asignado: number;        // Total assigned from transactions
   gastado: number;         // Total spent
   ajuste: number;          // Manual adjustment
+  retiros?: number;        // Withdrawals/usage
   balance: number;         // asignado - gastado + ajuste
   porcentaje_utilizado: number; // % of usage
   modo_refresco: 'acumulativo' | 'reinicio'; // Refresh mode
@@ -20,12 +21,14 @@ export type JarBalance = {
  */
 export type JarAdjustment = {
   id: number;
-  jar_id: number;
-  monto: number;           // Amount (positive or negative)
-  descripcion?: string;
-  usuario_id: number;
-  creado_en: string;       // ISO timestamp
-  actualizado_en: string;
+  amount: number;           // Amount (positive or negative)
+  type: string;             // Type of adjustment
+  reason?: string;
+  previous_available: number;
+  new_available: number;
+  date: string;             // Date string
+  created_at: string;       // ISO timestamp
+  adjusted_by?: string;     // User name who made adjustment
 };
 
 /**
@@ -96,7 +99,7 @@ export function useJarBalance(jarId: number | null | undefined) {
    * Carga balance desde backend
    * GET /jars/{jarId}/balance (usuario identificado por token)
    */
-  async function cargarBalance() {
+  async function cargarBalance(date?: string) {
     if (!jarId) {
       state.value.error = 'Jar ID no disponible';
       return;
@@ -106,11 +109,52 @@ export function useJarBalance(jarId: number | null | undefined) {
     state.value.error = null;
 
     try {
-      const res = await api.get<JarBalance>(
-        `/jars/${jarId}/balance`
-      );
+      console.log('[useJarBalance] Fetching balance', { jarId, date });
+      const res = await api.get<{
+        status: string;
+        code: number;
+        data: {
+          jar_id: number;
+          jar_name: string;
+          type: string;
+          refresh_mode: string;
+          allocated_amount: number;
+          spent_amount: number;
+          adjustment: number;
+          withdrawals?: number;
+          available_balance: number;
+          period: {
+            month: string;
+            start: string;
+            end: string;
+          };
+        };
+      }>(`/jars/${jarId}/balance`, {
+        params: date ? { date } : undefined,
+      });
 
-      state.value.balance = res.data;
+      // Transformar respuesta del backend al formato esperado
+      const data = res.data?.data;
+      if (!data || typeof data.jar_id !== 'number') {
+        const msg = 'Respuesta de balance inválida';
+        console.error('[useJarBalance] Invalid balance response', res.data);
+        state.value.error = msg;
+        throw new Error(msg);
+      }
+      state.value.balance = {
+        id: data.jar_id,
+        jar_id: data.jar_id,
+        asignado: data.allocated_amount,
+        gastado: data.spent_amount,
+        ajuste: data.adjustment,
+        retiros: data.withdrawals ?? 0,
+        balance: data.available_balance,
+        porcentaje_utilizado: data.allocated_amount > 0
+          ? Math.min(100, Math.round((data.spent_amount / data.allocated_amount) * 100))
+          : 0,
+        modo_refresco: data.refresh_mode === 'reset' ? 'reinicio' : 'acumulativo',
+      };
+      console.log('[useJarBalance] Balance loaded', state.value.balance);
     } catch (err) {
       console.error('Error cargando balance:', err);
       state.value.error = err instanceof Error ? err.message : 'Error desconocido';
@@ -134,11 +178,11 @@ export function useJarBalance(jarId: number | null | undefined) {
     state.value.error = null;
 
     try {
-      const res = await api.get<JarAdjustment[]>(
+      const res = await api.get<{ status: string; code: number; data: JarAdjustment[] }>(
         `/jars/${jarId}/adjustments`
       );
 
-      state.value.adjustments = res.data || [];
+      state.value.adjustments = res.data.data || [];
     } catch (err) {
       console.error('Error cargando ajustes:', err);
       state.value.error = err instanceof Error ? err.message : 'Error desconocido';
@@ -151,20 +195,21 @@ export function useJarBalance(jarId: number | null | undefined) {
   /**
    * Carga balance e historial simultáneamente
    */
-  async function cargarTodo() {
-    await Promise.all([cargarBalance(), cargarHistorial()]);
+  async function cargarTodo(date?: string) {
+    await Promise.all([cargarBalance(date), cargarHistorial()]);
   }
 
   /**
-   * Crea un nuevo ajuste
+   * Crea un nuevo ajuste estableciendo el balance objetivo
    * POST /jars/{jarId}/adjust (usuario identificado por token)
    *
-   * @param ajuste - Objeto con monto y descripción opcional
+   * @param ajuste - Objeto con valorObjetivo (balance deseado) y descripción opcional
    * @throws Error si falla la petición
    */
   async function crearAjuste(ajuste: {
-    monto: number;
+    valorObjetivo: number;
     descripcion?: string;
+    date?: string;
   }) {
     if (!jarId) {
       const msg = 'Jar ID no disponible';
@@ -172,60 +217,52 @@ export function useJarBalance(jarId: number | null | undefined) {
       throw new Error(msg);
     }
 
-    // Validaciones
-    if (!ajuste.monto || Number.isNaN(ajuste.monto)) {
-      const msg = 'El monto debe ser un número válido';
+    // Validaciones - valorObjetivo puede ser cualquier número incluido negativo
+    if (ajuste.valorObjetivo === null || ajuste.valorObjetivo === undefined || Number.isNaN(ajuste.valorObjetivo)) {
+      const msg = 'El balance objetivo debe ser un número válido';
       state.value.error = msg;
       throw new Error(msg);
-    }
-
-    if (ajuste.monto === 0) {
-      const msg = 'El monto no puede ser cero';
-      state.value.error = msg;
-      throw new Error(msg);
-    }
-
-    // Si es decremento, validar que no exceda balance disponible
-    if (ajuste.monto < 0 && state.value.balance) {
-      const nuevoBalance = state.value.balance.balance + ajuste.monto;
-      if (nuevoBalance < 0) {
-        const msg = `No puedes restar ${Math.abs(ajuste.monto)}. Balance disponible: ${state.value.balance.balance}`;
-        state.value.error = msg;
-        throw new Error(msg);
-      }
     }
 
     state.value.loading = true;
     state.value.error = null;
 
     try {
-      const res = await api.post<JarAdjustment>(
+      const res = await api.post<{
+        status: string;
+        code: number;
+        message: string;
+        data: {
+          jar_id: number;
+          jar_name: string;
+          adjustment: JarAdjustment;
+        };
+      }>(
         `/jars/${jarId}/adjust`,
         {
-          amount: ajuste.monto,
+          target_balance: ajuste.valorObjetivo,
           reason: ajuste.descripcion || null,
+          date: ajuste.date || null,
         }
       );
 
-      // Agregar nuevo ajuste al historial
-      state.value.adjustments.push(res.data);
+      const adjustment = res.data.data.adjustment;
 
-      // Actualizar balance local
+      // Agregar nuevo ajuste al historial
+      state.value.adjustments.push(adjustment);
+
+      // Actualizar balance local al valor objetivo
       if (state.value.balance) {
-        state.value.balance.ajuste += ajuste.monto;
-        state.value.balance.balance =
-          state.value.balance.asignado -
-          state.value.balance.gastado +
-          state.value.balance.ajuste;
-        state.value.balance.porcentaje_utilizado = Math.min(
-          100,
-          Math.round(
-            (state.value.balance.gastado / state.value.balance.asignado) * 100
-          )
-        );
+        // Calcular el ajuste incremental que se aplicó
+        const ajusteAplicado = ajuste.valorObjetivo - state.value.balance.balance;
+        state.value.balance.ajuste += ajusteAplicado;
+        state.value.balance.balance = ajuste.valorObjetivo;
+        state.value.balance.porcentaje_utilizado = state.value.balance.asignado > 0
+          ? Math.min(100, Math.round((state.value.balance.gastado / state.value.balance.asignado) * 100))
+          : 0;
       }
 
-      return res.data;
+      return adjustment;
     } catch (err) {
       console.error('Error creando ajuste:', err);
       state.value.error = err instanceof Error ? err.message : 'Error desconocido';
