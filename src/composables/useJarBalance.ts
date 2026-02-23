@@ -11,9 +11,21 @@ export type JarBalance = {
   gastado: number;         // Total spent
   ajuste: number;          // Manual adjustment
   retiros?: number;        // Withdrawals/usage
+  transfers_in?: number;   // Transfers into jar
+  transfers_out?: number;  // Transfers out of jar
+  leverage_in?: number;    // Virtual leverage into jar
+  leverage_out?: number;   // Virtual leverage out of jar
+  saldo_anterior?: number; // Previous month balance (carry-over for accumulative)
   balance: number;         // asignado - gastado + ajuste
   porcentaje_utilizado: number; // % of usage
   modo_refresco: 'acumulativo' | 'reinicio'; // Refresh mode
+  auto_transfer_applied?: {
+    id: number;
+    amount: number;
+    from_jar_id: number;
+    to_jar_id: number;
+    date: string;
+  } | null;
 };
 
 /**
@@ -122,7 +134,19 @@ export function useJarBalance(jarId: number | null | undefined) {
           spent_amount: number;
           adjustment: number;
           withdrawals?: number;
+            transfers_in?: number;
+            transfers_out?: number;
+            leverage_in?: number;
+            leverage_out?: number;
+            previous_month_balance?: number;
           available_balance: number;
+            auto_transfer_applied?: {
+              id: number;
+              amount: number;
+              from_jar_id: number;
+              to_jar_id: number;
+              date: string;
+            } | null;
           period: {
             month: string;
             start: string;
@@ -148,7 +172,13 @@ export function useJarBalance(jarId: number | null | undefined) {
         gastado: data.spent_amount,
         ajuste: data.adjustment,
         retiros: data.withdrawals ?? 0,
+        transfers_in: data.transfers_in ?? 0,
+        transfers_out: data.transfers_out ?? 0,
+        leverage_in: data.leverage_in ?? 0,
+        leverage_out: data.leverage_out ?? 0,
+        saldo_anterior: data.previous_month_balance ?? 0,
         balance: data.available_balance,
+        auto_transfer_applied: data.auto_transfer_applied ?? null,
         porcentaje_utilizado: data.allocated_amount > 0
           ? Math.min(100, Math.round((data.spent_amount / data.allocated_amount) * 100))
           : 0,

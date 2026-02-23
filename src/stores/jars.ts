@@ -13,14 +13,22 @@ export type JarLite = {
 /**
  * Balance information for a jar
  * Returned from balance endpoints
+ *
+ * Formula (reset):  balance = asignado - gastado + ajuste - retiros + transfers_in - transfers_out + leverage_in - leverage_out
+ * Formula (accum):  balance = balance_anterior + (same)
  */
 export type JarBalanceInfo = {
   id?: number;
   jar_id: number;
-  asignado: number;        // Total assigned from transactions
-  gastado: number;         // Total spent
-  ajuste: number;          // Manual adjustment
-  balance: number;         // asignado - gastado + ajuste
+  asignado: number;           // Total assigned from transactions
+  gastado: number;            // Total spent
+  ajuste: number;             // Manual adjustment (from jar_adjustments table)
+  retiros?: number;           // Withdrawals (optional, defaults 0)
+  transfers_in?: number;      // Manual transfers into jar (optional, defaults 0)
+  transfers_out?: number;     // Manual transfers out of jar (optional, defaults 0)
+  leverage_in?: number;       // Virtual leverage absorbed from other jars (optional, defaults 0)
+  leverage_out?: number;      // Virtual leverage given to deficit jars (optional, defaults 0)
+  balance: number;            // Effective available balance (computed by backend)
   porcentaje_utilizado: number; // % of usage
   modo_refresco?: 'acumulativo' | 'reinicio'; // Refresh mode
 };
@@ -120,31 +128,43 @@ export const useJarsStore = defineStore('jars', {
       this.adjustments[jarId].push(adjustment);
     },
     /**
-     * Update balance after adjustment
+     * Recalculate the local balance using the full formula.
+     * Backend is the single source of truth — this is only used for
+     * optimistic local updates before the next full reload.
+     */
+    _recalcLocalBalance(balance: JarBalanceInfo) {
+      balance.balance =
+        balance.asignado
+        - balance.gastado
+        + balance.ajuste
+        - (balance.retiros ?? 0)
+        + (balance.transfers_in ?? 0)
+        - (balance.transfers_out ?? 0)
+        + (balance.leverage_in ?? 0)
+        - (balance.leverage_out ?? 0);
+      balance.porcentaje_utilizado =
+        balance.asignado > 0
+          ? Math.min(100, Math.round((balance.gastado / balance.asignado) * 100))
+          : 0;
+    },
+    /**
+     * Update balance after adjustment (optimistic)
      */
     updateJarBalanceAfterAdjustment(jarId: number, monto: number) {
       const balance = this.balances[jarId];
       if (balance) {
         balance.ajuste += monto;
-        balance.balance = balance.asignado - balance.gastado + balance.ajuste;
-        balance.porcentaje_utilizado = Math.min(
-          100,
-          Math.round((balance.gastado / balance.asignado) * 100)
-        );
+        this._recalcLocalBalance(balance);
       }
     },
     /**
-     * Reset adjustment for a jar
+     * Reset adjustment for a jar (optimistic)
      */
     resetJarAdjustment(jarId: number) {
       const balance = this.balances[jarId];
       if (balance) {
         balance.ajuste = 0;
-        balance.balance = balance.asignado - balance.gastado;
-        balance.porcentaje_utilizado = Math.min(
-          100,
-          Math.round((balance.gastado / balance.asignado) * 100)
-        );
+        this._recalcLocalBalance(balance);
       }
     },
     /**

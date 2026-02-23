@@ -10,6 +10,143 @@
       @income-updated="handleIncomeUpdated"
     />
 
+    <!-- Resumen mensual de cántaros -->
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section>
+        <div class="text-subtitle2">Resumen del mes</div>
+        <div class="text-caption text-grey-7">
+          Totales de gasto, asignación y ahorro por cántaro.
+        </div>
+      </q-card-section>
+      <q-separator />
+
+      <!-- KPIs rápidos -->
+      <q-card-section>
+        <div class="row items-center q-col-gutter-md">
+          <div class="col-6 col-sm-3">
+            <div class="text-caption text-grey-7">Total gastado</div>
+            <div class="text-h6 text-negative">{{ formatCurrency(summaryTotals.spent) }}</div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div class="text-caption text-grey-7">Total ajustes</div>
+            <div class="text-h6" :class="summaryTotals.adjustment >= 0 ? 'text-positive' : 'text-negative'">
+              {{ summaryTotals.adjustment >= 0 ? '+' : '' }}{{ formatCurrency(summaryTotals.adjustment) }}
+            </div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div class="text-caption text-grey-7">No usado en cántaros</div>
+            <div class="text-h6">{{ formatCurrency(theoreticalSavings.total_unused) }}</div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div class="text-caption text-grey-7">Ahorro teórico total</div>
+            <div class="text-h6 text-primary">{{ formatCurrency(theoreticalSavings.total_theoretical) }}</div>
+            <div class="text-caption text-grey-6">Incluye cuentas de ahorro: {{ formatCurrency(theoreticalSavings.total_savings_accounts) }}</div>
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-separator />
+
+      <!-- Tabla desglose por cántaro -->
+      <q-card-section class="q-pa-none">
+        <div class="summary-table-wrap">
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th class="text-left">Cántaro</th>
+                <th v-if="hasAnyAccumulative" class="text-right">
+                  Saldo anterior
+                  <div class="th-sub text-grey-6">mes previo</div>
+                </th>
+                <th class="text-right">
+                  Asignado
+                  <div class="th-sub text-info">esperado</div>
+                </th>
+                <th class="text-right">
+                  Asignado
+                  <div class="th-sub text-positive">real</div>
+                </th>
+                <th v-if="hasAnyAccumulative" class="text-right">
+                  Disponible mes
+                  <div class="th-sub text-purple-4">anterior + asignado</div>
+                </th>
+                <th class="text-right">Gastado</th>
+                <th class="text-right">Ajuste</th>
+                <th class="text-right">Total gasto</th>
+                <th class="text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in jarMonthlySummary" :key="row.id">
+                <td>
+                  <div class="summary-jar-name">
+                    <span class="summary-dot" :style="{ background: row.color }"></span>
+                    {{ row.name }}
+                    <span class="text-caption text-grey-6 q-ml-xs">
+                      {{ row.type === 'percent' ? `${row.percent}%` : 'Fijo' }}
+                    </span>
+                  </div>
+                </td>
+                <td v-if="hasAnyAccumulative" class="text-right" :class="row.carryOver > 0 ? 'text-positive' : row.carryOver < 0 ? 'text-negative' : 'text-grey-6'">
+                  <template v-if="row.isAccumulative && row.carryOver !== 0">
+                    <q-icon :name="row.carryOver > 0 ? 'trending_up' : 'trending_down'" size="14px" class="q-mr-xs" />
+                    {{ row.carryOver > 0 ? '+' : '' }}{{ formatCurrency(row.carryOver) }}
+                    <div class="text-caption" :class="row.carryOver > 0 ? 'text-positive' : 'text-negative'">
+                      {{ row.carryOver > 0 ? 'superávit' : 'excedido' }}
+                    </div>
+                  </template>
+                  <template v-else-if="row.isAccumulative">
+                    $0.00
+                  </template>
+                  <template v-else>
+                    —
+                  </template>
+                </td>
+                <td class="text-right text-info">{{ formatCurrency(row.assignedExpected) }}</td>
+                <td class="text-right text-positive">{{ formatCurrency(row.assignedReal) }}</td>
+                <td v-if="hasAnyAccumulative" class="text-right text-weight-bold text-purple-4">
+                  {{ row.isAccumulative ? formatCurrency(row.carryOver + row.assignedExpected) : formatCurrency(row.assignedExpected) }}
+                </td>
+                <td class="text-right text-negative">{{ formatCurrency(row.spent) }}</td>
+                <td class="text-right" :class="row.adjustment > 0 ? 'text-positive' : row.adjustment < 0 ? 'text-negative' : ''">
+                  {{ row.adjustment !== 0 ? ((row.adjustment > 0 ? '+' : '') + formatCurrency(row.adjustment)) : '—' }}
+                </td>
+                <td class="text-right text-weight-bold text-negative">
+                  {{ formatCurrency(row.spent + Math.abs(Math.min(row.adjustment, 0))) }}
+                </td>
+                <td class="text-right text-weight-bold" :class="row.balance < 0 ? 'text-negative' : row.balance > 0 ? 'text-positive' : 'text-grey-6'">
+                  {{ formatCurrency(row.balance) }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="summary-total-row">
+                <td class="text-weight-bold">Total</td>
+                <td v-if="hasAnyAccumulative" class="text-right text-weight-bold" :class="summaryTotals.carryOver > 0 ? 'text-positive' : summaryTotals.carryOver < 0 ? 'text-negative' : 'text-grey-6'">
+                  {{ summaryTotals.carryOver !== 0 ? ((summaryTotals.carryOver > 0 ? '+' : '') + formatCurrency(summaryTotals.carryOver)) : '—' }}
+                </td>
+                <td class="text-right text-weight-bold text-info">{{ formatCurrency(summaryTotals.assignedExpected) }}</td>
+                <td class="text-right text-weight-bold text-positive">{{ formatCurrency(summaryTotals.assignedReal) }}</td>
+                <td v-if="hasAnyAccumulative" class="text-right text-weight-bold text-purple-4">
+                  {{ formatCurrency(summaryTotals.carryOver + summaryTotals.assignedExpected) }}
+                </td>
+                <td class="text-right text-weight-bold text-negative">{{ formatCurrency(summaryTotals.spent) }}</td>
+                <td class="text-right text-weight-bold" :class="summaryTotals.adjustment >= 0 ? 'text-positive' : 'text-negative'">
+                  {{ summaryTotals.adjustment !== 0 ? ((summaryTotals.adjustment > 0 ? '+' : '') + formatCurrency(summaryTotals.adjustment)) : '—' }}
+                </td>
+                <td class="text-right text-weight-bold text-negative">
+                  {{ formatCurrency(summaryTotals.totalSpent) }}
+                </td>
+                <td class="text-right text-weight-bold" :class="summaryTotals.balance < 0 ? 'text-negative' : 'text-positive'">
+                  {{ formatCurrency(summaryTotals.balance) }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </q-card-section>
+    </q-card>
+
     <q-card flat bordered class="q-mb-md">
       <q-card-section>
         <div class="text-subtitle2">Configuración global de cántaros</div>
@@ -72,6 +209,46 @@
               label="Día del ciclo por defecto"
               min="1"
               max="28"
+            />
+          </div>
+          <div class="col-12 col-sm-6">
+            <q-select
+              v-model="jarSettings.leverage_jar_id"
+              :options="[
+                { label: 'Ninguno', value: null },
+                ...jarElements
+                  .filter((j) => j.id)
+                  .map((j) => ({ label: j.name, value: j.id }))
+              ]"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              clearable
+              dense
+              filled
+              label="Cántaro de apalancamiento"
+              hint="Se usa para cubrir excesos automáticamente"
+            />
+          </div>
+          <div class="col-12 col-sm-6">
+            <q-select
+              v-model="monthlyLeverageJarId"
+              :options="[
+                { label: 'Ninguno', value: null },
+                ...jarElements
+                  .filter((j) => j.id)
+                  .map((j) => ({ label: j.name, value: j.id }))
+              ]"
+              option-label="label"
+              option-value="value"
+              emit-value
+              map-options
+              clearable
+              dense
+              filled
+              :label="`Cántaro de apalancamiento (${currentMonth})`"
+              hint="Se aplica solo al mes seleccionado"
             />
           </div>
         </div>
@@ -294,8 +471,20 @@
                             >
                               <q-tooltip>Eliminar cántaro</q-tooltip>
                             </q-btn>
+                            <q-btn
+                              flat
+                              dense
+                              round
+                              color="primary"
+                              :icon="jar.collapsed ? 'keyboard_arrow_down' : 'keyboard_arrow_up'"
+                              @click="jar.collapsed = !jar.collapsed"
+                            >
+                              <q-tooltip>
+                                {{ jar.collapsed ? 'Expandir cántaro' : 'Minimizar cántaro' }}
+                              </q-tooltip>
+                            </q-btn>
                           </div>
-                          <div class="jar-amount-grid q-mt-xs">
+                          <div v-if="jar.collapsed" class="jar-compact-controls q-mt-xs">
                             <template v-if="jar.type === 'percent'">
                               <q-slider
                                 v-model.number="jar.percent"
@@ -303,7 +492,7 @@
                                 :max="100"
                                 :step="1"
                                 color="primary"
-                                class="slider-col"
+                                class="compact-slider"
                                 @update:model-value="onPercentChange"
                               />
                               <q-input
@@ -311,7 +500,7 @@
                                 type="number"
                                 dense
                                 filled
-                                class="percent-input"
+                                class="compact-percent-input"
                                 suffix="%"
                                 @update:model-value="onPercentChange"
                               />
@@ -322,69 +511,93 @@
                                 type="number"
                                 dense
                                 filled
-                                class="fixed-input"
+                                class="compact-fixed-input"
                                 prefix="$"
                                 step="0.01"
                                 min="0"
                                 @update:model-value="onFixedAmountChange"
                               />
                             </template>
-                          </div>
-
-                          <!-- Panel de ingreso disponible y ajuste rápido -->
-                          <div class="jar-quick-summary q-mt-md">
-                            <div class="summary-row">
-                              <div class="summary-label">
-                                <q-icon name="account_balance_wallet" size="16px" class="q-mr-xs" />
-                                Ingreso disponible:
-                              </div>
-                              <div class="summary-value">
-                                {{ formatCurrency(calculateJarSuggestion(jar)) }}
-                                <q-tooltip>
-                                  Basado en {{ jar.type === 'percent' ? `${jar.percent}% de tus ingresos` : 'monto fijo' }}
-                                </q-tooltip>
-                              </div>
-                            </div>
-                            <div class="summary-row" v-if="jar.id">
-                              <div class="summary-label">
-                                <q-icon name="savings" size="16px" class="q-mr-xs" />
-                                Disponible actual:
-                              </div>
-                              <div class="summary-value text-primary">
-                                {{ formatCurrency(getJarBalanceValue(jar.id)?.balance || 0) }}
-                              </div>
-                            </div>
-                            <q-btn
-                              v-if="jar.id"
-                              outline
+                            <q-select
+                              v-model="jar.leverage_from_jar_id"
+                              :options="jarElements
+                                .filter((j) => j.id && j.id !== jar.id)
+                                .map((j) => ({ label: j.name, value: j.id }))"
+                              option-label="label"
+                              option-value="value"
+                              emit-value
+                              map-options
+                              clearable
                               dense
-                              no-caps
-                              color="primary"
-                              icon="tune"
-                              label="Ajustar disponible"
-                              class="full-width q-mt-xs"
-                              @click="openAdjustmentModal(jar.id)"
-                            />
-                            <q-btn
-                              v-if="jar.id"
-                              outline
-                              dense
-                              no-caps
-                              color="accent"
-                              icon="payments"
-                              label="Registrar uso"
-                              class="full-width q-mt-xs"
-                              @click="openWithdrawalModal(jar.id)"
+                              filled
+                              class="compact-leverage-select"
+                              label="Apalancamiento desde"
                             />
                           </div>
+                          <div v-show="!jar.collapsed">
+                            <div class="jar-amount-grid q-mt-xs">
+                              <template v-if="jar.type === 'percent'">
+                                <q-slider
+                                  v-model.number="jar.percent"
+                                  :min="0"
+                                  :max="100"
+                                  :step="1"
+                                  color="primary"
+                                  class="slider-col"
+                                  @update:model-value="onPercentChange"
+                                />
+                                <q-input
+                                  v-model.number="jar.percent"
+                                  type="number"
+                                  dense
+                                  filled
+                                  class="percent-input"
+                                  suffix="%"
+                                  @update:model-value="onPercentChange"
+                                />
+                              </template>
+                              <template v-else>
+                                <q-input
+                                  v-model.number="jar.fixedAmount"
+                                  type="number"
+                                  dense
+                                  filled
+                                  class="fixed-input"
+                                  prefix="$"
+                                  step="0.01"
+                                  min="0"
+                                  @update:model-value="onFixedAmountChange"
+                                />
+                              </template>
+                            </div>
 
-                          <q-expansion-item
-                            dense
-                            class="q-mt-sm"
-                            label="Opciones avanzadas"
-                            header-class="text-caption text-grey-7"
-                          >
-                            <div class="row q-col-gutter-sm">
+                            <!-- Balance card (right after config) -->
+                            <div v-if="jar.id && jarBalances[jar.id]" class="q-mt-md">
+                              <JarCard
+                                :jar="jar"
+                                :balance="getJarBalanceValue(jar.id)"
+                                :loading="getJarLoadingValue(jar.id)"
+                                :error="getJarErrorValue(jar.id)"
+                                :porcentaje-utilizado="getJarPctValue(jar.id)"
+                                :status-balance="getJarStatusValue(jar.id)"
+                                :show-leverage="!!(jar.leverage_from_jar_id || jarSettings.leverage_jar_id)"
+                                :use-real-income="useRealIncome"
+                                :expected-income="expectedIncome"
+                                :calculated-income="calculatedIncome"
+                                @adjust="openAdjustmentModal(jar.id)"
+                                @reset="handleResetAdjustment(jar.id)"
+                                @withdraw="openWithdrawalModal(jar.id)"
+                                @leverage="applyLeverageNow(jar.id)"
+                              />
+                            </div>
+
+                            <q-expansion-item
+                              dense
+                              class="q-mt-sm"
+                              label="Opciones avanzadas"
+                              header-class="text-caption text-grey-7"
+                            >
+                              <div class="row q-col-gutter-sm">
                               <div class="col-12 col-md-4">
                                 <q-input
                                   v-model="jar.start_date"
@@ -459,88 +672,77 @@
                                   step="0.01"
                                 />
                               </div>
-                            </div>
-                          </q-expansion-item>
-
-                          <div
-                            class="jar-dropzone q-mt-md"
-                            :class="{ 'is-drop-target': jarDropOverIndex === idx }"
-                            @dragover.prevent="() => onJarDragOver(idx)"
-                            @dragleave="() => onJarDragLeave(idx)"
-                            @drop.prevent="(ev) => onJarDrop(idx, ev)"
-                          >
-                            <Draggable
-                              v-model="jar.categories"
-                              group="categories"
-                              item-key="id"
-                              class="chip-list"
-                              :animation="160"
-                              :ghost-class="'drag-ghost'"
-                              :chosen-class="'drag-chosen'"
-                              handle=".chip-drag-handle"
-                              :filter="'.q-chip__icon--remove'"
-                              :prevent-on-filter="true"
-                              :move="onCategoryMove"
-                              @change="onCategoryChange"
-                            >
-                              <!-- handle=".chip-drag-handle" -->
-                              <template #item="{ element: c }">
-                                <q-chip
+                              <div class="col-12 col-md-6">
+                                <q-select
+                                  v-model="jar.leverage_from_jar_id"
+                                  :options="jarElements
+                                    .filter((j) => j.id && j.id !== jar.id)
+                                    .map((j) => ({ label: j.name, value: j.id }))"
+                                  option-label="label"
+                                  option-value="value"
+                                  emit-value
+                                  map-options
+                                  clearable
                                   dense
-                                  :key="c.id"
-                                  :draggable="false"
-                                  removable
-                                  remove-icon="close"
-                                  @remove="removeCategoryFromJar(idx, c.id)"
-                                  v-bind="categoryChipBind(c.label)"
-                                  class="q-mr-xs q-mb-xs"
-                                >
-                                  <q-icon
-                                    name="open_with"
-                                    size="14px"
-                                    class="chip-drag-handle q-mr-xs"
-                                    draggable="true"
-                                    @dragstart="onChipDragStart(c, $event)"
-                                  />
-                                  {{ c.label }}
-                                </q-chip>
-                              </template>
-                            </Draggable>
-                            <div
-                              v-if="!jar.categories || jar.categories.length === 0"
-                              class="text-caption text-grey-7"
-                            >
-                              Suelta categorías aquí
-                            </div>
-                          </div>
+                                  filled
+                                  label="Apalancamiento desde"
+                                  hint="Si este cántaro queda en negativo, se descuenta de este origen"
+                                />
+                              </div>
+                              </div>
+                            </q-expansion-item>
 
-                          <!-- NUEVO: Balance card -->
-                          <div v-if="jar.id && jarBalances[jar.id]" class="q-mt-md">
-                            <JarCard
-                              :jar="jar"
-                              :balance="
-                                (() => {
-                                  const bal = getJarBalanceValue(jar.id);
-                                  return bal
-                                    ? {
-                                        asignado: bal.asignado,
-                                        gastado: bal.gastado,
-                                        ajuste: bal.ajuste,
-                                        balance: bal.balance,
-                                        porcentaje_utilizado: bal.porcentaje_utilizado,
-                                      }
-                                    : null;
-                                })()
-                              "
-                              :loading="getJarLoadingValue(jar.id)"
-                              :error="getJarErrorValue(jar.id)"
-                              :porcentaje-utilizado="
-                                getJarPctValue(jar.id)
-                              "
-                              :status-balance="getJarStatusValue(jar.id)"
-                              @adjust="openAdjustmentModal(jar.id)"
-                              @reset="handleResetAdjustment(jar.id)"
-                            />
+                            <div
+                              class="jar-dropzone q-mt-md"
+                              :class="{ 'is-drop-target': jarDropOverIndex === idx }"
+                              @dragover.prevent="() => onJarDragOver(idx)"
+                              @dragleave="() => onJarDragLeave(idx)"
+                              @drop.prevent="(ev) => onJarDrop(idx, ev)"
+                            >
+                              <Draggable
+                                v-model="jar.categories"
+                                group="categories"
+                                item-key="id"
+                                class="chip-list"
+                                :animation="160"
+                                :ghost-class="'drag-ghost'"
+                                :chosen-class="'drag-chosen'"
+                                handle=".chip-drag-handle"
+                                :filter="'.q-chip__icon--remove'"
+                                :prevent-on-filter="true"
+                                :move="onCategoryMove"
+                                @change="onCategoryChange"
+                              >
+                                <!-- handle=".chip-drag-handle" -->
+                                <template #item="{ element: c }">
+                                  <q-chip
+                                    dense
+                                    :key="c.id"
+                                    :draggable="false"
+                                    removable
+                                    remove-icon="close"
+                                    @remove="removeCategoryFromJar(idx, c.id)"
+                                    v-bind="categoryChipBind(c.label)"
+                                    class="q-mr-xs q-mb-xs"
+                                  >
+                                    <q-icon
+                                      name="open_with"
+                                      size="14px"
+                                      class="chip-drag-handle q-mr-xs"
+                                      draggable="true"
+                                      @dragstart="onChipDragStart(c, $event)"
+                                    />
+                                    {{ c.label }}
+                                  </q-chip>
+                                </template>
+                              </Draggable>
+                              <div
+                                v-if="!jar.categories || jar.categories.length === 0"
+                                class="text-caption text-grey-7"
+                              >
+                                Suelta categorías aquí
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -586,6 +788,28 @@
               </q-card>
             </div>
           </div>
+        </div>
+        <q-separator spaced />
+        <div class="jar-bottom-bar">
+          <div
+            class="text-subtitle2"
+            :class="{
+              'text-negative': !hasFixedJar && totalPercentage > 100,
+              'text-warning': !hasFixedJar && totalPercentage < 100,
+            }"
+          >
+            Total: {{ totalPercentage }}%
+            <q-tooltip v-if="hasFixedJar"
+              >Hay cántaros fijos; la suma de % es informativa.</q-tooltip
+            >
+          </div>
+          <q-btn
+            label="Guardar Cambios"
+            color="primary"
+            @click="saveChanges"
+            :loading="saving"
+            :disable="saveDisabled"
+          />
         </div>
       </q-card-section>
     </q-card>
@@ -685,9 +909,26 @@
       :jar="
         currentJarAdjustment ? jarElements.find((j) => j.id === currentJarAdjustment) ?? null : null
       "
-      :current-balance="getJarBalanceValue(currentJarAdjustment || -1)?.balance || 0"
+      :current-balance="Math.round(getJarBaseBalance(currentJarAdjustment || -1) * 100) / 100"
+      :accounting-balance="Math.round((
+        getJarBaseBalance(currentJarAdjustment || -1) +
+          (getJarBalanceValue(currentJarAdjustment || -1)?.retiros || 0)
+      ) * 100) / 100"
+      :assigned-amount="Math.round(getAdjustmentBudgetBase(currentJarAdjustment || -1) * 100) / 100"
+      :allow-negative="
+        currentJarAdjustment
+          ? (jarElements.find((j) => j.id === currentJarAdjustment)?.allow_negative_balance ?? false) ||
+            jarElements.find((j) => j.id === currentJarAdjustment)?.refresh_mode === 'accumulative'
+          : false
+      "
+      :negative-limit="
+        currentJarAdjustment
+          ? jarElements.find((j) => j.id === currentJarAdjustment)?.negative_limit ?? null
+          : null
+      "
       :previous-adjustment="getJarBalanceValue(currentJarAdjustment || -1)?.ajuste ?? 0"
       @save="handleSaveAdjustment"
+      @clear="handleClearAdjustments"
     />
 
     <q-dialog v-model="showWithdrawalModal">
@@ -738,10 +979,12 @@
       </q-card>
     </q-dialog>
   </q-page>
+
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { usePeriodStore } from 'stores/period';
 import { useQuasar } from 'quasar';
@@ -773,9 +1016,11 @@ type Jar = {
   reset_cycle?: 'none' | 'monthly' | 'quarterly' | 'semiannual' | 'annual';
   reset_cycle_day?: number;
   target_amount?: number | null;
+  leverage_from_jar_id?: number | null;
   color?: string | undefined;
   categories?: Array<{ id: string; label: string }>;
   active?: boolean;
+  collapsed?: boolean;
 };
 
 // API response typing for jars
@@ -809,6 +1054,7 @@ type JarSettings = {
   default_negative_limit?: number | null;
   default_reset_cycle?: 'none' | 'monthly' | 'quarterly' | 'semiannual' | 'annual';
   default_reset_cycle_day?: number;
+  leverage_jar_id?: number | null;
 };
 
 type CatNodeInput = {
@@ -822,6 +1068,8 @@ type CatNodeInput = {
 const $q = useQuasar();
 const auth = useAuthStore();
 const periodStore = usePeriodStore();
+const route = useRoute();
+const router = useRouter();
 const jarElements = ref<Jar[]>([]);
 const jarsStore = useJarsStore();
 const serverJarIds = ref<Set<number>>(new Set());
@@ -835,6 +1083,14 @@ const jarSettings = ref<JarSettings>({
   default_negative_limit: null,
   default_reset_cycle: 'none',
   default_reset_cycle_day: 1,
+  leverage_jar_id: null,
+});
+const monthlyLeverageJarId = ref<number | null>(null);
+
+const theoreticalSavings = ref({
+  total_unused: 0,
+  total_savings_accounts: 0,
+  total_theoretical: 0,
 });
 
 // Get current month in YYYY-MM format from period store
@@ -851,6 +1107,83 @@ const currentMonth = computed(() => {
   const month = String(now.getMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
 });
+
+const validPeriodTypes = new Set([
+  'all',
+  'year',
+  'semester',
+  'quarter',
+  'month',
+  'fortnight',
+  'week',
+  'day',
+  'custom',
+]);
+const isIsoDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+const isYearMonth = (value: string) => /^\d{4}-\d{2}$/.test(value);
+
+function applyPeriodFromQuery() {
+  const q = route.query;
+  const period = typeof q.period === 'string' ? q.period : undefined;
+  const anchor = typeof q.anchor === 'string' ? q.anchor : undefined;
+  const from = typeof q.from === 'string' ? q.from : undefined;
+  const to = typeof q.to === 'string' ? q.to : undefined;
+  const month = typeof q.month === 'string' ? q.month : undefined;
+
+  if (month && isYearMonth(month)) {
+    periodStore.setType('month');
+    periodStore.state.anchor = `${month}-01`;
+    return;
+  }
+
+  if (period && validPeriodTypes.has(period)) {
+    if (period === 'custom') {
+      if (from && to && isIsoDate(from) && isIsoDate(to)) {
+        periodStore.setCustomRange(from, to);
+      }
+    } else {
+      periodStore.setType(period as typeof periodStore.state.type);
+    }
+  }
+
+  if (anchor && isIsoDate(anchor)) {
+    periodStore.state.anchor = anchor;
+  }
+}
+
+function syncPeriodToQuery() {
+  const type = periodStore.state.type;
+  const anchor = periodStore.state.anchor;
+  const from = periodStore.state.customFrom;
+  const to = periodStore.state.customTo;
+
+  const nextQuery: Record<string, string> = {
+    ...(route.query as Record<string, string>),
+    period: type,
+    anchor,
+  };
+
+  if (type === 'month') {
+    nextQuery.month = anchor.slice(0, 7);
+  } else {
+    delete nextQuery.month;
+  }
+
+  if (type === 'custom') {
+    if (from) nextQuery.from = from;
+    if (to) nextQuery.to = to;
+  } else {
+    delete nextQuery.from;
+    delete nextQuery.to;
+  }
+
+  const currentQuery = route.query as Record<string, string>;
+  const same = Object.keys(nextQuery).every((k) => nextQuery[k] === currentQuery[k]) &&
+    Object.keys(currentQuery).every((k) => currentQuery[k] === nextQuery[k]);
+  if (!same) {
+    void router.replace({ query: nextQuery });
+  }
+}
 
 // Income composable for calculating suggested amounts
 const { expectedIncome, calculatedIncome, fetchCalculatedIncome } = useCalculatedIncome();
@@ -915,6 +1248,7 @@ const withdrawalForm = ref({
   description: '',
   date: new Date().toISOString().slice(0, 10),
 });
+
 
 // Tree ref (typed with exposed API) and map of categories for quick lookup on drop
 type CategoriesTreeExposed = {
@@ -991,9 +1325,11 @@ function mkJar(name: string, percent: number, type: 'percent' | 'fixed', id?: nu
     reset_cycle: 'none',
     reset_cycle_day: 1,
     target_amount: null,
+    leverage_from_jar_id: null,
     color: undefined,
     categories: [],
     active: true,
+    collapsed: true,
   };
   if (id != null) j.id = id;
   return j;
@@ -1105,6 +1441,47 @@ function getJarBalanceValue(jarId: number) {
   return unwrapMaybeRef(entry?.balance ?? null);
 }
 
+function getJarLeverageNet(jarId: number): number {
+  const bal = getJarBalanceValue(jarId);
+  const leverageIn = bal?.leverage_in ?? 0; // absorbed from others
+  const leverageOut = bal?.leverage_out ?? 0; // excess transferred out
+  return leverageOut - leverageIn;
+}
+
+function getJarBaseBalance(jarId: number): number {
+  const bal = getJarBalanceValue(jarId);
+  if (!bal) return 0;
+  return (bal.balance ?? 0) - (bal.leverage_in ?? 0) + (bal.leverage_out ?? 0);
+}
+
+/**
+ * For accumulative jars, the budget base = saldo_anterior + asignado.
+ * For reset jars, just asignado.
+ * This way the "Usado" field in the adjustment modal shows
+ * only real spending for the current month, not the carry-over.
+ */
+function getAdjustmentBudgetBase(jarId: number): number {
+  const bal = getJarBalanceValue(jarId);
+  if (!bal) return 0;
+  const assigned = bal.asignado || 0;
+  const jar = jarElements.value.find((j) => j.id === jarId);
+  if (jar?.refresh_mode === 'accumulative') {
+    return assigned + (bal.saldo_anterior ?? 0);
+  }
+  return assigned;
+}
+
+function getJarLeverageSourceName(jarId: number): string {
+  const jar = jarElements.value.find((j) => j.id === jarId);
+  const sourceId =
+    jar?.leverage_from_jar_id ??
+    monthlyLeverageJarId.value ??
+    jarSettings.value.leverage_jar_id ??
+    null;
+  if (!sourceId) return '—';
+  return jarElements.value.find((j) => j.id === sourceId)?.name || `#${sourceId}`;
+}
+
 function getJarLoadingValue(jarId: number) {
   const entry = jarBalances.value[jarId];
   return unwrapMaybeRef(entry?.loading ?? null) ?? false;
@@ -1160,13 +1537,103 @@ const hasActivePercentJars = computed(() =>
 );
 
 /**
- * Calcula el total asignado actual a todos los cántaros basado en sus balances
+ * Calcula el total asignado actual a todos los cántaros.
+ * Usa el valor del backend si existe; si no, calcula localmente desde porcentaje × ingreso.
  */
 const totalAssignedAmount = computed(() => {
-  return Object.values(jarBalances.value).reduce((total, balanceComposable) => {
+  const backendTotal = Object.values(jarBalances.value).reduce((total, balanceComposable) => {
     const assigned = balanceComposable?.balance?.value?.asignado || 0;
     return total + assigned;
   }, 0);
+
+  // Si el backend ya tiene valores, usarlos
+  if (backendTotal > 0) return backendTotal;
+
+  // Fallback: calcular localmente desde porcentaje × ingreso activo
+  const income = useRealIncome.value ? calculatedIncome.value : expectedIncome.value;
+  if (income <= 0) return 0;
+  return jarElements.value
+    .filter((j) => (j.active ?? true) && j.id)
+    .reduce((sum, j) => {
+      if (j.type === 'percent') return sum + (income * (j.percent || 0)) / 100;
+      return sum + (j.fixedAmount || 0);
+    }, 0);
+});
+
+/**
+ * Resumen mensual por cántaro: nombre, asignado (esperado/real), gastado, ajuste, balance
+ */
+type JarMonthlySummaryRow = {
+  id: number;
+  name: string;
+  color: string;
+  type: 'percent' | 'fixed';
+  percent: number;
+  isAccumulative: boolean;
+  carryOver: number;
+  assignedExpected: number;
+  assignedReal: number;
+  spent: number;
+  adjustment: number;
+  withdrawals: number;
+  transfersIn: number;
+  transfersOut: number;
+  leverageIn: number;
+  leverageOut: number;
+  balance: number;
+};
+
+const jarMonthlySummary = computed<JarMonthlySummaryRow[]>(() => {
+  return jarElements.value
+    .filter((j) => j.id && (j.active ?? true))
+    .map((j) => {
+      const bal = getJarBalanceValue(j.id!);
+      const pct = j.percent || 0;
+      const isAccum = j.refresh_mode === 'accumulative';
+      return {
+        id: j.id!,
+        name: j.name,
+        color: getJarColor(j),
+        type: j.type as 'percent' | 'fixed',
+        percent: pct,
+        isAccumulative: isAccum,
+        carryOver: isAccum ? (bal?.saldo_anterior ?? 0) : 0,
+        assignedExpected: j.type === 'percent'
+          ? (expectedIncome.value * pct) / 100
+          : (j.fixedAmount || 0),
+        assignedReal: j.type === 'percent'
+          ? (calculatedIncome.value * pct) / 100
+          : (j.fixedAmount || 0),
+        spent: bal?.gastado || 0,
+        adjustment: bal?.ajuste || 0,
+        withdrawals: bal?.retiros || 0,
+        transfersIn: bal?.transfers_in || 0,
+        transfersOut: bal?.transfers_out || 0,
+        leverageIn: bal?.leverage_in || 0,
+        leverageOut: bal?.leverage_out || 0,
+        balance: bal?.balance || 0,
+      };
+    });
+});
+
+const hasAnyAccumulative = computed(() =>
+  jarMonthlySummary.value.some((r) => r.isAccumulative)
+);
+
+const summaryTotals = computed(() => {
+  const rows = jarMonthlySummary.value;
+  const spent = rows.reduce((s, r) => s + r.spent, 0);
+  const adjustment = rows.reduce((s, r) => s + r.adjustment, 0);
+  return {
+    assignedExpected: rows.reduce((s, r) => s + r.assignedExpected, 0),
+    assignedReal: rows.reduce((s, r) => s + r.assignedReal, 0),
+    carryOver: rows.reduce((s, r) => s + r.carryOver, 0),
+    spent,
+    adjustment,
+    withdrawals: rows.reduce((s, r) => s + r.withdrawals, 0),
+    balance: rows.reduce((s, r) => s + r.balance, 0),
+    totalSpent: spent + Math.abs(Math.min(adjustment, 0)),
+  };
 });
 
 // Segments for horizontal bar: active percent jars, plus empty remainder up to 100%
@@ -1427,31 +1894,83 @@ async function loadJarSettings() {
   try {
     const res = await api.get('/jars/settings');
     const data = res.data?.data || {};
+    // Normalize global_start_date: backend may return ISO datetime ("2025-11-01T00:00:00.000000Z")
+    // but <q-input type="date"> needs "YYYY-MM-DD"
+    let gsd = data.global_start_date ?? null;
+    if (gsd && typeof gsd === 'string' && gsd.includes('T')) {
+      gsd = gsd.slice(0, 10);
+    }
     jarSettings.value = {
       id: data.id,
       user_id: data.user_id,
-      global_start_date: data.global_start_date ?? null,
+      global_start_date: gsd,
       default_allow_negative: data.default_allow_negative ?? false,
       default_negative_limit: data.default_negative_limit ?? null,
       default_reset_cycle: data.default_reset_cycle ?? 'none',
       default_reset_cycle_day: data.default_reset_cycle_day ?? 1,
+      leverage_jar_id: data.leverage_jar_id ?? null,
     };
     jarSettingsLoaded.value = true;
+    await loadMonthlyLeverageSetting(currentMonth.value);
   } catch (e) {
     console.warn('[JarSettings] Error loading settings:', e);
     jarSettingsLoaded.value = false;
   }
 }
 
+async function loadMonthlyLeverageSetting(month: string) {
+  try {
+    const res = await api.get('/jars/settings/monthly', { params: { month } });
+    const data = res.data?.data || {};
+    monthlyLeverageJarId.value = data.leverage_jar_id ?? null;
+    useRealIncome.value = data.use_real_income ?? false;
+  } catch (e) {
+    console.warn('[JarSettings] Error loading monthly leverage:', e);
+    monthlyLeverageJarId.value = null;
+    useRealIncome.value = false;
+  }
+}
+
 async function saveJarSettings() {
   if (!jarSettingsLoaded.value) return;
+  const leverageValue =
+    jarSettings.value.leverage_jar_id === undefined
+      ? null
+      : jarSettings.value.leverage_jar_id;
   await api.put('/jars/settings', {
     global_start_date: jarSettings.value.global_start_date || null,
     default_allow_negative: jarSettings.value.default_allow_negative ?? false,
     default_negative_limit: jarSettings.value.default_negative_limit ?? null,
     default_reset_cycle: jarSettings.value.default_reset_cycle ?? 'none',
     default_reset_cycle_day: jarSettings.value.default_reset_cycle_day ?? 1,
+    leverage_jar_id: leverageValue ?? null,
   });
+
+  await api.put('/jars/settings/monthly', {
+    month: currentMonth.value,
+    leverage_jar_id: monthlyLeverageJarId.value ?? null,
+    use_real_income: useRealIncome.value ?? false,
+  });
+}
+
+async function loadTheoreticalSavings() {
+  try {
+    const balanceDate = `${currentMonth.value}-01`;
+    const res = await api.get('/jars/theoretical-savings', { params: { date: balanceDate } });
+    const data = res.data?.data || {};
+    theoreticalSavings.value = {
+      total_unused: Number(data.total_unused || 0),
+      total_savings_accounts: Number(data.total_savings_accounts || 0),
+      total_theoretical: Number(data.total_theoretical || 0),
+    };
+  } catch (err) {
+    console.warn('[TheoreticalSavings] Error loading data:', err);
+    theoreticalSavings.value = {
+      total_unused: 0,
+      total_savings_accounts: 0,
+      total_theoretical: 0,
+    };
+  }
 }
 
 async function loadJarData() {
@@ -1533,6 +2052,8 @@ async function loadJarData() {
       j.reset_cycle = (r.reset_cycle as Jar['reset_cycle']) ?? 'none';
       j.reset_cycle_day = r.reset_cycle_day ?? 1;
       j.target_amount = r.target_amount ?? null;
+      j.leverage_from_jar_id = (r as { leverage_from_jar_id?: number | null }).leverage_from_jar_id ?? null;
+      j.collapsed = true;
 
       const act = (r as { is_active?: unknown }).is_active ?? (r as { active?: unknown }).active;
       if (act != null) j.active = Number(act) === 1 || act === true;
@@ -1640,6 +2161,8 @@ async function handleIncomeUpdated() {
       await balanceComposable.cargarTodo(balanceDate);
     }
   }
+
+  await loadTheoreticalSavings();
 }
 
 function setCategories(nodes: CatNodeInput[], updateMaster = true) {
@@ -1776,10 +2299,7 @@ async function loadJarBalance(jarId: number) {
 async function openAdjustmentModal(jarId: number) {
   currentJarAdjustment.value = jarId;
 
-  // Open modal immediately; load data asynchronously
-  showAdjustmentModal.value = true;
-
-  // Ensure composable exists and load balance + history from backend
+  // Ensure composable exists and load fresh balance + history from backend BEFORE opening modal
   if (!jarBalances.value[jarId]) {
     jarBalances.value[jarId] = useJarBalance(jarId);
   }
@@ -1806,9 +2326,10 @@ async function openAdjustmentModal(jarId: number) {
       type: 'negative',
       message: err instanceof Error ? err.message : 'Error cargando balance',
     });
-    // still open modal so user can see UI, but guard save handler will no-op if no composable
   }
 
+  // Open modal AFTER data is loaded so form initializes with fresh values
+  showAdjustmentModal.value = true;
 }
 
 async function openWithdrawalModal(jarId: number) {
@@ -1836,26 +2357,130 @@ async function openWithdrawalModal(jarId: number) {
   }
 }
 
-/**
- * Guarda un ajuste y actualiza el balance
- */
+async function applyLeverageNow(jarId: number) {
+  if (!jarBalances.value[jarId]) {
+    jarBalances.value[jarId] = useJarBalance(jarId);
+  }
+  try {
+    const balanceDate = `${currentMonth.value}-01`;
+    const refreshBalance = async (id: number) => {
+      if (!jarBalances.value[id]) {
+        jarBalances.value[id] = useJarBalance(id);
+      }
+      await jarBalances.value[id].cargarBalance(balanceDate);
+      loadedBalances.value.add(id);
+    };
+    await refreshBalance(jarId);
+    const balance = jarBalances.value[jarId].balance?.value || null;
+    const applied = balance?.auto_transfer_applied || null;
+    const jar = jarElements.value.find((j) => j.id === jarId) || null;
+    const sourceId = jar?.leverage_from_jar_id ?? jarSettings.value.leverage_jar_id ?? null;
+    const sourceName = sourceId
+      ? jarElements.value.find((j) => j.id === sourceId)?.name || `#${sourceId}`
+      : null;
+
+    if (applied?.from_jar_id) {
+      await refreshBalance(applied.from_jar_id);
+      const appliedSource = jarElements.value.find((j) => j.id === applied.from_jar_id)?.name ||
+        `#${applied.from_jar_id}`;
+      $q.notify({
+        type: 'positive',
+        message: `Apalancado desde ${appliedSource} (${formatCurrency(applied.amount)})`,
+      });
+      return;
+    }
+
+    if (!sourceId) {
+      $q.notify({
+        type: 'warning',
+        message: 'Configura “Apalancamiento desde” para este cántaro.',
+      });
+      return;
+    }
+
+    if (sourceId === jarId) {
+      $q.notify({
+        type: 'warning',
+        message: 'El cántaro origen no puede ser el mismo. Elige otro.',
+      });
+      return;
+    }
+
+    const res = await api.post(`/jars/${jarId}/leverage`, { date: balanceDate });
+    const result = res.data?.data || {};
+    const reason = String(result.reason || 'unknown');
+    const transfer = result.transfer || null;
+
+    await refreshBalance(jarId);
+    if (sourceId) {
+      await refreshBalance(sourceId);
+    }
+
+    if (transfer?.from_jar_id) {
+      const appliedSource = jarElements.value.find((j) => j.id === transfer.from_jar_id)?.name ||
+        `#${transfer.from_jar_id}`;
+      $q.notify({
+        type: 'positive',
+        message: `Apalancado desde ${appliedSource} (${formatCurrency(transfer.amount)})`,
+      });
+      return;
+    }
+
+    if (reason === 'no_source') {
+      $q.notify({ type: 'warning', message: 'Configura “Apalancamiento desde” para este cántaro.' });
+      return;
+    }
+    if (reason === 'same_source') {
+      $q.notify({ type: 'warning', message: 'El cántaro origen no puede ser el mismo.' });
+      return;
+    }
+    if (reason === 'not_exceeded') {
+      const balValue = jarBalances.value[jarId].balance?.value?.balance ?? 0;
+      $q.notify({
+        type: 'info',
+        message: `Sin excedente. El cántaro está en ${formatCurrency(balValue)}.`,
+      });
+      return;
+    }
+    if (reason === 'already_applied') {
+      $q.notify({ type: 'info', message: 'El apalancamiento ya fue aplicado en este periodo.' });
+      return;
+    }
+    if (reason === 'insufficient_source') {
+      const sourceLabel = sourceName || 'origen';
+      $q.notify({
+        type: 'info',
+        message: `No se pudo apalancar desde ${sourceLabel}. Verifica saldo disponible en el origen.`,
+      });
+      return;
+    }
+
+    $q.notify({ type: 'info', message: 'No se pudo apalancar (sin cambios).' });
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: err instanceof Error ? err.message : 'Error al apalancar',
+    });
+  }
+}
+
 async function handleSaveAdjustment(data: { valorObjetivo: number; descripcion?: string }) {
   if (currentJarAdjustment.value === null) return;
+  const jarId = currentJarAdjustment.value;
 
-  const balanceComposable = jarBalances.value[currentJarAdjustment.value];
+  if (!jarBalances.value[jarId]) {
+    jarBalances.value[jarId] = useJarBalance(jarId);
+  }
+
+  const balanceComposable = jarBalances.value[jarId];
   if (!balanceComposable) return;
 
   try {
     const balanceDate = `${currentMonth.value}-01`;
-    console.log('[Jars][AdjustModal] Saving adjustment', {
-      jarId: currentJarAdjustment.value,
-      balanceDate,
-      target: data.valorObjetivo,
-    });
     await balanceComposable.crearAjuste({ ...data, date: balanceDate });
 
-    // Recargar el balance desde el backend para asegurar consistencia
     await balanceComposable.cargarBalance(balanceDate);
+    loadedBalances.value.add(jarId);
     console.log('[Jars][AdjustModal] Balance reloaded', {
       jarId: currentJarAdjustment.value,
       balance: balanceComposable.balance?.value,
@@ -1870,6 +2495,49 @@ async function handleSaveAdjustment(data: { valorObjetivo: number; descripcion?:
     $q.notify({
       type: 'negative',
       message: err instanceof Error ? err.message : 'Error al guardar ajuste',
+    });
+  }
+}
+
+async function handleClearAdjustments() {
+  if (currentJarAdjustment.value === null) return;
+  const jarId = currentJarAdjustment.value;
+
+  const confirmed = await new Promise<boolean>((resolve) => {
+    $q.dialog({
+      title: 'Borrar ajustes del mes',
+      message: 'Esto eliminará los ajustes del mes actual para este cántaro. ¿Continuar?',
+      cancel: true,
+      persistent: true,
+    })
+      .onOk(() => resolve(true))
+      .onCancel(() => resolve(false));
+  });
+
+  if (!confirmed) return;
+
+  if (!jarBalances.value[jarId]) {
+    jarBalances.value[jarId] = useJarBalance(jarId);
+  }
+
+  const balanceComposable = jarBalances.value[jarId];
+  if (!balanceComposable) return;
+
+  try {
+    const balanceDate = `${currentMonth.value}-01`;
+    await api.delete(`/jars/${jarId}/adjustments`, { params: { date: balanceDate } });
+
+    await balanceComposable.cargarTodo(balanceDate);
+    loadedBalances.value.add(jarId);
+
+    $q.notify({
+      type: 'positive',
+      message: 'Ajustes del mes eliminados',
+    });
+  } catch (err) {
+    $q.notify({
+      type: 'negative',
+      message: err instanceof Error ? err.message : 'Error al borrar ajustes',
     });
   }
 }
@@ -1906,6 +2574,7 @@ async function handleSaveWithdrawal() {
     });
   }
 }
+
 
 /**
  * Resetea el ajuste de un jar con confirmación
@@ -2262,6 +2931,7 @@ async function saveChanges() {
         reset_cycle: j.reset_cycle ?? 'none',
         reset_cycle_day: j.reset_cycle_day ?? 1,
         target_amount: j.target_amount ?? null,
+        leverage_from_jar_id: j.leverage_from_jar_id ?? null,
         sort_order: idx + 1,
         active: j.active ?? true,
         category_ids, // Categorías asignadas (drag-drop)
@@ -2319,7 +2989,13 @@ async function saveChanges() {
 }
 
 onMounted(() => {
-  void Promise.all([loadJarSettings(), loadJarData(), loadCategoriesTree()]).then(() => {
+  applyPeriodFromQuery();
+  void Promise.all([
+    loadJarSettings(),
+    loadJarData(),
+    loadCategoriesTree(),
+    loadTheoreticalSavings(),
+  ]).then(() => {
     // Remueve del árbol las categorías ya asignadas a algún cántaro
     const assigned = new Set<string>();
     for (const j of jarElements.value) {
@@ -2343,6 +3019,52 @@ onMounted(() => {
   });
 });
 
+// Persist useRealIncome toggle when user changes it
+watch(useRealIncome, async (newVal, oldVal) => {
+  if (!jarSettingsLoaded.value || newVal === oldVal) return;
+  try {
+    await api.put('/jars/settings/monthly', {
+      month: currentMonth.value,
+      leverage_jar_id: monthlyLeverageJarId.value ?? null,
+      use_real_income: newVal ?? false,
+    });
+  } catch (e) {
+    console.warn('[JarSettings] Error saving useRealIncome:', e);
+  }
+});
+
+watch(
+  () => jarElements.value,
+  () => {
+    if (!jarSettingsLoaded.value || jarSettings.value.leverage_jar_id) return;
+    const leverage = jarElements.value.find((j) => j.refresh_mode === 'accumulative' && j.id);
+    if (leverage?.id) {
+      jarSettings.value.leverage_jar_id = leverage.id;
+      void saveJarSettings();
+    }
+  },
+  { deep: true }
+);
+
+watch(
+  () => route.query,
+  () => {
+    applyPeriodFromQuery();
+  }
+);
+
+watch(
+  () => [
+    periodStore.state.type,
+    periodStore.state.anchor,
+    periodStore.state.customFrom,
+    periodStore.state.customTo,
+  ],
+  () => {
+    syncPeriodToQuery();
+  }
+);
+
 // Watch for period changes to refresh data (only when in month mode)
 watch(
   () => periodStore.state.anchor,
@@ -2355,6 +3077,8 @@ watch(
     // Refresh income data for the selected month
     await fetchCalculatedIncome(month);
 
+    await loadMonthlyLeverageSetting(month);
+
     // Note: No need to call incomePanelRef.refresh() because the watch on props.month
     // in MonthlyIncomePanel will automatically trigger when :month prop changes
 
@@ -2366,6 +3090,8 @@ watch(
         await jarBalances.value[id].cargarTodo(balanceDate);
       }
     }
+
+    await loadTheoreticalSavings();
   },
   { immediate: false }
 );
@@ -2407,6 +3133,68 @@ watch(
 </script>
 
 <style scoped>
+/* ── Summary table ── */
+.summary-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.summary-table th,
+.summary-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.summary-table thead th {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.02);
+  position: sticky;
+  top: 0;
+}
+.th-sub {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.summary-total-row td {
+  border-top: 2px solid rgba(0, 0, 0, 0.12);
+  border-bottom: none;
+  background: rgba(0, 0, 0, 0.02);
+}
+.summary-jar-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.summary-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Dark mode overrides */
+.body--dark .summary-table th {
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.03);
+}
+.body--dark .summary-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+.body--dark .summary-total-row td {
+  border-top-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+}
+
 /* Layout */
 .template-box {
   min-height: 420px;
@@ -2664,6 +3452,41 @@ watch(
   display: block;
 }
 
+.jar-compact-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compact-slider {
+  flex: 1;
+  min-width: 120px;
+}
+
+.compact-percent-input,
+.compact-fixed-input {
+  width: 90px;
+}
+
+.compact-leverage-select {
+  min-width: 180px;
+}
+
+.jar-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  bottom: 0;
+  background: var(--q-card-bg, #fff);
+  padding: 8px 0;
+  z-index: 20;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.06);
+  pointer-events: auto;
+}
+
 /* Amount row */
 .jar-amount-grid {
   display: grid;
@@ -2817,39 +3640,6 @@ watch(
   gap: 6px;
 }
 
-/* Quick summary panel for jar income display */
-.jar-quick-summary {
-  padding: 12px;
-  background: linear-gradient(135deg, rgba(156, 39, 176, 0.08) 0%, rgba(156, 39, 176, 0.12) 100%);
-  border: 2px solid rgba(156, 39, 176, 0.3);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.summary-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(156, 39, 176, 0.87);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-}
-
-.summary-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(0, 0, 0, 0.87);
-}
 </style>
 
 <style>

@@ -16,9 +16,21 @@
         <!-- Current balance info -->
         <div class="adjustment-info q-mb-lg">
           <div class="info-row">
-            <span class="info-label">Balance actual:</span>
+            <span class="info-label">Disponible a gastar:</span>
             <span class="info-value" :class="currentBalanceClass">
               {{ formatCurrency(currentBalance) }}
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Balance contable:</span>
+            <span class="info-value" :class="accountingBalanceClass">
+              {{ formatCurrency(accountingBalanceValue) }}
+            </span>
+          </div>
+          <div v-if="excedidoAmount > 0" class="info-row">
+            <span class="info-label">Excedido:</span>
+            <span class="info-value text-negative">
+              -{{ formatCurrency(excedidoAmount) }}
             </span>
           </div>
           <div class="info-row">
@@ -42,7 +54,13 @@
             step="0.01"
             :rules="[
               (v) => (v !== null && v !== undefined) || 'Requerido',
-              (v) => v >= 0 || 'El balance no puede ser negativo',
+              (v) =>
+                props.allowNegative
+                  ? (props.negativeLimit == null
+                      ? true
+                      : v >= -Number(props.negativeLimit) ||
+                        `No puede ser menor a -${formatCurrency(Number(props.negativeLimit))}`)
+                  : v >= 0 || 'El balance no puede ser negativo',
             ]"
             @keyup.enter="handleSave"
           >
@@ -50,6 +68,57 @@
               <q-icon name="account_balance" />
             </template>
           </q-input>
+
+          <!-- Presupuesto dividido en usado/restante -->
+          <div v-if="assignedAmountValue > 0" class="split-budget">
+            <div class="text-caption text-grey-7 q-mb-xs">
+              Presupuesto base: {{ formatCurrency(assignedAmountValue) }}
+            </div>
+            <div
+              v-if="excedidoAmount > 0 && !props.allowNegative"
+              class="text-caption text-negative q-mb-xs"
+            >
+              Te excediste por {{ formatCurrency(excedidoAmount) }}. Activa “Permitir negativo” en el cántaro
+              para guardar este saldo.
+            </div>
+            <div class="row q-col-gutter-sm">
+              <div class="col-6">
+                <q-input
+                  v-model.number="usedInput"
+                  type="number"
+                  label="Usado"
+                  outlined
+                  dense
+                  step="0.01"
+                  min="0"
+                  @update:model-value="onUsedChange"
+                >
+                  <template #prepend>
+                    <q-icon name="trending_up" />
+                  </template>
+                </q-input>
+              </div>
+              <div class="col-6">
+                <q-input
+                  v-model.number="remainingInput"
+                  type="number"
+                  label="Restante"
+                  outlined
+                  dense
+                  step="0.01"
+                  :min="props.allowNegative ? (props.negativeLimit == null ? undefined : -Number(props.negativeLimit)) : 0"
+                  @update:model-value="onRemainingChange"
+                >
+                  <template #prepend>
+                    <q-icon name="savings" />
+                  </template>
+                </q-input>
+              </div>
+            </div>
+            <div class="text-caption text-grey-6 q-mt-xs">
+              Al cambiar estos valores, se actualiza el balance objetivo.
+            </div>
+          </div>
 
           <!-- Descripción (opcional) -->
           <q-input
@@ -99,6 +168,13 @@
 
       <!-- Actions -->
       <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          outline
+          color="negative"
+          label="Borrar ajustes del mes"
+          class="q-mr-auto"
+          @click="emit('clear')"
+        />
         <q-btn flat label="Cancelar" color="grey-7" @click="$emit('update:modelValue', false)" />
         <q-btn
           unelevated
@@ -122,12 +198,17 @@ interface Props {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jar?: Record<string, any> | null;
   currentBalance: number;
+  accountingBalance?: number;
+  assignedAmount?: number;
+  allowNegative?: boolean;
+  negativeLimit?: number | null;
   previousAdjustment?: number;
 }
 
 interface Emits {
   'update:modelValue': [value: boolean];
   save: [data: { valorObjetivo: number; descripcion?: string }];
+  clear: [];
 }
 
 defineOptions({
@@ -155,6 +236,9 @@ const form = ref({
 });
 
 const saving = ref(false);
+const usedInput = ref<number | null>(null);
+const remainingInput = ref<number | null>(null);
+const isSyncingSplit = ref(false);
 
 /**
  * Calcula el ajuste necesario (diferencia entre objetivo y actual)
@@ -163,6 +247,13 @@ const ajusteCalculado = computed(() => {
   if (form.value.valorObjetivo === null) return 0;
   return form.value.valorObjetivo - props.currentBalance;
 });
+
+/**
+ * Round to 2 decimal places to avoid floating point noise
+ */
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
 
 /**
  * Formatea número como moneda
@@ -179,7 +270,10 @@ function formatCurrency(amount: number): string {
  * Checa si el formulario está completo y válido
  */
 const isValidForm = computed(() => {
-  return form.value.valorObjetivo !== null && form.value.valorObjetivo >= 0;
+  if (form.value.valorObjetivo === null) return false;
+  if (!props.allowNegative) return form.value.valorObjetivo >= 0;
+  if (props.negativeLimit == null) return true;
+  return form.value.valorObjetivo >= -Number(props.negativeLimit);
 });
 
 /**
@@ -188,6 +282,25 @@ const isValidForm = computed(() => {
 const currentBalanceClass = computed(() => {
   if (props.currentBalance < 0) return 'text-negative';
   if (props.currentBalance === 0) return 'text-warning';
+  return 'text-positive';
+});
+
+const accountingBalanceValue = computed(() => {
+  return props.accountingBalance ?? props.currentBalance;
+});
+
+const assignedAmountValue = computed(() => props.assignedAmount ?? 0);
+const excedidoAmount = computed(() => {
+  if (assignedAmountValue.value <= 0) return 0;
+  const used = usedInput.value ?? 0;
+  const extra = used - assignedAmountValue.value;
+  return extra > 0 ? extra : 0;
+});
+
+const accountingBalanceClass = computed(() => {
+  const val = accountingBalanceValue.value;
+  if (val < 0) return 'text-negative';
+  if (val === 0) return 'text-warning';
   return 'text-positive';
 });
 
@@ -241,6 +354,47 @@ async function handleSave() {
   }
 }
 
+function clampUsed(val: number | null) {
+  if (val == null || Number.isNaN(val)) return 0;
+  return Math.max(0, val);
+}
+
+function clampRemaining(val: number | null) {
+  if (val == null || Number.isNaN(val)) return 0;
+  const n = val;
+  if (!props.allowNegative) return Math.max(0, n);
+  if (props.negativeLimit == null) return n;
+  return Math.max(-Number(props.negativeLimit), n);
+}
+
+function syncSplitFromObjective() {
+  if (assignedAmountValue.value <= 0) return;
+  const remaining = clampRemaining(form.value.valorObjetivo ?? 0);
+  remainingInput.value = round2(remaining);
+  usedInput.value = round2(Math.max(0, assignedAmountValue.value - remaining));
+}
+
+function onRemainingChange() {
+  if (isSyncingSplit.value) return;
+  isSyncingSplit.value = true;
+  const remaining = clampRemaining(remainingInput.value);
+  const used = round2(Math.max(0, assignedAmountValue.value - remaining));
+  usedInput.value = used;
+  form.value.valorObjetivo = round2(remaining);
+  isSyncingSplit.value = false;
+}
+
+function onUsedChange() {
+  if (isSyncingSplit.value) return;
+  isSyncingSplit.value = true;
+  const used = clampUsed(usedInput.value);
+  let remaining = assignedAmountValue.value - used;
+  remaining = clampRemaining(remaining);
+  remainingInput.value = round2(remaining);
+  form.value.valorObjetivo = round2(remaining);
+  isSyncingSplit.value = false;
+}
+
 /**
  * Resetea el formulario
  */
@@ -261,8 +415,28 @@ watch(
       resetForm();
     } else {
       // Inicializar con el balance actual
-      form.value.valorObjetivo = props.currentBalance;
+      form.value.valorObjetivo = round2(props.currentBalance);
+      syncSplitFromObjective();
     }
+  }
+);
+
+// Re-sync when currentBalance changes (e.g. async load completes after modal opened)
+watch(
+  () => props.currentBalance,
+  (newBal) => {
+    if (props.modelValue) {
+      form.value.valorObjetivo = round2(newBal);
+      syncSplitFromObjective();
+    }
+  }
+);
+
+watch(
+  () => form.value.valorObjetivo,
+  () => {
+    if (isSyncingSplit.value) return;
+    syncSplitFromObjective();
   }
 );
 </script>
