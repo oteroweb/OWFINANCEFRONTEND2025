@@ -363,12 +363,12 @@
             </q-card>
 
             <q-card flat bordered style="min-height: 500px; height: 600px; display: flex; flex-direction: column;">
-              <CategoriesTree 
-                :readonly="false" 
-                :nodes="categoriesTreeNodes" 
+              <CategoriesTree
+                :readonly="false"
+                :nodes="categoriesTreeNodes"
                 :category-jar-map="categoryToJarMap"
-                ref="categoriesTreeRef" 
-                style="flex: 1; height: 100%;" 
+                ref="categoriesTreeRef"
+                style="flex: 1; height: 100%;"
                 @create-category="onCreateCategory"
                 @create-folder="onCreateCategoryFolder"
                 @move-node="onMoveCategoryNode"
@@ -585,6 +585,61 @@ async function loadUserRates() {
   }
 }
 
+/**
+ * Detecta monedas usadas en cuentas del usuario que no tengan tasa configurada
+ * y las crea automáticamente con tasa 1 (para que el usuario las corrija).
+ */
+async function syncAccountCurrencies() {
+  if (!auth.user?.id) return;
+  try {
+    const res = await api.get('/accounts');
+    type RawAcct = { currency?: { id?: number; name?: string; code?: string }; currency_id?: number };
+    const flat: RawAcct[] = Array.isArray(res.data?.data) ? (res.data.data as RawAcct[]) : [];
+
+    // Recopilar monedas únicas de las cuentas (omitir la moneda base del usuario)
+    const defaultCurrId = auth.user?.currency_id;
+    const seen = new Set<number>();
+    const accountCurrencies: Array<{ id: number; code: string }> = [];
+    for (const acc of flat) {
+      const cid = acc.currency?.id || acc.currency_id;
+      const ccode = acc.currency?.code || '';
+      if (!cid || seen.has(cid) || cid === defaultCurrId) continue;
+      seen.add(cid);
+      accountCurrencies.push({ id: cid, code: ccode });
+    }
+
+    // Comparar con las tasas ya configuradas
+    const configuredIds = new Set(userRates.value.map((r) => r.currency_id));
+    const missing = accountCurrencies.filter((c) => !configuredIds.has(c.id));
+    if (!missing.length) return;
+
+    // Crear automáticamente con tasa 1
+    for (const curr of missing) {
+      await api.post('/user_currencies', {
+        user_id: auth.user?.id,
+        currency_id: curr.id,
+        current_rate: 1,
+        is_current: true,
+        is_official: false,
+      });
+    }
+
+    // Recargar lista y notificar
+    await loadUserRates();
+    await auth.refreshUserCurrencies();
+    const names = missing.map((c) => c.code).join(', ');
+    Notify.create({
+      type: 'info',
+      icon: 'info',
+      message: `Se detectaron monedas sin tasa configurada: ${names}. Se crearon con valor 1. Por favor, actualiza las tasas reales.`,
+      multiLine: true,
+      timeout: 7000,
+    });
+  } catch {
+    // Silencioso — no interrumpir el flujo normal
+  }
+}
+
 function openRateForm(rate: UserRate | null) {
   if (rate) {
     rateFormId.value = rate.id;
@@ -710,7 +765,7 @@ async function loadJars() {
     console.log('📦 Respuesta de /jars:', res.data);
     const rawJars = res.data?.data || res.data || [];
     jars.value = rawJars;
-    
+
     // Crear mapa de categoría a jar
     const map: Record<string | number, string> = {};
     for (const jar of rawJars) {
@@ -1317,13 +1372,16 @@ function onCurrencyFilter(val: string, done: (cb: () => void) => void) {
   });
 }
 
+async function loadFinanceTab() {
+  void ensureCurrenciesLoaded();
+  await loadUserRates();
+  void syncAccountCurrencies();
+}
+
 onMounted(async () => {
   // Cargar monedas al entrar a la pestaña perfil o si ya está activa
   if (tab.value === 'profile') void ensureCurrenciesLoaded();
-  if (tab.value === 'finance') {
-    void ensureCurrenciesLoaded();
-    void loadUserRates();
-  }
+  if (tab.value === 'finance') void loadFinanceTab();
   if (tab.value === 'categories') {
     await loadJars();
     await loadCategoriesTree();
@@ -1334,10 +1392,7 @@ watch(
   () => tab.value,
   async (t) => {
     if (t === 'profile') void ensureCurrenciesLoaded();
-    if (t === 'finance') {
-      void ensureCurrenciesLoaded();
-      void loadUserRates();
-    }
+    if (t === 'finance') void loadFinanceTab();
     if (t === 'categories') {
       await loadJars();
       await loadCategoriesTree();
