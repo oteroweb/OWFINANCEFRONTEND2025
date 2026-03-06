@@ -59,7 +59,15 @@
             {{ defaultCurrencyCode || 'USD' }}
           </q-chip>
           <template v-for="r in currentRates" :key="r.code">
-            <q-chip dense color="white" text-color="primary" class="rate-chip-item">
+            <q-chip
+              dense
+              clickable
+              color="white"
+              text-color="primary"
+              class="rate-chip-item"
+              title="Clic para editar tasa"
+              @click="openRateEdit(r)"
+            >
               {{ r.code }}: {{ r.rateLabel }}
               <q-badge v-if="r.is_official" color="teal" class="q-ml-xs">oficial</q-badge>
             </q-chip>
@@ -175,6 +183,7 @@ import JarsBalanceBar from 'src/components/JarsBalanceBar.vue';
 import { useUiStore } from 'stores/ui';
 import { useQuasar } from 'quasar';
 import { useUserRates } from 'src/composables/useUserRates';
+import { api } from 'boot/axios';
 const auth = useAuthStore();
 const avatarUrl = computed(() => defaultAvatarUrl);
 const { defaultCurrencyCode, currentRates } = useUserRates();
@@ -212,6 +221,45 @@ function onBottomNav(val: string) {
   }
 }
 // (widgets removed for now; leave hooks ready if needed later)
+interface RateChip {
+  code: string;
+  rate: number;
+  rateLabel: string;
+  is_official?: boolean;
+}
+function openRateEdit(r: RateChip) {
+  $q.dialog({
+    title: `Actualizar tasa: ${r.code}`,
+    message: `¿Cuántos ${r.code} equivalen a 1 USD? (actual: ${r.rateLabel})`,
+    prompt: {
+      model: String(r.rate),
+      type: 'number',
+      isValid: (v: string) => !isNaN(Number(v)) && Number(v) > 0,
+    },
+    cancel: true,
+  }).onOk((val: string) => {
+    void (async () => {
+      const newRate = Number(val);
+      if (!newRate || newRate <= 0) return;
+      try {
+        const listRes = await api.get('/user_currencies', {
+          params: { user_id: auth.user?.id, per_page: 100 },
+        });
+        const raw = listRes.data?.data?.data || listRes.data?.data || listRes.data || [];
+        const records: Array<{ id: number; currency?: { code?: string } }> = Array.isArray(raw) ? raw : [];
+        const found = records.find((rec) => rec.currency?.code === r.code);
+        if (found) {
+          await api.put(`/user_currencies/${found.id}`, { current_rate: newRate, is_current: true });
+        }
+        await auth.refreshUserCurrencies();
+        $q.notify({ type: 'positive', message: `Tasa ${r.code} actualizada a ${newRate}` });
+      } catch {
+        $q.notify({ type: 'negative', message: 'Error actualizando tasa' });
+      }
+    })();
+  });
+}
+
 async function handleLogout() {
   // 1) Mostrar modal con botón OK y, al confirmarlo, proceder a cerrar sesión
   try {

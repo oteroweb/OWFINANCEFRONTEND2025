@@ -173,6 +173,44 @@
               </q-select>
             </q-card>
 
+            <!-- Mis Tasas de Cambio -->
+            <q-card flat bordered class="q-pa-md">
+              <div class="text-subtitle1 q-mb-sm row items-center justify-between">
+                <div>
+                  <q-icon name="currency_exchange" class="q-mr-sm" />
+                  Mis Tasas de Cambio
+                </div>
+                <q-btn dense flat round icon="add" color="primary" title="Agregar tasa" @click="openRateForm(null)" />
+              </div>
+              <div class="text-caption text-grey-7 q-mb-md">
+                Cuántas unidades de cada moneda equivalen a <strong>1 USD</strong>. Ej: VES 530 = 530 bolívares por dólar.
+              </div>
+              <q-skeleton v-if="userRatesLoading" type="rect" height="60px" />
+              <div v-else-if="!userRates.length" class="text-caption text-grey-6 q-pa-sm text-center">
+                Sin tasas configuradas. Haz clic en <q-icon name="add" size="14px" /> para agregar.
+              </div>
+              <q-list v-else bordered separator dense class="rounded-borders">
+                <q-item v-for="r in userRates" :key="r.id" class="q-py-xs">
+                  <q-item-section avatar>
+                    <q-chip dense :color="r.is_current ? 'teal' : 'grey-4'" :text-color="r.is_current ? 'white' : 'grey-8'" class="text-weight-bold">
+                      {{ r.currency?.code || '?' }}
+                    </q-chip>
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ r.currency?.name || r.currency?.code }}</q-item-label>
+                    <q-item-label caption>Tasa: {{ r.current_rate }} {{ r.currency?.code }}/USD</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <div class="row q-gutter-xs">
+                      <q-toggle v-model="r.is_current" dense color="teal" title="Activa para conversiones" @update:model-value="(v) => toggleRateCurrent(r, v)" />
+                      <q-btn dense flat round icon="edit" color="primary" @click="openRateForm(r)" />
+                      <q-btn dense flat round icon="delete" color="negative" @click="deleteRate(r)" />
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-card>
+
             <!-- Ingreso mensual -->
             <q-card flat bordered class="q-pa-md">
               <div class="text-subtitle1 q-mb-sm">
@@ -381,6 +419,54 @@
       </q-tab-panels>
     </q-card>
 
+    <!-- Rate form dialog -->
+    <q-dialog v-model="showRateForm">
+      <q-card style="min-width: 320px; max-width: 420px">
+        <q-card-section class="text-h6 q-pb-sm">
+          <q-icon name="currency_exchange" class="q-mr-sm" />
+          {{ rateFormId ? 'Editar Tasa' : 'Nueva Tasa' }}
+        </q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <div v-if="rateFormId" class="text-body2 text-grey-8 q-mb-sm">
+            <strong>{{ rateFormCurrencyLabel }}</strong>
+          </div>
+          <q-select
+            v-if="!rateFormId"
+            v-model="rateForm.currency_id"
+            :options="currencyOptions"
+            option-value="id"
+            option-label="nameLabel"
+            emit-value
+            map-options
+            label="Moneda"
+            dense
+            outlined
+            use-input
+            input-debounce="200"
+            @focus="ensureCurrenciesLoaded"
+            @filter="onCurrencyFilter"
+          />
+          <q-input
+            v-model.number="rateForm.current_rate"
+            label="Tasa (unidades por 1 USD)"
+            type="number"
+            step="0.01"
+            min="0.0001"
+            dense
+            outlined
+            autofocus
+          >
+            <template #hint>Ej: 530 significa 530 VES = 1 USD</template>
+          </q-input>
+          <q-checkbox v-model="rateForm.is_current" label="Activa para conversiones" dense color="teal" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey" v-close-popup />
+          <q-btn color="primary" label="Guardar" :loading="savingRate" @click="saveRate" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Account create/edit dialog -->
     <q-dialog v-model="showAccountForm" persistent>
       <q-card style="min-width: 400px; max-width: 480px;">
@@ -463,6 +549,126 @@ defineOptions({ name: 'user_config_page' });
 const $q = useQuasar();
 const auth = useAuthStore();
 const tab = ref<'profile' | 'finance' | 'categories' | 'accounts' | 'taxes'>('profile');
+
+// ----- Tasas de Cambio del Usuario -----
+type UserRate = {
+  id: number;
+  currency_id: number;
+  currency?: { id: number; name: string; code: string; symbol?: string };
+  current_rate: number;
+  is_current: boolean;
+  is_official: boolean;
+  updated_at?: string;
+};
+const userRates = ref<UserRate[]>([]);
+const userRatesLoading = ref(false);
+const showRateForm = ref(false);
+const rateFormId = ref<number | null>(null);
+const rateFormCurrencyLabel = ref('');
+const savingRate = ref(false);
+const rateForm = reactive({
+  currency_id: null as number | null,
+  current_rate: 1,
+  is_current: true,
+});
+
+async function loadUserRates() {
+  userRatesLoading.value = true;
+  try {
+    const res = await api.get('/user_currencies', { params: { user_id: auth.user?.id, per_page: 100 } });
+    const raw = res.data?.data?.data || res.data?.data || res.data || [];
+    userRates.value = Array.isArray(raw) ? raw as UserRate[] : [];
+  } catch {
+    Notify.create({ type: 'negative', message: 'Error cargando tasas' });
+  } finally {
+    userRatesLoading.value = false;
+  }
+}
+
+function openRateForm(rate: UserRate | null) {
+  if (rate) {
+    rateFormId.value = rate.id;
+    rateFormCurrencyLabel.value = rate.currency
+      ? `${rate.currency.name} (${rate.currency.code})`
+      : String(rate.currency_id);
+    rateForm.currency_id = rate.currency_id;
+    rateForm.current_rate = rate.current_rate;
+    rateForm.is_current = rate.is_current;
+  } else {
+    rateFormId.value = null;
+    rateFormCurrencyLabel.value = '';
+    rateForm.currency_id = null;
+    rateForm.current_rate = 1;
+    rateForm.is_current = true;
+  }
+  void ensureCurrenciesLoaded();
+  showRateForm.value = true;
+}
+
+async function saveRate() {
+  if (!rateFormId.value && !rateForm.currency_id) {
+    Notify.create({ type: 'warning', message: 'Selecciona una moneda' });
+    return;
+  }
+  if (!rateForm.current_rate || rateForm.current_rate <= 0) {
+    Notify.create({ type: 'warning', message: 'La tasa debe ser mayor a 0' });
+    return;
+  }
+  savingRate.value = true;
+  try {
+    if (rateFormId.value) {
+      await api.put(`/user_currencies/${rateFormId.value}`, {
+        current_rate: rateForm.current_rate,
+        is_current: rateForm.is_current,
+      });
+    } else {
+      await api.post('/user_currencies', {
+        user_id: auth.user?.id,
+        currency_id: rateForm.currency_id,
+        current_rate: rateForm.current_rate,
+        is_current: rateForm.is_current,
+        is_official: false,
+      });
+    }
+    showRateForm.value = false;
+    await loadUserRates();
+    await auth.refreshUserCurrencies();
+    Notify.create({ type: 'positive', message: 'Tasa guardada' });
+  } catch {
+    Notify.create({ type: 'negative', message: 'Error guardando tasa' });
+  } finally {
+    savingRate.value = false;
+  }
+}
+
+async function toggleRateCurrent(rate: UserRate, value: boolean) {
+  try {
+    await api.put(`/user_currencies/${rate.id}`, { is_current: value });
+    await auth.refreshUserCurrencies();
+  } catch {
+    rate.is_current = !value; // revert
+    Notify.create({ type: 'negative', message: 'Error actualizando tasa' });
+  }
+}
+
+function deleteRate(rate: UserRate) {
+  $q.dialog({
+    title: 'Eliminar tasa',
+    message: `¿Eliminar la tasa de ${rate.currency?.code || rate.currency_id}?`,
+    cancel: true,
+  }).onOk(() => {
+    void (async () => {
+      try {
+        await api.delete(`/user_currencies/${rate.id}`);
+        await loadUserRates();
+        await auth.refreshUserCurrencies();
+        Notify.create({ type: 'positive', message: 'Tasa eliminada' });
+      } catch {
+        Notify.create({ type: 'negative', message: 'Error eliminando tasa' });
+      }
+    })();
+  });
+}
 
 const name = ref(auth.user?.name || '');
 const email = ref(auth.user?.email || '');
@@ -1114,6 +1320,10 @@ function onCurrencyFilter(val: string, done: (cb: () => void) => void) {
 onMounted(async () => {
   // Cargar monedas al entrar a la pestaña perfil o si ya está activa
   if (tab.value === 'profile') void ensureCurrenciesLoaded();
+  if (tab.value === 'finance') {
+    void ensureCurrenciesLoaded();
+    void loadUserRates();
+  }
   if (tab.value === 'categories') {
     await loadJars();
     await loadCategoriesTree();
@@ -1124,6 +1334,10 @@ watch(
   () => tab.value,
   async (t) => {
     if (t === 'profile') void ensureCurrenciesLoaded();
+    if (t === 'finance') {
+      void ensureCurrenciesLoaded();
+      void loadUserRates();
+    }
     if (t === 'categories') {
       await loadJars();
       await loadCategoriesTree();
