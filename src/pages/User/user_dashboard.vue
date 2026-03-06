@@ -37,7 +37,7 @@
               <div class="text-subtitle2 text-weight-medium">Total todas las cuentas</div>
             </div>
             <div class="text-h5 q-mt-xs text-primary">
-              {{ balanceSummaryLoading ? '...' : formatAmount(balanceSummary.total_all) }}
+              {{ balanceSummaryLoading ? '...' : masked(balanceSummary.total_all) }}
             </div>
             <div class="text-caption text-grey-6">Suma de todas las cuentas activas</div>
             <q-tooltip v-if="accountsSummary.length" max-width="320px">
@@ -46,10 +46,10 @@
                   <span>{{ a.name }}</span>
                   <span class="text-right">
                     <span v-if="a.currency_code !== 'USD' && a.currency_code !== defaultCurrencyCode">
-                      {{ a.currency_symbol }}{{ a.balance.toLocaleString(undefined, { maximumFractionDigits: 2 }) }}
+                      {{ ui.hideValues ? HIDDEN : (a.currency_symbol + a.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })) }}
                       <span class="text-grey-3"> = </span>
                     </span>
-                    {{ formatAmount(a.balance_usd) }}
+                    {{ masked(a.balance_usd) }}
                     <q-icon v-if="!a.has_rate" name="warning" color="warning" size="12px" title="Sin tasa configurada" />
                   </span>
                 </div>
@@ -66,7 +66,7 @@
               <div class="text-subtitle2 text-weight-medium">Balance global configurado</div>
             </div>
             <div class="text-h5 q-mt-xs text-teal">
-              {{ balanceSummaryLoading ? '...' : formatAmount(balanceSummary.total_global_balance) }}
+              {{ balanceSummaryLoading ? '...' : masked(balanceSummary.total_global_balance) }}
             </div>
             <div class="text-caption text-grey-6">Solo cuentas marcadas para balance global</div>
             <q-tooltip v-if="accountsSummary.length" max-width="320px">
@@ -76,10 +76,10 @@
                     <span>{{ a.name }}</span>
                     <span class="text-right">
                       <span v-if="a.currency_code !== 'USD' && a.currency_code !== defaultCurrencyCode">
-                        {{ a.currency_symbol }}{{ a.balance.toLocaleString(undefined, { maximumFractionDigits: 2 }) }}
+                        {{ ui.hideValues ? HIDDEN : (a.currency_symbol + a.balance.toLocaleString(undefined, { maximumFractionDigits: 2 })) }}
                         <span class="text-grey-3"> = </span>
                       </span>
-                      {{ formatAmount(a.balance_usd) }}
+                      {{ masked(a.balance_usd) }}
                       <q-icon v-if="!a.has_rate" name="warning" color="warning" size="12px" title="Sin tasa configurada" />
                     </span>
                   </div>
@@ -95,15 +95,15 @@
       <q-card class="widget">
         <q-card-section class="q-pa-sm">
           <div class="text-subtitle2 text-weight-medium">Ahorro teórico</div>
-          <div class="text-h6 q-mt-xs">{{ formatAmount(theoreticalSavings.total_theoretical) }}</div>
+          <div class="text-h6 q-mt-xs">{{ masked(theoreticalSavings.total_theoretical) }}</div>
           <div class="text-caption text-grey-7 q-mt-xs">
-            Sin usar este mes: {{ formatAmount(theoreticalSavings.total_unused) }}
+            Sin usar este mes: {{ masked(theoreticalSavings.total_unused) }}
           </div>
           <div class="text-caption text-grey-7">
-            Cuentas de ahorro: {{ formatAmount(theoreticalSavings.total_savings_accounts) }}
+            Cuentas de ahorro: {{ masked(theoreticalSavings.total_savings_accounts) }}
           </div>
           <div class="text-caption text-warning q-mt-xs">
-            Ocioso acumulado: {{ formatAmount(theoreticalSavings.accumulated_unused) }}
+            Ocioso acumulado: {{ masked(theoreticalSavings.accumulated_unused) }}
           </div>
         </q-card-section>
       </q-card>
@@ -137,15 +137,15 @@
                 {{ new Date(row.month + '-02').toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) }}
                 <q-badge v-if="row.month === currentMonth" color="warning" class="q-ml-xs" label="actual" />
               </td>
-              <td class="text-right" :class="row.unused > 0 ? 'text-warning' : 'text-grey-5'">{{ formatAmount(row.unused) }}</td>
-              <td class="text-right text-weight-bold">{{ formatAmount(row.accumulated) }}</td>
+              <td class="text-right" :class="row.unused > 0 ? 'text-warning' : 'text-grey-5'">{{ masked(row.unused) }}</td>
+              <td class="text-right text-weight-bold">{{ masked(row.accumulated) }}</td>
             </tr>
           </tbody>
           <tfoot>
             <tr class="bg-grey-2">
               <td class="text-left text-weight-bold">Total 12 meses</td>
               <td></td>
-              <td class="text-right text-weight-bold text-warning">{{ formatAmount(theoreticalSavings.accumulated_unused) }}</td>
+              <td class="text-right text-weight-bold text-warning">{{ masked(theoreticalSavings.accumulated_unused) }}</td>
             </tr>
           </tfoot>
         </q-markup-table>
@@ -157,6 +157,7 @@
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
 import { useUserRates } from 'src/composables/useUserRates';
+const HIDDEN = '••••••';
 import { api } from 'boot/axios';
 import { computed, onMounted, ref, watch } from 'vue';
 import { usePeriodStore } from 'stores/period';
@@ -218,6 +219,10 @@ function formatAmount(amount: number) {
     currency: currencyCode.value,
     maximumFractionDigits: 2,
   }).format(amount || 0);
+}
+
+function masked(amount: number) {
+  return ui.hideValues ? HIDDEN : formatAmount(amount);
 }
 
 async function loadTheoreticalSavings() {

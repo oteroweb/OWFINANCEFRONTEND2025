@@ -45,6 +45,13 @@
               class="menu-btn"
             />
           </div>
+          <q-btn
+            flat round dense
+            :icon="ui.hideValues ? 'visibility_off' : 'visibility'"
+            :aria-label="ui.hideValues ? 'Mostrar valores' : 'Ocultar valores'"
+            :title="ui.hideValues ? 'Mostrar valores' : 'Ocultar valores'"
+            @click="ui.toggleHideValues()"
+          />
           <q-btn flat round dense icon="logout" aria-label="Cerrar sesión" @click="handleLogout" />
         </div>
       </q-toolbar>
@@ -123,7 +130,15 @@
           <q-item-section>{{ link.title }}</q-item-section>
         </q-item>
       </q-list>
-      <div class="q-pa-md">
+      <div class="q-pa-md column q-gutter-sm">
+        <q-btn
+          :color="ui.hideValues ? 'orange' : 'grey-7'"
+          outline
+          :icon="ui.hideValues ? 'visibility_off' : 'visibility'"
+          :label="ui.hideValues ? 'Mostrar valores' : 'Ocultar valores'"
+          class="full-width"
+          @click="ui.toggleHideValues()"
+        />
         <q-btn
           color="primary"
           outline
