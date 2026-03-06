@@ -173,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
@@ -314,6 +314,71 @@ onBeforeUnmount(() => {
   if (ui.showDialogNewTransaction) {
     ui.closeNewTransactionDialog();
   }
+});
+
+/**
+ * Al montar el layout, detecta monedas usadas en cuentas sin tasa configurada
+ * y las crea automáticamente con rate=1 para que las conversiones funcionen.
+ */
+onMounted(() => {
+  void (async () => {
+    if (!auth.user?.id) return;
+    try {
+      // 1. Obtener tasas existentes y cuentas en paralelo
+      const [ratesRes, accountsRes] = await Promise.all([
+        api.get('/user_currencies', { params: { user_id: auth.user.id, per_page: 100 } }),
+        api.get('/accounts'),
+      ]);
+      const ratesRaw = ratesRes.data?.data?.data || ratesRes.data?.data || ratesRes.data || [];
+      const rates: Array<{ currency_id: number; is_current?: boolean }> = Array.isArray(ratesRaw) ? ratesRaw : [];
+      const configuredIds = new Set(rates.map((r) => r.currency_id));
+
+      type RawAcct = { currency?: { id?: number; code?: string }; currency_id?: number };
+      const flat: RawAcct[] = Array.isArray(accountsRes.data?.data)
+        ? (accountsRes.data.data as RawAcct[])
+        : [];
+
+      // 2. Monedas únicas de cuentas que no tienen tasa y no son la moneda base
+      const defaultCurrId = auth.user?.currency_id;
+      const seen = new Set<number>();
+      const missing: Array<{ id: number; code: string }> = [];
+      for (const acc of flat) {
+        const cid = acc.currency?.id || acc.currency_id;
+        const ccode = acc.currency?.code || '';
+        if (!cid || seen.has(cid) || cid === defaultCurrId || configuredIds.has(cid)) continue;
+        seen.add(cid);
+        missing.push({ id: cid, code: ccode });
+      }
+
+      if (!missing.length) return;
+
+      // 3. Crear tasas faltantes con rate=1
+      for (const curr of missing) {
+        await api.post('/user_currencies', {
+          user_id: auth.user?.id,
+          currency_id: curr.id,
+          current_rate: 1,
+          is_current: true,
+          is_official: false,
+        });
+      }
+
+      // 4. Refrescar store para que los chips y conversiones se actualicen
+      await auth.refreshUserCurrencies();
+
+      const names = missing.map((c) => c.code).join(', ');
+      $q.notify({
+        type: 'info',
+        icon: 'info',
+        message: `Monedas sin tasa configurada: ${names}. Se asignó tasa 1 como inicio. Actualiza la tasa real desde Configuración → Finanzas o haciendo clic en el chip.`,
+        multiLine: true,
+        timeout: 8000,
+        actions: [{ label: 'OK', color: 'white' }],
+      });
+    } catch {
+      // Silencioso — no interrumpir carga principal
+    }
+  })();
 });
 </script>
 
