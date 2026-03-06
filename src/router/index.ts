@@ -1,11 +1,14 @@
 import { route } from 'quasar/wrappers'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
 import { useAuthStore } from 'stores/auth'
 
 export default route(function () {
   const router = createRouter({
-    history: createWebHistory(),
+    history:
+      process.env.VUE_ROUTER_MODE === 'history'
+        ? createWebHistory(process.env.VUE_ROUTER_BASE)
+        : createWebHashHistory(process.env.VUE_ROUTER_BASE),
     routes
   })
 

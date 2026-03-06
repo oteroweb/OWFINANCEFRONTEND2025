@@ -81,12 +81,23 @@
           :data-ow-section-id="String(section.id)"
         >
           <div
-            class="section-header bg-primary text-white q-px-sm q-py-xs"
+            class="section-header bg-primary text-white q-px-sm q-py-xs row items-center justify-between"
+            style="cursor: pointer"
             data-ow="section-header"
             :data-ow-section-id="String(section.id)"
+            @click="selectSection(section)"
           >
-            <q-icon name="folder" size="16px" class="q-mr-sm" />
-            <span class="text-caption text-weight-medium">{{ section.label }}</span>
+            <div class="row items-center">
+              <q-icon name="folder" size="16px" class="q-mr-sm" />
+              <span class="text-caption text-weight-medium">{{ section.label }}</span>
+            </div>
+            <span
+              v-if="section.totalBalance"
+              class="text-caption no-wrap q-ml-sm"
+              :style="section.totalNegative ? 'color: #ffcdd2' : 'color: #b2dfdb'"
+            >
+              {{ section.totalBalance }}
+            </span>
           </div>
           <q-list
             class="no-border-top no-borders-list"
@@ -228,6 +239,8 @@ type Section = {
   id: string | number;
   label: string;
   accounts: AccountItem[];
+  totalBalance: string;
+  totalNegative: boolean;
 };
 
 const allAccountIds = computed(() => {
@@ -244,22 +257,113 @@ const allAccountIds = computed(() => {
 
 const sections = computed<Section[]>(() => buildSections(nodes.value));
 
+function sectionTotalBalance(accounts: AccountItem[]): { text: string; negative: boolean } {
+  // Group balances by currency code
+  const perCurrency = new Map<string, { total: number; sym: string }>();
+  for (const acc of accounts) {
+    if (acc.balance !== undefined && acc.balance !== null) {
+      const code = acc.currencyCode || '';
+      const sym = acc.currencySymbol || '';
+      const existing = perCurrency.get(code);
+      if (existing) existing.total += acc.balance ?? 0;
+      else perCurrency.set(code, { total: acc.balance ?? 0, sym });
+    }
+  }
+  if (!perCurrency.size) return { text: '', negative: false };
+
+  const fmtNum = (val: number, decimals = 0): string => {
+    const abs = Math.abs(val);
+    const sign = val < 0 ? '-' : '';
+    if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(1) + 'M';
+    if (abs >= 1_000) return sign + (abs / 1_000).toFixed(1) + 'k';
+    return sign + abs.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals > 0 ? decimals : 2 });
+  };
+
+  // Try converting each currency to USD
+  let usdTotal = 0;
+  let hasUnconvertible = false;
+  const unconvertibleParts: string[] = [];
+  const convertibleParts: string[] = [];
+
+  for (const [code, { total, sym }] of perCurrency.entries()) {
+    const partLabel = sym + fmtNum(total);
+    if (!code || code.toUpperCase() === 'USD') {
+      usdTotal += total;
+      convertibleParts.push(sym + fmtNum(total, 2));
+    } else {
+      const rate = auth.getCurrentRateForCurrency(code);
+      if (rate && rate > 0) {
+        usdTotal += total / rate;
+        convertibleParts.push(partLabel);
+      } else {
+        hasUnconvertible = true;
+        unconvertibleParts.push(partLabel);
+      }
+    }
+  }
+
+  const fmtUsd = (val: number): string => {
+    const abs = Math.abs(val);
+    const sign = val < 0 ? '-' : '';
+    if (abs >= 1_000_000) return sign + '$' + (abs / 1_000_000).toFixed(1) + 'M';
+    if (abs >= 1_000) return sign + '$' + (abs / 1_000).toFixed(1) + 'k';
+    return sign + '$' + abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const parts: string[] = [];
+
+  if (convertibleParts.length > 0) {
+    const isSingleUsd = perCurrency.size === 1 && !hasUnconvertible && [...perCurrency.keys()][0]?.toUpperCase() === 'USD';
+    if (isSingleUsd) {
+      parts.push(fmtUsd(usdTotal));
+    } else {
+      parts.push(fmtUsd(usdTotal) + ' (' + convertibleParts.join(' + ') + ')');
+    }
+  }
+  parts.push(...unconvertibleParts);
+
+  const text = parts.join(' + ');
+  // Determine negativity: use USD total for convertible; for all-unconvertible fall back to raw sum
+  const negative = hasUnconvertible && convertibleParts.length === 0
+    ? Array.from(perCurrency.values()).reduce((s, { total }) => s + total, 0) < 0
+    : usdTotal < 0;
+  return { text, negative };
+}
+
 function buildSections(root: Node[]): Section[] {
   const sections: Section[] = [];
   const topFolders = root.filter((n) => n.type === 'folder');
   for (const f of topFolders) {
     const accounts = gatherAccounts(f);
-    sections.push({ id: f.id, label: String(f.label || ''), accounts });
+    const { text, negative } = sectionTotalBalance(accounts);
+    sections.push({ id: f.id, label: String(f.label || ''), accounts, totalBalance: text, totalNegative: negative });
   }
   const looseAccounts = root.filter((n) => n.type === 'account');
   if (looseAccounts.length) {
+    const accs = looseAccounts.map((a) => toAccountItem(a));
+    const { text, negative } = sectionTotalBalance(accs);
     sections.unshift({
       id: 'otros',
       label: 'Mis cuentas',
-      accounts: looseAccounts.map((a) => toAccountItem(a)),
+      accounts: accs,
+      totalBalance: text,
+      totalNegative: negative,
     });
   }
   return sections;
+}
+
+function selectSection(section: Section) {
+  const ids = section.accounts.map((a) => a.id);
+  ticked.value = ids.map(String);
+  txStore.setSelectedAccountIds(ids);
+  try {
+    window.dispatchEvent(
+      new CustomEvent('ow:accounts:selected', { detail: { ids } })
+    );
+  } catch {
+    /* ignore */
+  }
 }
 
 function gatherAccounts(folder: Node): AccountItem[] {

@@ -44,14 +44,14 @@ export default defineConfig((ctx) => {
         // extendTsConfig (tsConfig) {}
       },
 
-      vueRouterMode: 'hash', // available values: 'hash', 'history'
-      // vueRouterBase,
+      vueRouterMode: 'history', // available values: 'hash', 'history'
+      vueRouterBase: '/app/',
       // vueDevtools,
       // vueOptionsAPI: false,
 
       // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
-      // publicPath: '/',
+      publicPath: '/app/',
       // analyze: true,
       env: {
         VITE_API_BASE_URL: process.env.VITE_API_BASE_URL,

@@ -71,6 +71,9 @@
                   <span class="text-caption text-grey-5 no-wrap flex-shrink-0">
                     {{ folderAccountCount(node) }} cuenta{{ folderAccountCount(node) === 1 ? '' : 's' }}
                   </span>
+                  <span v-if="folderTotalBalance(node)" class="text-caption no-wrap flex-shrink-0" :class="folderTotalBalanceNegative(node) ? 'text-negative' : 'text-teal-7'">
+                    · {{ folderTotalBalance(node) }}
+                  </span>
                 </template>
               </div>
               <!-- Action buttons on hover -->
@@ -143,6 +146,7 @@ import { defineComponent, ref, watch } from 'vue';
 import type { PropType } from 'vue';
 import { Notify } from 'quasar';
 import { useTransactionsStore } from 'stores/transactions';
+import { useAuthStore } from 'stores/auth';
 
 type NodeType = 'folder' | 'account';
 
@@ -151,6 +155,7 @@ type TreeNode = {
   label: string;
   type: NodeType;
   balance?: number;
+  currencyCode?: string;
   currencySymbol?: string;
   includeInGlobalBalance?: boolean;
   children?: TreeNode[];
@@ -178,6 +183,7 @@ export default defineComponent({
   ],
   setup(props, { emit, expose }) {
     const txStore = useTransactionsStore();
+    const authStore = useAuthStore();
     // Top-level nodes; we keep a special folder id 'root' labeled 'Sin asignar'
     const UNASSIGNED_ID = 'root';
     const treeData = ref<TreeNode[]>([
@@ -433,8 +439,6 @@ export default defineComponent({
     function onSelect(node: TreeNode) {
       selectedNodeId.value = node.id;
       selectedIsFolder.value = node.type === 'folder' && node.id !== UNASSIGNED_ID;
-      // Cuando se selecciona una cuenta, sincronizar selección global para que otras vistas (transacciones)
-      // reaccionen y actualicen su balance/tabla.
       if (node.type === 'account') {
         txStore.setSelectedAccountIds([node.id]);
         emit('view-account', { id: node.id, label: node.label });
@@ -444,6 +448,24 @@ export default defineComponent({
           );
         } catch {
           /* ignore */
+        }
+      } else if (node.type === 'folder' && node.id !== UNASSIGNED_ID) {
+        // Seleccionar todas las cuentas de la carpeta
+        const ids: string[] = [];
+        const walkIds = (n: TreeNode) => {
+          if (n.type === 'account') ids.push(String(n.id));
+          for (const c of n.children || []) walkIds(c);
+        };
+        walkIds(node);
+        if (ids.length) {
+          txStore.setSelectedAccountIds(ids);
+          try {
+            window.dispatchEvent(
+              new CustomEvent('ow:accounts:selected', { detail: { ids } })
+            );
+          } catch {
+            /* ignore */
+          }
         }
       }
     }
@@ -563,19 +585,21 @@ export default defineComponent({
       }
     }
     // Replace entire tree with provided nodes (typed, no any)
-    type NodeInput = { id: string | number; label: string; type: NodeType; balance?: number | string | null; currency_symbol?: string; include_in_global_balance?: boolean; children?: NodeInput[] };
+    type NodeInput = { id: string | number; label: string; type: NodeType; balance?: number | string | null; currency_symbol?: string; currency_code?: string; include_in_global_balance?: boolean; children?: NodeInput[] };
     function setTree(nodes: NodeInput[]) {
       // Normalize incoming nodes
       const toTree = (items: NodeInput[]): TreeNode[] =>
         items.map((n) => {
           const balance = n.balance !== undefined && n.balance !== null ? Number(n.balance) : undefined;
           const currencySymbol = n.currency_symbol ?? undefined;
+          const currencyCode = n.currency_code ?? undefined;
           return {
             id: String(n.id),
             label: String(n.label ?? ''),
             type: n.type,
             ...(balance !== undefined ? { balance } : {}),
             ...(currencySymbol !== undefined ? { currencySymbol } : {}),
+            ...(currencyCode !== undefined ? { currencyCode } : {}),
             includeInGlobalBalance: n.include_in_global_balance !== false,
             children: n.children ? toTree(n.children) : [],
           };
@@ -642,6 +666,99 @@ export default defineComponent({
         else count += folderAccountCount(c);
       }
       return count;
+    }
+
+    function folderTotalBalance(node: TreeNode): string {
+      // Group balances by currency code
+      const perCurrency = new Map<string, { total: number; sym: string }>();
+      const walk = (n: TreeNode) => {
+        if (n.type === 'account' && n.balance !== undefined) {
+          const code = n.currencyCode || '';
+          const sym = n.currencySymbol || '';
+          const existing = perCurrency.get(code);
+          if (existing) existing.total += n.balance;
+          else perCurrency.set(code, { total: n.balance, sym });
+        }
+        for (const c of n.children || []) walk(c);
+      };
+      walk(node);
+      if (!perCurrency.size) return '';
+
+      const fmtNum = (val: number, decimals = 0): string => {
+        const abs = Math.abs(val);
+        const sign = val < 0 ? '-' : '';
+        if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(1) + 'M';
+        if (abs >= 1_000) return sign + (abs / 1_000).toFixed(1) + 'k';
+        return sign + abs.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals > 0 ? decimals : 2 });
+      };
+
+      // Try converting each currency to USD
+      let usdTotal = 0;
+      let hasUnconvertible = false;
+      const unconvertibleParts: string[] = [];
+      const convertibleParts: string[] = [];
+
+      for (const [code, { total, sym }] of perCurrency.entries()) {
+        const partLabel = sym + fmtNum(total);
+        if (!code || code.toUpperCase() === 'USD') {
+          usdTotal += total;
+          convertibleParts.push(sym + fmtNum(total, 2));
+        } else {
+          const rate = authStore.getCurrentRateForCurrency(code);
+          if (rate && rate > 0) {
+            usdTotal += total / rate;
+            convertibleParts.push(partLabel);
+          } else {
+            hasUnconvertible = true;
+            unconvertibleParts.push(partLabel);
+          }
+        }
+      }
+
+      const fmtUsd = (val: number): string => {
+        const abs = Math.abs(val);
+        const sign = val < 0 ? '-' : '';
+        if (abs >= 1_000_000) return sign + '$' + (abs / 1_000_000).toFixed(1) + 'M';
+        if (abs >= 1_000) return sign + '$' + (abs / 1_000).toFixed(1) + 'k';
+        return sign + '$' + abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+
+      const parts: string[] = [];
+
+      // Show USD total for all convertible currencies
+      if (convertibleParts.length > 0) {
+        const isSingleUsd = perCurrency.size === 1 && !hasUnconvertible && [...perCurrency.keys()][0]?.toUpperCase() === 'USD';
+        if (isSingleUsd) {
+          parts.push(fmtUsd(usdTotal));
+        } else {
+          // Show USD total with per-currency breakdown in parens
+          parts.push(fmtUsd(usdTotal) + ' (' + convertibleParts.join(' + ') + ')');
+        }
+      }
+
+      // Append unconvertible currencies separately
+      parts.push(...unconvertibleParts);
+
+      return parts.join(' + ');
+    }
+
+    function folderTotalBalanceNegative(node: TreeNode): boolean {
+      // Sum all balances converted to USD where possible; otherwise raw
+      let total = 0;
+      const walk = (n: TreeNode) => {
+        if (n.type === 'account' && n.balance !== undefined) {
+          const code = n.currencyCode || '';
+          if (!code || code.toUpperCase() === 'USD') {
+            total += n.balance;
+          } else {
+            const rate = authStore.getCurrentRateForCurrency(code);
+            total += rate && rate > 0 ? n.balance / rate : n.balance;
+          }
+        }
+        for (const c of n.children || []) walk(c);
+      };
+      walk(node);
+      return total < 0;
     }
 
     function makeDragImage(label: string) {
@@ -718,6 +835,8 @@ export default defineComponent({
       onRootDrop,
       formatBalance,
       folderAccountCount,
+      folderTotalBalance,
+      folderTotalBalanceNegative,
       // setTree is exposed for parent refs; no need to return to template
     };
   },

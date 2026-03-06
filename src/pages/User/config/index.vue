@@ -659,26 +659,27 @@ async function loadAccountsTree() {
     ]);
     const rawNodes = treeRes.data?.data?.nodes || treeRes.data?.nodes || treeRes.data?.data || treeRes.data || [];
 
-    // Build id → { balance, currency_symbol, include_in_global_balance } map from flat list
-    type AcctInfo = { id: number | string; balance?: number | string | null; currency?: { symbol?: string }; include_in_global_balance?: boolean };
+    // Build id → { balance, currency_symbol, currency_code, include_in_global_balance } map from flat list
+    type AcctInfo = { id: number | string; balance?: number | string | null; currency?: { symbol?: string; code?: string }; include_in_global_balance?: boolean };
     const flatList: AcctInfo[] = Array.isArray(listRes.data?.data) ? (listRes.data.data as AcctInfo[]) : [];
-    const balanceMap = new Map<string, { balance: number; currency_symbol: string; include_in_global_balance: boolean }>();
+    const balanceMap = new Map<string, { balance: number; currency_symbol: string; currency_code: string; include_in_global_balance: boolean }>();
     for (const a of flatList) {
       balanceMap.set(String(a.id), {
         balance: Number(a.balance ?? 0),
         currency_symbol: a.currency?.symbol ?? '$',
+        currency_code: a.currency?.code ?? '',
         include_in_global_balance: a.include_in_global_balance !== false,
       });
     }
 
     // Recursively merge balance info into tree nodes
-    type RawNode = { id: number | string; label?: string; type?: string; balance?: number | string; currency_symbol?: string; include_in_global_balance?: boolean; children?: RawNode[] };
+    type RawNode = { id: number | string; label?: string; type?: string; balance?: number | string; currency_symbol?: string; currency_code?: string; include_in_global_balance?: boolean; children?: RawNode[] };
     function mergeBalances(nodes: RawNode[]): RawNode[] {
       return nodes.map((n) => {
         const info = n.type === 'account' ? balanceMap.get(String(n.id)) : undefined;
         return {
           ...n,
-          ...(info !== undefined ? { balance: info.balance, currency_symbol: info.currency_symbol, include_in_global_balance: info.include_in_global_balance } : {}),
+          ...(info !== undefined ? { balance: info.balance, currency_symbol: info.currency_symbol, currency_code: info.currency_code, include_in_global_balance: info.include_in_global_balance } : {}),
           children: n.children ? mergeBalances(n.children) : [],
         };
       });
