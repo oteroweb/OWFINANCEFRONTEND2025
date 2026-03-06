@@ -70,7 +70,7 @@
           </q-input>
 
           <!-- Presupuesto dividido en usado/restante -->
-          <div v-if="assignedAmountValue > 0" class="split-budget">
+          <div v-if="assignedAmountValue !== 0" class="split-budget">
             <div class="text-caption text-grey-7 q-mb-xs">
               Presupuesto base: {{ formatCurrency(assignedAmountValue) }}
             </div>
@@ -368,7 +368,7 @@ function clampRemaining(val: number | null) {
 }
 
 function syncSplitFromObjective() {
-  if (assignedAmountValue.value <= 0) return;
+  if (assignedAmountValue.value === 0) return;
   const remaining = clampRemaining(form.value.valorObjetivo ?? 0);
   remainingInput.value = round2(remaining);
   usedInput.value = round2(Math.max(0, assignedAmountValue.value - remaining));
@@ -403,6 +403,8 @@ function resetForm() {
     valorObjetivo: null,
     descripcion: '',
   };
+  usedInput.value = null;
+  remainingInput.value = null;
 }
 
 /**

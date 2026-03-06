@@ -122,6 +122,86 @@
           v-model:pagination="pagination"
           @request="onRequest"
         >
+          <!--
+            Fila ancla superior:
+            - Ascendente (oldest→newest): "Saldo anterior" = preListBalance
+            - Descendente (newest→oldest): "Saldo actual"  = singleAccountBalance
+          -->
+          <template
+            v-if="showRunningBalanceColumn && (pagination.descending ? singleAccountBalance != null : preListBalance != null)"
+            v-slot:top-row="{ cols }"
+          >
+            <tr :class="pagination.descending ? 'current-balance-row' : 'initial-balance-row'">
+              <td
+                v-for="col in cols"
+                :key="col.name"
+                :class="col.align === 'right' ? 'text-right' : 'text-left'"
+                style="padding: 4px 8px"
+              >
+                <template v-if="col.name === 'name'">
+                  <span class="text-caption text-grey-7" style="font-style: italic">
+                    <q-icon :name="pagination.descending ? 'account_balance' : 'flag'" size="13px" class="q-mr-xs" />
+                    {{ pagination.descending ? 'Saldo actual' : 'Saldo anterior' }}
+                  </span>
+                </template>
+                <template v-else-if="col.name === 'running_balance'">
+                  <template v-if="pagination.descending && singleAccountBalance != null">
+                    <span class="text-weight-bold" :class="singleAccountBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
+                      {{ formatWithCodeSuffix(singleAccountCurrencyCode, singleAccountBalance) }}
+                    </span>
+                  </template>
+                  <template v-else-if="!pagination.descending && preListBalance != null">
+                    <span class="text-weight-bold" :class="preListBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
+                      {{ formatWithCodeSuffix(singleAccountCurrencyCode, preListBalance) }}
+                    </span>
+                  </template>
+                </template>
+                <template v-else>
+                  <span />
+                </template>
+              </td>
+            </tr>
+          </template>
+          <!--
+            Fila ancla inferior:
+            - Ascendente (oldest→newest): "Saldo actual"  = singleAccountBalance
+            - Descendente (newest→oldest): "Saldo anterior" = preListBalance
+          -->
+          <template
+            v-if="showRunningBalanceColumn && (pagination.descending ? preListBalance != null : singleAccountBalance != null)"
+            v-slot:bottom-row="{ cols }"
+          >
+            <tr :class="pagination.descending ? 'initial-balance-row' : 'current-balance-row'">
+              <td
+                v-for="col in cols"
+                :key="col.name"
+                :class="col.align === 'right' ? 'text-right' : 'text-left'"
+                style="padding: 4px 8px"
+              >
+                <template v-if="col.name === 'name'">
+                  <span class="text-caption text-grey-7" style="font-style: italic">
+                    <q-icon :name="pagination.descending ? 'flag' : 'account_balance'" size="13px" class="q-mr-xs" />
+                    {{ pagination.descending ? 'Saldo anterior' : 'Saldo actual' }}
+                  </span>
+                </template>
+                <template v-else-if="col.name === 'running_balance'">
+                  <template v-if="pagination.descending && preListBalance != null">
+                    <span class="text-weight-bold" :class="preListBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
+                      {{ formatWithCodeSuffix(singleAccountCurrencyCode, preListBalance) }}
+                    </span>
+                  </template>
+                  <template v-else-if="!pagination.descending && singleAccountBalance != null">
+                    <span class="text-weight-bold" :class="singleAccountBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
+                      {{ formatWithCodeSuffix(singleAccountCurrencyCode, singleAccountBalance) }}
+                    </span>
+                  </template>
+                </template>
+                <template v-else>
+                  <span />
+                </template>
+              </td>
+            </tr>
+          </template>
           <!-- Celda custom: Monto (línea principal: moneda de la cuenta, línea secundaria: moneda por defecto del usuario) -->
           <template v-slot:body-cell-amount="props">
             <q-td :props="props" align="right">
@@ -263,30 +343,13 @@
       <q-card style="min-width: 360px">
         <q-card-section class="text-h6">Ajustar saldo de la cuenta</q-card-section>
         <q-card-section>
-          <div class="text-caption q-mb-xs">Cuenta seleccionada: {{ singleAccountId ?? '-' }}</div>
-          <q-input
-            v-model="adjustBalanceTop"
-            label="Nuevo saldo"
-            type="number"
-            step="0.01"
-            dense
-            filled
-          />
-          <div class="q-mt-sm">
-            <q-checkbox v-model="includeInBalanceTop" label="Generar transacción de ajuste" dense />
+          <div class="text-subtitle2 q-mb-xs">
+            <q-icon name="account_balance" class="q-mr-xs" color="primary" />
+            {{ singleAccountName || ('Cuenta #' + (singleAccountId ?? '-')) }}
           </div>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup :disable="adjustingTop" />
-          <q-btn color="primary" label="Guardar" :loading="adjustingTop" @click="submitAdjustTop" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="showAdjustTop">
-      <q-card style="min-width: 360px">
-        <q-card-section class="text-h6">Ajustar saldo de la cuenta</q-card-section>
-        <q-card-section>
-          <div class="text-caption q-mb-xs">Cuenta seleccionada: {{ singleAccountId ?? '-' }}</div>
+          <div v-if="singleAccountInitial != null" class="text-caption text-grey-7 q-mb-sm">
+            Saldo de apertura: <strong>{{ formatWithCodeSuffix(singleAccountCurrencyCode, singleAccountInitial) }}</strong>
+          </div>
           <q-input
             v-model="adjustBalanceTop"
             label="Nuevo saldo"
@@ -536,6 +599,10 @@ const singleAccountId = computed<number | null>(() => {
 });
 const singleAccountBalance = ref<number | null>(null);
 const singleAccountBalanceLoading = ref(false);
+const singleAccountName = ref<string>('');
+const singleAccountInitial = ref<number | null>(null);
+// Balance calculado ANTES de la primera transacción visible (encadena con running balance)
+const preListBalance = ref<number | null>(null);
 // Moneda asociada a la cuenta seleccionada
 const singleAccountCurrencySymbol = ref<string>('$');
 const singleAccountCurrencyAlign = ref<'left' | 'right'>('left');
@@ -543,6 +610,10 @@ const singleAccountCurrencyCode = ref<string>('USD');
 const singleAccountCurrencyId = ref<number | null>(null);
 const singleAccountRate = ref<number | null>(null);
 const singleAccountRateLoading = ref(false);
+// Helper de redondeo a 2 decimales para evitar f.p. drift
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
 // Helper para convertir valores numéricos que llegan como string o number
 function toNumeric(val: unknown): number | null {
   if (typeof val === 'number' && Number.isFinite(val)) return val;
@@ -560,6 +631,9 @@ async function fetchSingleAccountBalance(): Promise<void> {
   const id = singleAccountId.value;
   if (!id) {
     singleAccountBalance.value = null;
+    singleAccountName.value = '';
+    singleAccountInitial.value = null;
+    preListBalance.value = null;
     return;
   }
   try {
@@ -587,6 +661,11 @@ async function fetchSingleAccountBalance(): Promise<void> {
         const code = typeof cur['code'] === 'string' ? cur['code'] : 'USD';
         singleAccountCurrencyCode.value = code || 'USD';
       }
+      // Capturar nombre e initial de la cuenta
+      const nameVal = source['name'];
+      singleAccountName.value = typeof nameVal === 'string' ? nameVal : '';
+      const initVal = toNumeric(source['initial']);
+      singleAccountInitial.value = initVal;
       // Preferir balance en vivo por encima del balance_cached
       const candidateKeys = [
         'balance',
@@ -872,11 +951,13 @@ const showRunningBalanceColumn = computed(
 function computeRunningBalances(): void {
   if (!showRunningBalanceColumn.value) {
     runningBalanceMap.value = {};
+    preListBalance.value = null;
     return;
   }
   const currentBalance = singleAccountBalance.value;
   if (currentBalance == null) {
     runningBalanceMap.value = {};
+    preListBalance.value = null;
     return;
   }
   const list = rows.value.slice();
@@ -904,9 +985,13 @@ function computeRunningBalances(): void {
       const amt = amounts[i] ?? 0;
       bal = bal - amt;
     }
+    // bal ahora = currentBalance - Σ(amounts) = saldo ANTES de la tx más antigua visible
+    preListBalance.value = round2(bal);
   } else {
     const total = amounts.reduce((a, b) => a + b, 0);
-    let bal = currentBalance - total;
+    const startBal = currentBalance - total;
+    preListBalance.value = round2(startBal);
+    let bal = startBal;
     for (let i = 0; i < list.length; i++) {
       const row = list[i] as Record<string, unknown>;
       const id = (row['id'] as string | number | undefined) ?? i;
@@ -1965,5 +2050,13 @@ function exportCSV(): void {
   font-size: 11px;
   opacity: 0.8;
   margin-left: 6px;
+}
+.initial-balance-row td {
+  background: rgba(0, 128, 96, 0.06);
+  border-bottom: 2px dashed rgba(0, 128, 96, 0.25);
+}
+.current-balance-row td {
+  background: rgba(0, 100, 200, 0.06);
+  border-top: 2px dashed rgba(0, 100, 200, 0.25);
 }
 </style>

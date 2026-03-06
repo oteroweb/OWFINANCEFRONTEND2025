@@ -66,6 +66,8 @@
           </template>
         </div>
       </div>
+      <!-- Cántaros: disponible por mes -->
+      <JarsBalanceBar ref="jarsBarRef" />
       <!-- Barra de periodos global -->
       <div class="bg-white text-dark">
         <PeriodFilterBar />
@@ -169,6 +171,7 @@ import { useAuthStore } from 'stores/auth';
 import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
 import { TransactionCreateDialog } from 'components';
 import { PeriodFilterBar } from 'components/models';
+import JarsBalanceBar from 'src/components/JarsBalanceBar.vue';
 import { useUiStore } from 'stores/ui';
 import { useQuasar } from 'quasar';
 import { useUserRates } from 'src/composables/useUserRates';
@@ -180,6 +183,16 @@ const ui = useUiStore();
 const $q = useQuasar();
 const router = useRouter();
 const drawerOpen = ref(false);
+const jarsBarRef = ref<InstanceType<typeof JarsBalanceBar>>();
+// Refresh jars bar when new-transaction dialog closes
+watch(
+  () => ui.showDialogNewTransaction,
+  (isOpen) => {
+    if (!isOpen) {
+      jarsBarRef.value?.refresh();
+    }
+  }
+);
 // bottom navigation state
 const bottomNav = ref<string>('');
 // Seleccionar subconjunto (máx 4) para bottom nav

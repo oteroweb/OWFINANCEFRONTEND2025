@@ -34,8 +34,14 @@
             </div>
           </div>
           <div class="col-6 col-sm-3">
-            <div class="text-caption text-grey-7">No usado en cántaros</div>
+            <div class="text-caption text-grey-7">No usado este mes</div>
             <div class="text-h6">{{ formatCurrency(theoreticalSavings.total_unused) }}</div>
+            <div class="text-caption text-grey-6">Cántaros en reset</div>
+          </div>
+          <div class="col-6 col-sm-3">
+            <div class="text-caption text-grey-7">Ocioso acumulado</div>
+            <div class="text-h6 text-warning">{{ formatCurrency(theoreticalSavings.accumulated_unused) }}</div>
+            <div class="text-caption text-grey-6">Reset sin usar desde el inicio</div>
           </div>
           <div class="col-6 col-sm-3">
             <div class="text-caption text-grey-7">Ahorro teórico total</div>
@@ -109,7 +115,22 @@
                 </td>
                 <td class="text-right text-negative">{{ formatCurrency(row.spent) }}</td>
                 <td class="text-right" :class="row.adjustment > 0 ? 'text-positive' : row.adjustment < 0 ? 'text-negative' : ''">
-                  {{ row.adjustment !== 0 ? ((row.adjustment > 0 ? '+' : '') + formatCurrency(row.adjustment)) : '—' }}
+                  <div class="row items-center justify-end no-wrap q-gutter-xs">
+                    <span>{{ row.adjustment !== 0 ? ((row.adjustment > 0 ? '+' : '') + formatCurrency(row.adjustment)) : '—' }}</span>
+                    <q-btn
+                      v-if="row.id"
+                      flat
+                      dense
+                      round
+                      size="sm"
+                      icon="edit"
+                      color="primary"
+                      @click="openAdjustmentModal(row.id)"
+                      class="q-ml-xs"
+                    >
+                      <q-tooltip>Editar ajuste de {{ row.name }}</q-tooltip>
+                    </q-btn>
+                  </div>
                 </td>
                 <td class="text-right text-weight-bold text-negative">
                   {{ formatCurrency(row.spent + Math.abs(Math.min(row.adjustment, 0))) }}
@@ -250,6 +271,18 @@
               :label="`Cántaro de apalancamiento (${currentMonth})`"
               hint="Se aplica solo al mes seleccionado"
             />
+          </div>
+          <div class="col-12 col-sm-6">
+            <q-toggle
+              v-model="jarSettings.auto_leverage_enabled"
+              dense
+              color="primary"
+              label="Habilitar apalancamiento automático"
+              class="q-my-md"
+            />
+            <div class="text-caption text-grey-6">
+              Si está habilitado, los cántaros negativos se reabsorben automáticamente desde el cántaro de apalancamiento
+            </div>
           </div>
         </div>
       </q-card-section>
@@ -909,11 +942,8 @@
       :jar="
         currentJarAdjustment ? jarElements.find((j) => j.id === currentJarAdjustment) ?? null : null
       "
-      :current-balance="Math.round(getJarBaseBalance(currentJarAdjustment || -1) * 100) / 100"
-      :accounting-balance="Math.round((
-        getJarBaseBalance(currentJarAdjustment || -1) +
-          (getJarBalanceValue(currentJarAdjustment || -1)?.retiros || 0)
-      ) * 100) / 100"
+      :current-balance="Math.round((getJarBalanceValue(currentJarAdjustment || -1)?.balance ?? 0) * 100) / 100"
+      :accounting-balance="Math.round((getJarBalanceValue(currentJarAdjustment || -1)?.balance ?? 0) * 100) / 100"
       :assigned-amount="Math.round(getAdjustmentBudgetBase(currentJarAdjustment || -1) * 100) / 100"
       :allow-negative="
         currentJarAdjustment
@@ -983,7 +1013,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { usePeriodStore } from 'stores/period';
@@ -1055,6 +1085,7 @@ type JarSettings = {
   default_reset_cycle?: 'none' | 'monthly' | 'quarterly' | 'semiannual' | 'annual';
   default_reset_cycle_day?: number;
   leverage_jar_id?: number | null;
+  auto_leverage_enabled?: boolean;
 };
 
 type CatNodeInput = {
@@ -1075,7 +1106,7 @@ const jarsStore = useJarsStore();
 const serverJarIds = ref<Set<number>>(new Set());
 const saving = ref(false);
 const useRealIncome = ref(false);
-const incomePanelRef = ref<{ refresh: () => Promise<void> } | null>(null);
+const incomePanelRef = ref<{ refresh: (month?: string) => Promise<unknown> } | null>(null);
 const jarSettingsLoaded = ref(false);
 const jarSettings = ref<JarSettings>({
   global_start_date: null,
@@ -1084,6 +1115,7 @@ const jarSettings = ref<JarSettings>({
   default_reset_cycle: 'none',
   default_reset_cycle_day: 1,
   leverage_jar_id: null,
+  auto_leverage_enabled: false,
 });
 const monthlyLeverageJarId = ref<number | null>(null);
 
@@ -1091,6 +1123,7 @@ const theoreticalSavings = ref({
   total_unused: 0,
   total_savings_accounts: 0,
   total_theoretical: 0,
+  accumulated_unused: 0,
 });
 
 // Get current month in YYYY-MM format from period store
@@ -1187,23 +1220,6 @@ function syncPeriodToQuery() {
 
 // Income composable for calculating suggested amounts
 const { expectedIncome, calculatedIncome, fetchCalculatedIncome } = useCalculatedIncome();
-
-// Helper function to calculate suggested amount for a jar
-function calculateJarSuggestion(jar: Jar): number {
-  if (!jar.active) return 0;
-
-  // Use real income if toggle is on, otherwise use expected
-  const income = useRealIncome.value ? calculatedIncome.value : expectedIncome.value;
-
-  if (income === 0) return 0;
-
-  if (jar.type === 'percent') {
-    return (income * (jar.percent || 0)) / 100;
-  }
-
-  // For fixed amount jars
-  return jar.fixedAmount || 0;
-}
 
 // Format currency helper
 function formatCurrency(amount: number): string {
@@ -1441,24 +1457,12 @@ function getJarBalanceValue(jarId: number) {
   return unwrapMaybeRef(entry?.balance ?? null);
 }
 
-function getJarLeverageNet(jarId: number): number {
-  const bal = getJarBalanceValue(jarId);
-  const leverageIn = bal?.leverage_in ?? 0; // absorbed from others
-  const leverageOut = bal?.leverage_out ?? 0; // excess transferred out
-  return leverageOut - leverageIn;
-}
-
-function getJarBaseBalance(jarId: number): number {
-  const bal = getJarBalanceValue(jarId);
-  if (!bal) return 0;
-  return (bal.balance ?? 0) - (bal.leverage_in ?? 0) + (bal.leverage_out ?? 0);
-}
-
 /**
  * For accumulative jars, the budget base = saldo_anterior + asignado.
+ * This is the real total available (including carry-over debt or surplus).
  * For reset jars, just asignado.
- * This way the "Usado" field in the adjustment modal shows
- * only real spending for the current month, not the carry-over.
+ * The split Used/Remaining in the modal works correctly with this total
+ * because: used = budget - remaining = (carry + assigned) - balance = spent.
  */
 function getAdjustmentBudgetBase(jarId: number): number {
   const bal = getJarBalanceValue(jarId);
@@ -1469,17 +1473,6 @@ function getAdjustmentBudgetBase(jarId: number): number {
     return assigned + (bal.saldo_anterior ?? 0);
   }
   return assigned;
-}
-
-function getJarLeverageSourceName(jarId: number): string {
-  const jar = jarElements.value.find((j) => j.id === jarId);
-  const sourceId =
-    jar?.leverage_from_jar_id ??
-    monthlyLeverageJarId.value ??
-    jarSettings.value.leverage_jar_id ??
-    null;
-  if (!sourceId) return '—';
-  return jarElements.value.find((j) => j.id === sourceId)?.name || `#${sourceId}`;
 }
 
 function getJarLoadingValue(jarId: number) {
@@ -1594,7 +1587,7 @@ const jarMonthlySummary = computed<JarMonthlySummaryRow[]>(() => {
         id: j.id!,
         name: j.name,
         color: getJarColor(j),
-        type: j.type as 'percent' | 'fixed',
+        type: j.type === 'percent' ? 'percent' : 'fixed',
         percent: pct,
         isAccumulative: isAccum,
         carryOver: isAccum ? (bal?.saldo_anterior ?? 0) : 0,
@@ -1909,6 +1902,7 @@ async function loadJarSettings() {
       default_reset_cycle: data.default_reset_cycle ?? 'none',
       default_reset_cycle_day: data.default_reset_cycle_day ?? 1,
       leverage_jar_id: data.leverage_jar_id ?? null,
+      auto_leverage_enabled: data.auto_leverage_enabled ?? false,
     };
     jarSettingsLoaded.value = true;
     await loadMonthlyLeverageSetting(currentMonth.value);
@@ -1944,6 +1938,7 @@ async function saveJarSettings() {
     default_reset_cycle: jarSettings.value.default_reset_cycle ?? 'none',
     default_reset_cycle_day: jarSettings.value.default_reset_cycle_day ?? 1,
     leverage_jar_id: leverageValue ?? null,
+    auto_leverage_enabled: jarSettings.value.auto_leverage_enabled ?? false,
   });
 
   await api.put('/jars/settings/monthly', {
@@ -1956,12 +1951,17 @@ async function saveJarSettings() {
 async function loadTheoreticalSavings() {
   try {
     const balanceDate = `${currentMonth.value}-01`;
-    const res = await api.get('/jars/theoretical-savings', { params: { date: balanceDate } });
-    const data = res.data?.data || {};
+    const [summaryRes, accumRes] = await Promise.all([
+      api.get('/jars/theoretical-savings', { params: { date: balanceDate } }),
+      api.get('/jars/theoretical-savings/accumulated', { params: { to: currentMonth.value } }),
+    ]);
+    const data = summaryRes.data?.data || {};
+    const accumData = accumRes.data?.data || {};
     theoreticalSavings.value = {
       total_unused: Number(data.total_unused || 0),
       total_savings_accounts: Number(data.total_savings_accounts || 0),
       total_theoretical: Number(data.total_theoretical || 0),
+      accumulated_unused: Number(accumData.grand_total_unused || 0),
     };
   } catch (err) {
     console.warn('[TheoreticalSavings] Error loading data:', err);
@@ -1969,6 +1969,7 @@ async function loadTheoreticalSavings() {
       total_unused: 0,
       total_savings_accounts: 0,
       total_theoretical: 0,
+      accumulated_unused: 0,
     };
   }
 }
@@ -2988,8 +2989,46 @@ async function saveChanges() {
   }
 }
 
+/**
+ * Refresh all loaded jar balances and summary data.
+ * Called when a transaction is created/updated/deleted externally.
+ */
+async function handleTransactionsChanged() {
+  console.log('[Jars] Transaction changed externally, refreshing jar data...');
+  const month = currentMonth.value;
+  const balanceDate = `${month}-01`;
+
+  // Refresh income data (singleton composable: updates both index and MonthlyIncomePanel)
+  await fetchCalculatedIncome(month);
+
+  // Also refresh MonthlyIncomePanel via ref (ensures its internal UI reacts)
+  try {
+    await incomePanelRef.value?.refresh(month);
+  } catch {
+    /* panel refresh is best-effort */
+  }
+
+  // Refresh all jar balances that were already loaded
+  for (const jarId of loadedBalances.value) {
+    const balanceComposable = jarBalances.value[jarId];
+    if (balanceComposable) {
+      await balanceComposable.cargarTodo(balanceDate);
+    }
+  }
+
+  await loadTheoreticalSavings();
+}
+
+function onTransactionsChangedEvent() {
+  void handleTransactionsChanged();
+}
+
 onMounted(() => {
   applyPeriodFromQuery();
+
+  // Listen for transaction create/update/delete events
+  window.addEventListener('ow:transactions:changed', onTransactionsChangedEvent);
+
   void Promise.all([
     loadJarSettings(),
     loadJarData(),
@@ -3019,6 +3058,10 @@ onMounted(() => {
   });
 });
 
+onBeforeUnmount(() => {
+  window.removeEventListener('ow:transactions:changed', onTransactionsChangedEvent);
+});
+
 // Persist useRealIncome toggle when user changes it
 watch(useRealIncome, async (newVal, oldVal) => {
   if (!jarSettingsLoaded.value || newVal === oldVal) return;
@@ -3033,18 +3076,8 @@ watch(useRealIncome, async (newVal, oldVal) => {
   }
 });
 
-watch(
-  () => jarElements.value,
-  () => {
-    if (!jarSettingsLoaded.value || jarSettings.value.leverage_jar_id) return;
-    const leverage = jarElements.value.find((j) => j.refresh_mode === 'accumulative' && j.id);
-    if (leverage?.id) {
-      jarSettings.value.leverage_jar_id = leverage.id;
-      void saveJarSettings();
-    }
-  },
-  { deep: true }
-);
+// REMOVED: Auto-assign leverage watch
+// Leverage is now 100% manual - user must explicitly configure it in settings
 
 watch(
   () => route.query,
@@ -3147,7 +3180,7 @@ watch(
 .summary-table th,
 .summary-table td {
   padding: 8px 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 .summary-table thead th {
   font-weight: 700;
@@ -3155,10 +3188,27 @@ watch(
   text-transform: uppercase;
   letter-spacing: 0.3px;
   color: rgba(0, 0, 0, 0.5);
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(0, 0, 0, 0.04);
   position: sticky;
   top: 0;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.12);
 }
+
+/* Alternating row colors for better readability */
+.summary-table tbody tr:nth-child(odd) {
+  background: transparent;
+}
+.summary-table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* Hover effect to highlight current row */
+.summary-table tbody tr:hover {
+  background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(var(--q-primary-rgb, 25, 118, 210), 0.2);
+  transition: background-color 0.15s ease-in-out;
+}
+
 .th-sub {
   font-size: 10px;
   font-weight: 500;
@@ -3166,9 +3216,10 @@ watch(
   letter-spacing: 0;
 }
 .summary-total-row td {
-  border-top: 2px solid rgba(0, 0, 0, 0.12);
-  border-bottom: none;
-  background: rgba(0, 0, 0, 0.02);
+  border-top: 2px solid rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
 }
 .summary-jar-name {
   display: flex;
@@ -3183,16 +3234,28 @@ watch(
 }
 
 /* Dark mode overrides */
-.body--dark .summary-table th {
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.03);
+.body--dark .summary-table thead th {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+.body--dark .summary-table tbody tr:nth-child(odd) {
+  background: transparent;
+}
+.body--dark .summary-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+.body--dark .summary-table tbody tr:hover {
+  background: rgba(var(--q-primary-rgb, 25, 118, 210), 0.15) !important;
+  box-shadow: inset 0 0 0 1px rgba(var(--q-primary-rgb, 25, 118, 210), 0.3);
 }
 .body--dark .summary-table td {
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 .body--dark .summary-total-row td {
-  border-top-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.03);
+  border-top-color: rgba(255, 255, 255, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* Layout */

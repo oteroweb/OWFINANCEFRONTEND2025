@@ -331,6 +331,11 @@
                 :category-jar-map="categoryToJarMap"
                 ref="categoriesTreeRef" 
                 style="flex: 1; height: 100%;" 
+                @create-category="onCreateCategory"
+                @create-folder="onCreateCategoryFolder"
+                @move-node="onMoveCategoryNode"
+                @delete-category="onDeleteCategory"
+                @edit-category="onEditCategory"
               />
             </q-card>
           </div>
@@ -352,14 +357,19 @@
 
             <q-card flat bordered style="min-height: 500px;">
               <AccountsTree
+                ref="accountsTreeRef"
                 :tree="accountsTreeNodes"
-                :selected-node-id="selectedAccountNodeId"
-                @select="onSelectAccountNode"
+                :can-delete-folder="true"
                 @create-account="onCreateAccount"
+                @create-folder="onCreateAccountFolder"
+                @move-node="onMoveAccountNode"
+                @reorder-siblings="onReorderAccountFolderSiblings"
                 @delete-folder="onDeleteAccountFolder"
-                @folder-created="onAccountFolderCreated"
-                @folder-deleted="onAccountFolderDeleted"
-                @account-moved="onAccountMoved"
+                @view-account="onViewAccount"
+                @edit-account="onEditAccount"
+                @delete-account="onDeleteAccount"
+                @rename-folder="onRenameAccountFolder"
+                @toggle-global-balance="onToggleAccountGlobalBalance"
               />
             </q-card>
           </div>
@@ -370,11 +380,75 @@
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
+
+    <!-- Account create/edit dialog -->
+    <q-dialog v-model="showAccountForm" persistent>
+      <q-card style="min-width: 400px; max-width: 480px;">
+        <q-card-section>
+          <div class="text-h6">{{ acctFormTitle }}</div>
+        </q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <q-input v-model="acctForm.name" label="Nombre de la cuenta" dense outlined autofocus />
+          <q-select
+            v-model="acctForm.account_type_id"
+            :options="accountTypeOptions"
+            option-value="id"
+            option-label="name"
+            emit-value
+            map-options
+            label="Tipo de cuenta"
+            dense
+            outlined
+          />
+          <q-select
+            v-model="acctForm.currency_id"
+            :options="acctCurrencyFilterOptions"
+            option-value="id"
+            option-label="nameLabel"
+            emit-value
+            map-options
+            label="Moneda"
+            dense
+            outlined
+            use-input
+            @filter="onAcctCurrencyFilter"
+          />
+          <q-select
+            v-model="acctForm.folder_id"
+            :options="acctFolderOptions"
+            option-value="id"
+            option-label="name"
+            emit-value
+            map-options
+            label="Carpeta"
+            dense
+            outlined
+          />
+          <q-input v-if="acctFormMode === 'create'" v-model.number="acctForm.initial" label="Balance inicial" type="number" dense outlined />
+          <q-input v-if="acctFormMode === 'edit'" v-model.number="acctForm.balance" label="Saldo actual" type="number" dense outlined />
+          <q-toggle v-if="acctFormMode === 'edit'" v-model="acctForm.active" label="Cuenta activa" />
+          <q-toggle v-model="acctForm.include_in_global_balance" color="teal" label="Incluir en balance global">
+            <q-tooltip>Si está activo, el saldo de esta cuenta se sumará al balance global configurado</q-tooltip>
+          </q-toggle>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey" v-close-popup />
+          <q-btn
+            flat
+            :label="acctFormMode === 'create' ? 'Crear' : 'Guardar'"
+            color="primary"
+            :disable="!acctForm.name.trim()"
+            @click="onSaveAccountForm"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, reactive } from 'vue';
 import CrudPage from 'components/CrudPage.vue';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import AccountsTree from 'components/AccountsTree.vue';
@@ -382,10 +456,11 @@ import { useAuthStore } from 'stores/auth';
 import { defaultAvatarUrl } from '../config';
 import { dictionary as taxesDictionary } from '../taxes/dictionary';
 import { api } from 'boot/axios';
-import { Notify } from 'quasar';
+import { Notify, useQuasar } from 'quasar';
 
 defineOptions({ name: 'user_config_page' });
 
+const $q = useQuasar();
 const auth = useAuthStore();
 const tab = ref<'profile' | 'finance' | 'categories' | 'accounts' | 'taxes'>('profile');
 
@@ -451,7 +526,6 @@ async function loadJars() {
 async function loadCategoriesTree() {
   try {
     const res = await api.get('/categories/tree');
-    // Backend devuelve data.nodes
     const rawNodes = res.data?.data?.nodes || res.data?.nodes || res.data?.data || res.data || [];
     console.log('📊 Categorías cargadas:', rawNodes);
     categoriesTreeNodes.value = rawNodes;
@@ -459,6 +533,109 @@ async function loadCategoriesTree() {
     console.error('Error loading categories tree:', e);
     Notify.create({ type: 'negative', message: 'Error cargando categorías' });
   }
+}
+
+// ----- Category event handlers -----
+function onCreateCategory(payload: { parent_id: string }) {
+  $q.dialog({
+    title: 'Nueva categoría',
+    message: 'Nombre de la categoría:',
+    prompt: { model: '', type: 'text', isValid: (v: string) => v.trim().length > 0 },
+    cancel: true,
+  }).onOk((catName: string) => {
+    const parentId = payload.parent_id && payload.parent_id !== 'root' ? payload.parent_id : null;
+    void api.post('/categories', {
+      name: catName.trim(),
+      parent_id: parentId,
+      type: 'category',
+    }).then((res) => {
+      const cat = res.data?.data;
+      if (cat?.id) {
+        categoriesTreeRef.value?.addCategoryToParent(
+          { id: String(cat.id), label: cat.name, type: 'category', icon: cat.icon || null },
+          parentId ? String(parentId) : 'root',
+        );
+        Notify.create({ type: 'positive', message: `Categoría "${catName}" creada` });
+      }
+    }).catch((e) => {
+      console.error('Error creating category:', e);
+      Notify.create({ type: 'negative', message: 'Error creando categoría' });
+    });
+  });
+}
+
+function onCreateCategoryFolder(payload: { parent_id: string }) {
+  $q.dialog({
+    title: 'Nueva carpeta de categorías',
+    message: 'Nombre de la carpeta:',
+    prompt: { model: '', type: 'text', isValid: (v: string) => v.trim().length > 0 },
+    cancel: true,
+  }).onOk((folderName: string) => {
+    const parentId = payload.parent_id && payload.parent_id !== 'root' ? payload.parent_id : null;
+    void api.post('/categories', {
+      name: folderName.trim(),
+      parent_id: parentId,
+      type: 'folder',
+    }).then((res) => {
+      const cat = res.data?.data;
+      if (cat?.id) {
+        categoriesTreeRef.value?.addCategoryToParent(
+          { id: String(cat.id), label: cat.name, type: 'folder' },
+          parentId ? String(parentId) : 'root',
+        );
+        Notify.create({ type: 'positive', message: `Carpeta "${folderName}" creada` });
+      }
+    }).catch((e) => {
+      console.error('Error creating category folder:', e);
+      Notify.create({ type: 'negative', message: 'Error creando carpeta de categorías' });
+    });
+  });
+}
+
+async function onMoveCategoryNode(payload: { node_id: string; new_parent_id: string }) {
+  try {
+    const parentId = payload.new_parent_id === 'root' ? null : payload.new_parent_id;
+    await api.patch(`/categories/${payload.node_id}/move`, { parent_id: parentId });
+    Notify.create({ type: 'positive', message: 'Categoría movida' });
+  } catch (e) {
+    console.error('Error moving category:', e);
+    Notify.create({ type: 'negative', message: 'Error al mover categoría' });
+    void loadCategoriesTree();
+  }
+}
+
+function onDeleteCategory(payload: { id: string; label: string }) {
+  $q.dialog({
+    title: 'Eliminar categoría',
+    message: `¿Eliminar "${payload.label}"? Esta acción no se puede deshacer.`,
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    void api.delete(`/categories/${payload.id}`).then(() => {
+      categoriesTreeRef.value?.removeNode(payload.id);
+      Notify.create({ type: 'positive', message: `"${payload.label}" eliminada` });
+    }).catch((e) => {
+      console.error('Error deleting category:', e);
+      Notify.create({ type: 'negative', message: 'Error eliminando categoría' });
+    });
+  });
+}
+
+function onEditCategory(payload: { id: string; label: string }) {
+  $q.dialog({
+    title: 'Editar categoría',
+    message: 'Nuevo nombre:',
+    prompt: { model: payload.label, type: 'text', isValid: (v: string) => v.trim().length > 0 },
+    cancel: true,
+  }).onOk((newName: string) => {
+    void api.put(`/categories/${payload.id}`, { name: newName.trim() }).then(() => {
+      categoriesTreeRef.value?.updateNodeLabel(payload.id, newName.trim());
+      Notify.create({ type: 'positive', message: 'Categoría actualizada' });
+    }).catch((e) => {
+      console.error('Error updating category:', e);
+      Notify.create({ type: 'negative', message: 'Error actualizando categoría' });
+    });
+  });
 }
 
 // ----- Accounts Tree -----
@@ -471,43 +648,394 @@ type AccountNode = {
 };
 
 const accountsTreeNodes = ref<AccountNode[]>([]);
-const selectedAccountNodeId = ref<number | string | null>(null);
+const accountsTreeRef = ref<InstanceType<typeof AccountsTree> | null>(null);
 
 async function loadAccountsTree() {
   try {
-    const res = await api.get('/accounts/tree');
-    // Backend devuelve data.nodes
-    const rawNodes = res.data?.data?.nodes || res.data?.nodes || res.data?.data || res.data || [];
+    // Parallel: tree structure + flat list with balances
+    const [treeRes, listRes] = await Promise.all([
+      api.get('/accounts/tree'),
+      api.get('/accounts'),
+    ]);
+    const rawNodes = treeRes.data?.data?.nodes || treeRes.data?.nodes || treeRes.data?.data || treeRes.data || [];
+
+    // Build id → { balance, currency_symbol, include_in_global_balance } map from flat list
+    type AcctInfo = { id: number | string; balance?: number | string | null; currency?: { symbol?: string }; include_in_global_balance?: boolean };
+    const flatList: AcctInfo[] = Array.isArray(listRes.data?.data) ? (listRes.data.data as AcctInfo[]) : [];
+    const balanceMap = new Map<string, { balance: number; currency_symbol: string; include_in_global_balance: boolean }>();
+    for (const a of flatList) {
+      balanceMap.set(String(a.id), {
+        balance: Number(a.balance ?? 0),
+        currency_symbol: a.currency?.symbol ?? '$',
+        include_in_global_balance: a.include_in_global_balance !== false,
+      });
+    }
+
+    // Recursively merge balance info into tree nodes
+    type RawNode = { id: number | string; label?: string; type?: string; balance?: number | string; currency_symbol?: string; include_in_global_balance?: boolean; children?: RawNode[] };
+    function mergeBalances(nodes: RawNode[]): RawNode[] {
+      return nodes.map((n) => {
+        const info = n.type === 'account' ? balanceMap.get(String(n.id)) : undefined;
+        return {
+          ...n,
+          ...(info !== undefined ? { balance: info.balance, currency_symbol: info.currency_symbol, include_in_global_balance: info.include_in_global_balance } : {}),
+          children: n.children ? mergeBalances(n.children) : [],
+        };
+      });
+    }
+
     console.log('💳 Cuentas cargadas:', rawNodes);
-    accountsTreeNodes.value = rawNodes;
+    accountsTreeNodes.value = mergeBalances(rawNodes as RawNode[]) as unknown as AccountNode[];
   } catch (e) {
     console.error('Error loading accounts tree:', e);
     Notify.create({ type: 'negative', message: 'Error cargando cuentas' });
   }
 }
 
-function onSelectAccountNode(nodeId: number | string | null) {
-  selectedAccountNodeId.value = nodeId;
+async function onCreateAccountFolder(payload: { name: string; parent_id: string | null }) {
+  try {
+    const parentId = payload.parent_id && payload.parent_id !== 'root' ? payload.parent_id : null;
+    const res = await api.post('/accounts/folders', { name: payload.name, parent_id: parentId });
+    const folder = res.data?.data;
+    if (folder?.id) {
+      const newNode: AccountNode = {
+        id: String(folder.id),
+        label: payload.name,
+        is_folder: true,
+        type: 'folder',
+        children: [],
+      };
+      // Actualizar árbol visual
+      accountsTreeRef.value?.addFolderToParent(
+        { id: String(folder.id), label: payload.name },
+        parentId ? String(parentId) : null,
+      );
+      // Actualizar accountsTreeNodes para que acctFolderOptions se refresque inmediatamente
+      if (!parentId) {
+        accountsTreeNodes.value = [...accountsTreeNodes.value, newNode];
+      } else {
+        function insertIntoTree(nodes: AccountNode[]): boolean {
+          for (const n of nodes) {
+            if (String(n.id) === String(parentId)) {
+              n.children = [...(n.children ?? []), newNode];
+              return true;
+            }
+            if (n.children && insertIntoTree(n.children)) return true;
+          }
+          return false;
+        }
+        const updated = [...accountsTreeNodes.value];
+        insertIntoTree(updated);
+        accountsTreeNodes.value = updated;
+      }
+      Notify.create({ type: 'positive', message: `Carpeta "${payload.name}" creada` });
+    }
+  } catch (e) {
+    console.error('Error creating account folder:', e);
+    Notify.create({ type: 'negative', message: 'Error creando carpeta' });
+  }
+}
+
+async function onReorderAccountFolderSiblings(payload: {
+  parent_id: string;
+  siblings: { id: string; sort_order: number; node_type: string }[];
+}) {
+  const folderItems = payload.siblings
+    .filter((s) => s.node_type === 'folder' && s.id !== 'root')
+    .map((s) => ({ id: s.id, sort_order: s.sort_order }));
+  const accountItems = payload.siblings
+    .filter((s) => s.node_type === 'account')
+    .map((s) => ({ id: s.id, sort_order: s.sort_order }));
+  try {
+    const calls: Promise<unknown>[] = [];
+    if (folderItems.length) calls.push(api.post('/accounts/folders/batch-sort', { items: folderItems }));
+    if (accountItems.length) calls.push(api.post('/accounts/batch-sort', { items: accountItems }));
+    await Promise.all(calls);
+  } catch (e) {
+    console.error('Error batch-sorting:', e);
+  }
+}
+
+async function onMoveAccountNode(payload: { node_id: string; new_parent_id: string; node_type: string; sort_order: number }) {
+  try {
+    if (payload.node_type === 'account') {
+      const folderId = payload.new_parent_id === 'root' ? null : payload.new_parent_id;
+      await api.patch(`/accounts/${payload.node_id}/move`, {
+        folder_id: folderId,
+        sort_order: payload.sort_order,
+      });
+    } else {
+      const parentId = payload.new_parent_id === 'root' ? null : payload.new_parent_id;
+      await api.patch(`/accounts/folders/${payload.node_id}/move`, {
+        parent_id: parentId,
+      });
+    }
+    Notify.create({ type: 'positive', message: 'Movido correctamente' });
+  } catch (e) {
+    console.error('Error moving node:', e);
+    Notify.create({ type: 'negative', message: 'Error al mover' });
+    void loadAccountsTree();
+  }
+}
+
+function onDeleteAccountFolder(payload: { id: string; label: string }) {
+  $q.dialog({
+    title: 'Eliminar carpeta',
+    message: `¿Eliminar la carpeta "${payload.label}"? Las cuentas dentro pasarán a "Sin asignar".`,
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    void api.delete(`/accounts/folders/${payload.id}`).then(() => {
+      accountsTreeRef.value?.removeNode(payload.id);
+      Notify.create({ type: 'positive', message: `Carpeta "${payload.label}" eliminada` });
+      void loadAccountsTree();
+    }).catch((e) => {
+      console.error('Error deleting folder:', e);
+      Notify.create({ type: 'negative', message: 'Error eliminando carpeta' });
+    });
+  });
+}
+
+// Find which folder an account belongs to by traversing the tree
+function findAccountFolderInTree(accountId: string): string | null {
+  function walk(nodes: AccountNode[]): string | null | undefined {
+    for (const n of nodes) {
+      const isFolder = n.is_folder || (n as Record<string, unknown>).type === 'folder';
+      if (isFolder && n.children) {
+        for (const child of n.children) {
+          const isChildAccount = !child.is_folder && (child as Record<string, unknown>).type !== 'folder';
+          if (isChildAccount && String(child.id) === accountId) {
+            const fid = String(n.id);
+            return fid === 'root' ? null : fid;
+          }
+        }
+        const deeper = walk(n.children);
+        if (deeper !== undefined) return deeper;
+      }
+    }
+    return undefined;
+  }
+  return walk(accountsTreeNodes.value) ?? null;
 }
 
 function onCreateAccount() {
-  Notify.create({ type: 'info', message: 'Crear cuenta - Por implementar' });
+  void ensureAccountFormDataLoaded().then(() => {
+    acctForm.name = '';
+    acctForm.currency_id = 1;
+    acctForm.account_type_id = 1;
+    acctForm.initial = 0;
+    acctForm.balance = 0;
+    acctForm._originalBalance = 0;
+    acctForm.folder_id = null;
+    acctForm._originalFolderId = null;
+    acctForm.active = true;
+    acctForm.include_in_global_balance = true;
+    acctFormMode.value = 'create';
+    acctFormEditId.value = null;
+    acctFormTitle.value = 'Nueva cuenta';
+    showAccountForm.value = true;
+  });
 }
 
-function onDeleteAccountFolder() {
-  Notify.create({ type: 'info', message: 'Eliminar carpeta - Por implementar' });
+function onViewAccount(payload: { id: string; label: string }) {
+  onEditAccount(payload);
 }
 
-function onAccountFolderCreated() {
-  void loadAccountsTree();
+function onEditAccount(payload: { id: string; label: string }) {
+  void ensureAccountFormDataLoaded().then(() => {
+    void api.get(`/accounts/${payload.id}`).then((res) => {
+      const acct = res.data?.data;
+      if (!acct) return;
+      acctForm.name = acct.name || '';
+      acctForm.currency_id = acct.currency_id;
+      acctForm.account_type_id = acct.account_type_id;
+      acctForm.initial = parseFloat(acct.initial) || 0;
+      acctForm.balance = parseFloat(acct.balance) || 0;
+      acctForm._originalBalance = parseFloat(acct.balance) || 0;
+      acctForm.active = !!acct.active;
+      acctForm.include_in_global_balance = acct.include_in_global_balance !== false;
+      // Determine current folder from tree data
+      const currentFolderId = findAccountFolderInTree(String(payload.id));
+      acctForm.folder_id = currentFolderId;
+      acctForm._originalFolderId = currentFolderId;
+      acctFormMode.value = 'edit';
+      acctFormEditId.value = payload.id;
+      acctFormTitle.value = `Editar: ${acct.name}`;
+      showAccountForm.value = true;
+    });
+  });
 }
 
-function onAccountFolderDeleted() {
-  void loadAccountsTree();
+function onDeleteAccount(payload: { id: string; label: string }) {
+  $q.dialog({
+    title: 'Eliminar cuenta',
+    message: `¿Estás seguro de eliminar la cuenta "${payload.label}"? Esta acción no se puede deshacer.`,
+    cancel: true,
+    persistent: true,
+    ok: { label: 'Eliminar', color: 'negative' },
+  }).onOk(() => {
+    void api.delete(`/accounts/${payload.id}`).then(() => {
+      accountsTreeRef.value?.removeNode(payload.id);
+      Notify.create({ type: 'positive', message: `Cuenta "${payload.label}" eliminada` });
+    }).catch((e) => {
+      console.error('Error deleting account:', e);
+      Notify.create({ type: 'negative', message: 'Error eliminando cuenta' });
+    });
+  });
 }
 
-function onAccountMoved() {
-  void loadAccountsTree();
+function onRenameAccountFolder(payload: { id: string; label: string }) {
+  $q.dialog({
+    title: 'Renombrar carpeta',
+    message: 'Nuevo nombre:',
+    prompt: { model: payload.label, type: 'text', isValid: (v: string) => v.trim().length > 0 },
+    cancel: true,
+  }).onOk((newName: string) => {
+    void api.put(`/accounts/folders/${payload.id}`, { name: newName.trim() }).then(() => {
+      accountsTreeRef.value?.updateNodeLabel(payload.id, newName.trim());
+      Notify.create({ type: 'positive', message: `Carpeta renombrada a "${newName.trim()}"` });
+    }).catch((e) => {
+      console.error('Error renaming folder:', e);
+      Notify.create({ type: 'negative', message: 'Error renombrando carpeta' });
+    });
+  });
+}
+
+function onToggleAccountGlobalBalance(payload: { id: string; newValue: boolean }) {
+  void api.put(`/accounts/${payload.id}`, {
+    include_in_global_balance: payload.newValue,
+  }).then(() => {
+    accountsTreeRef.value?.updateNodeGlobalBalance(payload.id, payload.newValue);
+    const msg = payload.newValue ? 'Cuenta incluida en balance global' : 'Cuenta excluida del balance global';
+    Notify.create({ type: 'positive', message: msg });
+  }).catch((e) => {
+    console.error('Error toggling global balance:', e);
+    Notify.create({ type: 'negative', message: 'Error actualizando balance global' });
+  });
+}
+
+// ----- Account form dialog state -----
+type AccountTypeOption = { id: number; name: string };
+const accountTypeOptions = ref<AccountTypeOption[]>([]);
+const showAccountForm = ref(false);
+const acctFormMode = ref<'create' | 'edit'>('create');
+const acctFormEditId = ref<string | null>(null);
+const acctFormTitle = ref('Nueva cuenta');
+const acctForm = reactive({
+  name: '',
+  currency_id: 1,
+  account_type_id: 1,
+  initial: 0,
+  balance: 0,
+  _originalBalance: 0,
+  folder_id: null as string | null,
+  _originalFolderId: null as string | null,
+  active: true,
+  include_in_global_balance: true,
+});
+const acctCurrencyFilterOptions = ref<CurrencyOption[]>([]);
+
+type FolderOption = { id: string | null; name: string };
+const acctFolderOptions = computed<FolderOption[]>(() => {
+  const opts: FolderOption[] = [{ id: null, name: 'Sin asignar' }];
+  function walk(nodes: AccountNode[]) {
+    for (const n of nodes) {
+      if (n.is_folder || (n as Record<string, unknown>).type === 'folder') {
+        const nid = String(n.id);
+        if (nid !== 'root') opts.push({ id: nid, name: String(n.label) });
+      }
+      if (n.children) walk(n.children);
+    }
+  }
+  walk(accountsTreeNodes.value);
+  return opts;
+});
+
+async function ensureAccountFormDataLoaded() {
+  await ensureCurrenciesLoaded();
+  acctCurrencyFilterOptions.value = [...allCurrencies.value];
+  if (!accountTypeOptions.value.length) {
+    try {
+      const res = await api.get('/account_types/active');
+      const raw = (res.data?.data || res.data) as AccountTypeOption[];
+      accountTypeOptions.value = (raw || []).map((t) => ({ id: t.id, name: t.name }));
+    } catch {
+      Notify.create({ type: 'negative', message: 'Error cargando tipos de cuenta' });
+    }
+  }
+}
+
+function onAcctCurrencyFilter(val: string, update: (cb: () => void) => void) {
+  const needle = (val || '').toLowerCase();
+  update(() => {
+    acctCurrencyFilterOptions.value = !needle
+      ? [...allCurrencies.value]
+      : allCurrencies.value.filter(
+          (o) =>
+            (o.name || '').toLowerCase().includes(needle) ||
+            (o.code || '').toLowerCase().includes(needle)
+        );
+  });
+}
+
+function onSaveAccountForm() {
+  if (!acctForm.name.trim()) return;
+  showAccountForm.value = false;
+  if (acctFormMode.value === 'create') {
+    void api.post('/accounts', {
+      name: acctForm.name.trim(),
+      currency_id: acctForm.currency_id,
+      initial: acctForm.initial,
+      account_type_id: acctForm.account_type_id,
+      folder_id: acctForm.folder_id || null,
+      include_in_global_balance: acctForm.include_in_global_balance,
+    }).then((res) => {
+      const account = res.data?.data;
+      if (account?.id) {
+        Notify.create({ type: 'positive', message: `Cuenta "${acctForm.name}" creada` });
+        void loadAccountsTree();
+      }
+    }).catch((e) => {
+      console.error('Error creating account:', e);
+      Notify.create({ type: 'negative', message: 'Error creando cuenta' });
+    });
+  } else if (acctFormEditId.value) {
+    const editId = acctFormEditId.value;
+    const editName = acctForm.name.trim();
+    const balanceChanged = Math.abs(acctForm.balance - acctForm._originalBalance) >= 0.01;
+    const folderChanged = acctForm.folder_id !== acctForm._originalFolderId;
+    // 1) Update account metadata (name, type, currency, active)
+    void api.put(`/accounts/${editId}`, {
+      name: editName,
+      currency_id: acctForm.currency_id,
+      account_type_id: acctForm.account_type_id,
+      active: acctForm.active,
+      include_in_global_balance: acctForm.include_in_global_balance,
+    }).then(() => {
+      accountsTreeRef.value?.updateNodeLabel(editId, editName);
+      const promises: Promise<unknown>[] = [];
+      // 2) If balance changed, adjust via dedicated endpoint
+      if (balanceChanged) {
+        promises.push(api.post(`/accounts/${editId}/adjust-balance`, {
+          target_balance: acctForm.balance,
+          description: 'Ajuste manual desde configuración',
+        }));
+      }
+      // 3) If folder changed, move account to new folder
+      if (folderChanged) {
+        promises.push(api.patch(`/accounts/${editId}/move`, {
+          folder_id: acctForm.folder_id || null,
+        }));
+      }
+      return promises.length ? Promise.all(promises) : undefined;
+    }).then(() => {
+      Notify.create({ type: 'positive', message: `Cuenta "${editName}" actualizada` });
+      if (folderChanged || balanceChanged) void loadAccountsTree();
+    }).catch((e) => {
+      console.error('Error updating account:', e);
+      Notify.create({ type: 'negative', message: 'Error actualizando cuenta' });
+    });
+  }
 }
 
 // ----- Moneda por defecto -----

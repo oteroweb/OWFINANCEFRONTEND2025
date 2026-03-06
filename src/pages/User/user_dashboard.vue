@@ -27,16 +27,51 @@
       </template>
     </div>
     <q-separator spaced />
+    <!-- Balance global de cuentas -->
+    <div class="row q-col-gutter-md">
+      <div class="col-12 col-sm-6">
+        <q-card flat bordered>
+          <q-card-section class="q-pa-sm">
+            <div class="row items-center q-gutter-xs">
+              <q-icon name="account_balance_wallet" color="primary" size="22px" />
+              <div class="text-subtitle2 text-weight-medium">Total todas las cuentas</div>
+            </div>
+            <div class="text-h5 q-mt-xs text-primary">
+              {{ balanceSummaryLoading ? '...' : formatAmount(balanceSummary.total_all) }}
+            </div>
+            <div class="text-caption text-grey-6">Suma de todas las cuentas activas</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-12 col-sm-6">
+        <q-card flat bordered>
+          <q-card-section class="q-pa-sm">
+            <div class="row items-center q-gutter-xs">
+              <q-icon name="account_balance" color="teal" size="22px" />
+              <div class="text-subtitle2 text-weight-medium">Balance global configurado</div>
+            </div>
+            <div class="text-h5 q-mt-xs text-teal">
+              {{ balanceSummaryLoading ? '...' : formatAmount(balanceSummary.total_global_balance) }}
+            </div>
+            <div class="text-caption text-grey-6">Solo cuentas marcadas para balance global</div>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+    <q-separator spaced />
     <div class="dashboard-grid">
       <q-card class="widget">
         <q-card-section class="q-pa-sm">
           <div class="text-subtitle2 text-weight-medium">Ahorro teórico</div>
           <div class="text-h6 q-mt-xs">{{ formatAmount(theoreticalSavings.total_theoretical) }}</div>
           <div class="text-caption text-grey-7 q-mt-xs">
-            Sin usar: {{ formatAmount(theoreticalSavings.total_unused) }}
+            Sin usar este mes: {{ formatAmount(theoreticalSavings.total_unused) }}
           </div>
           <div class="text-caption text-grey-7">
             Cuentas de ahorro: {{ formatAmount(theoreticalSavings.total_savings_accounts) }}
+          </div>
+          <div class="text-caption text-warning q-mt-xs">
+            Ocioso acumulado: {{ formatAmount(theoreticalSavings.accumulated_unused) }}
           </div>
         </q-card-section>
       </q-card>
@@ -44,6 +79,46 @@
         <q-card-section class="q-pa-sm">{{ w }}</q-card-section>
       </q-card>
     </div>
+
+    <!-- Tabla dinero ocioso mensual -->
+    <q-card v-if="idleMonths.length > 0" flat bordered>
+      <q-card-section class="q-pb-none">
+        <div class="text-subtitle2 text-weight-medium">Dinero ocioso en cántaros reset</div>
+        <div class="text-caption text-grey-6">Dinero asignado pero no gastado cada mes &mdash; se pierde al resetear</div>
+      </q-card-section>
+      <q-card-section class="q-pa-none">
+        <q-markup-table flat dense separator="horizontal">
+          <thead>
+            <tr class="text-grey-7">
+              <th class="text-left">Mes</th>
+              <th class="text-right">No usado</th>
+              <th class="text-right">Acumulado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="row in idleMonths"
+              :key="row.month"
+              :class="row.month === currentMonth ? 'bg-orange-1 text-weight-medium' : ''"
+            >
+              <td class="text-left">
+                {{ new Date(row.month + '-02').toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) }}
+                <q-badge v-if="row.month === currentMonth" color="warning" class="q-ml-xs" label="actual" />
+              </td>
+              <td class="text-right" :class="row.unused > 0 ? 'text-warning' : 'text-grey-5'">{{ formatAmount(row.unused) }}</td>
+              <td class="text-right text-weight-bold">{{ formatAmount(row.accumulated) }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="bg-grey-2">
+              <td class="text-left text-weight-bold">Total 12 meses</td>
+              <td></td>
+              <td class="text-right text-weight-bold text-warning">{{ formatAmount(theoreticalSavings.accumulated_unused) }}</td>
+            </tr>
+          </tfoot>
+        </q-markup-table>
+      </q-card-section>
+    </q-card>
   </q-page>
 </template>
 <script setup lang="ts">
@@ -65,7 +140,18 @@ const theoreticalSavings = ref({
   total_unused: 0,
   total_savings_accounts: 0,
   total_theoretical: 0,
+  accumulated_unused: 0,
 });
+
+const balanceSummary = ref({ total_all: 0, total_global_balance: 0 });
+const balanceSummaryLoading = ref(false);
+
+type IdleMonth = {
+  month: string;
+  unused: number;
+  accumulated: number;
+};
+const idleMonths = ref<IdleMonth[]>([]);
 
 const currentMonth = computed(() => {
   if (periodStore.state.type === 'month') {
@@ -93,25 +179,53 @@ function formatAmount(amount: number) {
 async function loadTheoreticalSavings() {
   try {
     const balanceDate = `${currentMonth.value}-01`;
-    const res = await api.get('/jars/theoretical-savings', { params: { date: balanceDate } });
-    const data = res.data?.data || {};
+    const [summaryRes, accumRes] = await Promise.all([
+      api.get('/jars/theoretical-savings', { params: { date: balanceDate } }),
+      api.get('/jars/theoretical-savings/accumulated', {
+        params: { to: currentMonth.value },
+      }),
+    ]);
+    const data = summaryRes.data?.data || {};
+    const accumData = accumRes.data?.data || {};
     theoreticalSavings.value = {
       total_unused: Number(data.total_unused || 0),
       total_savings_accounts: Number(data.total_savings_accounts || 0),
       total_theoretical: Number(data.total_theoretical || 0),
+      accumulated_unused: Number(accumData.grand_total_unused || 0),
     };
+    idleMonths.value = (accumData.months || []) as IdleMonth[];
   } catch (err) {
     console.warn('[TheoreticalSavings] Error loading data:', err);
     theoreticalSavings.value = {
       total_unused: 0,
       total_savings_accounts: 0,
       total_theoretical: 0,
+      accumulated_unused: 0,
     };
+    idleMonths.value = [];
+  }
+}
+
+async function loadBalanceSummary() {
+  balanceSummaryLoading.value = true;
+  try {
+    const res = await api.get('/accounts/summary/global-balance');
+    const data = res.data?.data || {};
+    balanceSummary.value = {
+      total_all: Number(data.total_all ?? 0),
+      total_global_balance: Number(data.total_global_balance ?? 0),
+    };
+  } catch (err) {
+    console.warn('[BalanceSummary] Error loading data:', err);
+    balanceSummary.value = { total_all: 0, total_global_balance: 0 };
+  } finally {
+    balanceSummaryLoading.value = false;
   }
 }
 
 onMounted(() => {
   void loadTheoreticalSavings();
+  void loadBalanceSummary();
 });
 
 watch(

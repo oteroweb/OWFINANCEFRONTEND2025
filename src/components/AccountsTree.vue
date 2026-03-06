@@ -35,18 +35,6 @@
         <div v-if="dragNodeId && dragNodeLabel" class="drag-floating">
           Moviendo: <strong>{{ dragNodeLabel }}</strong>
         </div>
-        <!-- Root drop target to move folders/accounts to top-level (or to 'Sin asignar' for accounts) -->
-        <div
-          v-if="dragNodeId"
-          class="row items-center no-wrap q-gutter-x-sm tree-node q-ml-sm q-mb-xs"
-          :class="{ 'is-drop-target': dragOverRoot }"
-          @dragover.prevent="onRootDragOver"
-          @drop.prevent="onRootDrop"
-          @dragleave="onRootDragLeave"
-        >
-          <q-icon name="arrow_upward" size="18px" />
-          <div class="ellipsis col text-primary">Mover a raíz</div>
-        </div>
         <q-tree :nodes="treeData" node-key="id" default-expand-all no-transition>
           <template #default-header="{ node }">
             <div
@@ -56,6 +44,8 @@
                 'is-dragging': dragNodeId === node.id,
                 'is-selected': selectedNodeId === node.id,
                 'is-drop-target': dragOverFolderId === node.id,
+                'insert-before': dragOverInsertId === node.id && dragOverInsertPos === 'before',
+                'insert-after': dragOverInsertId === node.id && dragOverInsertPos === 'after',
               }"
               :draggable="node.id !== UNASSIGNED_ID"
               @mouseenter="hoveredNodeId = node.id"
@@ -68,7 +58,59 @@
               @dragleave="onDragLeave(node)"
             >
               <q-icon :name="node.type === 'folder' ? 'folder' : 'account_balance'" size="18px" />
-              <div class="ellipsis col">{{ node.label }}</div>
+              <!-- Label + balance -->
+              <div class="col row items-center no-wrap" style="min-width:0; gap:3px">
+                <span class="ellipsis">{{ node.label }}</span>
+                <template v-if="node.type === 'account' && node.balance !== undefined">
+                  <span
+                    class="text-caption no-wrap flex-shrink-0"
+                    :class="node.balance < 0 ? 'text-negative' : 'text-teal-7'"
+                  >({{ node.currencySymbol || '$' }}{{ formatBalance(node.balance) }})</span>
+                </template>
+                <template v-if="node.type === 'folder' && node.id !== UNASSIGNED_ID">
+                  <span class="text-caption text-grey-5 no-wrap flex-shrink-0">
+                    {{ folderAccountCount(node) }} cuenta{{ folderAccountCount(node) === 1 ? '' : 's' }}
+                  </span>
+                </template>
+              </div>
+              <!-- Action buttons on hover -->
+              <div
+                v-if="hoveredNodeId === node.id && node.id !== UNASSIGNED_ID"
+                class="row no-wrap q-gutter-xs node-actions"
+                @click.stop
+              >
+                <template v-if="node.type === 'account'">
+                  <q-btn
+                    flat dense round size="xs"
+                    :icon="node.includeInGlobalBalance !== false ? 'account_balance' : 'money_off'"
+                    :color="node.includeInGlobalBalance !== false ? 'teal-6' : 'grey-5'"
+                    @click.stop="$emit('toggle-global-balance', { id: node.id, newValue: node.includeInGlobalBalance === false })"
+                  >
+                    <q-tooltip>{{ node.includeInGlobalBalance !== false ? 'En balance global (click para excluir)' : 'Excluida del balance global (click para incluir)' }}</q-tooltip>
+                  </q-btn>
+                  <q-btn flat dense round size="xs" icon="edit" color="primary" @click.stop="emitEdit(node)">
+                    <q-tooltip>Editar cuenta</q-tooltip>
+                  </q-btn>
+                  <q-btn flat dense round size="xs" icon="delete" color="negative" @click.stop="emitDelete(node)">
+                    <q-tooltip>Eliminar cuenta</q-tooltip>
+                  </q-btn>
+                </template>
+                <template v-if="node.type === 'folder'">
+                  <q-btn flat dense round size="xs" icon="drive_file_rename_outline" color="primary" @click.stop="emitRenameFolder(node)">
+                    <q-tooltip>Renombrar carpeta</q-tooltip>
+                  </q-btn>
+                </template>
+              </div>
+              <!-- Persistent global-balance indicator (non-hovered) -->
+              <q-icon
+                v-if="hoveredNodeId !== node.id && node.type === 'account' && node.includeInGlobalBalance === false"
+                name="money_off"
+                size="14px"
+                color="grey-5"
+                class="q-ml-xs"
+              >
+                <q-tooltip>Excluida del balance global</q-tooltip>
+              </q-icon>
             </div>
           </template>
         </q-tree>
@@ -108,6 +150,9 @@ type TreeNode = {
   id: string; // unique
   label: string;
   type: NodeType;
+  balance?: number;
+  currencySymbol?: string;
+  includeInGlobalBalance?: boolean;
   children?: TreeNode[];
 };
 
@@ -123,9 +168,13 @@ export default defineComponent({
     'create-account',
     'create-folder',
     'move-node',
+    'reorder-siblings',
     'view-account',
     'edit-account',
+    'delete-account',
     'delete-folder',
+    'rename-folder',
+    'toggle-global-balance',
   ],
   setup(props, { emit, expose }) {
     const txStore = useTransactionsStore();
@@ -143,6 +192,9 @@ export default defineComponent({
     const dragOverFolderId = ref<string | null>(null);
     const dragOverRoot = ref<boolean>(false);
     const selectedIsFolder = ref<boolean>(false);
+    // Reorder insert indicator: which node id + position before/after
+    const dragOverInsertId = ref<string | null>(null);
+    const dragOverInsertPos = ref<'before' | 'after'>('after');
 
     function onDragStart(node: TreeNode, ev: DragEvent) {
       dragNodeId.value = node.id;
@@ -163,75 +215,139 @@ export default defineComponent({
     }
 
     function onDragOver(node: TreeNode, ev: DragEvent) {
-      // Allow dropping on folders (and root); prevent dropping on itself
       const draggingId = dragNodeId.value;
-      if (!draggingId) return;
-      if (node.type === 'folder' && node.id !== draggingId) {
-        ev.preventDefault();
+      if (!draggingId || node.id === draggingId) return;
+      ev.preventDefault();
+
+      // Determine Y position relative to the element (0..1)
+      const target = ev.currentTarget as HTMLElement | null;
+      const rect = target?.getBoundingClientRect();
+      const relY = rect ? (ev.clientY - rect.top) / rect.height : 0.5;
+
+      // 'Sin asignar' only supports insert-after (bottom half) — it must stay first
+      if (node.id === UNASSIGNED_ID) {
+        dragOverFolderId.value = null;
+        dragOverInsertId.value = node.id;
+        dragOverInsertPos.value = 'after';
+        return;
+      }
+
+      if (node.type === 'folder' && relY > 0.25 && relY < 0.75) {
+        // Middle zone of a folder → move INTO folder
         dragOverFolderId.value = node.id;
+        dragOverInsertId.value = null;
+      } else {
+        // Top or bottom zone → insert before / after
+        dragOverFolderId.value = null;
+        dragOverInsertId.value = node.id;
+        dragOverInsertPos.value = relY <= 0.5 ? 'before' : 'after';
       }
     }
 
     function onDrop(target: TreeNode, ev: DragEvent) {
       const sourceId = ev.dataTransfer?.getData('text/plain') || dragNodeId.value;
-      if (!sourceId) return;
-      if (target.type !== 'folder' || target.id === sourceId) return;
+      if (!sourceId || target.id === sourceId) { clearDragState(); return; }
 
       const sourceInfo = findNodeWithParent(treeData.value, sourceId);
       const targetInfo = findNodeWithParent(treeData.value, target.id);
-      if (!sourceInfo || !targetInfo) return;
+      if (!sourceInfo || !targetInfo) { clearDragState(); return; }
 
       const { node: srcNode, parent: srcParent } = sourceInfo;
-      let { node: tgtNode } = targetInfo;
+      const { node: tgtNode, parent: tgtParent } = targetInfo;
 
-      // prevent dropping a folder into its own descendant
-      if (srcNode.type === 'folder' && isDescendant(srcNode, tgtNode)) {
-        Notify.create({
-          type: 'warning',
-          message: 'No puedes mover una carpeta dentro de sí misma',
-        });
-        return;
+      // ── CASE A: drop INTO a folder (middle-zone hover) ──────────────────────
+      if (dragOverFolderId.value === target.id && target.type === 'folder') {
+        if (srcNode.type === 'folder' && isDescendant(srcNode, tgtNode)) {
+          Notify.create({ type: 'warning', message: 'No puedes mover una carpeta dentro de sí misma' });
+          clearDragState(); return;
+        }
+        if (tgtNode.id === UNASSIGNED_ID && srcNode.type === 'folder') {
+          Notify.create({ type: 'warning', message: 'No puedes mover carpetas a "Sin asignar"' });
+          clearDragState(); return;
+        }
+        // Remove from old parent
+        removeSrcFromParent(srcNode, srcParent);
+        // Append to target folder
+        tgtNode.children = tgtNode.children || [];
+        tgtNode.children.push(srcNode);
+        const sortOrder = tgtNode.children.length - 1;
+        const payloadParentId = tgtNode.id === UNASSIGNED_ID ? 'root' : tgtNode.id;
+        emit('move-node', { node_id: srcNode.id, new_parent_id: payloadParentId, node_type: srcNode.type, sort_order: sortOrder });
+        clearDragState(); return;
       }
 
-      // UI rule: accounts dropped on 'Sin asignar' stay there; payload 'root' => null en backend
-      let payloadParentId = tgtNode.id;
-      const isUnassigned = tgtNode.id === UNASSIGNED_ID;
-      if (isUnassigned && srcNode.type === 'account') {
-        const un = getOrCreateUnassigned();
-        tgtNode = un;
-        payloadParentId = 'root'; // keep API semantic: root => null folder
+      // ── CASE B: reorder (insert before/after target) ─────────────────────────
+      if (!dragOverInsertId.value) { clearDragState(); return; }
+      // Safety: never insert before UNASSIGNED_ID — redirect to after
+      if (tgtNode.id === UNASSIGNED_ID && dragOverInsertPos.value === 'before') {
+        dragOverInsertPos.value = 'after';
       }
-      // Do not allow moving a folder into 'Sin asignar'
-      if (isUnassigned && srcNode.type === 'folder') {
+      // Get the siblings list of the target
+      const tgtSiblings: TreeNode[] = tgtParent ? (tgtParent.children || []) : treeData.value;
+      const srcSiblings: TreeNode[] = srcParent ? (srcParent.children || []) : treeData.value;
+
+      // Determine the parent id payload (for the backend)
+      const newParentNode = tgtParent ?? null;
+      const payloadParentId = !newParentNode
+        ? 'root'
+        : newParentNode.id === UNASSIGNED_ID
+        ? 'root'
+        : newParentNode.id;
+
+      // Prevent accounts from being reordered to root (would escape a folder)
+      // — only allow if there's a valid folder parent or they are already root-level
+      if (srcNode.type === 'folder' && newParentNode?.id === UNASSIGNED_ID) {
         Notify.create({ type: 'warning', message: 'No puedes mover carpetas a "Sin asignar"' });
-        return;
+        clearDragState(); return;
       }
 
-      // remove from old parent
-      if (srcParent) {
-        srcParent.children = (srcParent.children || []).filter((n) => n.id !== srcNode.id);
-      } else {
-        // was root-level
-        const idx = treeData.value.findIndex((n) => n.id === srcNode.id);
-        if (idx !== -1) treeData.value.splice(idx, 1);
-      }
+      // Remove source from its current siblings
+      const srcIdx = srcSiblings.findIndex((n) => n.id === srcNode.id);
+      if (srcIdx !== -1) srcSiblings.splice(srcIdx, 1);
 
-      // add to target folder
-      tgtNode.children = tgtNode.children || [];
-      tgtNode.children.push(srcNode);
-      const sortOrder = (tgtNode.children?.length || 1) - 1;
+      // Find target position in target siblings (after source removal)
+      let tgtIdx = tgtSiblings.findIndex((n) => n.id === tgtNode.id);
+      if (tgtIdx === -1) tgtIdx = tgtSiblings.length;
 
-      // emit payload for backend with node_type
+      const insertAt = dragOverInsertPos.value === 'before' ? tgtIdx : tgtIdx + 1;
+      tgtSiblings.splice(insertAt, 0, srcNode);
+
       emit('move-node', {
         node_id: srcNode.id,
         new_parent_id: payloadParentId,
         node_type: srcNode.type,
-        sort_order: sortOrder,
+        sort_order: insertAt,
       });
 
+      // Emit full sibling order so parent can persist all positions (folders + accounts separately)
+      const folderSiblings = tgtSiblings
+        .filter((n) => n.type === 'folder')
+        .map((n, idx) => ({ id: n.id, sort_order: idx, node_type: 'folder' }));
+      const accountSiblings = tgtSiblings
+        .filter((n) => n.type === 'account')
+        .map((n, idx) => ({ id: n.id, sort_order: idx, node_type: 'account' }));
+      emit('reorder-siblings', {
+        parent_id: payloadParentId,
+        siblings: [...folderSiblings, ...accountSiblings],
+      });
+
+      clearDragState();
+    }
+
+    function clearDragState() {
       dragNodeId.value = null;
       dragNodeLabel.value = null;
       dragOverFolderId.value = null;
+      dragOverInsertId.value = null;
+    }
+
+    function removeSrcFromParent(srcNode: TreeNode, srcParent: TreeNode | null) {
+      if (srcParent) {
+        srcParent.children = (srcParent.children || []).filter((n) => n.id !== srcNode.id);
+      } else {
+        const idx = treeData.value.findIndex((n) => n.id === srcNode.id);
+        if (idx !== -1) treeData.value.splice(idx, 1);
+      }
     }
 
     function onRootDragOver() {
@@ -284,12 +400,12 @@ export default defineComponent({
         });
       }
 
-      dragNodeId.value = null;
-      dragNodeLabel.value = null;
+      clearDragState();
     }
 
     function onDragLeave(node: TreeNode) {
       if (dragOverFolderId.value === node.id) dragOverFolderId.value = null;
+      if (dragOverInsertId.value === node.id) dragOverInsertId.value = null;
     }
 
     function emitView(node: TreeNode) {
@@ -298,6 +414,14 @@ export default defineComponent({
 
     function emitEdit(node: TreeNode) {
       if (node.type === 'account') emit('edit-account', { id: node.id, label: node.label });
+    }
+
+    function emitDelete(node: TreeNode) {
+      if (node.type === 'account') emit('delete-account', { id: node.id, label: node.label });
+    }
+
+    function emitRenameFolder(node: TreeNode) {
+      if (node.type === 'folder') emit('rename-folder', { id: node.id, label: node.label });
     }
 
     function onDblClick(node: TreeNode) {
@@ -422,6 +546,11 @@ export default defineComponent({
       if (info) info.node.label = label;
     }
 
+    function updateNodeGlobalBalance(id: string, value: boolean) {
+      const info = findNodeWithParent(treeData.value, id);
+      if (info) info.node.includeInGlobalBalance = value;
+    }
+
     function removeNode(id: string) {
       const info = findNodeWithParent(treeData.value, id);
       if (!info) return;
@@ -434,16 +563,23 @@ export default defineComponent({
       }
     }
     // Replace entire tree with provided nodes (typed, no any)
-    type NodeInput = { id: string | number; label: string; type: NodeType; children?: NodeInput[] };
+    type NodeInput = { id: string | number; label: string; type: NodeType; balance?: number | string | null; currency_symbol?: string; include_in_global_balance?: boolean; children?: NodeInput[] };
     function setTree(nodes: NodeInput[]) {
       // Normalize incoming nodes
       const toTree = (items: NodeInput[]): TreeNode[] =>
-        items.map((n) => ({
-          id: String(n.id),
-          label: String(n.label ?? ''),
-          type: n.type,
-          children: n.children ? toTree(n.children) : [],
-        }));
+        items.map((n) => {
+          const balance = n.balance !== undefined && n.balance !== null ? Number(n.balance) : undefined;
+          const currencySymbol = n.currency_symbol ?? undefined;
+          return {
+            id: String(n.id),
+            label: String(n.label ?? ''),
+            type: n.type,
+            ...(balance !== undefined ? { balance } : {}),
+            ...(currencySymbol !== undefined ? { currencySymbol } : {}),
+            includeInGlobalBalance: n.include_in_global_balance !== false,
+            children: n.children ? toTree(n.children) : [],
+          };
+        });
 
       // If backend provides a node with id 'root', treat it as 'Sin asignar' children
       const children = toTree(nodes);
@@ -463,8 +599,8 @@ export default defineComponent({
         else orphanAccounts.push(n);
       }
 
-      // Sort folders by label
-      folders.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+      // Keep folders in the order returned by the backend (sort_order)
+      // Do NOT sort alphabetically — the backend now returns them in user-defined order
 
       // Ensure 'Sin asignar' node exists and is first
       const unassigned: TreeNode = {
@@ -489,6 +625,23 @@ export default defineComponent({
       };
       treeData.value.unshift(un);
       return un;
+    }
+
+    function formatBalance(n: number): string {
+      const abs = Math.abs(n);
+      const sign = n < 0 ? '-' : '';
+      if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(1) + 'M';
+      if (abs >= 1_000) return sign + (abs / 1_000).toFixed(1) + 'k';
+      return sign + abs.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function folderAccountCount(node: TreeNode): number {
+      let count = 0;
+      for (const c of node.children || []) {
+        if (c.type === 'account') count++;
+        else count += folderAccountCount(c);
+      }
+      return count;
     }
 
     function makeDragImage(label: string) {
@@ -526,7 +679,7 @@ export default defineComponent({
     );
 
     // Expose methods to parent via template ref
-    expose({ addAccountToFolder, addFolderToParent, updateNodeLabel, removeNode, setTree });
+    expose({ addAccountToFolder, addFolderToParent, updateNodeLabel, updateNodeGlobalBalance, removeNode, setTree });
 
     return {
       UNASSIGNED_ID,
@@ -545,19 +698,26 @@ export default defineComponent({
       selectedNodeId,
       dragOverFolderId,
       dragOverRoot,
+      dragOverInsertId,
+      dragOverInsertPos,
       selectedIsFolder,
       emitView,
       emitEdit,
+      emitDelete,
+      emitRenameFolder,
       onDblClick,
       onSelect,
       onRequestDeleteFolder,
       addAccountToFolder,
       addFolderToParent,
       updateNodeLabel,
+      updateNodeGlobalBalance,
       removeNode,
       onRootDragOver,
       onRootDragLeave,
       onRootDrop,
+      formatBalance,
+      folderAccountCount,
       // setTree is exposed for parent refs; no need to return to template
     };
   },
@@ -595,5 +755,20 @@ export default defineComponent({
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   color: #1976d2;
   font-size: 12px;
+}
+.node-actions {
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.node-actions:hover {
+  opacity: 1;
+}
+.tree-node.insert-before {
+  border-top: 2px solid var(--q-primary);
+  margin-top: -1px;
+}
+.tree-node.insert-after {
+  border-bottom: 2px solid var(--q-primary);
+  margin-bottom: -1px;
 }
 </style>

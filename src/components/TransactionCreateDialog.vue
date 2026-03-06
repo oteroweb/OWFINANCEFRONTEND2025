@@ -1130,6 +1130,28 @@ async function resolveTxById(id: number): Promise<Transaction | null> {
 async function onDialogShow() {
   dialogLoading.value = true;
   try {
+    // Preseleccionar fecha del mes seleccionado (solo si creación nueva, no edición)
+    if (!ui.prefillTransactionId && !isEdit.value && periodStore.state.type === 'month') {
+      const anchor = periodStore.state.anchor;
+      if (anchor) {
+        const anchorYear = parseInt(anchor.slice(0, 4), 10);
+        const anchorMonth = parseInt(anchor.slice(5, 7), 10);
+        const now = new Date();
+        const isCurrentMonth = anchorYear === now.getFullYear() && anchorMonth === (now.getMonth() + 1);
+        if (isCurrentMonth) {
+          const nowLocal = new Date(Date.now() - now.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16);
+          form.value.datetime = nowLocal;
+        } else {
+          const nowLocal = new Date(Date.now() - now.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(11, 16);
+          const firstDay = `${anchor.slice(0, 7)}-01`;
+          form.value.datetime = `${firstDay}T${nowLocal}`;
+        }
+      }
+    }
     // Al abrir, asumir creación por defecto y limpiar snapshot; si luego se carga un tx se sobreescribe
     originalSnapshot.value = {
       includeInBalance: true,
@@ -2718,10 +2740,24 @@ watch(
     if (!ui.prefillTransactionId && !isEdit.value && periodStore.state.type === 'month') {
       const anchor = periodStore.state.anchor; // YYYY-MM-DD
       if (anchor) {
-        const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-          .toISOString()
-          .slice(11, 16);
-        form.value.datetime = `${anchor}T${nowLocal}`;
+        const anchorYear = parseInt(anchor.slice(0, 4), 10);
+        const anchorMonth = parseInt(anchor.slice(5, 7), 10);
+        const now = new Date();
+        const isCurrentMonth = anchorYear === now.getFullYear() && anchorMonth === (now.getMonth() + 1);
+        if (isCurrentMonth) {
+          // Current month: use today's date with current time
+          const nowLocal = new Date(Date.now() - now.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16);
+          form.value.datetime = nowLocal;
+        } else {
+          // Different month: use the 1st day of that month at current time
+          const nowLocal = new Date(Date.now() - now.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(11, 16);
+          const firstDay = `${anchor.slice(0, 7)}-01`;
+          form.value.datetime = `${firstDay}T${nowLocal}`;
+        }
       }
     }
     // Prefill from UI store when opening (edit flow)
@@ -3269,14 +3305,12 @@ function saveTransaction() {
         if (id in accountBalanceCache.value) delete accountBalanceCache.value[id];
         void fetchAccountBalance(id);
       });
-      // Notificar a la app para refrescar vistas relacionadas
-      if (ids.length) {
-        window.dispatchEvent(
-          new CustomEvent('ow:transactions:changed', {
-            detail: { account_ids: ids, reason: doUpdate ? 'update' : 'create' },
-          })
-        );
-      }
+      // Notificar a la app para refrescar vistas relacionadas (siempre, independientemente de cuentas)
+      window.dispatchEvent(
+        new CustomEvent('ow:transactions:changed', {
+          detail: { account_ids: ids, reason: doUpdate ? 'update' : 'create' },
+        })
+      );
       ui.closeNewTransactionDialog();
       resetForm();
     })

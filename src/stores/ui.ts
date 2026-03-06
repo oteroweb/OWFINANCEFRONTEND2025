@@ -9,6 +9,8 @@ export const useUiStore = defineStore('ui', {
   }),
   actions: {
     openNewTransactionDialog() {
+      this.prefillTransactionId = null;
+      this.editTransactionId = null;
       this.showDialogNewTransaction = true;
     },
     closeNewTransactionDialog() {

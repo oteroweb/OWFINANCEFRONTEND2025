@@ -3,7 +3,11 @@ import { api } from 'boot/axios';
 import { useAuthStore } from 'stores/auth';
 
 /**
- * Composable para obtener y gestionar ingresos calculados del mes actual
+ * Composable SINGLETON para obtener y gestionar ingresos calculados del mes actual.
+ *
+ * El estado se comparte entre todos los componentes que llamen a useCalculatedIncome(),
+ * garantizando que MonthlyIncomePanel, jars/index y cualquier otro consumidor
+ * siempre vean los mismos valores tras un refresh.
  *
  * Este composable maneja:
  * - Ingreso esperado (monthly_income configurado por usuario)
@@ -11,14 +15,16 @@ import { useAuthStore } from 'stores/auth';
  * - Diferencia entre esperado y real
  * - Porcentaje de cumplimiento
  */
+
+// ── Estado singleton compartido entre todas las instancias ──
+const loading = ref(false);
+const error = ref<string | null>(null);
+const calculatedIncome = ref(0);
+const expectedIncomeValue = ref(0); // Store historical expected income
+const lastUpdated = ref<Date | null>(null);
+
 export function useCalculatedIncome() {
   const auth = useAuthStore();
-
-  const loading = ref(false);
-  const error = ref<string | null>(null);
-  const calculatedIncome = ref(0);
-  const expectedIncomeValue = ref(0); // Store historical expected income
-  const lastUpdated = ref<Date | null>(null);
 
   /**
    * Ingreso esperado (configurado manualmente por usuario)
