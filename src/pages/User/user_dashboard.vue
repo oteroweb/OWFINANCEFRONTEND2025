@@ -40,6 +40,21 @@
               {{ balanceSummaryLoading ? '...' : formatAmount(balanceSummary.total_all) }}
             </div>
             <div class="text-caption text-grey-6">Suma de todas las cuentas activas</div>
+            <q-tooltip v-if="accountsSummary.length" max-width="320px">
+              <div class="q-gutter-y-xs">
+                <div v-for="a in accountsSummary" :key="a.id" class="row items-center justify-between q-gutter-x-sm">
+                  <span>{{ a.name }}</span>
+                  <span class="text-right">
+                    <span v-if="a.currency_code !== 'USD' && a.currency_code !== defaultCurrencyCode">
+                      {{ a.currency_symbol }}{{ a.balance.toLocaleString(undefined, { maximumFractionDigits: 2 }) }}
+                      <span class="text-grey-3"> = </span>
+                    </span>
+                    {{ formatAmount(a.balance_usd) }}
+                    <q-icon v-if="!a.has_rate" name="warning" color="warning" size="12px" title="Sin tasa configurada" />
+                  </span>
+                </div>
+              </div>
+            </q-tooltip>
           </q-card-section>
         </q-card>
       </div>
@@ -54,6 +69,23 @@
               {{ balanceSummaryLoading ? '...' : formatAmount(balanceSummary.total_global_balance) }}
             </div>
             <div class="text-caption text-grey-6">Solo cuentas marcadas para balance global</div>
+            <q-tooltip v-if="accountsSummary.length" max-width="320px">
+              <div class="q-gutter-y-xs">
+                <template v-for="a in accountsSummary" :key="a.id">
+                  <div v-if="a.include_in_global_balance" class="row items-center justify-between q-gutter-x-sm">
+                    <span>{{ a.name }}</span>
+                    <span class="text-right">
+                      <span v-if="a.currency_code !== 'USD' && a.currency_code !== defaultCurrencyCode">
+                        {{ a.currency_symbol }}{{ a.balance.toLocaleString(undefined, { maximumFractionDigits: 2 }) }}
+                        <span class="text-grey-3"> = </span>
+                      </span>
+                      {{ formatAmount(a.balance_usd) }}
+                      <q-icon v-if="!a.has_rate" name="warning" color="warning" size="12px" title="Sin tasa configurada" />
+                    </span>
+                  </div>
+                </template>
+              </div>
+            </q-tooltip>
           </q-card-section>
         </q-card>
       </div>
@@ -146,6 +178,18 @@ const theoreticalSavings = ref({
 const balanceSummary = ref({ total_all: 0, total_global_balance: 0 });
 const balanceSummaryLoading = ref(false);
 
+type AccountSummaryItem = {
+  id: number;
+  name: string;
+  balance: number;
+  balance_usd: number;
+  include_in_global_balance: boolean;
+  currency_code: string;
+  currency_symbol: string;
+  has_rate: boolean;
+};
+const accountsSummary = ref<AccountSummaryItem[]>([]);
+
 type IdleMonth = {
   month: string;
   unused: number;
@@ -215,9 +259,11 @@ async function loadBalanceSummary() {
       total_all: Number(data.total_all ?? 0),
       total_global_balance: Number(data.total_global_balance ?? 0),
     };
+    accountsSummary.value = (data.accounts || []) as AccountSummaryItem[];
   } catch (err) {
     console.warn('[BalanceSummary] Error loading data:', err);
     balanceSummary.value = { total_all: 0, total_global_balance: 0 };
+    accountsSummary.value = [];
   } finally {
     balanceSummaryLoading.value = false;
   }
