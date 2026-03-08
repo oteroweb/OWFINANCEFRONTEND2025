@@ -820,23 +820,30 @@ interface TransactionForm {
   account_to_id?: number | null;
   url_file: string;
 }
-const initialForm = (): TransactionForm => ({
-  name: '',
-  amount: null,
-  // taxes removed
-  datetime: new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16),
-  provider_id: null,
-  account_id: null,
-  rate: null,
-  rateMarkCurrent: null,
-  rateMarkOfficial: null,
-  transaction_type_id: null,
-  account_from_id: null,
-  account_to_id: null,
-  url_file: '',
-});
+const initialForm = (): TransactionForm => {
+  let defaultAccountId: number | null = null;
+  if (tsStore.selectedAccountIds && tsStore.selectedAccountIds.length === 1) {
+    defaultAccountId = Number(tsStore.selectedAccountIds[0]);
+  }
+
+  return {
+    name: '',
+    amount: null,
+    // taxes removed
+    datetime: new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16),
+    provider_id: null,
+    account_id: defaultAccountId,
+    rate: null,
+    rateMarkCurrent: null,
+    rateMarkOfficial: null,
+    transaction_type_id: null,
+    account_from_id: defaultAccountId,
+    account_to_id: null,
+    url_file: '',
+  };
+};
 const form = ref<TransactionForm>(initialForm());
 // Flag para excluir la transacción del balance agregado de cuentas
 const includeInBalance = ref(true);
@@ -3369,7 +3376,7 @@ function resetForm() {
   isAdvancedPayment.value = false;
   payments.value = [
     {
-      account_id: null,
+      account_id: form.value.account_id,
       amount: null,
       rate: null,
       applyTax: false,
