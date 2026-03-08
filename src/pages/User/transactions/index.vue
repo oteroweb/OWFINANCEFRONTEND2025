@@ -335,7 +335,29 @@
 
     <!-- Botón flotante para crear transacción -->
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
-      <q-btn fab color="primary" icon="add" @click="openNewFab" />
+      <q-fab color="primary" icon="add" direction="up" vertical-actions-align="right">
+        <q-fab-action
+          color="green"
+          icon="trending_up"
+          label="Ingreso"
+          label-position="left"
+          @click="ui.openNewTransactionDialog('income')"
+        />
+        <q-fab-action
+          color="red"
+          icon="trending_down"
+          label="Egreso"
+          label-position="left"
+          @click="ui.openNewTransactionDialog('expense')"
+        />
+        <q-fab-action
+          color="blue"
+          icon="swap_horiz"
+          label="Transferencia"
+          label-position="left"
+          @click="ui.openNewTransactionDialog('transfer')"
+        />
+      </q-fab>
     </q-page-sticky>
 
     <!-- Dialogo ajustar saldo desde transacciones -->

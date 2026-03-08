@@ -2822,6 +2822,18 @@ watch(
     // Prefill from UI store when opening (edit flow)
     // Limpiar proveedor al seleccionar transferencia
     form.value.provider_id = null;
+    // Pre-seleccionar tipo si viene indicado desde el botón FAB
+    if (ui.prefillTypeSlug && !ui.prefillTransactionId) {
+      const slugToFind = ui.prefillTypeSlug.toLowerCase();
+      const matchedType = ttypes.types.find(
+        (t: TransactionType) => (t.slug || t.name || '').toLowerCase() === slugToFind ||
+          (slugToFind === 'expense' && (t.slug || t.name || '').toLowerCase().includes('egreso')) ||
+          (slugToFind === 'income' && (t.slug || t.name || '').toLowerCase().includes('ingreso')) ||
+          (slugToFind === 'transfer' && (t.slug || t.name || '').toLowerCase().includes('transfer'))
+      );
+      if (matchedType) form.value.transaction_type_id = matchedType.id;
+      ui.prefillTypeSlug = null;
+    }
     if (ui.prefillTransactionId && Number.isFinite(ui.prefillTransactionId)) {
       // Opcional: precargar datos reales de la transacción
       await prefillFromId(Number(ui.prefillTransactionId));
