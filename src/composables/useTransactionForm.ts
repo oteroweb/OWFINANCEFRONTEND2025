@@ -29,6 +29,11 @@ export function useTransactionForm() {
   // Flag para excluir la transacción del balance agregado de cuentas
   const includeInBalance = ref(true);
   function initialForm(): TransactionFormState {
+    let defaultAccountId: number | null = null;
+    if (tsStore.selectedAccountIds && tsStore.selectedAccountIds.length === 1) {
+      defaultAccountId = Number(tsStore.selectedAccountIds[0]);
+    }
+
     return {
       name: '',
       amount: null,
@@ -36,10 +41,10 @@ export function useTransactionForm() {
         .toISOString()
         .slice(0, 16),
       provider_id: null,
-      account_id: null,
+      account_id: defaultAccountId,
       rate: null,
       transaction_type_id: null,
-      account_from_id: null,
+      account_from_id: defaultAccountId,
       account_to_id: null,
       url_file: '',
     };
