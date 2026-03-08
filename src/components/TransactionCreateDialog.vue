@@ -1065,6 +1065,11 @@ function mapTxToForm(tx: Transaction): void {
         }
       }
 
+      // El formulario de creación espera el monto de ORIGEN en el campo principal
+      if (neg) {
+        form.value.amount = Math.abs(Number(neg.amount || 0));
+      }
+
       form.value.account_from_id = Number.isFinite(Number(fromId)) ? Number(fromId) : null;
       form.value.account_to_id = Number.isFinite(Number(toId)) ? Number(toId) : null;
       // Ensure transfer UI path: no advanced payments, no simple account
