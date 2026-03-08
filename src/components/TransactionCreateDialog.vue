@@ -1045,14 +1045,26 @@ function mapTxToForm(tx: Transaction): void {
           : typeof toIdRaw === 'string'
           ? Number(toIdRaw)
           : null;
+          
+      const neg = maybePayments.find((p) => Number(p.amount || 0) < 0);
+      const pos = maybePayments.find((p) => Number(p.amount || 0) > 0);
+
       if (!(Number.isFinite(fromId as number) && (fromId as number) > 0)) {
-        const neg = maybePayments.find((p) => Number(p.amount || 0) < 0);
         if (neg) fromId = Number(neg.account_id);
       }
       if (!(Number.isFinite(toId as number) && (toId as number) > 0)) {
-        const pos = maybePayments.find((p) => Number(p.amount || 0) > 0);
         if (pos) toId = Number(pos.account_id);
       }
+
+      // Si es diferente monto entre pagos, calcular la tasa implícita y prellenarla
+      if (neg && pos && !form.value.rate) {
+        const amtOrigin = Math.abs(Number(neg.amount || 0));
+        const amtDest = Math.abs(Number(pos.amount || 0));
+        if (amtOrigin > 0 && amtDest > 0 && Math.abs(amtDest - amtOrigin) > 0.001) {
+          form.value.rate = Number((amtDest / amtOrigin).toFixed(6));
+        }
+      }
+
       form.value.account_from_id = Number.isFinite(Number(fromId)) ? Number(fromId) : null;
       form.value.account_to_id = Number.isFinite(Number(toId)) ? Number(toId) : null;
       // Ensure transfer UI path: no advanced payments, no simple account
