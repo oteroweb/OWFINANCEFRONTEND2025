@@ -395,9 +395,9 @@
               <div>
                 <span v-if="!isCrossCurrency">Destino = actual + importe</span>
                 <span v-else>
-                  <span v-if="form.rate && Number(form.rate) > 0"
-                    >Destino = actual + (importe &times; tasa)</span
-                  >
+                  <span v-if="form.rate && Number(form.rate) > 0">
+                    Destino = actual + (importe {{ transferRateIsMultiply ? '&times;' : '&divide;' }} tasa)
+                  </span>
                   <span v-else>(falta tasa para calcular)</span>
                 </span>
               </div>
@@ -472,7 +472,8 @@
                   <q-icon name="info_outline" size="16px" class="text-grey-6">
                     <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
                       <template v-if="isTransfer && isCrossCurrency">
-                        Conversión: monto origen &times; tasa = monto destino.
+                        <span v-if="transferRateIsMultiply">Conversión: monto origen &times; tasa = monto destino.</span>
+                        <span v-else>Conversión: monto origen &divide; tasa = monto destino.</span>
                       </template>
                       <template v-else>
                         Conversión: monto de la cuenta / tasa = monto en moneda base.
@@ -605,7 +606,8 @@
                   <q-icon name="info_outline" size="16px" class="text-grey-6">
                     <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
                       <template v-if="isTransfer && isCrossCurrency">
-                        Conversión: monto origen &times; tasa = monto destino.
+                        <span v-if="transferRateIsMultiply">Conversión: monto origen &times; tasa = monto destino.</span>
+                        <span v-else>Conversión: monto origen &divide; tasa = monto destino.</span>
                       </template>
                       <template v-else>
                         Conversión: subtotal con IVA / tasa = monto en moneda base.
@@ -1824,14 +1826,26 @@ const resultCurrencySymbol = computed(() =>
     ? destCurrencySymbol.value || currencySymbol.value || ''
     : currencySymbol.value || ''
 );
+// La tasa siempre se ingresa como "unidades débiles por 1 unidad fuerte" (ej: 560 bs/$ o 603 bs/$).
+// Si el ORIGEN es la moneda fuerte (ej: USD→VES): destino = monto * tasa
+// Si el ORIGEN es la moneda débil (ej: VES→USD): destino = monto / tasa
+const transferRateIsMultiply = computed(() => {
+  if (!isTransfer.value || !isCrossCurrency.value) return true;
+  const originId = toNumId(originAccount.value?.currencyId);
+  const userId = toNumId(userCurrencyId.value);
+  if (originId != null && userId != null) return originId === userId;
+  const originCode = normCode(originAccount.value?.currencyCode);
+  const userCode = normCode(userCurrencyCode.value);
+  if (originCode && userCode) return originCode === userCode;
+  return true; // default: multiply
+});
 const resultTotal = computed(() => {
   const base = Math.abs(form.value.amount || 0);
   if (!applyRateToTotal.value) return base;
   const r = Number(form.value.rate || 0);
   if (!Number.isFinite(r) || r <= 0) return base;
   if (isTransfer.value && isCrossCurrency.value) {
-    // Para transferencias: Origen * Tasa = Destino
-    return base * r;
+    return transferRateIsMultiply.value ? base * r : base / r;
   }
   // Interpret rate as: account currency amount / rate = user base amount
   return base / r;
@@ -2117,8 +2131,9 @@ const destNewBalance = computed(() => {
     if (!isCrossCurrency.value) proposed = Math.abs(Number(form.value.amount || 0));
     else {
       const r = Number(form.value.rate || 0);
-      // Tasa Origen→Destino: 1 Origen = X Destino -> destino = origen * tasa
-      if (r > 0) proposed = Math.abs(Number(form.value.amount || 0)) * r;
+      if (r > 0) proposed = transferRateIsMultiply.value
+        ? Math.abs(Number(form.value.amount || 0)) * r
+        : Math.abs(Number(form.value.amount || 0)) / r;
       else return curr; // requiere tasa
     }
   }
@@ -3245,9 +3260,12 @@ function saveTransaction() {
     // Mantenemos la lógica visual actual: si no hay tasa global, usamos el mismo importe al destino (mismo valor) y
     // en validación el backend tomará las current. Si quieres consistencia total, podríamos derivar r_O→D de dos tasas U→O y U→D.
     const rGlobal = Number(form.value.rate || 0);
-    // Tasa UI es Origen→Destino: 1 Origen = X Destino
-    // por lo tanto el monto destino se obtiene multiplicando: destino = origen * tasa
-    const toAmt = isCrossCurrency.value && rGlobal > 0 ? rawAmt * rGlobal : rawAmt; // destino recibe
+    // La tasa siempre representa "unidades débiles por 1 unidad fuerte" (ej: 560 bs/$).
+    // Si origen es moneda fuerte (ej: USD→VES): destino = monto * tasa
+    // Si origen es moneda débil (ej: VES→USD): destino = monto / tasa
+    const toAmt = isCrossCurrency.value && rGlobal > 0
+      ? (transferRateIsMultiply.value ? rawAmt * rGlobal : rawAmt / rGlobal)
+      : rawAmt; // destino recibe
     payload.payments = [
       {
         account_id: form.value.account_from_id ?? null,
