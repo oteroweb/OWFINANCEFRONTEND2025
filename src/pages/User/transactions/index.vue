@@ -1094,7 +1094,7 @@ function paymentAccountNames(row: Record<string, unknown>): string[] {
 const showAdjustTop = ref(false);
 const adjustBalanceTop = ref<string>('');
 const adjustingTop = ref(false);
-const includeInBalanceTop = ref(true);
+const includeInBalanceTop = ref(false);
 function openAdjustTop(): void {
   if (!singleAccountSelected.value) return;
   adjustBalanceTop.value =

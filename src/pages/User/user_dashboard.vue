@@ -91,26 +91,82 @@
       </div>
     </div>
     <q-separator spaced />
-    <div class="dashboard-grid">
-      <q-card class="widget">
-        <q-card-section class="q-pa-sm">
-          <div class="text-subtitle2 text-weight-medium">Ahorro teórico</div>
-          <div class="text-h6 q-mt-xs">{{ masked(theoreticalSavings.total_theoretical) }}</div>
-          <div class="text-caption text-grey-7 q-mt-xs">
-            Sin usar este mes: {{ masked(theoreticalSavings.total_unused) }}
-          </div>
-          <div class="text-caption text-grey-7">
-            Cuentas de ahorro: {{ masked(theoreticalSavings.total_savings_accounts) }}
-          </div>
-          <div class="text-caption text-warning q-mt-xs">
-            Ocioso acumulado: {{ masked(theoreticalSavings.accumulated_unused) }}
-          </div>
-        </q-card-section>
-      </q-card>
-      <q-card v-for="w in widgets" :key="w" class="widget">
-        <q-card-section class="q-pa-sm">{{ w }}</q-card-section>
-      </q-card>
+    <!-- Filtro de periodo/mes -->
+    <div class="row items-center q-gutter-md q-mb-md">
+      <div class="col-auto">
+        <PeriodFilterBar />
+      </div>
     </div>
+
+    <!-- Pie chart de distribución por cántaro -->
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section>
+        <div class="text-subtitle2">Distribución por cántaro</div>
+        <div class="text-caption text-grey-7">Visualiza cómo se distribuyen tus fondos entre cántaros este periodo.</div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <div style="max-width: 420px; margin: 0 auto;">
+          <q-img :src="pieChartUrl" style="width: 100%; max-width: 400px;" v-if="pieChartUrl" />
+          <div v-else class="text-grey-5 text-center q-pa-md">Sin datos para graficar</div>
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <!-- Resumen mensual de cántaros (tabla) -->
+    <q-card flat bordered class="q-mb-md">
+      <q-card-section>
+        <div class="text-subtitle2">Resumen del mes</div>
+        <div class="text-caption text-grey-7">
+          Totales de gasto, asignación y ahorro por cántaro.
+        </div>
+      </q-card-section>
+      <q-separator />
+      <q-card-section class="q-pa-none">
+        <div class="summary-table-wrap">
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th class="text-left">Cántaro</th>
+                <th class="text-right">Asignado</th>
+                <th class="text-right">Gastado</th>
+                <th class="text-right">Ajuste</th>
+                <th class="text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in jarMonthlySummary" :key="row.id">
+                <td>
+                  <span class="summary-dot" :style="{ background: row.color, display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', marginRight: '6px' }"></span>
+                  {{ row.name }}
+                </td>
+                <td class="text-right text-info">{{ masked(row.assignedExpected) }}</td>
+                <td class="text-right text-negative">{{ masked(row.spent) }}</td>
+                <td class="text-right" :class="row.adjustment > 0 ? 'text-positive' : row.adjustment < 0 ? 'text-negative' : ''">
+                  {{ row.adjustment !== 0 ? ((row.adjustment > 0 ? '+' : '') + masked(row.adjustment)) : '—' }}
+                </td>
+                <td class="text-right text-weight-bold" :class="row.balance < 0 ? 'text-negative' : row.balance > 0 ? 'text-positive' : 'text-grey-6'">
+                  {{ masked(row.balance) }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="summary-total-row">
+                <td class="text-weight-bold">Total</td>
+                <td class="text-right text-weight-bold text-info">{{ masked(summaryTotals.assignedExpected) }}</td>
+                <td class="text-right text-weight-bold text-negative">{{ masked(summaryTotals.spent) }}</td>
+                <td class="text-right text-weight-bold" :class="summaryTotals.adjustment >= 0 ? 'text-positive' : 'text-negative'">
+                  {{ summaryTotals.adjustment !== 0 ? ((summaryTotals.adjustment > 0 ? '+' : '') + masked(summaryTotals.adjustment)) : '—' }}
+                </td>
+                <td class="text-right text-weight-bold" :class="summaryTotals.balance < 0 ? 'text-negative' : 'text-positive'">
+                  {{ masked(summaryTotals.balance) }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </q-card-section>
+    </q-card>
 
     <!-- Tabla dinero ocioso mensual -->
     <q-card v-if="idleMonths.length > 0" flat bordered>
@@ -154,18 +210,92 @@
   </q-page>
 </template>
 <script setup lang="ts">
+
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
 import { useUserRates } from 'src/composables/useUserRates';
-const HIDDEN = '••••••';
 import { api } from 'boot/axios';
 import { computed, onMounted, ref, watch } from 'vue';
 import { usePeriodStore } from 'stores/period';
+import PeriodFilterBar from 'components/PeriodFilterBar.vue';
+
+// --- Jars summary logic (adapted from jars/index.vue) ---
+type JarSummary = {
+  id: number;
+  name: string;
+  color: string;
+  percent: number;
+  assignedExpected: number;
+  spent: number;
+  adjustment: number;
+  balance: number;
+};
+const jarElements = ref<JarSummary[]>([]);
+const periodStore = usePeriodStore();
+const expectedIncome = ref(0);
+const calculatedIncome = ref(0);
+const theoreticalSavings = ref({
+  total_unused: 0,
+  total_savings_accounts: 0,
+  total_theoretical: 0,
+  accumulated_unused: 0,
+});
+
+function masked(val: number) {
+  if (ui.hideValues) return '••••••';
+  return typeof val === 'number' ? val.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }) : val;
+}
+
+// Dummy: in real app, fetch jars and balances from API or Pinia store
+onMounted(() => {
+  // Simulate API fetch for jars and summary
+  // TODO: Replace with real API/store logic
+  jarElements.value = [
+    { id: 1, name: 'Necesidades', color: '#1976d2', percent: 50, assignedExpected: 500, spent: 400, adjustment: 0, balance: 100 },
+    { id: 2, name: 'Ahorro', color: '#43a047', percent: 30, assignedExpected: 300, spent: 100, adjustment: 0, balance: 200 },
+    { id: 3, name: 'Ocio', color: '#fbc02d', percent: 20, assignedExpected: 200, spent: 150, adjustment: 0, balance: 50 },
+  ];
+  expectedIncome.value = 1000;
+  calculatedIncome.value = 950;
+  theoreticalSavings.value = {
+    total_unused: 150,
+    total_savings_accounts: 200,
+    total_theoretical: 350,
+    accumulated_unused: 300,
+  };
+});
+
+const jarMonthlySummary = computed(() => jarElements.value);
+const summaryTotals = computed(() => {
+  const rows = jarMonthlySummary.value;
+  const spent = rows.reduce((s, r) => s + (r.spent || 0), 0);
+  const adjustment = rows.reduce((s, r) => s + (r.adjustment || 0), 0);
+  return {
+    assignedExpected: rows.reduce((s, r) => s + (r.assignedExpected || 0), 0),
+    spent,
+    adjustment,
+    balance: rows.reduce((s, r) => s + (r.balance || 0), 0),
+  };
+});
+
+// Pie chart image URL (using quickchart.io for demo)
+const pieChartUrl = computed(() => {
+  const rows = jarMonthlySummary.value;
+  if (!rows.length) return '';
+  const labels = rows.map((r) => r.name);
+  const data = rows.map((r) => r.assignedExpected);
+  const colors = rows.map((r) => r.color || '#888');
+  const chart = {
+    type: 'pie',
+    data: { labels, datasets: [{ data, backgroundColor: colors }] },
+    options: { plugins: { legend: { position: 'bottom' } } },
+  };
+  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chart))}`;
+});
 
 defineOptions({ name: 'user_dashboard' });
 const auth = useAuthStore();
 const ui = useUiStore();
-const widgets = ['Balance', 'Distribución', 'Presupuestos', 'Evolución', 'Vencimientos'];
 const { defaultCurrencyCode, currentRates } = useUserRates();
 const periodStore = usePeriodStore();
 
