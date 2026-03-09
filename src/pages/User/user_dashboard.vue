@@ -210,104 +210,30 @@
   </q-page>
 </template>
 <script setup lang="ts">
-
-import { useAuthStore } from 'stores/auth';
-import { useUiStore } from 'stores/ui';
-import { useUserRates } from 'src/composables/useUserRates';
 import { api } from 'boot/axios';
-import { computed, onMounted, ref, watch } from 'vue';
-import { usePeriodStore } from 'stores/period';
 import PeriodFilterBar from 'components/PeriodFilterBar.vue';
-
-// --- Jars summary logic (adapted from jars/index.vue) ---
-type JarSummary = {
-  id: number;
-  name: string;
-  color: string;
-  percent: number;
-  assignedExpected: number;
-  spent: number;
-  adjustment: number;
-  balance: number;
-};
-const jarElements = ref<JarSummary[]>([]);
-const periodStore = usePeriodStore();
-const expectedIncome = ref(0);
-const calculatedIncome = ref(0);
-const theoreticalSavings = ref({
-  total_unused: 0,
-  total_savings_accounts: 0,
-  total_theoretical: 0,
-  accumulated_unused: 0,
-});
-
-function masked(val: number) {
-  if (ui.hideValues) return '••••••';
-  return typeof val === 'number' ? val.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }) : val;
-}
-
-// Dummy: in real app, fetch jars and balances from API or Pinia store
-onMounted(() => {
-  // Simulate API fetch for jars and summary
-  // TODO: Replace with real API/store logic
-  jarElements.value = [
-    { id: 1, name: 'Necesidades', color: '#1976d2', percent: 50, assignedExpected: 500, spent: 400, adjustment: 0, balance: 100 },
-    { id: 2, name: 'Ahorro', color: '#43a047', percent: 30, assignedExpected: 300, spent: 100, adjustment: 0, balance: 200 },
-    { id: 3, name: 'Ocio', color: '#fbc02d', percent: 20, assignedExpected: 200, spent: 150, adjustment: 0, balance: 50 },
-  ];
-  expectedIncome.value = 1000;
-  calculatedIncome.value = 950;
-  theoreticalSavings.value = {
-    total_unused: 150,
-    total_savings_accounts: 200,
-    total_theoretical: 350,
-    accumulated_unused: 300,
-  };
-});
-
-const jarMonthlySummary = computed(() => jarElements.value);
-const summaryTotals = computed(() => {
-  const rows = jarMonthlySummary.value;
-  const spent = rows.reduce((s, r) => s + (r.spent || 0), 0);
-  const adjustment = rows.reduce((s, r) => s + (r.adjustment || 0), 0);
-  return {
-    assignedExpected: rows.reduce((s, r) => s + (r.assignedExpected || 0), 0),
-    spent,
-    adjustment,
-    balance: rows.reduce((s, r) => s + (r.balance || 0), 0),
-  };
-});
-
-// Pie chart image URL (using quickchart.io for demo)
-const pieChartUrl = computed(() => {
-  const rows = jarMonthlySummary.value;
-  if (!rows.length) return '';
-  const labels = rows.map((r) => r.name);
-  const data = rows.map((r) => r.assignedExpected);
-  const colors = rows.map((r) => r.color || '#888');
-  const chart = {
-    type: 'pie',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: { plugins: { legend: { position: 'bottom' } } },
-  };
-  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chart))}`;
-});
+import { computed, onMounted, ref, watch } from 'vue';
+import { useUserRates } from 'src/composables/useUserRates';
+import { useAuthStore } from 'stores/auth';
+import { usePeriodStore } from 'stores/period';
+import { useUiStore } from 'stores/ui';
 
 defineOptions({ name: 'user_dashboard' });
+
+const HIDDEN = '••••••';
 const auth = useAuthStore();
 const ui = useUiStore();
-const { defaultCurrencyCode, currentRates } = useUserRates();
 const periodStore = usePeriodStore();
-
-const theoreticalSavings = ref({
-  total_unused: 0,
-  total_savings_accounts: 0,
-  total_theoretical: 0,
-  accumulated_unused: 0,
-});
+const { defaultCurrencyCode, currentRates } = useUserRates();
 
 const balanceSummary = ref({ total_all: 0, total_global_balance: 0 });
 const balanceSummaryLoading = ref(false);
+const theoreticalSavings = ref({
+  total_unused: 0,
+  total_savings_accounts: 0,
+  total_theoretical: 0,
+  accumulated_unused: 0,
+});
 
 type AccountSummaryItem = {
   id: number;
@@ -319,26 +245,47 @@ type AccountSummaryItem = {
   currency_symbol: string;
   has_rate: boolean;
 };
-const accountsSummary = ref<AccountSummaryItem[]>([]);
 
 type IdleMonth = {
   month: string;
   unused: number;
   accumulated: number;
 };
+
+type JarBasic = {
+  id: number;
+  name: string;
+  color?: string | null;
+};
+
+type JarBalanceResponse = {
+  allocated_amount: number;
+  spent_amount: number;
+  adjustment: number;
+  available_balance: number;
+};
+
+type JarSummaryRow = {
+  id: number;
+  name: string;
+  color: string;
+  assignedExpected: number;
+  spent: number;
+  adjustment: number;
+  balance: number;
+};
+
+const accountsSummary = ref<AccountSummaryItem[]>([]);
 const idleMonths = ref<IdleMonth[]>([]);
+const jarMonthlySummary = ref<JarSummaryRow[]>([]);
 
 const currentMonth = computed(() => {
-  if (periodStore.state.type === 'month') {
-    const anchorDate = new Date(periodStore.state.anchor + 'T00:00:00');
-    const year = anchorDate.getFullYear();
-    const month = String(anchorDate.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  }
+  const anchor = periodStore.state.anchor;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(anchor)) return anchor.slice(0, 7);
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
 });
 
 const currencyCode = computed(() => defaultCurrencyCode.value || 'USD');
@@ -348,42 +295,41 @@ function formatAmount(amount: number) {
     style: 'currency',
     currency: currencyCode.value,
     maximumFractionDigits: 2,
-  }).format(amount || 0);
+  }).format(Number(amount || 0));
 }
 
 function masked(amount: number) {
   return ui.hideValues ? HIDDEN : formatAmount(amount);
 }
 
-async function loadTheoreticalSavings() {
-  try {
-    const balanceDate = `${currentMonth.value}-01`;
-    const [summaryRes, accumRes] = await Promise.all([
-      api.get('/jars/theoretical-savings', { params: { date: balanceDate } }),
-      api.get('/jars/theoretical-savings/accumulated', {
-        params: { to: currentMonth.value },
-      }),
-    ]);
-    const data = summaryRes.data?.data || {};
-    const accumData = accumRes.data?.data || {};
-    theoreticalSavings.value = {
-      total_unused: Number(data.total_unused || 0),
-      total_savings_accounts: Number(data.total_savings_accounts || 0),
-      total_theoretical: Number(data.total_theoretical || 0),
-      accumulated_unused: Number(accumData.grand_total_unused || 0),
-    };
-    idleMonths.value = (accumData.months || []) as IdleMonth[];
-  } catch (err) {
-    console.warn('[TheoreticalSavings] Error loading data:', err);
-    theoreticalSavings.value = {
-      total_unused: 0,
-      total_savings_accounts: 0,
-      total_theoretical: 0,
-      accumulated_unused: 0,
-    };
-    idleMonths.value = [];
-  }
-}
+const summaryTotals = computed(() => {
+  const rows = jarMonthlySummary.value;
+  return {
+    assignedExpected: rows.reduce((sum, row) => sum + row.assignedExpected, 0),
+    spent: rows.reduce((sum, row) => sum + row.spent, 0),
+    adjustment: rows.reduce((sum, row) => sum + row.adjustment, 0),
+    balance: rows.reduce((sum, row) => sum + row.balance, 0),
+  };
+});
+
+const pieChartUrl = computed(() => {
+  const rows = jarMonthlySummary.value;
+  if (!rows.length) return '';
+  const labels = rows.map((r) => r.name);
+  const data = rows.map((r) => Math.max(0, Number(r.assignedExpected || 0)));
+  const colors = rows.map((r) => r.color || '#6b7280');
+  const chart = {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: colors }],
+    },
+    options: {
+      plugins: { legend: { position: 'bottom' } },
+    },
+  };
+  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chart))}`;
+});
 
 async function loadBalanceSummary() {
   balanceSummaryLoading.value = true;
@@ -396,7 +342,7 @@ async function loadBalanceSummary() {
     };
     accountsSummary.value = (data.accounts || []) as AccountSummaryItem[];
   } catch (err) {
-    console.warn('[BalanceSummary] Error loading data:', err);
+    console.warn('[Dashboard] Error loading account summary:', err);
     balanceSummary.value = { total_all: 0, total_global_balance: 0 };
     accountsSummary.value = [];
   } finally {
@@ -404,16 +350,104 @@ async function loadBalanceSummary() {
   }
 }
 
+async function loadTheoreticalSavings() {
+  try {
+    const balanceDate = `${currentMonth.value}-01`;
+    const [summaryRes, accumRes] = await Promise.all([
+      api.get('/jars/theoretical-savings', { params: { date: balanceDate } }),
+      api.get('/jars/theoretical-savings/accumulated', { params: { to: currentMonth.value } }),
+    ]);
+    const data = summaryRes.data?.data || {};
+    const accumData = accumRes.data?.data || {};
+    theoreticalSavings.value = {
+      total_unused: Number(data.total_unused || 0),
+      total_savings_accounts: Number(data.total_savings_accounts || 0),
+      total_theoretical: Number(data.total_theoretical || 0),
+      accumulated_unused: Number(accumData.grand_total_unused || 0),
+    };
+    idleMonths.value = (accumData.months || []) as IdleMonth[];
+  } catch (err) {
+    console.warn('[Dashboard] Error loading theoretical savings:', err);
+    theoreticalSavings.value = {
+      total_unused: 0,
+      total_savings_accounts: 0,
+      total_theoretical: 0,
+      accumulated_unused: 0,
+    };
+    idleMonths.value = [];
+  }
+}
+
+async function loadJarMonthlySummary() {
+  try {
+    const jarsRes = await api.get('/jars', { params: { per_page: 100 } });
+    const raw = jarsRes.data?.data;
+    const jarsData = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+      ? raw.data
+      : [];
+    const jars = (jarsData as Array<Record<string, unknown>>)
+      .map((j) => {
+        const idNum = Number(j.id);
+        const rawName = typeof j.name === 'string' ? j.name.trim() : '';
+        return {
+          idNum,
+          rawName,
+          color: typeof j.color === 'string' ? j.color : null,
+        };
+      })
+      .filter((j) => Number.isFinite(j.idNum) && j.idNum > 0)
+      .map(
+        (j): JarBasic => ({
+          id: j.idNum,
+          name: j.rawName || 'Cántaro',
+          color: j.color,
+        })
+      );
+
+    const balanceDate = `${currentMonth.value}-01`;
+    const balances = await Promise.all(
+      jars.map(async (jar) => {
+        try {
+          const res = await api.get(`/jars/${jar.id}/balance`, { params: { date: balanceDate } });
+          return {
+            jar,
+            bal: (res.data?.data || {}) as Partial<JarBalanceResponse>,
+          };
+        } catch {
+          return { jar, bal: {} as Partial<JarBalanceResponse> };
+        }
+      })
+    );
+
+    jarMonthlySummary.value = balances.map(({ jar, bal }) => ({
+      id: jar.id,
+      name: jar.name,
+      color: jar.color || '#6b7280',
+      assignedExpected: Number(bal.allocated_amount || 0),
+      spent: Number(bal.spent_amount || 0),
+      adjustment: Number(bal.adjustment || 0),
+      balance: Number(bal.available_balance || 0),
+    }));
+  } catch (err) {
+    console.warn('[Dashboard] Error loading jars summary:', err);
+    jarMonthlySummary.value = [];
+  }
+}
+
+async function refreshDashboardData() {
+  await Promise.all([loadBalanceSummary(), loadTheoreticalSavings(), loadJarMonthlySummary()]);
+}
+
 onMounted(() => {
-  void loadTheoreticalSavings();
-  void loadBalanceSummary();
+  void refreshDashboardData();
 });
 
 watch(
-  () => periodStore.state.anchor,
-  async (newAnchor, oldAnchor) => {
-    if (periodStore.state.type !== 'month' || newAnchor === oldAnchor) return;
-    await loadTheoreticalSavings();
+  () => [periodStore.state.type, periodStore.state.anchor],
+  () => {
+    void refreshDashboardData();
   }
 );
 </script>
