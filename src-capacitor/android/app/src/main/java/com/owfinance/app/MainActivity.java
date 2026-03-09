@@ -1,4 +1,4 @@
-package org.capacitor.quasar.app;
+package com.owfinance.app;
 
 import com.getcapacitor.BridgeActivity;
 

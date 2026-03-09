@@ -5,6 +5,8 @@ import { defineConfig } from '#q-app/wrappers';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig((ctx) => {
+  const isMobile = ctx.modeName === 'capacitor';
+
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -44,14 +46,14 @@ export default defineConfig((ctx) => {
         // extendTsConfig (tsConfig) {}
       },
 
-      vueRouterMode: 'history', // available values: 'hash', 'history'
-      vueRouterBase: '/app/',
+      vueRouterMode: isMobile ? 'hash' : 'history',
+      vueRouterBase: isMobile ? '/' : '/app/',
       // vueDevtools,
       // vueOptionsAPI: false,
 
       // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
-      publicPath: '/app/',
+      publicPath: isMobile ? '/' : '/app/',
       // analyze: true,
       env: {
         VITE_API_BASE_URL: process.env.VITE_API_BASE_URL,

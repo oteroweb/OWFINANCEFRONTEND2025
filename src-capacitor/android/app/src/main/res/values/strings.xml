@@ -1,7 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">OwFinance App</string>
-    <string name="title_activity_main">OwFinance App</string>
-    <string name="package_name">org.capacitor.quasar.app</string>
-    <string name="custom_url_scheme">org.capacitor.quasar.app</string>
+    <string name="title_activity_main">OWFinance</string>
+    <string name="package_name">com.owfinance.app</string>
+    <string name="custom_url_scheme">com.owfinance.app</string>
 </resources>

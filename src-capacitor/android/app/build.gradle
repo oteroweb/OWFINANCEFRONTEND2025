@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "org.capacitor.quasar.app"
+    namespace "com.owfinance.app"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "org.capacitor.quasar.app"
+        applicationId "com.owfinance.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -14,6 +14,20 @@ android {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    flavorDimensions "version"
+    productFlavors {
+        prod {
+            dimension "version"
+            // applicationId heredado del defaultConfig: com.owfinance.app
+            resValue "string", "app_name", "OWFinance"
+        }
+        dev {
+            dimension "version"
+            applicationIdSuffix ".dev"
+            // applicationId final: com.owfinance.app.dev
+            resValue "string", "app_name", "OWFinance Dev"
         }
     }
     buildTypes {
