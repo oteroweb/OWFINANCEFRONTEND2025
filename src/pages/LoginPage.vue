@@ -18,6 +18,7 @@
             spellcheck="false"
             inputmode="email"
             autofocus
+            :disable="loginLoading"
           />
           <q-input
             v-model="password"
@@ -26,16 +27,23 @@
             class="q-mt-sm"
             name="password"
             autocomplete="current-password"
+            :disable="loginLoading"
           />
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn label="Login" color="primary" type="submit" />
+          <q-btn
+            label="Login"
+            color="primary"
+            type="submit"
+            :loading="loginLoading"
+            :disable="loginLoading"
+          />
         </q-card-actions>
       </form>
 
       <!-- Biometric login -->
-      <q-card-section v-if="showBiometric" class="q-pt-none text-center">
+      <q-card-section v-if="showBiometric && !loginLoading" class="q-pt-none text-center">
         <q-separator class="q-mb-md" />
         <q-btn
           round
@@ -44,6 +52,7 @@
           icon="fingerprint"
           @click="loginWithBiometric"
           :loading="biometricLoading"
+          :disable="biometricLoading"
         />
         <div class="text-caption text-grey q-mt-sm">Acceder con huella</div>
       </q-card-section>
@@ -65,6 +74,7 @@ const auth = useAuthStore();
 const { checkAvailability, checkStoredCredentials, saveCredentials, authenticate, isAvailable } = useBiometric();
 const showBiometric = ref(false);
 const biometricLoading = ref(false);
+const loginLoading = ref(false);
 
 onMounted(async () => {
   const available = await checkAvailability();
@@ -85,6 +95,8 @@ function navigateByRole() {
 }
 
 async function submit() {
+  if (loginLoading.value) return;
+  loginLoading.value = true;
   try {
     await auth.login(email.value, password.value);
 
@@ -101,6 +113,8 @@ async function submit() {
     } else {
       alert('Error al iniciar sesión. Verifica tu conexión y credenciales.');
     }
+  } finally {
+    loginLoading.value = false;
   }
 }
 
