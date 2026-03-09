@@ -530,6 +530,33 @@
       </q-card>
     </q-dialog>
 
+    <!-- Diálogo editar categoría con selector de cántaro -->
+    <q-dialog v-model="showEditCatDialog" persistent>
+      <q-card style="min-width: 360px">
+        <q-card-section class="text-subtitle1">Editar categoría</q-card-section>
+        <q-card-section class="q-gutter-md">
+          <q-input v-model="editCatForm.name" label="Nombre" dense outlined autofocus />
+          <q-select
+            v-model="editCatForm.jar_id"
+            :options="jarOptions"
+            option-value="id"
+            option-label="name"
+            emit-value
+            map-options
+            label="Cántaro"
+            dense
+            outlined
+            clearable
+            hint="Asignar a un cántaro (opcional)"
+          />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="grey" v-close-popup />
+          <q-btn flat label="Guardar" color="primary" :loading="editCatSaving" @click="onSubmitEditCat" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -882,21 +909,68 @@ function onDeleteCategory(payload: { id: string; label: string }) {
   });
 }
 
-function onEditCategory(payload: { id: string; label: string }) {
-  $q.dialog({
-    title: 'Editar categoría',
-    message: 'Nuevo nombre:',
-    prompt: { model: payload.label, type: 'text', isValid: (v: string) => v.trim().length > 0 },
-    cancel: true,
-  }).onOk((newName: string) => {
-    void api.put(`/categories/${payload.id}`, { name: newName.trim() }).then(() => {
-      categoriesTreeRef.value?.updateNodeLabel(payload.id, newName.trim());
-      Notify.create({ type: 'positive', message: 'Categoría actualizada' });
-    }).catch((e) => {
-      console.error('Error updating category:', e);
-      Notify.create({ type: 'negative', message: 'Error actualizando categoría' });
-    });
-  });
+const showEditCatDialog = ref(false);
+const editCatSaving = ref(false);
+const editCatForm = ref<{ id: string; name: string; jar_id: number | null }>({ id: '', name: '', jar_id: null });
+const jarOptions = computed(() => jars.value.map((j) => ({ id: j.id, name: j.name })));
+
+function currentJarIdForCategory(catId: string | number): number | null {
+  for (const jar of jars.value) {
+    if (jar.categories?.some((c) => String(c.id) === String(catId))) return jar.id;
+  }
+  return null;
+}
+
+async function onEditCategory(payload: { id: string; label: string }) {
+  if (jars.value.length === 0) await loadJars();
+  editCatForm.value = {
+    id: payload.id,
+    name: payload.label,
+    jar_id: currentJarIdForCategory(payload.id),
+  };
+  showEditCatDialog.value = true;
+}
+
+async function onSubmitEditCat() {
+  if (!editCatForm.value.name.trim()) {
+    Notify.create({ type: 'warning', message: 'El nombre es requerido' });
+    return;
+  }
+  editCatSaving.value = true;
+  try {
+    const catId = editCatForm.value.id;
+    await api.put(`/categories/${catId}`, { name: editCatForm.value.name.trim() });
+    categoriesTreeRef.value?.updateNodeLabel(catId, editCatForm.value.name.trim());
+
+    const userId = auth.user?.id;
+    if (userId) {
+      const oldJarId = currentJarIdForCategory(catId);
+      const newJarId = editCatForm.value.jar_id ?? null;
+      if (oldJarId !== newJarId) {
+        if (oldJarId) {
+          const oldJar = jars.value.find((j) => j.id === oldJarId);
+          const remaining = (oldJar?.categories || [])
+            .filter((c) => String(c.id) !== String(catId))
+            .map((c) => Number(c.id));
+          await api.put(`/users/${userId}/jars/${oldJarId}/categories`, { category_ids: remaining });
+        }
+        if (newJarId) {
+          const newJar = jars.value.find((j) => j.id === newJarId);
+          const existing = (newJar?.categories || []).map((c) => Number(c.id));
+          if (!existing.includes(Number(catId))) existing.push(Number(catId));
+          await api.put(`/users/${userId}/jars/${newJarId}/categories`, { category_ids: existing });
+        }
+        await loadJars();
+      }
+    }
+    Notify.create({ type: 'positive', message: 'Categoría actualizada' });
+    showEditCatDialog.value = false;
+  } catch (e: unknown) {
+    const msg = (e as { message?: string })?.message || 'Error actualizando categoría';
+    Notify.create({ type: 'negative', message: msg });
+  } finally {
+    editCatSaving.value = false;
+  }
 }
 
 // ----- Accounts Tree -----
