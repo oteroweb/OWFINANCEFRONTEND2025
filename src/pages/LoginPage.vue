@@ -33,32 +33,67 @@
           <q-btn label="Login" color="primary" type="submit" />
         </q-card-actions>
       </form>
+
+      <!-- Biometric login -->
+      <q-card-section v-if="showBiometric" class="q-pt-none text-center">
+        <q-separator class="q-mb-md" />
+        <q-btn
+          round
+          size="lg"
+          color="teal"
+          icon="fingerprint"
+          @click="loginWithBiometric"
+          :loading="biometricLoading"
+        />
+        <div class="text-caption text-grey q-mt-sm">Acceder con huella</div>
+      </q-card-section>
     </q-card>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
+import { useBiometric } from 'src/composables/useBiometric';
 
 const email = ref('');
 const password = ref('');
 const router = useRouter();
 const auth = useAuthStore();
 
+const { checkAvailability, checkStoredCredentials, saveCredentials, authenticate, isAvailable } = useBiometric();
+const showBiometric = ref(false);
+const biometricLoading = ref(false);
+
+onMounted(async () => {
+  const available = await checkAvailability();
+  if (available) {
+    const hasCreds = await checkStoredCredentials();
+    showBiometric.value = hasCreds;
+  }
+});
+
+function navigateByRole() {
+  if (auth.role === 'admin') {
+    void router.push('/admin');
+  } else if (auth.role === 'user') {
+    void router.push('/user');
+  } else {
+    alert('Rol desconocido');
+  }
+}
+
 async function submit() {
   try {
     await auth.login(email.value, password.value);
 
-    // 👇 Espera a que auth.role esté disponible
-    if (auth.role === 'admin') {
-      void router.push('/admin');
-    } else if (auth.role === 'user') {
-      void router.push('/user');
-    } else {
-      alert('Rol desconocido');
+    // Guardar credenciales para biometría si el dispositivo lo soporta
+    if (isAvailable.value) {
+      await saveCredentials(email.value, password.value);
     }
+
+    navigateByRole();
   } catch (error: unknown) {
     console.error('Error completo de login:', error);
     if (error instanceof Error) {
@@ -66,6 +101,26 @@ async function submit() {
     } else {
       alert('Error al iniciar sesión. Verifica tu conexión y credenciales.');
     }
+  }
+}
+
+async function loginWithBiometric() {
+  biometricLoading.value = true;
+  try {
+    const creds = await authenticate();
+    if (!creds) return;
+
+    await auth.login(creds.email, creds.password);
+    navigateByRole();
+  } catch (error: unknown) {
+    console.error('Error biométrico:', error);
+    if (error instanceof Error) {
+      alert(error.message || 'Error al autenticar con huella.');
+    } else {
+      alert('Error al autenticar con huella.');
+    }
+  } finally {
+    biometricLoading.value = false;
   }
 }
 </script>

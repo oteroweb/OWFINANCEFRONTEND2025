@@ -21,12 +21,14 @@ android {
         prod {
             dimension "version"
             // applicationId heredado del defaultConfig: com.owfinance.app
-            resValue "string", "app_name", "OWFinance"
+            resValue "string", "app_name", "OWFinance Stage"
+            resValue "string", "title_activity_main", "OWFinance Stage"
         }
         dev {
             dimension "version"
             applicationIdSuffix ".dev"
             // applicationId final: com.owfinance.app.dev
+            resValue "string", "title_activity_main", "OWFinance Dev"
             resValue "string", "app_name", "OWFinance Dev"
         }
     }
