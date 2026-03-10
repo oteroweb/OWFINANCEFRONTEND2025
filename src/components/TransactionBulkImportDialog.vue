@@ -27,9 +27,25 @@
                 dense
                 emit-value
                 map-options
-                label="Cuenta (aplica a todas las filas)"
+                use-input
+                input-debounce="300"
+                @filter="filterAccounts"
+                label="Cuenta (aplica a todas las filas) *"
+                hint="Requerido - todas las filas usarán esta cuenta"
                 class="min-w-xs"
-              />
+                :rules="[val => !!val || 'Debe seleccionar una cuenta']"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="account_balance_wallet" />
+                </template>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-grey">
+                      Sin resultados
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
             </div>
             <div v-if="selectedAccount && needsRateForSelectedAccount" class="col-12 col-sm-auto">
               <q-chip
@@ -96,11 +112,20 @@
                     <td>
                       <q-select
                         v-model="row.type"
-                        :options="['income', 'expense', 'transfer']"
+                        :options="typeOptions"
+                        option-label="label"
+                        option-value="value"
                         dense
-                        map-options
                         emit-value
-                      />
+                        map-options
+                        use-input
+                        input-debounce="0"
+                        @filter="filterTypes"
+                      >
+                        <template v-slot:prepend>
+                          <q-icon name="swap_horiz" size="xs" />
+                        </template>
+                      </q-select>
                     </td>
                     <td>
                       <q-input v-model.number="row.amount" dense type="number" step="0.01" />
@@ -118,7 +143,14 @@
                         emit-value
                         map-options
                         clearable
-                      />
+                        use-input
+                        input-debounce="300"
+                        @filter="filterCategories"
+                      >
+                        <template v-slot:prepend>
+                          <q-icon name="category" size="xs" />
+                        </template>
+                      </q-select>
                     </td>
                     <td>
                       <q-btn
@@ -160,12 +192,12 @@
                 <q-markup-table dense flat bordered>
                   <thead>
                     <tr>
-                      <th>Fecha</th>
-                      <th>Concepto</th>
-                      <th>Tipo</th>
-                      <th>Monto</th>
-                      <th v-if="needsRateForSelectedAccount">Tasa</th>
-                      <th>Categoría</th>
+                      <th>Fecha (Columna 1)</th>
+                      <th>Concepto (Columna 2)</th>
+                      <th>Tipo (Columna 3)</th>
+                      <th>Monto (Columna 4)</th>
+                      <th v-if="needsRateForSelectedAccount">Tasa (Columna 5)</th>
+                      <th>Categoría (Columna {{ needsRateForSelectedAccount ? 6 : 5 }})</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -201,8 +233,13 @@
                 dense
                 emit-value
                 map-options
+                label="Delimitador"
                 style="min-width: 180px"
-              />
+              >
+                <template v-slot:prepend>
+                  <q-icon name="more_vert" />
+                </template>
+              </q-select>
             </div>
             <q-input
               v-model="textInput"
@@ -220,12 +257,12 @@
                 <q-markup-table dense flat bordered>
                   <thead>
                     <tr>
-                      <th>Fecha</th>
-                      <th>Concepto</th>
-                      <th>Tipo</th>
-                      <th>Monto</th>
-                      <th v-if="needsRateForSelectedAccount">Tasa</th>
-                      <th>Categoría</th>
+                      <th>Fecha (Columna 1)</th>
+                      <th>Concepto (Columna 2)</th>
+                      <th>Tipo (Columna 3)</th>
+                      <th>Monto (Columna 4)</th>
+                      <th v-if="needsRateForSelectedAccount">Tasa (Columna 5)</th>
+                      <th>Categoría (Columna {{ needsRateForSelectedAccount ? 6 : 5 }})</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -256,11 +293,15 @@
                   <q-select 
                     v-model="columnMapping.date" 
                     :options="columnMappingOptions" 
-                    label="📅 Fecha" 
+                    label="📅 Fecha *" 
                     outlined 
                     dense 
                     emit-value 
                     map-options
+                    use-input
+                    input-debounce="0"
+                    @filter="filterColumnOptions"
+                    :rules="[val => !!val || 'Requerido']"
                   >
                     <template v-slot:prepend>
                       <q-badge color="primary" :label="getColumnNumber(columnMapping.date)" />
@@ -271,11 +312,15 @@
                   <q-select 
                     v-model="columnMapping.name" 
                     :options="columnMappingOptions" 
-                    label="📝 Concepto" 
+                    label="📝 Concepto *" 
                     outlined 
                     dense 
                     emit-value 
                     map-options
+                    use-input
+                    input-debounce="0"
+                    @filter="filterColumnOptions"
+                    :rules="[val => !!val || 'Requerido']"
                   >
                     <template v-slot:prepend>
                       <q-badge color="primary" :label="getColumnNumber(columnMapping.name)" />
@@ -286,11 +331,15 @@
                   <q-select 
                     v-model="columnMapping.type" 
                     :options="columnMappingOptions" 
-                    label="🏷️ Tipo" 
+                    label="🏷️ Tipo *" 
                     outlined 
                     dense 
                     emit-value 
                     map-options
+                    use-input
+                    input-debounce="0"
+                    @filter="filterColumnOptions"
+                    :rules="[val => !!val || 'Requerido']"
                   >
                     <template v-slot:prepend>
                       <q-badge color="primary" :label="getColumnNumber(columnMapping.type)" />
@@ -301,11 +350,15 @@
                   <q-select 
                     v-model="columnMapping.amount" 
                     :options="columnMappingOptions" 
-                    label="💰 Monto" 
+                    label="💰 Monto *" 
                     outlined 
                     dense 
                     emit-value 
                     map-options
+                    use-input
+                    input-debounce="0"
+                    @filter="filterColumnOptions"
+                    :rules="[val => !!val || 'Requerido']"
                   >
                     <template v-slot:prepend>
                       <q-badge color="primary" :label="getColumnNumber(columnMapping.amount)" />
@@ -322,6 +375,10 @@
                     emit-value 
                     map-options 
                     clearable
+                    use-input
+                    input-debounce="0"
+                    @filter="filterColumnOptions"
+                    hint="Opcional"
                   >
                     <template v-slot:prepend>
                       <q-badge v-if="columnMapping.rate" color="primary" :label="getColumnNumber(columnMapping.rate)" />
@@ -338,6 +395,10 @@
                     emit-value 
                     map-options 
                     clearable
+                    use-input
+                    input-debounce="0"
+                    @filter="filterColumnOptions"
+                    hint="Opcional"
                   >
                     <template v-slot:prepend>
                       <q-badge v-if="columnMapping.category" color="primary" :label="getColumnNumber(columnMapping.category)" />
@@ -463,10 +524,21 @@
                       dense
                       outlined
                       clearable
+                      use-input
+                      input-debounce="300"
+                      @filter="filterCategories"
                       label="Asignar a"
+                      placeholder="Buscar categoría..."
                     >
                       <template v-slot:prepend>
                         <q-icon name="folder" color="primary" />
+                      </template>
+                      <template v-slot:no-option>
+                        <q-item>
+                          <q-item-section class="text-grey">
+                            Sin resultados
+                          </q-item-section>
+                        </q-item>
                       </template>
                     </q-select>
                   </div>
@@ -1199,4 +1271,57 @@ function closeResults() {
     emit('close')
   }
 }
+
+// Filter functions for select inputs
+const filteredAccounts = ref(accountOptions.value)
+const filteredCategories = ref(categoryOptions.value)
+const filteredColumnOptions = ref(columnMappingOptions.value)
+
+const typeOptions = [
+  { label: 'Ingreso', value: 'income' },
+  { label: 'Egreso', value: 'expense' },
+  { label: 'Transferencia', value: 'transfer' }
+]
+const filteredTypes = ref(typeOptions)
+
+function filterAccounts(val: string, update: (fn: () => void) => void) {
+  update(() => {
+    const needle = val.toLowerCase()
+    filteredAccounts.value = needle
+      ? accountOptions.value.filter((v: { name: string }) => v.name.toLowerCase().includes(needle))
+      : accountOptions.value
+  })
+}
+
+function filterTypes(val: string, update: (fn: () => void) => void) {
+  update(() => {
+    const needle = val.toLowerCase()
+    filteredTypes.value = needle
+      ? typeOptions.filter((v) => v.label.toLowerCase().includes(needle))
+      : typeOptions
+  })
+}
+
+function filterCategories(val: string, update: (fn: () => void) => void) {
+  update(() => {
+    const needle = val.toLowerCase()
+    filteredCategories.value = needle
+      ? categoryOptions.value.filter((v: { name: string }) => v.name.toLowerCase().includes(needle))
+      : categoryOptions.value
+  })
+}
+
+function filterColumnOptions(val: string, update: (fn: () => void) => void) {
+  update(() => {
+    const needle = val.toLowerCase()
+    filteredColumnOptions.value = needle
+      ? columnMappingOptions.value.filter((v: { label: string }) => v.label.toLowerCase().includes(needle))
+      : columnMappingOptions.value
+  })
+}
+
+// Watch para actualizar filtros cuando cambien las opciones
+watch(accountOptions, () => { filteredAccounts.value = accountOptions.value })
+watch(categoryOptions, () => { filteredCategories.value = categoryOptions.value })
+watch(columnMappingOptions, () => { filteredColumnOptions.value = columnMappingOptions.value })
 </script>
