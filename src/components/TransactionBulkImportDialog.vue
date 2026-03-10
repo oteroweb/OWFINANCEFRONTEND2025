@@ -930,8 +930,7 @@ function notifyCompletion(title: string, body: string) {
   try {
     const notification = new Notification(title, {
       body,
-      tag: 'bulk-import-completion',
-      renotify: true
+      tag: 'bulk-import-completion'
     })
     setTimeout(() => notification.close(), 10000)
   } catch (err) {
