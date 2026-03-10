@@ -556,17 +556,15 @@
                 <table class="full-width" style="border-collapse: collapse;">
                   <thead style="position: sticky; top: 0; background: #f5f5f5; z-index: 1;">
                     <tr>
-                      <th style="width: 40px; padding: 8px; text-align: center; border: 1px solid #ddd;"></th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">Fecha</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 150px;">Concepto</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">Tipo</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">Monto</th>
-                      <th v-if="needsRateForSelectedAccount" style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 80px;">Tasa</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">💱 Preview de conversión</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 160px;">🏦 Cuenta</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">↗️ Cuenta origen</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">↘️ Cuenta destino</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">📁 Categoría</th>
+                      <th style="width: 40px; padding: 8px; text-align: center; border: 1px solid #ddd;">#</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">1. Fecha</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 150px;">2. Concepto</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">3. Tipo</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">4. Monto</th>
+                      <th v-if="needsRateForSelectedAccount" style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 80px;">5. Tasa</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">6. Conversión</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">7. Cuenta aplicada</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">8. Categoría</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -620,7 +618,6 @@
                           :model-value="Number(getRowValue(row, 'rate') || defaultRate)" 
                           @update:model-value="(val) => setRowValue(row, 'rate', Number(val))" 
                           dense outlined type="number" step="0.0001" style="width: 100%;" 
-                          :hint="defaultRate ? `Default: ${defaultRate}` : ''"
                         >
                           <template v-slot:append>
                             <q-btn
@@ -640,79 +637,9 @@
                         <div v-else class="text-caption text-grey-6" style="font-style: italic; text-align: center;">-</div>
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
-                        <q-select
-                          :model-value="String(getRowValue(row, 'account_name') || '')"
-                          @update:model-value="(val) => setRowValue(row, 'account_name', val)"
-                          :options="filteredAccountNameOptions"
-                          option-label="label"
-                          option-value="value"
-                          dense
-                          outlined
-                          emit-value
-                          map-options
-                          use-input
-                          input-debounce="300"
-                          @filter="filterAccountsByName"
-                          clearable
-                          style="width: 100%;"
-                          hint="General, o para expense/income"
-                        >
-                          <template v-slot:prepend>
-                            <q-icon name="account_balance" size="xs" />
-                          </template>
-                        </q-select>
-                      </td>
-                      <td v-if="String(getRowValue(row, 'type') || '') === 'transfer'" style="padding: 6px; border: 1px solid #ddd;">
-                        <q-select
-                          :model-value="String(getRowValue(row, 'from_account_name') || '')"
-                          @update:model-value="(val) => setRowValue(row, 'from_account_name', val)"
-                          :options="filteredAccountNameOptions"
-                          option-label="label"
-                          option-value="value"
-                          dense
-                          outlined
-                          emit-value
-                          map-options
-                          use-input
-                          input-debounce="300"
-                          @filter="filterAccountsByName"
-                          clearable
-                          style="width: 100%;"
-                          hint="De donde sale el dinero"
-                        >
-                          <template v-slot:prepend>
-                            <q-icon name="arrow_upward" size="xs" color="negative" />
-                          </template>
-                        </q-select>
-                      </td>
-                      <td v-else style="padding: 6px; border: 1px solid #ddd; background: #f5f5f5;">
-                        <div class="text-caption text-grey-6" style="text-align: center; font-style: italic;">Solo transfer</div>
-                      </td>
-                      <td v-if="String(getRowValue(row, 'type') || '') === 'transfer'" style="padding: 6px; border: 1px solid #ddd;">
-                        <q-select
-                          :model-value="String(getRowValue(row, 'to_account_name') || '')"
-                          @update:model-value="(val) => setRowValue(row, 'to_account_name', val)"
-                          :options="filteredAccountNameOptions"
-                          option-label="label"
-                          option-value="value"
-                          dense
-                          outlined
-                          emit-value
-                          map-options
-                          use-input
-                          input-debounce="300"
-                          @filter="filterAccountsByName"
-                          clearable
-                          style="width: 100%;"
-                          hint="A donde llega el dinero"
-                        >
-                          <template v-slot:prepend>
-                            <q-icon name="arrow_downward" size="xs" color="positive" />
-                          </template>
-                        </q-select>
-                      </td>
-                      <td v-else style="padding: 6px; border: 1px solid #ddd; background: #f5f5f5;">
-                        <div class="text-caption text-grey-6" style="text-align: center; font-style: italic;">Solo transfer</div>
+                        <div class="text-caption text-weight-medium">
+                          {{ selectedAccount?.name || 'Cuenta no seleccionada' }}
+                        </div>
                       </td>
                       <td v-if="String(getRowValue(row, 'type') || '') !== 'transfer'" style="padding: 6px; border: 1px solid #ddd;">
                         <q-select 
@@ -730,7 +657,6 @@
                           @filter="filterCategories"
                           clearable
                           style="width: 100%;"
-                          hint="Gastos, Ingresos, etc."
                         >
                           <template v-slot:prepend>
                             <q-icon name="category" size="xs" />
@@ -1101,6 +1027,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTransactionsStore } from '../stores/transactions'
 import { useTransactionForm } from 'src/composables/useTransactionForm'
+import { useAuthStore } from 'src/stores/auth'
 import { api } from 'boot/axios'
 import { read as xlsxRead, utils as xlsxUtils } from 'xlsx'
 import { Notify } from 'quasar'
@@ -1156,6 +1083,7 @@ const emit = defineEmits<{
 }>()
 
 const transactionsStore = useTransactionsStore()
+const authStore = useAuthStore()
 
 // Get accounts from composable
 const { allAccounts, ensureAccountsLoaded } = useTransactionForm()
@@ -1184,6 +1112,7 @@ async function ensureCategoriesLoaded() {
 onMounted(async () => {
   await ensureAccountsLoaded()
   await ensureCategoriesLoaded()
+  await authStore.refreshUserCurrencies()
   if (browserNotificationsEnabled.value && typeof Notification !== 'undefined' && Notification.permission === 'default') {
     void Notification.requestPermission()
   }
@@ -1207,31 +1136,17 @@ const needsRateForSelectedAccount = computed(() => {
   return selectedAccount.value && (selectedAccount.value.currencyCode !== 'USD' && selectedAccount.value.currencyCode !== 'ARS')
 })
 
-// Watch para cargar la tasa current cuando cambia la cuenta
-watch(selectedAccountId, async () => {
+function getCurrentRateForSelectedAccount(): number {
+  const code = selectedAccount.value?.currencyCode
+  if (!code) return 1
+  const rate = authStore.getCurrentRateForCurrency(code)
+  return typeof rate === 'number' && Number.isFinite(rate) && rate > 0 ? rate : 1
+}
+
+// Cargar tasa current desde el perfil local al seleccionar cuenta
+watch(selectedAccountId, () => {
   if (!selectedAccountId.value || !selectedAccount.value) return
-  
-  try {
-    // Intentar obtener las tasas del usuario desde el perfil
-    const response = await api.get('/user')
-    const userData = response.data?.data || response.data
-    const rates = userData?.rates || []
-    
-    // Buscar la tasa current para la moneda de la cuenta seleccionada
-    const currencyId = selectedAccount.value.currencyId
-    const currentRate = rates.find((r: { currency_id?: number; currency?: { id?: number } }) => {
-      return (r.currency_id || r.currency?.id) === currencyId
-    })
-    
-    if (currentRate && currentRate.current_rate) {
-      defaultRate.value = Number(currentRate.current_rate)
-    } else {
-      defaultRate.value = 1
-    }
-  } catch (err) {
-    console.warn('Error loading current rate', err)
-    defaultRate.value = 1
-  }
+  defaultRate.value = getCurrentRateForSelectedAccount()
 })
 
 // Table mode
@@ -1348,46 +1263,20 @@ function setRowValue(row: unknown, key: string, value: unknown): void {
 
 function getConversionPreview(row: unknown): string {
   if (typeof row !== 'object' || row === null) return ''
-  
+
+  if (!selectedAccount.value) return 'Selecciona una cuenta'
+
   const rowObj = row as Record<string, unknown>
-  
-  // Extraer valores de forma segura usando safeText
-  const type = safeText(rowObj.type).trim()
-  if (type !== 'transfer') return ''
-  
-  const amount = Number(rowObj.amount || 0)
-  const rate = Number(rowObj.rate || 1)
-  const fromAccountName = safeText(rowObj.from_account_name).trim()
-  const toAccountName = safeText(rowObj.to_account_name).trim()
-  
-  if (!fromAccountName || !toAccountName || amount === 0) {
-    return 'Especifica cuentas y monto'
-  }
-  
-  // Buscar las cuentas en allAccounts
-  const fromAccount = allAccounts.value.find((a: { name: string }) => 
-    a.name.toLowerCase() === fromAccountName.toLowerCase()
-  ) as { name: string; currencySymbol?: string; currencyCode?: string } | undefined
-  
-  const toAccount = allAccounts.value.find((a: { name: string }) => 
-    a.name.toLowerCase() === toAccountName.toLowerCase()
-  ) as { name: string; currencySymbol?: string; currencyCode?: string } | undefined
-  
-  if (!fromAccount || !toAccount) {
-    return 'Cuentas no encontradas'
-  }
-  
-  const fromCurrency = fromAccount.currencySymbol || fromAccount.currencyCode || ''
-  const toCurrency = toAccount.currencySymbol || toAccount.currencyCode || ''
-  
-  // Si son la misma moneda, no hay conversión
-  if (fromCurrency === toCurrency) {
-    return `${fromCurrency}${amount.toFixed(2)} → ${toCurrency}${amount.toFixed(2)} (misma moneda)`
-  }
-  
-  // Hay conversión
-  const convertedAmount = amount * rate
-  return `${fromCurrency}${amount.toFixed(2)} → ${toCurrency}${convertedAmount.toFixed(2)} (tasa: ${rate})`
+
+  const amount = Math.abs(Number(rowObj.amount || 0))
+  const rate = Number(rowObj.rate || defaultRate.value || 1)
+  if (!Number.isFinite(amount) || amount <= 0) return '-'
+  if (!Number.isFinite(rate) || rate <= 0) return 'Tasa inválida'
+
+  const fromCurrency = selectedAccount.value.currencyCode || selectedAccount.value.currencySymbol || ''
+  const userAmount = amount / rate
+
+  return `${fromCurrency}${amount.toFixed(2)} -> USD${userAmount.toFixed(2)} (÷ ${rate})`
 }
 
 function toIsoDateString(date: Date): string {
@@ -1610,14 +1499,6 @@ const separatorOptions = [
 // Options for select dropdowns
 const accountOptions = computed(() => {
   return allAccounts.value.map((a: { id: number; name: string }) => ({ id: a.id, name: a.name }))
-})
-const accountNameOptions = computed(() => {
-  return allAccounts.value.map((a: { name: string; balance?: number; currencySymbol?: string; currencyCode?: string }) => {
-    const bal = a.balance ?? 0
-    const symbol = a.currencySymbol || a.currencyCode || ''
-    const balanceStr = bal !== 0 ? ` (${symbol}${bal.toFixed(2)})` : ''
-    return { label: `${a.name}${balanceStr}`, value: a.name }
-  })
 })
 const categoryOptions = computed(() => {
   return allCategories.value.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name }))
@@ -2012,45 +1893,14 @@ function buildPayload(dryRun: boolean) {
 function buildRowPayload(row: Record<string, unknown>, clientId: string): TransactionBulkRow {
   const normalizedType = normalizeTypeValue(row.type)
   const isExpense = normalizedType === 'expense'
-  const isTransfer = normalizedType === 'transfer'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
   const normalizedDate = normalizeDateValue(row.date)
-
-  const accountName = typeof row.account_name === 'string' ? String(row.account_name).trim() : ''
-  const fromAccountName = typeof row.from_account_name === 'string' ? String(row.from_account_name).trim() : ''
-  const toAccountName = typeof row.to_account_name === 'string' ? String(row.to_account_name).trim() : ''
-
-  let accountId = selectedAccountId.value as number
-  if (accountName) {
-    const found = allAccounts.value.find((acc) =>
-      acc.name.toLowerCase() === accountName.toLowerCase()
-    )
-    if (found) accountId = found.id
-  }
-
-  let payments: Array<{ account_id: number; amount: number; rate: number }> = []
-
-  if (isTransfer && fromAccountName && toAccountName) {
-    const fromAccount = allAccounts.value.find((acc) =>
-      acc.name.toLowerCase() === fromAccountName.toLowerCase()
-    )
-    const toAccount = allAccounts.value.find((acc) =>
-      acc.name.toLowerCase() === toAccountName.toLowerCase()
-    )
-
-    if (fromAccount && toAccount) {
-      payments = [
-        { account_id: fromAccount.id, amount: -Math.abs(amount), rate },
-        { account_id: toAccount.id, amount: Math.abs(amount), rate }
-      ]
-    } else {
-      payments = [{ account_id: accountId, amount, rate }]
-    }
-  } else {
-    payments = [{ account_id: accountId, amount, rate }]
-  }
+  const accountId = selectedAccountId.value as number
+  const payments: Array<{ account_id: number; amount: number; rate: number }> = [
+    { account_id: accountId, amount, rate }
+  ]
   
   return {
     name: nameValue,
@@ -2071,7 +1921,6 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
 function buildRowPayloadFromNormalized(row: Record<string, unknown>): TransactionBulkRow {
   const normalizedType = normalizeTypeValue(row.type)
   const isExpense = normalizedType === 'expense'
-  const isTransfer = normalizedType === 'transfer'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   const clientRowId = typeof row.client_row_id === 'string' || typeof row.client_row_id === 'number' ? String(row.client_row_id) : ''
@@ -2084,41 +1933,10 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
     c.name.toLowerCase() === String(row.category_name).toLowerCase()
   )
 
-  // Resolver cuenta principal
-  const accountName = typeof row.account_name === 'string' ? String(row.account_name).trim() : ''
-  let accountId = selectedAccountId.value as number
-  if (accountName) {
-    const found = allAccounts.value.find((acc) => 
-      acc.name.toLowerCase() === accountName.toLowerCase()
-    )
-    if(found) accountId = found.id
-  }
-
-  // Para transferencias, resolver from_account y to_account
-  const fromAccountName = typeof row.from_account_name === 'string' ? String(row.from_account_name).trim() : ''
-  const toAccountName = typeof row.to_account_name === 'string' ? String(row.to_account_name).trim() : ''
-  
-  let payments: Array<{ account_id: number; amount: number; rate: number }> = []
-  
-  if (isTransfer && fromAccountName && toAccountName) {
-    const fromAccount = allAccounts.value.find((acc) => 
-      acc.name.toLowerCase() === fromAccountName.toLowerCase()
-    )
-    const toAccount = allAccounts.value.find((acc) => 
-      acc.name.toLowerCase() === toAccountName.toLowerCase()
-    )
-    
-    if (fromAccount && toAccount) {
-      payments = [
-        { account_id: fromAccount.id, amount: -Math.abs(amount), rate },
-        { account_id: toAccount.id, amount: Math.abs(amount), rate }
-      ]
-    } else {
-      payments = [{ account_id: accountId, amount, rate }]
-    }
-  } else {
-    payments = [{ account_id: accountId, amount, rate }]
-  }
+  const accountId = selectedAccountId.value as number
+  const payments: Array<{ account_id: number; amount: number; rate: number }> = [
+    { account_id: accountId, amount, rate }
+  ]
   
   return {
     name: nameValue,
@@ -2226,7 +2044,6 @@ function closeResults() {
 // Filter functions for select inputs
 const filteredAccounts = ref(accountOptions.value)
 const filteredCategories = ref(categoryOptions.value)
-const filteredAccountNameOptions = ref(accountNameOptions.value)
 
 const typeOptions = [
   { label: 'Ingreso', value: 'income' },
@@ -2262,17 +2079,7 @@ function filterCategories(val: string, update: (fn: () => void) => void) {
   })
 }
 
-function filterAccountsByName(val: string, update: (fn: () => void) => void) {
-  update(() => {
-    const needle = val.toLowerCase()
-    filteredAccountNameOptions.value = needle
-      ? accountNameOptions.value.filter((v: { label: string }) => v.label.toLowerCase().includes(needle))
-      : accountNameOptions.value
-  })
-}
-
 // Watch para actualizar filtros cuando cambien las opciones
 watch(accountOptions, () => { filteredAccounts.value = accountOptions.value })
 watch(categoryOptions, () => { filteredCategories.value = categoryOptions.value })
-watch(accountNameOptions, () => { filteredAccountNameOptions.value = accountNameOptions.value })
 </script>
