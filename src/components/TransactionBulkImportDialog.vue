@@ -407,6 +407,69 @@
                     </template>
                   </q-select>
                 </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.account" 
+                    :options="columnMappingOptions" 
+                    label="🏦 Cuenta" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options 
+                    use-input
+                    input-debounce="0"
+                    multiple
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="account_balance" />
+                    </template>
+                    <template v-slot:hint>
+                      Opcional - nombre de cuenta (si no se mapea, usa la seleccionada arriba)
+                    </template>
+                  </q-select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.from_account" 
+                    :options="columnMappingOptions" 
+                    label="↗️ Cuenta origen (transfer)" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options 
+                    use-input
+                    input-debounce="0"
+                    multiple
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="arrow_upward" />
+                    </template>
+                    <template v-slot:hint>
+                      Solo para transferencias - cuenta de donde sale el dinero
+                    </template>
+                  </q-select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.to_account" 
+                    :options="columnMappingOptions" 
+                    label="↘️ Cuenta destino (transfer)" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options 
+                    use-input
+                    input-debounce="0"
+                    multiple
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="arrow_downward" />
+                    </template>
+                    <template v-slot:hint>
+                      Solo para transferencias - cuenta a donde llega el dinero
+                    </template>
+                  </q-select>
+                </div>
               </div>
               <div class="q-mt-md">
                 <q-btn color="secondary" unelevated icon="sync" label="Aplicar mapeo" @click="applyColumnMapping" />
@@ -747,6 +810,77 @@
                   @click="applyCategoryKeywordRules"
                 />
               </div>
+
+              <q-separator class="q-my-md" />
+              <div class="text-subtitle2 q-mb-sm">Mapear columna TIPO a categorías (opcional)</div>
+              <p class="text-caption text-grey-7">
+                Ej: si en la columna TIPO aparece "debito" → asignar categoría "Gastos Varios"
+              </p>
+              <q-toggle
+                v-model="enableTypeValueToCategoryRules"
+                color="primary"
+                label="Mapear valores de TIPO a categorías específicas"
+                class="q-mb-sm"
+              />
+              <div v-if="enableTypeValueToCategoryRules">
+                <div
+                  v-for="(rule, idx) in typeValueToCategoryRules"
+                  :key="`type-cat-rule-${idx}`"
+                  class="row q-col-gutter-md items-center q-mb-sm"
+                >
+                  <div class="col-12 col-sm-5">
+                    <q-input
+                      v-model="rule.typeValue"
+                      outlined
+                      dense
+                      label="Si columna TIPO = "
+                      placeholder="debito, egreso, pago..."
+                    />
+                  </div>
+                  <div class="col-12 col-sm-5">
+                    <q-select
+                      v-model="rule.categoryId"
+                      :options="filteredCategories"
+                      option-value="id"
+                      option-label="name"
+                      emit-value
+                      map-options
+                      use-input
+                      input-debounce="300"
+                      @filter="filterCategories"
+                      dense
+                      outlined
+                      clearable
+                      label="Mapear a categoría"
+                    />
+                  </div>
+                  <div class="col-12 col-sm-2">
+                    <q-btn
+                      icon="delete"
+                      flat
+                      round
+                      color="negative"
+                      :disable="typeValueToCategoryRules.length === 1"
+                      @click="removeTypeValueToCategoryRule(idx)"
+                    />
+                  </div>
+                </div>
+                <q-btn
+                  flat
+                  color="primary"
+                  icon="add"
+                  label="Agregar regla"
+                  @click="addTypeValueToCategoryRule"
+                  class="q-mr-sm"
+                />
+                <q-btn
+                  color="secondary"
+                  unelevated
+                  icon="rule"
+                  label="Aplicar mapeo tipo→categoría"
+                  @click="applyTypeValueToCategoryRules"
+                />
+              </div>
             </q-card-section>
           </q-card>
 
@@ -978,6 +1112,10 @@ const enableCategoryKeywordRules = ref<boolean>(false)
 const categoryKeywordRules = ref<Array<{ keyword: string; categoryId: number | null }>>([
   { keyword: '', categoryId: null }
 ])
+const enableTypeValueToCategoryRules = ref<boolean>(false)
+const typeValueToCategoryRules = ref<Array<{ typeValue: string; categoryId: number | null }>>([
+  { typeValue: '', categoryId: null }
+])
 const columnMapping = ref<{
   date: string[]
   name: string[]
@@ -985,13 +1123,19 @@ const columnMapping = ref<{
   amount: string[]
   rate: string[]
   category: string[]
+  account: string[]
+  from_account: string[]
+  to_account: string[]
 }>({
   date: [],
   name: [],
   type: [],
   amount: [],
   rate: [],
-  category: []
+  category: [],
+  account: [],
+  from_account: [],
+  to_account: []
 })
 
 // Results
@@ -1173,6 +1317,50 @@ function applyCategoryKeywordRules() {
 
   applyCategoryMappingsToRows(rows)
   Notify.create({ type: 'positive', message: 'Reglas de categoría por texto aplicadas' })
+}
+
+function addTypeValueToCategoryRule() {
+  typeValueToCategoryRules.value.push({ typeValue: '', categoryId: null })
+}
+
+function removeTypeValueToCategoryRule(index: number) {
+  if (typeValueToCategoryRules.value.length <= 1) return
+  typeValueToCategoryRules.value.splice(index, 1)
+}
+
+function applyTypeValueToCategoryRules() {
+  if (!enableTypeValueToCategoryRules.value) {
+    Notify.create({ type: 'warning', message: 'Activa el mapeo tipo→categoría para aplicarlo' })
+    return
+  }
+
+  const rows = activeTab.value === 'excel' ? excelParsedRows.value : textParsedRows.value
+  if (!rows.length) {
+    Notify.create({ type: 'warning', message: 'No hay filas para aplicar reglas' })
+    return
+  }
+
+  let changed = 0
+  rows.forEach((row) => {
+    const typeValue = safeText(getRowValue(row, 'type')).trim().toLowerCase()
+    if (!typeValue) return
+
+    const matchingRule = typeValueToCategoryRules.value.find((rule) =>
+      rule.typeValue && safeText(rule.typeValue).trim().toLowerCase() === typeValue
+    )
+
+    if (matchingRule && matchingRule.categoryId) {
+      const existing = getRowValue(row, 'category_id')
+      if (!existing || !Number.isFinite(Number(existing))) {
+        setRowValue(row, 'category_id', matchingRule.categoryId)
+        const selected = allCategories.value.find((c) => c.id === matchingRule.categoryId)
+        if (selected) setRowValue(row, 'category_name', selected.name)
+        changed++
+      }
+    }
+  })
+
+  Notify.create({ type: 'positive', message: `Mapeo tipo→categoría aplicado. ${changed} filas actualizadas` })
 }
 
 function applyTypeRulesToRows() {
@@ -1406,7 +1594,10 @@ function initColumnMappingDefaults() {
       type: findCol(['tipo', 'type']),
       amount: findCol(['monto', 'amount']),
       rate: findCol(['tasa', 'rate']),
-      category: findCol(['categoria', 'categoría', 'category'])
+      category: findCol(['categoria', 'categoría', 'category']),
+      account: findCol(['cuenta', 'account']),
+      from_account: findCol(['cuentaorigen', 'cuenta origen', 'from_account', 'fromaccount', 'origen']),
+      to_account: findCol(['cuentadestino', 'cuenta destino', 'to_account', 'toaccount', 'destino'])
     }
     return
   }
@@ -1418,7 +1609,10 @@ function initColumnMappingDefaults() {
       type: ['2'],
       amount: ['3'],
       rate: ['4'],
-      category: ['5']
+      category: ['5'],
+      account: [],
+      from_account: [],
+      to_account: []
     }
   }
 }
@@ -1448,7 +1642,10 @@ function applyColumnMapping() {
         Tipo: columnMapping.value.type.length > 0 ? concatColumns(row, columnMapping.value.type) : '',
         Monto: columnMapping.value.amount.length > 0 ? concatColumns(row, columnMapping.value.amount) : '',
         Tasa: columnMapping.value.rate.length > 0 ? concatColumns(row, columnMapping.value.rate) || null : null,
-        Categoría: columnMapping.value.category.length > 0 ? concatColumns(row, columnMapping.value.category) : ''
+        Categoría: columnMapping.value.category.length > 0 ? concatColumns(row, columnMapping.value.category) : '',
+        Cuenta: columnMapping.value.account.length > 0 ? concatColumns(row, columnMapping.value.account) : '',
+        CuentaOrigen: columnMapping.value.from_account.length > 0 ? concatColumns(row, columnMapping.value.from_account) : '',
+        CuentaDestino: columnMapping.value.to_account.length > 0 ? concatColumns(row, columnMapping.value.to_account) : ''
       }
       return normalizeRow(mapped, `excel-${idx}`)
     })
@@ -1471,6 +1668,9 @@ function applyColumnMapping() {
     const idxAmount = columnMapping.value.amount.map(safeIndex)
     const idxRate = columnMapping.value.rate.map(safeIndex)
     const idxCategory = columnMapping.value.category.map(safeIndex)
+    const idxAccount = columnMapping.value.account.map(safeIndex)
+    const idxFromAccount = columnMapping.value.from_account.map(safeIndex)
+    const idxToAccount = columnMapping.value.to_account.map(safeIndex)
 
     textParsedRows.value = textRawRows.value.map((parts, idx) => {
       const mapped: Record<string, unknown> = {
@@ -1479,7 +1679,10 @@ function applyColumnMapping() {
         Tipo: concatColumnsText(parts, idxType),
         Monto: concatColumnsText(parts, idxAmount),
         Tasa: concatColumnsText(parts, idxRate) || null,
-        Categoría: concatColumnsText(parts, idxCategory)
+        Categoría: concatColumnsText(parts, idxCategory),
+        Cuenta: concatColumnsText(parts, idxAccount),
+        CuentaOrigen: concatColumnsText(parts, idxFromAccount),
+        CuentaDestino: concatColumnsText(parts, idxToAccount)
       }
       return normalizeRow(mapped, `text-${idx}`)
     })
@@ -1549,6 +1752,12 @@ function normalizeRow(row: Record<string, unknown>, clientId: string) {
   const categoryName = typeof categoryNameRaw === 'string' || typeof categoryNameRaw === 'number' ? String(categoryNameRaw) : ''
   const rateRaw = row.Tasa || row.tasa || row.Rate || row.rate
   const rate = typeof rateRaw === 'string' || typeof rateRaw === 'number' ? parseFloat(String(rateRaw)) : null
+  const accountNameRaw = row.Cuenta || row.cuenta || row.Account || row.account
+  const accountName = typeof accountNameRaw === 'string' || typeof accountNameRaw === 'number' ? String(accountNameRaw) : ''
+  const fromAccountNameRaw = row.CuentaOrigen || row.cuentaOrigen || row.FromAccount || row.from_account
+  const fromAccountName = typeof fromAccountNameRaw === 'string' || typeof fromAccountNameRaw === 'number' ? String(fromAccountNameRaw) : ''
+  const toAccountNameRaw = row.CuentaDestino || row.cuentaDestino || row.ToAccount || row.to_account
+  const toAccountName = typeof toAccountNameRaw === 'string' || typeof toAccountNameRaw === 'number' ? String(toAccountNameRaw) : ''
   
   return {
     date,
@@ -1557,6 +1766,9 @@ function normalizeRow(row: Record<string, unknown>, clientId: string) {
     amount,
     category_name: categoryName,
     rate,
+    account_name: accountName,
+    from_account_name: fromAccountName,
+    to_account_name: toAccountName,
     client_row_id: clientId
   }
 }
@@ -1616,6 +1828,7 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
 function buildRowPayloadFromNormalized(row: Record<string, unknown>): TransactionBulkRow {
   const normalizedType = normalizeTypeValue(row.type)
   const isExpense = normalizedType === 'expense'
+  const isTransfer = normalizedType === 'transfer'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   const clientRowId = typeof row.client_row_id === 'string' || typeof row.client_row_id === 'number' ? String(row.client_row_id) : ''
@@ -1627,6 +1840,42 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
   const category = allCategories.value.find((c: { id: number; name: string }) =>
     c.name.toLowerCase() === String(row.category_name).toLowerCase()
   )
+
+  // Resolver cuenta principal
+  const accountName = typeof row.account_name === 'string' ? String(row.account_name).trim() : ''
+  let accountId = selectedAccountId.value as number
+  if (accountName) {
+    const found = allAccounts.value.find((acc) => 
+      acc.name.toLowerCase() === accountName.toLowerCase()
+    )
+    if(found) accountId = found.id
+  }
+
+  // Para transferencias, resolver from_account y to_account
+  const fromAccountName = typeof row.from_account_name === 'string' ? String(row.from_account_name).trim() : ''
+  const toAccountName = typeof row.to_account_name === 'string' ? String(row.to_account_name).trim() : ''
+  
+  let payments: Array<{ account_id: number; amount: number; rate: number }> = []
+  
+  if (isTransfer && fromAccountName && toAccountName) {
+    const fromAccount = allAccounts.value.find((acc) => 
+      acc.name.toLowerCase() === fromAccountName.toLowerCase()
+    )
+    const toAccount = allAccounts.value.find((acc) => 
+      acc.name.toLowerCase() === toAccountName.toLowerCase()
+    )
+    
+    if (fromAccount && toAccount) {
+      payments = [
+        { account_id: fromAccount.id, amount: -Math.abs(amount), rate },
+        { account_id: toAccount.id, amount: Math.abs(amount), rate }
+      ]
+    } else {
+      payments = [{ account_id: accountId, amount, rate }]
+    }
+  } else {
+    payments = [{ account_id: accountId, amount, rate }]
+  }
   
   return {
     name: nameValue,
@@ -1639,13 +1888,7 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
         amount: amount
       }
     ],
-    payments: [
-      {
-        account_id: selectedAccountId.value as number,
-        amount: amount,
-        rate: rate
-      }
-    ],
+    payments,
     client_row_id: clientRowId
   }
 }
