@@ -562,6 +562,9 @@
                       <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">Tipo</th>
                       <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">Monto</th>
                       <th v-if="needsRateForSelectedAccount" style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 80px;">Tasa</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 160px;">Cuenta</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">Cuenta origen (transfer)</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">Cuenta destino (transfer)</th>
                       <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">Categoría</th>
                     </tr>
                   </thead>
@@ -616,6 +619,62 @@
                           :model-value="Number(getRowValue(row, 'rate') || 1)" 
                           @update:model-value="(val) => setRowValue(row, 'rate', Number(val))" 
                           dense outlined type="number" step="0.0001" style="width: 100%;" 
+                        />
+                      </td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
+                        <q-select
+                          :model-value="String(getRowValue(row, 'account_name') || '')"
+                          @update:model-value="(val) => setRowValue(row, 'account_name', val)"
+                          :options="filteredAccountNameOptions"
+                          option-label="label"
+                          option-value="value"
+                          dense
+                          outlined
+                          emit-value
+                          map-options
+                          use-input
+                          input-debounce="300"
+                          @filter="filterAccountsByName"
+                          clearable
+                          style="width: 100%;"
+                        />
+                      </td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
+                        <q-select
+                          :model-value="String(getRowValue(row, 'from_account_name') || '')"
+                          @update:model-value="(val) => setRowValue(row, 'from_account_name', val)"
+                          :options="filteredAccountNameOptions"
+                          option-label="label"
+                          option-value="value"
+                          dense
+                          outlined
+                          emit-value
+                          map-options
+                          use-input
+                          input-debounce="300"
+                          @filter="filterAccountsByName"
+                          clearable
+                          :disable="String(getRowValue(row, 'type') || '') !== 'transfer'"
+                          style="width: 100%;"
+                        />
+                      </td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
+                        <q-select
+                          :model-value="String(getRowValue(row, 'to_account_name') || '')"
+                          @update:model-value="(val) => setRowValue(row, 'to_account_name', val)"
+                          :options="filteredAccountNameOptions"
+                          option-label="label"
+                          option-value="value"
+                          dense
+                          outlined
+                          emit-value
+                          map-options
+                          use-input
+                          input-debounce="300"
+                          @filter="filterAccountsByName"
+                          clearable
+                          :disable="String(getRowValue(row, 'type') || '') !== 'transfer'"
+                          style="width: 100%;"
                         />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
@@ -1086,6 +1145,9 @@ const tableRows = ref<Array<{
   amount: number
   rate: number | null
   category_id: number | null
+  account_name?: string
+  from_account_name?: string
+  to_account_name?: string
 }>>([])
 
 // Excel mode
@@ -1408,6 +1470,9 @@ const separatorOptions = [
 const accountOptions = computed(() => {
   return allAccounts.value.map((a: { id: number; name: string }) => ({ id: a.id, name: a.name }))
 })
+const accountNameOptions = computed(() => {
+  return allAccounts.value.map((a: { name: string }) => ({ label: a.name, value: a.name }))
+})
 const categoryOptions = computed(() => {
   return allCategories.value.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name }))
 })
@@ -1515,7 +1580,10 @@ function addTableRow() {
     type: 'expense',
     amount: 0,
     rate: needsRateForSelectedAccount.value ? 1 : null,
-    category_id: null
+    category_id: null,
+    account_name: '',
+    from_account_name: '',
+    to_account_name: ''
   })
 }
 
@@ -1797,11 +1865,47 @@ function buildPayload(dryRun: boolean) {
 }
 
 function buildRowPayload(row: Record<string, unknown>, clientId: string): TransactionBulkRow {
-  const isExpense = row.type === 'expense'
+  const normalizedType = normalizeTypeValue(row.type)
+  const isExpense = normalizedType === 'expense'
+  const isTransfer = normalizedType === 'transfer'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
   const normalizedDate = normalizeDateValue(row.date)
+
+  const accountName = typeof row.account_name === 'string' ? String(row.account_name).trim() : ''
+  const fromAccountName = typeof row.from_account_name === 'string' ? String(row.from_account_name).trim() : ''
+  const toAccountName = typeof row.to_account_name === 'string' ? String(row.to_account_name).trim() : ''
+
+  let accountId = selectedAccountId.value as number
+  if (accountName) {
+    const found = allAccounts.value.find((acc) =>
+      acc.name.toLowerCase() === accountName.toLowerCase()
+    )
+    if (found) accountId = found.id
+  }
+
+  let payments: Array<{ account_id: number; amount: number; rate: number }> = []
+
+  if (isTransfer && fromAccountName && toAccountName) {
+    const fromAccount = allAccounts.value.find((acc) =>
+      acc.name.toLowerCase() === fromAccountName.toLowerCase()
+    )
+    const toAccount = allAccounts.value.find((acc) =>
+      acc.name.toLowerCase() === toAccountName.toLowerCase()
+    )
+
+    if (fromAccount && toAccount) {
+      payments = [
+        { account_id: fromAccount.id, amount: -Math.abs(amount), rate },
+        { account_id: toAccount.id, amount: Math.abs(amount), rate }
+      ]
+    } else {
+      payments = [{ account_id: accountId, amount, rate }]
+    }
+  } else {
+    payments = [{ account_id: accountId, amount, rate }]
+  }
   
   return {
     name: nameValue,
@@ -1814,13 +1918,7 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
         amount: amount
       }
     ],
-    payments: [
-      {
-        account_id: selectedAccountId.value as number,
-        amount: amount,
-        rate: rate
-      }
-    ],
+    payments,
     client_row_id: clientId
   }
 }
@@ -1965,6 +2063,7 @@ function closeResults() {
 // Filter functions for select inputs
 const filteredAccounts = ref(accountOptions.value)
 const filteredCategories = ref(categoryOptions.value)
+const filteredAccountNameOptions = ref(accountNameOptions.value)
 
 const typeOptions = [
   { label: 'Ingreso', value: 'income' },
@@ -2000,7 +2099,17 @@ function filterCategories(val: string, update: (fn: () => void) => void) {
   })
 }
 
+function filterAccountsByName(val: string, update: (fn: () => void) => void) {
+  update(() => {
+    const needle = val.toLowerCase()
+    filteredAccountNameOptions.value = needle
+      ? accountNameOptions.value.filter((v: { label: string }) => v.label.toLowerCase().includes(needle))
+      : accountNameOptions.value
+  })
+}
+
 // Watch para actualizar filtros cuando cambien las opciones
 watch(accountOptions, () => { filteredAccounts.value = accountOptions.value })
 watch(categoryOptions, () => { filteredCategories.value = categoryOptions.value })
+watch(accountNameOptions, () => { filteredAccountNameOptions.value = accountNameOptions.value })
 </script>

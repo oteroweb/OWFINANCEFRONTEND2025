@@ -45,6 +45,29 @@
               >
                 <q-tooltip>Exportar CSV</q-tooltip>
               </q-btn>
+              <q-select
+                v-model="visibleColumnNames"
+                :options="columnVisibilityOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                multiple
+                use-chips
+                dense
+                outlined
+                label="Columnas"
+                style="min-width: 260px"
+              />
+              <q-btn
+                flat
+                icon="delete_sweep"
+                color="negative"
+                @click="removeSelectedRows"
+                :disable="selectedRows.length === 0"
+              >
+                <q-tooltip>Eliminar seleccionadas</q-tooltip>
+              </q-btn>
               <q-btn flat icon="filter_alt_off" color="secondary" @click="clearFilters" />
               <q-btn 
                 label="Carga Masiva" 
@@ -120,8 +143,11 @@
         <q-table
           :columns="columns"
           :rows="rows"
+          :visible-columns="effectiveVisibleColumnNames"
           :loading="loading"
           row-key="id"
+          selection="multiple"
+          v-model:selected="selectedRows"
           flat
           bordered
           class="shadow-1"
@@ -511,6 +537,7 @@ const filters = reactive<Filters>({ search: '' });
 type Row = Record<string, unknown>;
 const rows = ref<Row[]>([]);
 const loading = ref(false);
+const selectedRows = ref<Row[]>([]);
 
 function getByPath(obj: unknown, path: string): unknown {
   return path.split('.').reduce<unknown>((acc, k) => {
@@ -1073,6 +1100,24 @@ const columns = computed<ColumnDef[]>(() => {
   return clone;
 });
 
+const columnVisibilityOptions = computed(() =>
+  columns.value
+    .filter((c) => c.name !== 'actions')
+    .map((c) => ({ label: c.label, value: c.name }))
+);
+
+const visibleColumnNames = ref<string[]>([]);
+
+const effectiveVisibleColumnNames = computed(() => {
+  const valid = new Set(columns.value.map((c) => c.name));
+  const selected = visibleColumnNames.value.filter((name) => valid.has(name));
+  if (!selected.length) {
+    return columns.value.map((c) => c.name);
+  }
+  // Siempre mantener acciones visible para editar/eliminar individualmente
+  return selected.includes('actions') ? selected : [...selected, 'actions'];
+});
+
 // helper para extraer nombres de cuentas de pagos
 function paymentAccountNames(row: Record<string, unknown>): string[] {
   if (!row) return [];
@@ -1325,6 +1370,7 @@ async function runFetch(force = false): Promise<void> {
   if (!force && sig === lastParamsSignature) return;
   lastParamsSignature = sig;
   await fetchData(params);
+  selectedRows.value = [];
   computeRunningBalances();
   if (singleAccountSelected.value) void fetchSingleAccountBalance();
 }
@@ -1390,6 +1436,7 @@ onMounted(async () => {
   }
 
   await runFetch(true);
+  visibleColumnNames.value = columns.value.filter((c) => c.name !== 'actions').map((c) => c.name);
 
   // Escuchar cambios en transacciones para refrescar la tabla SIEMPRE;
   // si hay una sola cuenta seleccionada, además refrescamos el saldo/bandera.
@@ -1411,6 +1458,21 @@ onMounted(async () => {
     window.removeEventListener('ow:accounts:selected', accountsSelectedHandler);
   });
 });
+
+watch(
+  () => columns.value.map((c) => c.name),
+  (names) => {
+    const dataNames = names.filter((n) => n !== 'actions');
+    if (!visibleColumnNames.value.length) {
+      visibleColumnNames.value = dataNames;
+      return;
+    }
+    const set = new Set(dataNames);
+    const kept = visibleColumnNames.value.filter((n) => set.has(n));
+    const missing = dataNames.filter((n) => !kept.includes(n));
+    visibleColumnNames.value = [...kept, ...missing];
+  }
+);
 
 // Sidebar de cuentas: si hay exactamente una cuenta seleccionada en el widget,
 // aplicamos el filtro account_id; en caso contrario quitamos el filtro.
@@ -1997,10 +2059,56 @@ function remove(row: Record<string, unknown>) {
   });
 }
 
+function removeSelectedRows() {
+  const ids = selectedRows.value
+    .map((row) => Number((row as Record<string, unknown>)['id']))
+    .filter((id) => Number.isFinite(id));
+
+  if (!ids.length) {
+    $q.notify({ type: 'warning', message: 'No hay transacciones seleccionadas' });
+    return;
+  }
+
+  $q.dialog({
+    title: 'Confirmar eliminación masiva',
+    message: `¿Eliminar ${ids.length} transacción(es) seleccionada(s)?`,
+    cancel: true,
+    persistent: true,
+  }).onOk(() => {
+    void (async () => {
+      let deleted = 0;
+      for (const id of ids) {
+        try {
+          await txStore.deleteTransaction(id);
+          deleted++;
+        } catch {
+          // Continuar con las demás para evitar abortar toda la operación
+        }
+      }
+
+      selectedRows.value = [];
+      await runFetch(true);
+      if (singleAccountSelected.value) void fetchSingleAccountBalance();
+
+      if (deleted === ids.length) {
+        $q.notify({ type: 'positive', message: `${deleted} transacciones eliminadas` });
+      } else if (deleted > 0) {
+        $q.notify({
+          type: 'warning',
+          message: `Se eliminaron ${deleted} de ${ids.length} transacciones`,
+        });
+      } else {
+        $q.notify({ type: 'negative', message: 'No se pudo eliminar ninguna transacción' });
+      }
+    })();
+  });
+}
+
 function exportCSV(): void {
   if (!rows.value?.length) return;
   const allCols = columns.value;
-  const visibleCols = allCols.filter((c) => c.name !== 'actions');
+  const visibleSet = new Set(effectiveVisibleColumnNames.value);
+  const visibleCols = allCols.filter((c) => c.name !== 'actions' && visibleSet.has(c.name));
   const header = visibleCols.map((c: ColumnDef) => c.label);
   const csv = [header.join(',')]
     .concat(
