@@ -162,13 +162,30 @@
 
           <!-- TAB: Texto -->
           <q-tab-panel name="text">
-            <p class="text-caption text-grey-7">
-              Pega texto separado por <code>;</code> y nuevas líneas. <br />
-              Formato: <code>fecha;concepto;tipo;monto;cuenta;categoría</code>
-              <br />
-              Ejemplo:
-              <code>2026-03-09;Supermercado;expense;35.50;Cuenta Principal;Alimentos</code>
-            </p>
+            <div class="row wrap gap-md items-center q-mb-md">
+              <div>
+                <p class="text-caption text-grey-7 q-mb-sm">
+                  Pega texto separado por el delimitador elegido y nuevas líneas. <br />
+                  Formato: <code>fecha{sep}concepto{sep}tipo{sep}monto{sep}cuenta{sep}categoría</code>
+                </p>
+              </div>
+              <q-select
+                v-model="textSeparator"
+                :options="[
+                  { label: 'Punto y coma (;)', value: ';' },
+                  { label: 'Tabulador (TAB)', value: '\t' },
+                  { label: 'Coma (,)', value: ',' },
+                  { label: 'Pipe (|)', value: '|' }
+                ]"
+                option-label="label"
+                option-value="value"
+                outlined
+                dense
+                emit-value
+                map-options
+                style="min-width: 180px"
+              />
+            </div>
             <q-input
               v-model="textInput"
               type="textarea"
@@ -179,7 +196,7 @@
             />
             <div v-if="textParsedRows.length > 0" class="q-mt-md">
               <p class="text-body2">
-                <strong>{{ textParsedRows.length }}</strong> filas parseadas.
+                <strong>{{ textParsedRows.length }}</strong> filas parseadas (delimitador: <code>{{ textSeparator === '\t' ? 'TAB' : textSeparator }}</code>).
               </p>
               <div style="max-height: 300px; overflow-y: auto">
                 <q-markup-table dense flat bordered>
@@ -376,7 +393,8 @@ const excelParsedRows = ref<Array<Record<string, unknown>>>([])
 
 // Text mode
 const textInput = ref('')
-const textParsedRows = ref<Array<Record<string, unknown>>>([])
+const textSeparator = ref<';' | '\t' | ',' | '|'>(';')
+const textParsedRows = ref<Array<Record<string, unknown>>>>([])
 
 // Results
 const processingDryRun = ref(false)
@@ -459,8 +477,9 @@ function handleTextInput(value: string | number | null) {
     return
   }
   const lines = strValue.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+  const sep = textSeparator.value
   textParsedRows.value = lines.map((line, idx) => {
-    const parts = line.split(';').map(p => p.trim())
+    const parts = line.split(sep).map(p => p.trim())
     if (parts.length < 4) return null
     return normalizeRow({
       Fecha: parts[0] || '',
