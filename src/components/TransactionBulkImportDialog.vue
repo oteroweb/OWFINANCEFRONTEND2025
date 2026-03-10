@@ -276,10 +276,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTransactionsStore } from '../stores/transactions'
-import { useAccountsStore } from '../stores/accounts'
-import { useCategoriesStore } from '../stores/categories'
+import { useTransactionForm } from 'src/composables/useTransactionForm'
+import { api } from 'boot/axios'
 import { read as xlsxRead, utils as xlsxUtils } from 'xlsx'
 import { Notify } from 'quasar'
 
@@ -327,8 +327,35 @@ const emit = defineEmits<{
 }>()
 
 const transactionsStore = useTransactionsStore()
-const accountsStore = useAccountsStore()
-const categoriesStore = useCategoriesStore()
+
+// Get accounts from composable
+const { allAccounts, ensureAccountsLoaded } = useTransactionForm()
+
+// Categories - load manually
+type CategoryOption = { id: number; name: string }
+const allCategories = ref<CategoryOption[]>([])
+let categoriesLoaded = false
+
+async function ensureCategoriesLoaded() {
+  if (categoriesLoaded) return
+  try {
+    const res = await api.get('/categories', {
+      params: { order_by: 'name', order_dir: 'asc' }
+    })
+    const data = (res.data?.data || res.data) as CategoryOption[]
+    allCategories.value = data || []
+    categoriesLoaded = true
+  } catch (err) {
+    console.warn('Error loading categories', err)
+    categoriesLoaded = false
+  }
+}
+
+// Load accounts and categories on mount
+onMounted(async () => {
+  await ensureAccountsLoaded()
+  await ensureCategoriesLoaded()
+})
 
 const showDialog = ref(true)
 const activeTab = ref<'table' | 'excel' | 'text'>('table')
@@ -517,12 +544,12 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
   const clientRowId = typeof row.client_row_id === 'string' || typeof row.client_row_id === 'number' ? String(row.client_row_id) : ''
   
   // Find account by name
-  const account = accountsStore.accounts.find((a: { id: number; name: string }) => 
+  const account = allAccounts.value.find((a: { id: number; name: string }) => 
     a.name.toLowerCase() === String(row.account_name).toLowerCase()
   )
   
   // Find category by name
-  const category = categoriesStore.categories.find((c: { id: number; name: string }) => 
+  const category = allCategories.value.find((c: { id: number; name: string }) => 
     c.name.toLowerCase() === String(row.category_name).toLowerCase()
   )
   
