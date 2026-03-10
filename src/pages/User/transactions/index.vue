@@ -18,57 +18,6 @@
           </div>
           <div class="col-auto">
             <div class="row items-center q-gutter-sm">
-              <q-btn
-                flat
-                icon="tune"
-                color="primary"
-                @click="openAdjustTop"
-                :disable="!singleAccountSelected"
-              >
-                <q-tooltip>Ajustar saldo (cuenta seleccionada)</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                icon="autorenew"
-                color="secondary"
-                @click="recalcSingleAccountTop"
-                :disable="!singleAccountSelected"
-              >
-                <q-tooltip>Recalcular saldo (cuenta seleccionada)</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                icon="download"
-                color="primary"
-                @click="exportCSV"
-                :disable="!rows.length"
-              >
-                <q-tooltip>Exportar CSV</q-tooltip>
-              </q-btn>
-              <q-select
-                v-model="visibleColumnNames"
-                :options="columnVisibilityOptions"
-                option-label="label"
-                option-value="value"
-                emit-value
-                map-options
-                multiple
-                use-chips
-                dense
-                outlined
-                label="Columnas"
-                style="min-width: 260px"
-              />
-              <q-btn
-                flat
-                icon="delete_sweep"
-                color="negative"
-                @click="removeSelectedRows"
-                :disable="selectedRows.length === 0"
-              >
-                <q-tooltip>Eliminar seleccionadas</q-tooltip>
-              </q-btn>
-              <q-btn flat icon="filter_alt_off" color="secondary" @click="clearFilters" />
               <q-btn 
                 label="Carga Masiva" 
                 color="accent" 
@@ -78,6 +27,75 @@
               <q-btn :label="dictionary.buttonNewLabel" color="primary" @click="openNewFab" />
             </div>
           </div>
+        </div>
+
+        <!-- Barra de herramientas -->
+        <div class="row items-center q-mb-md q-gutter-sm">
+          <q-btn
+            flat
+            dense
+            icon="tune"
+            color="primary"
+            @click="openAdjustTop"
+            :disable="!singleAccountSelected"
+          >
+            <q-tooltip>Ajustar saldo (cuenta seleccionada)</q-tooltip>
+          </q-btn>
+          <q-btn
+            flat
+            dense
+            icon="autorenew"
+            color="secondary"
+            @click="recalcSingleAccountTop"
+            :disable="!singleAccountSelected"
+          >
+            <q-tooltip>Recalcular saldo (cuenta seleccionada)</q-tooltip>
+          </q-btn>
+          <q-btn
+            flat
+            dense
+            icon="download"
+            color="primary"
+            @click="exportCSV"
+            :disable="!rows.length"
+          >
+            <q-tooltip>Exportar CSV</q-tooltip>
+          </q-btn>
+          <q-btn
+            flat
+            dense
+            icon="delete_sweep"
+            color="negative"
+            @click="removeSelectedRows"
+            :disable="selectedRows.length === 0"
+          >
+            <q-tooltip>Eliminar seleccionadas ({{ selectedRows.length }})</q-tooltip>
+          </q-btn>
+          <q-btn 
+            flat 
+            dense
+            icon="filter_alt_off" 
+            color="secondary" 
+            @click="clearFilters"
+          >
+            <q-tooltip>Limpiar filtros</q-tooltip>
+          </q-btn>
+          <q-space />
+          <q-select
+            v-model="visibleColumnNames"
+            :options="columnVisibilityOptions"
+            option-label="label"
+            option-value="value"
+            emit-value
+            map-options
+            multiple
+            use-chips
+            dense
+            outlined
+            label="Columnas visibles"
+            style="min-width: 300px; max-width: 500px"
+            class="col-auto"
+          />
         </div>
 
         <!-- Búsqueda global -->
