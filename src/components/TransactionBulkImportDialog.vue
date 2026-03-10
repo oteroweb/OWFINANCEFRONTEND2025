@@ -737,32 +737,56 @@
           </q-card>
 
           <!-- Tasa por defecto -->
-          <q-card v-if="needsRateForSelectedAccount" flat bordered class="q-mb-md">
+          <q-card v-if="needsRateForSelectedAccount" flat bordered class="q-mb-md bg-warning-1">
             <q-card-section>
-              <div class="text-subtitle1 q-mb-md">💱 Tasa por defecto (actual)</div>
-              <div class="row items-center q-col-gutter-md">
-                <div class="col-12 col-sm-6 col-md-4">
-                  <q-input 
-                    v-model.number="defaultRate" 
-                    type="number" 
-                    step="0.0001" 
-                    outlined 
-                    dense 
-                    label="Tasa"
-                  >
-                    <template v-slot:prepend>
-                      <q-icon name="currency_exchange" />
-                    </template>
-                  </q-input>
+              <div class="row items-start q-col-gutter-md">
+                <div class="col-auto">
+                  <q-icon name="info" size="lg" color="warning" />
                 </div>
-                <div class="col-12 col-sm-6 col-md-auto">
-                  <q-btn 
-                    color="secondary" 
-                    unelevated 
-                    icon="refresh" 
-                    label="Aplicar tasa a filas sin tasa" 
-                    @click="applyDefaultRateToRows" 
-                  />
+                <div class="col">
+                  <div class="text-subtitle1 q-mb-md">💱 Tasa de cambio {{ selectedAccount?.currencyCode }} a USD</div>
+                  <p class="text-caption text-grey-7 q-mb-md">
+                    La cuenta <strong>{{ selectedAccount?.name }}</strong> está en <strong>{{ selectedAccount?.currencyCode }}</strong>. 
+                    Debes especificar la tasa de cambio para convertir a USD.
+                  </p>
+                  <div class="row items-center q-col-gutter-md">
+                    <div class="col-12 col-sm-6 col-md-3">
+                      <q-input 
+                        v-model.number="defaultRate" 
+                        type="number" 
+                        step="0.0001" 
+                        outlined 
+                        dense 
+                        label="Tasa (ej: 40.5)"
+                        hint="Se aplicará a todas las filas sin tasa"
+                        class="full-width"
+                      >
+                        <template v-slot:prepend>
+                          <q-icon name="currency_exchange" />
+                        </template>
+                      </q-input>
+                    </div>
+                    <div v-if="defaultRate === 1" class="col-12 col-sm-6 col-md-auto">
+                      <q-chip
+                        removable
+                        color="negative"
+                        text-color="white"
+                        class="text-weight-bold"
+                        icon="warning"
+                      >
+                        ⚠️ Tasa en 1.0 = conversión 1:1 (probablemente incorrigible)
+                      </q-chip>
+                    </div>
+                    <div v-else class="col-12 col-sm-6 col-md-auto">
+                      <q-chip
+                        color="positive"
+                        text-color="white"
+                        icon="check_circle"
+                      >
+                        ✓ Se aplicará automáticamente
+                      </q-chip>
+                    </div>
+                  </div>
                 </div>
               </div>
             </q-card-section>
@@ -1931,6 +1955,27 @@ function buildPayload(dryRun: boolean) {
     throw new Error('Debes seleccionar una cuenta')
   }
   
+  // Auto-apply default rate if needed and not already applied
+  if (needsRateForSelectedAccount.value && defaultRate.value > 0) {
+    const applyDefaultRateIfMissing = (rows: Array<Record<string, unknown>>) => {
+      rows.forEach((row) => {
+        const current = Number(row.rate)
+        // Only apply if rate is missing or invalid
+        if (!Number.isFinite(current) || current <= 0) {
+          row.rate = Number(defaultRate.value)
+        }
+      })
+    }
+    
+    if (activeTab.value === 'table') {
+      applyDefaultRateIfMissing(tableRows.value as unknown as Array<Record<string, unknown>>)
+    } else if (activeTab.value === 'excel') {
+      applyDefaultRateIfMissing(excelParsedRows.value)
+    } else if (activeTab.value === 'text') {
+      applyDefaultRateIfMissing(textParsedRows.value)
+    }
+  }
+  
   let rows: Array<TransactionBulkRow> = []
   
   if (activeTab.value === 'table') {
@@ -2079,6 +2124,15 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
 async function handleDryRun() {
   processingDryRun.value = true
   try {
+    // Notify if auto-applying rate
+    if (needsRateForSelectedAccount.value && defaultRate.value > 0) {
+      Notify.create({
+        type: 'info',
+        message: `📊 Tasa de cambio ${defaultRate.value} aplicada automáticamente a filas sin tasa`,
+        position: 'top'
+      })
+    }
+    
     const payload = buildPayload(true)
     const response = await transactionsStore.bulkAddTransactions(payload)
     bulkResult.value = response.data?.data
@@ -2104,6 +2158,15 @@ async function handleDryRun() {
 async function handleImport() {
   processingImport.value = true
   try {
+    // Notify if auto-applying rate
+    if (needsRateForSelectedAccount.value && defaultRate.value > 0) {
+      Notify.create({
+        type: 'info',
+        message: `📊 Tasa de cambio ${defaultRate.value} aplicada automáticamente a filas sin tasa`,
+        position: 'top'
+      })
+    }
+    
     const payload = buildPayload(false)
     const response = await transactionsStore.bulkAddTransactions(payload)
     bulkResult.value = response.data?.data
