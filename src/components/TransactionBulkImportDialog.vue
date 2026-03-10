@@ -419,37 +419,55 @@
             <q-card-section>
               <div class="text-subtitle1 q-mb-md">⚙️ Reglas opcionales de tipo</div>
               <q-toggle
-                v-model="enableTypeSymbolRules"
+                v-model="enableTypeMappingRules"
                 color="primary"
-                label="Usar reglas para símbolos (+/-)"
+                label="Usar reglas personalizadas de tipo"
               />
-              <div v-if="enableTypeSymbolRules" class="row q-col-gutter-md q-mt-sm">
-                <div class="col-12 col-sm-6">
-                  <q-select
-                    v-model="minusSymbolType"
-                    :options="typeOptions"
-                    option-label="label"
-                    option-value="value"
-                    emit-value
-                    map-options
-                    outlined
-                    dense
-                    label="Símbolo '-' se interpreta como"
-                  />
+              <div v-if="enableTypeMappingRules" class="q-mt-sm">
+                <div
+                  v-for="(rule, idx) in typeMappingRules"
+                  :key="`type-rule-${idx}`"
+                  class="row q-col-gutter-md items-center q-mb-sm"
+                >
+                  <div class="col-12 col-sm-5">
+                    <q-input
+                      v-model="rule.match"
+                      outlined
+                      dense
+                      label="Si valor es (ej: -, +, DEBITO)"
+                    />
+                  </div>
+                  <div class="col-12 col-sm-5">
+                    <q-select
+                      v-model="rule.target"
+                      :options="typeOptions"
+                      option-label="label"
+                      option-value="value"
+                      emit-value
+                      map-options
+                      outlined
+                      dense
+                      label="Mapear a"
+                    />
+                  </div>
+                  <div class="col-12 col-sm-2">
+                    <q-btn
+                      icon="delete"
+                      flat
+                      round
+                      color="negative"
+                      :disable="typeMappingRules.length === 1"
+                      @click="removeTypeRule(idx)"
+                    />
+                  </div>
                 </div>
-                <div class="col-12 col-sm-6">
-                  <q-select
-                    v-model="plusSymbolType"
-                    :options="typeOptions"
-                    option-label="label"
-                    option-value="value"
-                    emit-value
-                    map-options
-                    outlined
-                    dense
-                    label="Símbolo '+' se interpreta como"
-                  />
-                </div>
+                <q-btn
+                  flat
+                  color="primary"
+                  icon="add"
+                  label="Agregar regla"
+                  @click="addTypeRule"
+                />
               </div>
               <div class="q-mt-md">
                 <q-btn
@@ -659,6 +677,74 @@
                   icon="check_circle" 
                   label="Aplicar categorías" 
                   @click="applyCategoryMappings" 
+                />
+              </div>
+
+              <q-separator class="q-my-md" />
+              <div class="text-subtitle2 q-mb-sm">Reglas por texto (opcional)</div>
+              <q-toggle
+                v-model="enableCategoryKeywordRules"
+                color="primary"
+                label="Mapear categorías por coincidencia parcial (ej: social)"
+                class="q-mb-sm"
+              />
+              <div v-if="enableCategoryKeywordRules">
+                <div
+                  v-for="(rule, idx) in categoryKeywordRules"
+                  :key="`cat-rule-${idx}`"
+                  class="row q-col-gutter-md items-center q-mb-sm"
+                >
+                  <div class="col-12 col-sm-5">
+                    <q-input
+                      v-model="rule.keyword"
+                      outlined
+                      dense
+                      label="Si texto contiene"
+                      placeholder="social"
+                    />
+                  </div>
+                  <div class="col-12 col-sm-5">
+                    <q-select
+                      v-model="rule.categoryId"
+                      :options="filteredCategories"
+                      option-value="id"
+                      option-label="name"
+                      emit-value
+                      map-options
+                      use-input
+                      input-debounce="300"
+                      @filter="filterCategories"
+                      dense
+                      outlined
+                      clearable
+                      label="Mapear a categoría"
+                    />
+                  </div>
+                  <div class="col-12 col-sm-2">
+                    <q-btn
+                      icon="delete"
+                      flat
+                      round
+                      color="negative"
+                      :disable="categoryKeywordRules.length === 1"
+                      @click="removeCategoryKeywordRule(idx)"
+                    />
+                  </div>
+                </div>
+                <q-btn
+                  flat
+                  color="primary"
+                  icon="add"
+                  label="Agregar regla"
+                  @click="addCategoryKeywordRule"
+                  class="q-mr-sm"
+                />
+                <q-btn
+                  color="secondary"
+                  unelevated
+                  icon="rule"
+                  label="Aplicar reglas por texto"
+                  @click="applyCategoryKeywordRules"
                 />
               </div>
             </q-card-section>
@@ -883,9 +969,15 @@ const textRawRows = ref<string[][]>([])
 const defaultRate = ref<number>(1)
 const categoryMappings = ref<Record<string, number | null>>({})
 const autoApplyCategoryMappings = ref<boolean>(false)
-const enableTypeSymbolRules = ref<boolean>(true)
-const minusSymbolType = ref<'expense' | 'income' | 'transfer'>('expense')
-const plusSymbolType = ref<'expense' | 'income' | 'transfer'>('income')
+const enableTypeMappingRules = ref<boolean>(true)
+const typeMappingRules = ref<Array<{ match: string; target: 'expense' | 'income' | 'transfer' }>>([
+  { match: '-', target: 'expense' },
+  { match: '+', target: 'income' }
+])
+const enableCategoryKeywordRules = ref<boolean>(false)
+const categoryKeywordRules = ref<Array<{ keyword: string; categoryId: number | null }>>([
+  { keyword: '', categoryId: null }
+])
 const columnMapping = ref<{
   date: string[]
   name: string[]
@@ -1003,9 +1095,9 @@ function normalizeDateValue(value: unknown): string {
 function normalizeTypeValue(value: unknown): 'income' | 'expense' | 'transfer' {
   const raw = safeText(value).trim().toLowerCase()
 
-  if (enableTypeSymbolRules.value) {
-    if (raw === '-') return minusSymbolType.value
-    if (raw === '+') return plusSymbolType.value
+  if (enableTypeMappingRules.value) {
+    const explicitRule = typeMappingRules.value.find((rule) => safeText(rule.match).trim().toLowerCase() === raw)
+    if (explicitRule) return explicitRule.target
   }
 
   if (raw === '-' || raw === 'expense' || raw === 'egreso' || raw === 'gasto' || raw === 'outcome' || raw === 'outflow' || raw === 'debit' || raw === 'debito') {
@@ -1023,15 +1115,64 @@ function normalizeTypeValue(value: unknown): 'income' | 'expense' | 'transfer' {
 
 function applyCategoryMappingsToRows(rows: Array<Record<string, unknown>>) {
   rows.forEach((row) => {
-    const key = safeText(row.category_name).trim()
-    if (!key) return
-    const mappedCategoryId = categoryMappings.value[key]
-    if (mappedCategoryId) {
-      row.category_id = mappedCategoryId
-      const selected = allCategories.value.find((c) => c.id === mappedCategoryId)
+    const text = safeText(row.category_name).trim()
+    if (!text) return
+
+    const exactMappedCategoryId = categoryMappings.value[text]
+    if (exactMappedCategoryId) {
+      row.category_id = exactMappedCategoryId
+      const selected = allCategories.value.find((c) => c.id === exactMappedCategoryId)
       if (selected) row.category_name = selected.name
+      return
+    }
+
+    if (enableCategoryKeywordRules.value) {
+      const normalizedText = text.toLowerCase()
+      const keywordRule = categoryKeywordRules.value.find((rule) => {
+        const keyword = safeText(rule.keyword).trim().toLowerCase()
+        return keyword.length > 0 && rule.categoryId && normalizedText.includes(keyword)
+      })
+      if (keywordRule?.categoryId) {
+        row.category_id = keywordRule.categoryId
+        const selected = allCategories.value.find((c) => c.id === keywordRule.categoryId)
+        if (selected) row.category_name = selected.name
+      }
     }
   })
+}
+
+function addTypeRule() {
+  typeMappingRules.value.push({ match: '', target: 'expense' })
+}
+
+function removeTypeRule(index: number) {
+  if (typeMappingRules.value.length <= 1) return
+  typeMappingRules.value.splice(index, 1)
+}
+
+function addCategoryKeywordRule() {
+  categoryKeywordRules.value.push({ keyword: '', categoryId: null })
+}
+
+function removeCategoryKeywordRule(index: number) {
+  if (categoryKeywordRules.value.length <= 1) return
+  categoryKeywordRules.value.splice(index, 1)
+}
+
+function applyCategoryKeywordRules() {
+  if (!enableCategoryKeywordRules.value) {
+    Notify.create({ type: 'warning', message: 'Activa las reglas por texto para aplicarlas' })
+    return
+  }
+
+  const rows = activeTab.value === 'excel' ? excelParsedRows.value : textParsedRows.value
+  if (!rows.length) {
+    Notify.create({ type: 'warning', message: 'No hay filas para aplicar reglas de categoría' })
+    return
+  }
+
+  applyCategoryMappingsToRows(rows)
+  Notify.create({ type: 'positive', message: 'Reglas de categoría por texto aplicadas' })
 }
 
 function applyTypeRulesToRows() {
