@@ -21,8 +21,8 @@
               <q-select
                 v-model="selectedAccountId"
                 :options="accountOptions"
-                :option-label="(opt: { id: number; name: string }) => opt.name"
-                :option-value="(opt: { id: number; name: string }) => opt.id"
+                option-label="name"
+                option-value="id"
                 outlined
                 dense
                 emit-value
@@ -38,7 +38,7 @@
                 text-color="dark"
                 class="text-caption"
               >
-                ⚠️ Moneda: {{ (selectedAccount as any).currencyCode }} (requerirá TASA en cada fila)
+                ⚠️ Moneda: {{ selectedAccount?.currencyCode }} (requerirá TASA en cada fila)
               </q-chip>
             </div>
           </div>
@@ -283,20 +283,18 @@
               <div v-if="bulkResult.failed > 0" class="q-mt-md">
                 <p class="text-body2 text-negative">Errores:</p>
                 <q-list dense bordered separator>
-                  <template v-for="(res, idx) in (bulkResult.results as Array<{ok: boolean; index: number; client_row_id?: string; errors?: Record<string, unknown>}>).filter(r => !r.ok)" :key="`error-${idx}`">
-                    <q-item>
-                      <q-item-section>
-                        <q-item-label overline>
-                          Fila {{ res.index + 1 }} ({{ res.client_row_id || 'sin id' }})
+                  <q-item v-for="(res, idx) in bulkResult.results.filter((r: any) => !r.ok)" :key="`error-${idx}`">
+                    <q-item-section>
+                      <q-item-label overline>
+                        Fila {{ res.index + 1 }} ({{ res.client_row_id || 'sin id' }})
+                      </q-item-label>
+                      <template v-if="res.errors">
+                        <q-item-label caption v-for="(errs, field) in res.errors" :key="`err-${idx}-${String(field)}`">
+                          <strong>{{ field }}:</strong> {{ Array.isArray(errs) ? errs.join(', ') : String(errs) }}
                         </q-item-label>
-                        <template v-if="res.errors">
-                          <q-item-label caption v-for="(errs, field) in res.errors" :key="`err-${idx}-${String(field)}`">
-                            <strong>{{ field }}:</strong> {{ Array.isArray(errs) ? errs.join(', ') : String(errs) }}
-                          </q-item-label>
                         </template>
                       </q-item-section>
                     </q-item>
-                  </template>
                 </q-list>
               </div>
             </div>
