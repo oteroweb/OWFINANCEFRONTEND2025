@@ -617,10 +617,21 @@
                       </td>
                       <td v-if="needsRateForSelectedAccount" style="padding: 6px; border: 1px solid #ddd;">
                         <q-input 
-                          :model-value="Number(getRowValue(row, 'rate') || 1)" 
+                          :model-value="Number(getRowValue(row, 'rate') || defaultRate)" 
                           @update:model-value="(val) => setRowValue(row, 'rate', Number(val))" 
                           dense outlined type="number" step="0.0001" style="width: 100%;" 
-                        />
+                          :hint="defaultRate ? `Default: ${defaultRate}` : ''"
+                        >
+                          <template v-slot:append>
+                            <q-btn
+                              v-if="Number(getRowValue(row, 'rate') || 0) !== defaultRate && defaultRate > 0"
+                              flat dense icon="restore" size="sm" color="info"
+                              @click="setRowValue(row, 'rate', defaultRate)"
+                            >
+                              <q-tooltip>Restaurar a tasa default</q-tooltip>
+                            </q-btn>
+                          </template>
+                        </q-input>
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
                         <div v-if="String(getRowValue(row, 'type') || '') === 'transfer'" class="text-caption text-primary">
@@ -1194,6 +1205,33 @@ const needsRateForSelectedAccount = computed(() => {
   // For now, we assume any non-default is cross-currency
   // In a real implementation, we'd check user.default_currency_id or user.currency_code
   return selectedAccount.value && (selectedAccount.value.currencyCode !== 'USD' && selectedAccount.value.currencyCode !== 'ARS')
+})
+
+// Watch para cargar la tasa current cuando cambia la cuenta
+watch(selectedAccountId, async () => {
+  if (!selectedAccountId.value || !selectedAccount.value) return
+  
+  try {
+    // Intentar obtener las tasas del usuario desde el perfil
+    const response = await api.get('/user')
+    const userData = response.data?.data || response.data
+    const rates = userData?.rates || []
+    
+    // Buscar la tasa current para la moneda de la cuenta seleccionada
+    const currencyId = selectedAccount.value.currencyId
+    const currentRate = rates.find((r: { currency_id?: number; currency?: { id?: number } }) => {
+      return (r.currency_id || r.currency?.id) === currencyId
+    })
+    
+    if (currentRate && currentRate.current_rate) {
+      defaultRate.value = Number(currentRate.current_rate)
+    } else {
+      defaultRate.value = 1
+    }
+  } catch (err) {
+    console.warn('Error loading current rate', err)
+    defaultRate.value = 1
+  }
 })
 
 // Table mode
