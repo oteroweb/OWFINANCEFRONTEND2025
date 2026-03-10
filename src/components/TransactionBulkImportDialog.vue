@@ -171,12 +171,7 @@
               </div>
               <q-select
                 v-model="textSeparator"
-                :options="[
-                  { label: 'Punto y coma (;)', value: ';' },
-                  { label: 'Tabulador (TAB)', value: '\t' },
-                  { label: 'Coma (,)', value: ',' },
-                  { label: 'Pipe (|)', value: '|' }
-                ]"
+                :options="separatorOptions"
                 option-label="label"
                 option-value="value"
                 outlined
@@ -393,7 +388,7 @@ const excelParsedRows = ref<Array<Record<string, unknown>>>([])
 
 // Text mode
 const textInput = ref('')
-const textSeparator = ref<';' | '\t' | ',' | '|'>(';')
+const textSeparator = ref<string>(';')
 const textParsedRows = ref<Array<Record<string, unknown>>>>([])
 
 // Results
@@ -401,6 +396,14 @@ const processingDryRun = ref(false)
 const processingImport = ref(false)
 const showResults = ref(false)
 const bulkResult = ref<BulkResult | null>(null)
+
+// Separator options for text mode
+const separatorOptions = [
+  { label: 'Punto y coma (;)', value: ';' },
+  { label: 'Tabulador (TAB)', value: '\t' },
+  { label: 'Coma (,)', value: ',' },
+  { label: 'Pipe (|)', value: '|' }
+]
 
 // Options for select dropdowns
 const accountOptions = computed(() => {
