@@ -486,15 +486,16 @@ function buildPayload(dryRun: boolean) {
 function buildRowPayload(row: Record<string, unknown>, clientId: string): TransactionBulkRow {
   const isExpense = row.type === 'expense'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
+  const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   
   return {
-    name: String(row.name || ''),
+    name: nameValue,
     date: String(row.date) + ' 12:00:00',
     category_id: row.category_id as number | null,
     include_in_balance: true,
     items: [
       {
-        name: String(row.name || ''),
+        name: nameValue,
         amount: amount
       }
     ],
@@ -512,6 +513,8 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
 function buildRowPayloadFromNormalized(row: Record<string, unknown>): TransactionBulkRow {
   const isExpense = String(row.type) === 'expense' || String(row.type) === 'egreso' || String(row.type) === 'gasto'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
+  const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
+  const clientRowId = typeof row.client_row_id === 'string' || typeof row.client_row_id === 'number' ? String(row.client_row_id) : ''
   
   // Find account by name
   const account = accountsStore.accounts.find((a: { id: number; name: string }) => 
@@ -529,13 +532,13 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
   }
   
   return {
-    name: String(row.name || ''),
+    name: nameValue,
     date: String(row.date) + ' 12:00:00',
     category_id: category?.id || null,
     include_in_balance: true,
     items: [
       {
-        name: String(row.name || ''),
+        name: nameValue,
         amount: amount
       }
     ],
@@ -546,7 +549,7 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
         rate: 1
       }
     ],
-    client_row_id: String(row.client_row_id || '')
+    client_row_id: clientRowId
   }
 }
 
