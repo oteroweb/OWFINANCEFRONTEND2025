@@ -433,6 +433,10 @@ function handleExcelFile(file: File | null) {
         return
       }
       const sheet = workbook.Sheets[sheetName]
+      if (!sheet) {
+        Notify.create({ type: 'warning', message: 'La hoja no contiene datos' })
+        return
+      }
       const json = xlsxUtils.sheet_to_json(sheet)
       
       // Parse and normalize
