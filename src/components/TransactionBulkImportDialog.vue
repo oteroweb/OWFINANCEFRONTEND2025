@@ -386,10 +386,10 @@ const bulkResult = ref<BulkResult | null>(null)
 
 // Options for select dropdowns
 const accountOptions = computed(() => {
-  return accountsStore.accounts.map(a => ({ id: a.id, name: a.name }))
+  return allAccounts.value.map((a: { id: number; name: string }) => ({ id: a.id, name: a.name }))
 })
 const categoryOptions = computed(() => {
-  return categoriesStore.categories.map(c => ({ id: c.id, name: c.name }))
+  return allCategories.value.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name }))
 })
 
 const hasData = computed(() => {
