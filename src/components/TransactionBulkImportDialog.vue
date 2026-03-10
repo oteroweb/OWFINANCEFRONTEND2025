@@ -389,7 +389,7 @@ const excelParsedRows = ref<Array<Record<string, unknown>>>([])
 // Text mode
 const textInput = ref('')
 const textSeparator = ref<string>(';')
-const textParsedRows = ref<Array<Record<string, unknown>>>>([])
+const textParsedRows = ref<Array<Record<string, unknown>>>([])
 
 // Results
 const processingDryRun = ref(false)
