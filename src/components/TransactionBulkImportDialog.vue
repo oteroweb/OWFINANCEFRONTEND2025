@@ -14,6 +14,36 @@
       </q-card-section>
 
       <q-card-section class="col">
+        <!-- Selector de Cuenta Única -->
+        <div class="q-mb-md">
+          <div class="row items-center gap-md">
+            <div class="col-12 col-sm-auto">
+              <q-select
+                v-model="selectedAccountId"
+                :options="accountOptions"
+                :option-label="(opt: { id: number; name: string }) => opt.name"
+                :option-value="(opt: { id: number; name: string }) => opt.id"
+                outlined
+                dense
+                emit-value
+                map-options
+                label="Cuenta (aplica a todas las filas)"
+                class="min-w-xs"
+              />
+            </div>
+            <div v-if="selectedAccount && needsRateForSelectedAccount" class="col-12 col-sm-auto">
+              <q-chip
+                removable
+                color="warning"
+                text-color="dark"
+                class="text-caption"
+              >
+                ⚠️ Moneda: {{ (selectedAccount as any).currencyCode }} (requerirá TASA en cada fila)
+              </q-chip>
+            </div>
+          </div>
+        </div>
+        
         <q-tabs
           v-model="activeTab"
           dense
@@ -50,9 +80,9 @@
                     <th>Concepto</th>
                     <th>Tipo</th>
                     <th>Monto</th>
-                    <th>Cuenta</th>
+                    <th v-if="needsRateForSelectedAccount">Tasa</th>
                     <th>Categoría</th>
-                    <th>Acciones</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -73,18 +103,10 @@
                       />
                     </td>
                     <td>
-                      <q-input v-model.number="row.amount" dense type="number" />
+                      <q-input v-model.number="row.amount" dense type="number" step="0.01" />
                     </td>
-                    <td>
-                      <q-select
-                        v-model="row.account_id"
-                        :options="accountOptions"
-                        dense
-                        option-value="id"
-                        option-label="name"
-                        emit-value
-                        map-options
-                      />
+                    <td v-if="needsRateForSelectedAccount">
+                      <q-input v-model.number="row.rate" dense type="number" step="0.0001" placeholder="1.0" />
                     </td>
                     <td>
                       <q-select
@@ -104,6 +126,7 @@
                         flat
                         dense
                         color="negative"
+                        size="sm"
                         @click="removeTableRow(idx)"
                       />
                     </td>
@@ -141,7 +164,7 @@
                       <th>Concepto</th>
                       <th>Tipo</th>
                       <th>Monto</th>
-                      <th>Cuenta</th>
+                      <th v-if="needsRateForSelectedAccount">Tasa</th>
                       <th>Categoría</th>
                     </tr>
                   </thead>
@@ -151,7 +174,7 @@
                       <td>{{ row.name }}</td>
                       <td>{{ row.type }}</td>
                       <td>{{ row.amount }}</td>
-                      <td>{{ row.account_name }}</td>
+                      <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
                       <td>{{ row.category_name }}</td>
                     </tr>
                   </tbody>
@@ -201,7 +224,7 @@
                       <th>Concepto</th>
                       <th>Tipo</th>
                       <th>Monto</th>
-                      <th>Cuenta</th>
+                      <th v-if="needsRateForSelectedAccount">Tasa</th>
                       <th>Categoría</th>
                     </tr>
                   </thead>
@@ -211,7 +234,7 @@
                       <td>{{ row.name }}</td>
                       <td>{{ row.type }}</td>
                       <td>{{ row.amount }}</td>
-                      <td>{{ row.account_name }}</td>
+                      <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
                       <td>{{ row.category_name }}</td>
                     </tr>
                   </tbody>
@@ -372,13 +395,26 @@ onMounted(async () => {
 const showDialog = ref(true)
 const activeTab = ref<'table' | 'excel' | 'text'>('table')
 
+// Account selection
+const selectedAccountId = ref<number | null>(null)
+const selectedAccount = computed(() => {
+  if (!selectedAccountId.value) return null
+  return allAccounts.value.find((a: { id: number; name: string; currencyCode?: string; currencyId?: number }) => a.id === selectedAccountId.value)
+})
+const needsRateForSelectedAccount = computed(() => {
+  // Check if account currency is not the default user currency
+  // For now, we assume any non-default is cross-currency
+  // In a real implementation, we'd check user.default_currency_id or user.currency_code
+  return selectedAccount.value && (selectedAccount.value.currencyCode !== 'USD' && selectedAccount.value.currencyCode !== 'ARS')
+})
+
 // Table mode
 const tableRows = ref<Array<{
   date: string
   name: string
   type: string
   amount: number
-  account_id: number | null
+  rate: number | null
   category_id: number | null
 }>>([])
 
@@ -428,7 +464,7 @@ function addTableRow() {
     name: '',
     type: 'expense',
     amount: 0,
-    account_id: null,
+    rate: needsRateForSelectedAccount.value ? 1 : null,
     category_id: null
   })
 }
@@ -489,7 +525,7 @@ function handleTextInput(value: string | number | null) {
       Concepto: parts[1] || '',
       Tipo: parts[2] || '',
       Monto: parts[3] || '',
-      Cuenta: parts[4] || '',
+      Tasa: parts[4] || null,
       Categoría: parts[5] || '',
     }, `text-${idx}`)
   }).filter(r => r !== null)
@@ -511,24 +547,28 @@ function normalizeRow(row: Record<string, unknown>, clientId: string) {
   const amountRaw = row.Monto || row.monto || row.Amount || row.amount
   const amountStr = typeof amountRaw === 'string' ? amountRaw : (typeof amountRaw === 'number' ? String(amountRaw) : '0')
   const amount = parseFloat(amountStr.replace(',', '.'))
-  const accountNameRaw = row.Cuenta || row.cuenta || row.Account || row.account
-  const accountName = typeof accountNameRaw === 'string' || typeof accountNameRaw === 'number' ? String(accountNameRaw) : ''
   const categoryNameRaw = row.Categoría || row.categoria || row.Category || row.category
   const categoryName = typeof categoryNameRaw === 'string' || typeof categoryNameRaw === 'number' ? String(categoryNameRaw) : ''
+  const rateRaw = row.Tasa || row.tasa || row.Rate || row.rate
+  const rate = typeof rateRaw === 'string' || typeof rateRaw === 'number' ? parseFloat(String(rateRaw)) : null
   
   return {
     date,
     name,
     type,
     amount,
-    account_name: accountName,
     category_name: categoryName,
+    rate,
     client_row_id: clientId
   }
 }
 
 // Build payload
 function buildPayload(dryRun: boolean) {
+  if (!selectedAccountId.value) {
+    throw new Error('Debes seleccionar una cuenta')
+  }
+  
   let rows: Array<TransactionBulkRow> = []
   
   if (activeTab.value === 'table') {
@@ -550,6 +590,7 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
   const isExpense = row.type === 'expense'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
+  const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
   
   return {
     name: nameValue,
@@ -564,9 +605,9 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
     ],
     payments: [
       {
-        account_id: row.account_id as number,
+        account_id: selectedAccountId.value,
         amount: amount,
-        rate: 1
+        rate: rate
       }
     ],
     client_row_id: clientId
@@ -578,21 +619,12 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   const clientRowId = typeof row.client_row_id === 'string' || typeof row.client_row_id === 'number' ? String(row.client_row_id) : ''
-  
-  // Find account by name
-  const account = allAccounts.value.find((a: { id: number; name: string }) => 
-    a.name.toLowerCase() === String(row.account_name).toLowerCase()
-  )
+  const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
   
   // Find category by name
   const category = allCategories.value.find((c: { id: number; name: string }) => 
     c.name.toLowerCase() === String(row.category_name).toLowerCase()
   )
-  
-  const accountId = account?.id
-  if (!accountId) {
-    throw new Error(`Account not found: ${String(row.account_name)}`)
-  }
   
   return {
     name: nameValue,
@@ -607,9 +639,9 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
     ],
     payments: [
       {
-        account_id: accountId,
+        account_id: selectedAccountId.value,
         amount: amount,
-        rate: 1
+        rate: rate
       }
     ],
     client_row_id: clientRowId
