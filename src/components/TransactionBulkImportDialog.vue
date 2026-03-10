@@ -397,7 +397,7 @@ const activeTab = ref<'table' | 'excel' | 'text'>('table')
 const selectedAccountId = ref<number | null>(null)
 const selectedAccount = computed(() => {
   if (!selectedAccountId.value) return null
-  return allAccounts.value.find((a: { id: number; name: string; currencyCode?: string; currencyId?: number }) => a.id === selectedAccountId.value)
+  return allAccounts.value.find((a: { id: number; name: string; currencyCode?: string; currencyId?: number | null }) => a.id === selectedAccountId.value)
 })
 const needsRateForSelectedAccount = computed(() => {
   // Check if account currency is not the default user currency
