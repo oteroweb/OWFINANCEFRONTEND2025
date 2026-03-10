@@ -290,7 +290,7 @@
                       </q-item-label>
                       <template v-if="res.errors">
                         <q-item-label caption v-for="(errs, field) in res.errors" :key="`err-${idx}-${String(field)}`">
-                          <strong>{{ field }}:</strong> {{ Array.isArray(errs) ? errs.join(', ') : String(errs) }}
+                          <strong>{{ field }}:</strong> {{ Array.isArray(errs) ? (errs as Array<any>).join(', ') : String(errs) }}
                         </q-item-label>
                         </template>
                       </q-item-section>
