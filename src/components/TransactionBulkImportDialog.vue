@@ -175,7 +175,7 @@
                       <td>{{ row.type }}</td>
                       <td>{{ row.amount }}</td>
                       <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
-                      <td>{{ row.category_name }}</td>
+                      <td>{{ getCategoryDisplay(row) }}</td>
                     </tr>
                   </tbody>
                 </q-markup-table>
@@ -235,7 +235,7 @@
                       <td>{{ row.type }}</td>
                       <td>{{ row.amount }}</td>
                       <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
-                      <td>{{ row.category_name }}</td>
+                      <td>{{ getCategoryDisplay(row) }}</td>
                     </tr>
                   </tbody>
                 </q-markup-table>
@@ -390,7 +390,7 @@
                       <td>{{ row.type }}</td>
                       <td>{{ row.amount }}</td>
                       <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
-                      <td>{{ row.category_name }}</td>
+                      <td>{{ getCategoryDisplay(row) }}</td>
                     </tr>
                   </tbody>
                 </q-markup-table>
@@ -806,6 +806,18 @@ function removeRowFromPreview(index: number) {
     textRawRows.value.splice(index, 1)
   }
   Notify.create({ type: 'info', message: `Fila ${index + 1} eliminada` })
+}
+
+// Helper: Get category display name
+function getCategoryDisplay(row: Record<string, unknown> | { date: string; name: string; type: string; amount: number; rate: number | null; category_id: number | null }): string {
+  if ('category_name' in row && row.category_name) {
+    return safeText(row.category_name)
+  }
+  if ('category_id' in row && row.category_id) {
+    const cat = allCategories.value.find((c) => c.id === row.category_id)
+    return cat ? cat.name : ''
+  }
+  return ''
 }
 
 watch(activeTab, () => {
