@@ -414,6 +414,56 @@
             </q-card-section>
           </q-card>
 
+          <!-- Reglas opcionales de tipo -->
+          <q-card v-if="activeTab !== 'table'" flat bordered class="q-mb-md">
+            <q-card-section>
+              <div class="text-subtitle1 q-mb-md">⚙️ Reglas opcionales de tipo</div>
+              <q-toggle
+                v-model="enableTypeSymbolRules"
+                color="primary"
+                label="Usar reglas para símbolos (+/-)"
+              />
+              <div v-if="enableTypeSymbolRules" class="row q-col-gutter-md q-mt-sm">
+                <div class="col-12 col-sm-6">
+                  <q-select
+                    v-model="minusSymbolType"
+                    :options="typeOptions"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    outlined
+                    dense
+                    label="Símbolo '-' se interpreta como"
+                  />
+                </div>
+                <div class="col-12 col-sm-6">
+                  <q-select
+                    v-model="plusSymbolType"
+                    :options="typeOptions"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    outlined
+                    dense
+                    label="Símbolo '+' se interpreta como"
+                  />
+                </div>
+              </div>
+              <div class="q-mt-md">
+                <q-btn
+                  color="secondary"
+                  unelevated
+                  icon="rule"
+                  label="Aplicar reglas de tipo a vista previa"
+                  @click="applyTypeRulesToRows"
+                  :disable="parsedRowsForPreview.length === 0"
+                />
+              </div>
+            </q-card-section>
+          </q-card>
+
           <!-- Vista previa editable -->
           <q-card v-if="parsedRowsForPreview.length > 0" flat bordered class="q-mb-md">
             <q-card-section>
@@ -450,22 +500,22 @@
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
                         <q-input 
-                          :model-value="(row as any).date" 
-                          @update:model-value="(val) => { (row as any).date = val }" 
+                          :model-value="String(getRowValue(row, 'date') || '')" 
+                          @update:model-value="(val) => setRowValue(row, 'date', val)" 
                           dense outlined type="date" style="width: 100%;" 
                         />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
                         <q-input 
-                          :model-value="(row as any).name" 
-                          @update:model-value="(val) => { (row as any).name = val }" 
+                          :model-value="String(getRowValue(row, 'name') || '')" 
+                          @update:model-value="(val) => setRowValue(row, 'name', val)" 
                           dense outlined style="width: 100%;" 
                         />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
                         <q-select 
-                          :model-value="(row as any).type" 
-                          @update:model-value="(val) => { (row as any).type = val }" 
+                          :model-value="String(getRowValue(row, 'type') || 'expense')" 
+                          @update:model-value="(val) => setRowValue(row, 'type', val)" 
                           :options="['income', 'expense', 'transfer']" 
                           dense 
                           outlined 
@@ -475,22 +525,22 @@
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
                         <q-input 
-                          :model-value="(row as any).amount" 
-                          @update:model-value="(val) => { (row as any).amount = Number(val) }" 
+                          :model-value="Number(getRowValue(row, 'amount') || 0)" 
+                          @update:model-value="(val) => setRowValue(row, 'amount', Number(val))" 
                           dense outlined type="number" step="0.01" style="width: 100%;" 
                         />
                       </td>
                       <td v-if="needsRateForSelectedAccount" style="padding: 6px; border: 1px solid #ddd;">
                         <q-input 
-                          :model-value="(row as any).rate" 
-                          @update:model-value="(val) => { (row as any).rate = Number(val) }" 
+                          :model-value="Number(getRowValue(row, 'rate') || 1)" 
+                          @update:model-value="(val) => setRowValue(row, 'rate', Number(val))" 
                           dense outlined type="number" step="0.0001" style="width: 100%;" 
                         />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
                         <q-select 
-                          :model-value="(row as any).category_id" 
-                          @update:model-value="(val) => { (row as any).category_id = val }" 
+                          :model-value="getRowValue(row, 'category_id')" 
+                          @update:model-value="(val) => setRowValue(row, 'category_id', val)" 
                           :options="categoryOptions" 
                           option-value="id" 
                           option-label="name" 
@@ -545,6 +595,12 @@
           <q-card v-if="detectedCategoryNames.length > 0" flat bordered class="q-mb-md">
             <q-card-section>
               <div class="text-subtitle1 q-mb-md">🗂️ Asignación de categorías</div>
+              <q-toggle
+                v-model="autoApplyCategoryMappings"
+                color="primary"
+                label="Aplicar estas asignaciones automáticamente al presionar 'Aplicar mapeo'"
+                class="q-mb-md"
+              />
               <div v-for="catName in detectedCategoryNames" :key="`map-cat-${catName}`" class="q-mb-md">
                 <div class="row q-col-gutter-md items-center">
                   <div class="col-12 col-sm-5">
@@ -811,6 +867,10 @@ const textRawRows = ref<string[][]>([])
 
 const defaultRate = ref<number>(1)
 const categoryMappings = ref<Record<string, number | null>>({})
+const autoApplyCategoryMappings = ref<boolean>(false)
+const enableTypeSymbolRules = ref<boolean>(true)
+const minusSymbolType = ref<'expense' | 'income' | 'transfer'>('expense')
+const plusSymbolType = ref<'expense' | 'income' | 'transfer'>('income')
 const columnMapping = ref<{
   date: string[]
   name: string[]
@@ -836,6 +896,116 @@ const bulkResult = ref<BulkResult | null>(null)
 function safeText(value: unknown): string {
   if (typeof value === 'string' || typeof value === 'number') return String(value)
   return ''
+}
+
+function getRowValue(row: unknown, key: string): unknown {
+  if (typeof row === 'object' && row !== null) {
+    return (row as Record<string, unknown>)[key]
+  }
+  return undefined
+}
+
+function setRowValue(row: unknown, key: string, value: unknown): void {
+  if (typeof row === 'object' && row !== null) {
+    ;(row as Record<string, unknown>)[key] = value
+  }
+}
+
+function toIsoDateString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function normalizeDateValue(value: unknown): string {
+  const todayIso = toIsoDateString(new Date())
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return toIsoDateString(value)
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value > 59) {
+      const excelEpoch = Date.UTC(1899, 11, 30)
+      const ms = excelEpoch + Math.round(value * 86400000)
+      const parsed = new Date(ms)
+      if (!Number.isNaN(parsed.getTime())) return toIsoDateString(parsed)
+    }
+  }
+
+  const raw = safeText(value).trim()
+  if (!raw) return todayIso
+
+  const yyyyMmDd = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (yyyyMmDd) {
+    return `${yyyyMmDd[1]}-${yyyyMmDd[2]}-${yyyyMmDd[3]}`
+  }
+
+  const ddMmYyyy = raw.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/)
+  if (ddMmYyyy) {
+    const a = Number(ddMmYyyy[1])
+    const b = Number(ddMmYyyy[2])
+    const y = Number(ddMmYyyy[3])
+    if (a >= 1 && a <= 31 && b >= 1 && b <= 12) {
+      return `${String(y)}-${String(b).padStart(2, '0')}-${String(a).padStart(2, '0')}`
+    }
+  }
+
+  const jsParsed = new Date(raw)
+  if (!Number.isNaN(jsParsed.getTime())) {
+    return toIsoDateString(jsParsed)
+  }
+
+  return todayIso
+}
+
+function normalizeTypeValue(value: unknown): 'income' | 'expense' | 'transfer' {
+  const raw = safeText(value).trim().toLowerCase()
+
+  if (enableTypeSymbolRules.value) {
+    if (raw === '-') return minusSymbolType.value
+    if (raw === '+') return plusSymbolType.value
+  }
+
+  if (raw === '-' || raw === 'expense' || raw === 'egreso' || raw === 'gasto' || raw === 'outcome' || raw === 'outflow' || raw === 'debit' || raw === 'debito') {
+    return 'expense'
+  }
+  if (raw === '+' || raw === 'income' || raw === 'ingreso' || raw === 'abono' || raw === 'credito' || raw === 'credit') {
+    return 'income'
+  }
+  if (raw === 'transfer' || raw === 'transferencia' || raw === 'trf') {
+    return 'transfer'
+  }
+
+  return 'expense'
+}
+
+function applyCategoryMappingsToRows(rows: Array<Record<string, unknown>>) {
+  rows.forEach((row) => {
+    const key = safeText(row.category_name).trim()
+    if (!key) return
+    const mappedCategoryId = categoryMappings.value[key]
+    if (mappedCategoryId) {
+      row.category_id = mappedCategoryId
+      const selected = allCategories.value.find((c) => c.id === mappedCategoryId)
+      if (selected) row.category_name = selected.name
+    }
+  })
+}
+
+function applyTypeRulesToRows() {
+  const rows = activeTab.value === 'table'
+    ? (tableRows.value as unknown as Array<Record<string, unknown>>)
+    : activeTab.value === 'excel'
+      ? excelParsedRows.value
+      : textParsedRows.value
+
+  rows.forEach((row) => {
+    row.type = normalizeTypeValue(row.type)
+  })
+
+  Notify.create({ type: 'positive', message: 'Reglas de tipo aplicadas' })
 }
 
 function formatFieldErrors(value: unknown): string {
@@ -1101,6 +1271,9 @@ function applyColumnMapping() {
       }
       return normalizeRow(mapped, `excel-${idx}`)
     })
+    if (autoApplyCategoryMappings.value) {
+      applyCategoryMappingsToRows(excelParsedRows.value)
+    }
     Notify.create({ type: 'positive', message: 'Mapeo aplicado a filas Excel' })
     return
   }
@@ -1129,6 +1302,9 @@ function applyColumnMapping() {
       }
       return normalizeRow(mapped, `text-${idx}`)
     })
+    if (autoApplyCategoryMappings.value) {
+      applyCategoryMappingsToRows(textParsedRows.value)
+    }
     Notify.create({ type: 'positive', message: 'Mapeo aplicado a filas de texto' })
   }
 }
@@ -1161,16 +1337,7 @@ function applyCategoryMappings() {
   }
 
   const rows = activeTab.value === 'excel' ? excelParsedRows.value : textParsedRows.value
-  rows.forEach((row) => {
-    const key = safeText(row.category_name).trim()
-    if (!key) return
-    const mappedCategoryId = categoryMappings.value[key]
-    if (mappedCategoryId) {
-      row.category_id = mappedCategoryId
-      const selected = allCategories.value.find((c) => c.id === mappedCategoryId)
-      if (selected) row.category_name = selected.name
-    }
-  })
+  applyCategoryMappingsToRows(rows)
 
   Notify.create({ type: 'positive', message: 'Categorías aplicadas a filas detectadas' })
 }
@@ -1189,16 +1356,11 @@ function goToAdjustments() {
 // Normalize row from different sources
 function normalizeRow(row: Record<string, unknown>, clientId: string) {
   const dateRaw = row.Fecha || row.fecha || row.Date || row.date
-  const date = typeof dateRaw === 'string' || typeof dateRaw === 'number' ? String(dateRaw) : ''
+  const date = normalizeDateValue(dateRaw)
   const nameRaw = row.Concepto || row.concepto || row.Name || row.name
   const name = typeof nameRaw === 'string' || typeof nameRaw === 'number' ? String(nameRaw) : ''
   const typeRaw = row.Tipo || row.tipo || row.Type || row.type
-  let type = ''
-  if (typeof typeRaw === 'string') {
-    type = typeRaw.toLowerCase()
-  } else if (typeof typeRaw === 'number') {
-    type = String(typeRaw)
-  }
+  const type = normalizeTypeValue(typeRaw)
   const amountRaw = row.Monto || row.monto || row.Amount || row.amount
   const amountStr = typeof amountRaw === 'string' ? amountRaw : (typeof amountRaw === 'number' ? String(amountRaw) : '0')
   const amount = parseFloat(amountStr.replace(',', '.'))
@@ -1246,10 +1408,11 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
+  const normalizedDate = normalizeDateValue(row.date)
   
   return {
     name: nameValue,
-    date: String(row.date) + ' 12:00:00',
+    date: normalizedDate + ' 12:00:00',
     category_id: row.category_id as number | null,
     include_in_balance: true,
     items: [
@@ -1270,11 +1433,13 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
 }
 
 function buildRowPayloadFromNormalized(row: Record<string, unknown>): TransactionBulkRow {
-  const isExpense = String(row.type) === 'expense' || String(row.type) === 'egreso' || String(row.type) === 'gasto'
+  const normalizedType = normalizeTypeValue(row.type)
+  const isExpense = normalizedType === 'expense'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   const clientRowId = typeof row.client_row_id === 'string' || typeof row.client_row_id === 'number' ? String(row.client_row_id) : ''
   const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
+  const normalizedDate = normalizeDateValue(row.date)
   
   const explicitCategoryId = Number(row.category_id)
   const hasExplicitCategoryId = Number.isFinite(explicitCategoryId) && explicitCategoryId > 0
@@ -1284,7 +1449,7 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
   
   return {
     name: nameValue,
-    date: String(row.date) + ' 12:00:00',
+    date: normalizedDate + ' 12:00:00',
     category_id: hasExplicitCategoryId ? explicitCategoryId : (category?.id || null),
     include_in_balance: true,
     items: [
