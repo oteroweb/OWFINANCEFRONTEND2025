@@ -244,74 +244,245 @@
           </q-tab-panel>
         </q-tab-panels>
 
-        <div v-if="showAdjustments" class="q-mt-lg">
-          <q-separator class="q-mb-md" />
-          <div class="text-subtitle1 q-mb-sm">Paso 2: Ajustes antes de importar</div>
+        <div v-if="showAdjustments" class="q-mt-lg q-pa-md bg-grey-1" style="border-radius: 8px;">
+          <div class="text-h6 q-mb-md">Paso 2: Ajustes antes de importar</div>
 
-          <div v-if="activeTab !== 'table'" class="q-mb-md">
-            <div class="text-subtitle2 q-mb-sm">Mapeo de columnas</div>
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-md-4">
-                <q-select v-model="columnMapping.date" :options="columnMappingOptions" label="Fecha" outlined dense emit-value map-options />
+          <!-- Mapeo de columnas -->
+          <q-card v-if="activeTab !== 'table'" flat bordered class="q-mb-md">
+            <q-card-section>
+              <div class="text-subtitle1 q-mb-md">📋 Mapeo de columnas</div>
+              <div class="row q-col-gutter-md">
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.date" 
+                    :options="columnMappingOptions" 
+                    label="📅 Fecha" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options
+                  >
+                    <template v-slot:prepend>
+                      <q-badge color="primary" :label="getColumnNumber(columnMapping.date)" />
+                    </template>
+                  </q-select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.name" 
+                    :options="columnMappingOptions" 
+                    label="📝 Concepto" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options
+                  >
+                    <template v-slot:prepend>
+                      <q-badge color="primary" :label="getColumnNumber(columnMapping.name)" />
+                    </template>
+                  </q-select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.type" 
+                    :options="columnMappingOptions" 
+                    label="🏷️ Tipo" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options
+                  >
+                    <template v-slot:prepend>
+                      <q-badge color="primary" :label="getColumnNumber(columnMapping.type)" />
+                    </template>
+                  </q-select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.amount" 
+                    :options="columnMappingOptions" 
+                    label="💰 Monto" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options
+                  >
+                    <template v-slot:prepend>
+                      <q-badge color="primary" :label="getColumnNumber(columnMapping.amount)" />
+                    </template>
+                  </q-select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.rate" 
+                    :options="columnMappingOptions" 
+                    label="💱 Tasa" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options 
+                    clearable
+                  >
+                    <template v-slot:prepend>
+                      <q-badge v-if="columnMapping.rate" color="primary" :label="getColumnNumber(columnMapping.rate)" />
+                    </template>
+                  </q-select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-select 
+                    v-model="columnMapping.category" 
+                    :options="columnMappingOptions" 
+                    label="🗂️ Categoría" 
+                    outlined 
+                    dense 
+                    emit-value 
+                    map-options 
+                    clearable
+                  >
+                    <template v-slot:prepend>
+                      <q-badge v-if="columnMapping.category" color="primary" :label="getColumnNumber(columnMapping.category)" />
+                    </template>
+                  </q-select>
+                </div>
               </div>
-              <div class="col-12 col-md-4">
-                <q-select v-model="columnMapping.name" :options="columnMappingOptions" label="Concepto" outlined dense emit-value map-options />
+              <div class="q-mt-md">
+                <q-btn color="secondary" unelevated icon="sync" label="Aplicar mapeo" @click="applyColumnMapping" />
               </div>
-              <div class="col-12 col-md-4">
-                <q-select v-model="columnMapping.type" :options="columnMappingOptions" label="Tipo" outlined dense emit-value map-options />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-select v-model="columnMapping.amount" :options="columnMappingOptions" label="Monto" outlined dense emit-value map-options />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-select v-model="columnMapping.rate" :options="columnMappingOptions" label="Tasa" outlined dense emit-value map-options clearable />
-              </div>
-              <div class="col-12 col-md-4">
-                <q-select v-model="columnMapping.category" :options="columnMappingOptions" label="Categoría" outlined dense emit-value map-options clearable />
-              </div>
-            </div>
-            <div class="q-mt-sm">
-              <q-btn color="secondary" outline label="Aplicar mapeo" @click="applyColumnMapping" />
-            </div>
-          </div>
+            </q-card-section>
+          </q-card>
 
-          <div v-if="needsRateForSelectedAccount" class="q-mb-md">
-            <div class="text-subtitle2 q-mb-sm">Tasa por defecto (actual)</div>
-            <div class="row items-center q-col-gutter-sm">
-              <div class="col-12 col-md-3">
-                <q-input v-model.number="defaultRate" type="number" step="0.0001" outlined dense label="Tasa por defecto" />
+          <!-- Vista previa editable -->
+          <q-card v-if="parsedRowsForPreview.length > 0" flat bordered class="q-mb-md">
+            <q-card-section>
+              <div class="row items-center justify-between q-mb-md">
+                <div class="text-subtitle1">👁️ Vista previa ({{ parsedRowsForPreview.length }} filas)</div>
+                <q-badge color="info" :label="`${parsedRowsForPreview.length} filas cargadas`" />
               </div>
-              <div class="col-12 col-md-auto">
-                <q-btn color="secondary" outline label="Aplicar tasa a filas sin tasa" @click="applyDefaultRateToRows" />
+              <div style="max-height: 300px; overflow-y: auto;">
+                <q-markup-table dense flat bordered>
+                  <thead>
+                    <tr>
+                      <th style="width: 40px"></th>
+                      <th>Fecha</th>
+                      <th>Concepto</th>
+                      <th>Tipo</th>
+                      <th>Monto</th>
+                      <th v-if="needsRateForSelectedAccount">Tasa</th>
+                      <th>Categoría</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, idx) in parsedRowsForPreview.slice(0, 50)" :key="`prev-${idx}`">
+                      <td>
+                        <q-btn 
+                          icon="delete" 
+                          flat 
+                          dense 
+                          size="sm" 
+                          color="negative" 
+                          @click="removeRowFromPreview(idx)"
+                        >
+                          <q-tooltip>Eliminar fila</q-tooltip>
+                        </q-btn>
+                      </td>
+                      <td>{{ row.date }}</td>
+                      <td>{{ row.name }}</td>
+                      <td>{{ row.type }}</td>
+                      <td>{{ row.amount }}</td>
+                      <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
+                      <td>{{ row.category_name }}</td>
+                    </tr>
+                  </tbody>
+                </q-markup-table>
               </div>
-            </div>
-          </div>
+            </q-card-section>
+          </q-card>
 
-          <div v-if="detectedCategoryNames.length > 0" class="q-mb-md">
-            <div class="text-subtitle2 q-mb-sm">Asignación de categorías</div>
-            <div class="row q-col-gutter-sm" v-for="catName in detectedCategoryNames" :key="`map-cat-${catName}`">
-              <div class="col-12 col-md-4">
-                <q-input :model-value="catName" dense outlined readonly label="Categoría detectada" />
+          <!-- Tasa por defecto -->
+          <q-card v-if="needsRateForSelectedAccount" flat bordered class="q-mb-md">
+            <q-card-section>
+              <div class="text-subtitle1 q-mb-md">💱 Tasa por defecto (actual)</div>
+              <div class="row items-center q-col-gutter-md">
+                <div class="col-12 col-sm-6 col-md-4">
+                  <q-input 
+                    v-model.number="defaultRate" 
+                    type="number" 
+                    step="0.0001" 
+                    outlined 
+                    dense 
+                    label="Tasa"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="currency_exchange" />
+                    </template>
+                  </q-input>
+                </div>
+                <div class="col-12 col-sm-6 col-md-auto">
+                  <q-btn 
+                    color="secondary" 
+                    unelevated 
+                    icon="refresh" 
+                    label="Aplicar tasa a filas sin tasa" 
+                    @click="applyDefaultRateToRows" 
+                  />
+                </div>
               </div>
-              <div class="col-12 col-md-6">
-                <q-select
-                  v-model="categoryMappings[catName]"
-                  :options="categoryOptions"
-                  option-value="id"
-                  option-label="name"
-                  emit-value
-                  map-options
-                  dense
-                  outlined
-                  clearable
-                  label="Asignar a"
+            </q-card-section>
+          </q-card>
+
+          <!-- Asignación de categorías -->
+          <q-card v-if="detectedCategoryNames.length > 0" flat bordered class="q-mb-md">
+            <q-card-section>
+              <div class="text-subtitle1 q-mb-md">🗂️ Asignación de categorías</div>
+              <div v-for="catName in detectedCategoryNames" :key="`map-cat-${catName}`" class="q-mb-md">
+                <div class="row q-col-gutter-md items-center">
+                  <div class="col-12 col-sm-5">
+                    <q-input 
+                      :model-value="catName" 
+                      dense 
+                      outlined 
+                      readonly 
+                      label="Categoría detectada"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="label" color="orange" />
+                      </template>
+                    </q-input>
+                  </div>
+                  <div class="col-12 col-sm-1 text-center">
+                    <q-icon name="arrow_forward" size="sm" color="grey-6" />
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <q-select
+                      v-model="categoryMappings[catName]"
+                      :options="categoryOptions"
+                      option-value="id"
+                      option-label="name"
+                      emit-value
+                      map-options
+                      dense
+                      outlined
+                      clearable
+                      label="Asignar a"
+                    >
+                      <template v-slot:prepend>
+                        <q-icon name="folder" color="primary" />
+                      </template>
+                    </q-select>
+                  </div>
+                </div>
+              </div>
+              <div class="q-mt-md">
+                <q-btn 
+                  color="secondary" 
+                  unelevated 
+                  icon="check_circle" 
+                  label="Aplicar categorías" 
+                  @click="applyCategoryMappings" 
                 />
               </div>
-            </div>
-            <div class="q-mt-sm">
-              <q-btn color="secondary" outline label="Aplicar categorías" @click="applyCategoryMappings" />
-            </div>
-          </div>
+            </q-card-section>
+          </q-card>
         </div>
       </q-card-section>
 
@@ -596,12 +767,46 @@ const detectedCategoryNames = computed(() => {
   return Array.from(new Set(names))
 })
 
+const parsedRowsForPreview = computed(() => {
+  if (activeTab.value === 'table') return tableRows.value
+  if (activeTab.value === 'excel') return excelParsedRows.value
+  if (activeTab.value === 'text') return textParsedRows.value
+  return []
+})
+
 const hasData = computed(() => {
   if (activeTab.value === 'table') return tableRows.value.length > 0
   if (activeTab.value === 'excel') return excelParsedRows.value.length > 0
   if (activeTab.value === 'text') return textParsedRows.value.length > 0
   return false
 })
+
+// Helper: Get column number display
+function getColumnNumber(columnValue: string): string {
+  if (!columnValue) return '-'
+  if (activeTab.value === 'excel') {
+    return columnValue
+  }
+  if (activeTab.value === 'text') {
+    const num = parseInt(columnValue)
+    return Number.isFinite(num) ? `Col ${num + 1}` : columnValue
+  }
+  return columnValue
+}
+
+// Helper: Remove row from preview
+function removeRowFromPreview(index: number) {
+  if (activeTab.value === 'table') {
+    tableRows.value.splice(index, 1)
+  } else if (activeTab.value === 'excel') {
+    excelParsedRows.value.splice(index, 1)
+    excelRawRows.value.splice(index, 1)
+  } else if (activeTab.value === 'text') {
+    textParsedRows.value.splice(index, 1)
+    textRawRows.value.splice(index, 1)
+  }
+  Notify.create({ type: 'info', message: `Fila ${index + 1} eliminada` })
+}
 
 watch(activeTab, () => {
   showAdjustments.value = false
