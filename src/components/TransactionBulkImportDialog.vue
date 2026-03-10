@@ -296,6 +296,31 @@ interface BulkResult {
   }>
 }
 
+interface TransactionBulkRow {
+  name: string
+  date: string
+  transaction_type_id?: number | null
+  provider_id?: number | null
+  category_id?: number | null
+  include_in_balance?: boolean
+  amount?: number | null
+  description?: string | null
+  items: Array<{
+    name: string
+    amount: number
+    item_category_id?: number | null
+    quantity?: number
+  }>
+  payments: Array<{
+    account_id: number
+    amount: number
+    rate?: number | null
+    is_current?: boolean | null
+    is_official?: boolean | null
+  }>
+  client_row_id?: string
+}
+
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'imported', count: number): void
@@ -441,7 +466,7 @@ function normalizeRow(row: Record<string, unknown>, clientId: string) {
 
 // Build payload
 function buildPayload(dryRun: boolean) {
-  let rows: Array<Record<string, unknown>> = []
+  let rows: Array<TransactionBulkRow> = []
   
   if (activeTab.value === 'table') {
     rows = tableRows.value.map((row, idx) => buildRowPayload(row, `table-${idx}`))
@@ -458,24 +483,24 @@ function buildPayload(dryRun: boolean) {
   }
 }
 
-function buildRowPayload(row: Record<string, unknown>, clientId: string) {
+function buildRowPayload(row: Record<string, unknown>, clientId: string): TransactionBulkRow {
   const isExpense = row.type === 'expense'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   
   return {
-    name: row.name,
+    name: String(row.name || ''),
     date: String(row.date) + ' 12:00:00',
-    category_id: row.category_id,
+    category_id: row.category_id as number | null,
     include_in_balance: true,
     items: [
       {
-        name: row.name,
+        name: String(row.name || ''),
         amount: amount
       }
     ],
     payments: [
       {
-        account_id: row.account_id,
+        account_id: row.account_id as number,
         amount: amount,
         rate: 1
       }
@@ -484,39 +509,44 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string) {
   }
 }
 
-function buildRowPayloadFromNormalized(row: Record<string, unknown>) {
+function buildRowPayloadFromNormalized(row: Record<string, unknown>): TransactionBulkRow {
   const isExpense = String(row.type) === 'expense' || String(row.type) === 'egreso' || String(row.type) === 'gasto'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   
   // Find account by name
-  const account = accountsStore.accounts.find((a: { name: string }) => 
+  const account = accountsStore.accounts.find((a: { id: number; name: string }) => 
     a.name.toLowerCase() === String(row.account_name).toLowerCase()
   )
   
   // Find category by name
-  const category = categoriesStore.categories.find((c: { name: string }) => 
+  const category = categoriesStore.categories.find((c: { id: number; name: string }) => 
     c.name.toLowerCase() === String(row.category_name).toLowerCase()
   )
   
+  const accountId = account?.id
+  if (!accountId) {
+    throw new Error(`Account not found: ${String(row.account_name)}`)
+  }
+  
   return {
-    name: row.name,
+    name: String(row.name || ''),
     date: String(row.date) + ' 12:00:00',
     category_id: category?.id || null,
     include_in_balance: true,
     items: [
       {
-        name: row.name,
+        name: String(row.name || ''),
         amount: amount
       }
     ],
     payments: [
       {
-        account_id: account?.id || null,
+        account_id: accountId,
         amount: amount,
         rate: 1
       }
     ],
-    client_row_id: row.client_row_id
+    client_row_id: String(row.client_row_id || '')
   }
 }
 
