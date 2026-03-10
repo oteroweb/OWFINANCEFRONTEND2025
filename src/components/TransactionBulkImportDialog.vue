@@ -189,7 +189,7 @@
               <div>
                 <p class="text-caption text-grey-7 q-mb-sm">
                   Pega texto separado por el delimitador elegido y nuevas líneas. <br />
-                  Formato: <code>fecha{sep}concepto{sep}tipo{sep}monto{sep}cuenta{sep}categoría</code>
+                  Formato sugerido: <code>fecha{sep}concepto{sep}tipo{sep}monto{sep}tasa{sep}categoría</code>
                 </p>
               </div>
               <q-select
@@ -243,6 +243,76 @@
             </div>
           </q-tab-panel>
         </q-tab-panels>
+
+        <div v-if="showAdjustments" class="q-mt-lg">
+          <q-separator class="q-mb-md" />
+          <div class="text-subtitle1 q-mb-sm">Paso 2: Ajustes antes de importar</div>
+
+          <div v-if="activeTab !== 'table'" class="q-mb-md">
+            <div class="text-subtitle2 q-mb-sm">Mapeo de columnas</div>
+            <div class="row q-col-gutter-sm">
+              <div class="col-12 col-md-4">
+                <q-select v-model="columnMapping.date" :options="columnMappingOptions" label="Fecha" outlined dense emit-value map-options />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select v-model="columnMapping.name" :options="columnMappingOptions" label="Concepto" outlined dense emit-value map-options />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select v-model="columnMapping.type" :options="columnMappingOptions" label="Tipo" outlined dense emit-value map-options />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select v-model="columnMapping.amount" :options="columnMappingOptions" label="Monto" outlined dense emit-value map-options />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select v-model="columnMapping.rate" :options="columnMappingOptions" label="Tasa" outlined dense emit-value map-options clearable />
+              </div>
+              <div class="col-12 col-md-4">
+                <q-select v-model="columnMapping.category" :options="columnMappingOptions" label="Categoría" outlined dense emit-value map-options clearable />
+              </div>
+            </div>
+            <div class="q-mt-sm">
+              <q-btn color="secondary" outline label="Aplicar mapeo" @click="applyColumnMapping" />
+            </div>
+          </div>
+
+          <div v-if="needsRateForSelectedAccount" class="q-mb-md">
+            <div class="text-subtitle2 q-mb-sm">Tasa por defecto (actual)</div>
+            <div class="row items-center q-col-gutter-sm">
+              <div class="col-12 col-md-3">
+                <q-input v-model.number="defaultRate" type="number" step="0.0001" outlined dense label="Tasa por defecto" />
+              </div>
+              <div class="col-12 col-md-auto">
+                <q-btn color="secondary" outline label="Aplicar tasa a filas sin tasa" @click="applyDefaultRateToRows" />
+              </div>
+            </div>
+          </div>
+
+          <div v-if="detectedCategoryNames.length > 0" class="q-mb-md">
+            <div class="text-subtitle2 q-mb-sm">Asignación de categorías</div>
+            <div class="row q-col-gutter-sm" v-for="catName in detectedCategoryNames" :key="`map-cat-${catName}`">
+              <div class="col-12 col-md-4">
+                <q-input :model-value="catName" dense outlined readonly label="Categoría detectada" />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-select
+                  v-model="categoryMappings[catName]"
+                  :options="categoryOptions"
+                  option-value="id"
+                  option-label="name"
+                  emit-value
+                  map-options
+                  dense
+                  outlined
+                  clearable
+                  label="Asignar a"
+                />
+              </div>
+            </div>
+            <div class="q-mt-sm">
+              <q-btn color="secondary" outline label="Aplicar categorías" @click="applyCategoryMappings" />
+            </div>
+          </div>
+        </div>
       </q-card-section>
 
       <q-separator />
@@ -250,18 +320,25 @@
       <q-card-actions align="right" class="q-pa-md">
         <q-btn flat label="Cancelar" v-close-popup />
         <q-btn
+          v-if="hasData && !showAdjustments"
+          color="secondary"
+          outline
+          label="Siguiente: Ajustes"
+          @click="goToAdjustments"
+        />
+        <q-btn
           color="primary"
           label="Vista Previa (Dry Run)"
           @click="handleDryRun"
           :loading="processingDryRun"
-          :disable="!hasData"
+          :disable="!hasData || !showAdjustments"
         />
         <q-btn
           color="positive"
           label="Importar Ahora"
           @click="handleImport"
           :loading="processingImport"
-          :disable="!hasData"
+          :disable="!hasData || !showAdjustments"
         />
       </q-card-actions>
 
@@ -283,14 +360,14 @@
               <div v-if="bulkResult.failed > 0" class="q-mt-md">
                 <p class="text-body2 text-negative">Errores:</p>
                 <q-list dense bordered separator>
-                  <q-item v-for="(res, idx) in bulkResult.results.filter((r: any) => !r.ok)" :key="`error-${idx}`">
+                  <q-item v-for="(res, idx) in failedResults" :key="`error-${idx}`">
                     <q-item-section>
                       <q-item-label overline>
                         Fila {{ res.index + 1 }} ({{ res.client_row_id || 'sin id' }})
                       </q-item-label>
                       <template v-if="res.errors">
                         <q-item-label caption v-for="(errs, field) in res.errors" :key="`err-${idx}-${String(field)}`">
-                          <strong>{{ field }}:</strong> {{ Array.isArray(errs) ? (errs as Array<any>).join(', ') : String(errs) }}
+                          <strong>{{ field }}:</strong> {{ formatFieldErrors(errs) }}
                         </q-item-label>
                         </template>
                       </q-item-section>
@@ -309,7 +386,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useTransactionsStore } from '../stores/transactions'
 import { useTransactionForm } from 'src/composables/useTransactionForm'
 import { api } from 'boot/axios'
@@ -327,6 +404,13 @@ interface BulkResult {
     transaction_id?: number
     errors?: unknown
   }>
+}
+
+interface BulkFailedResult {
+  index: number
+  client_row_id: string | undefined
+  ok: boolean
+  errors: Record<string, unknown> | undefined
 }
 
 interface TransactionBulkRow {
@@ -392,6 +476,7 @@ onMounted(async () => {
 
 const showDialog = ref(true)
 const activeTab = ref<'table' | 'excel' | 'text'>('table')
+const showAdjustments = ref(false)
 
 // Account selection
 const selectedAccountId = ref<number | null>(null)
@@ -419,17 +504,62 @@ const tableRows = ref<Array<{
 // Excel mode
 const excelFile = ref<File | null>(null)
 const excelParsedRows = ref<Array<Record<string, unknown>>>([])
+const excelRawRows = ref<Array<Record<string, unknown>>>([])
+const excelDetectedColumns = ref<string[]>([])
 
 // Text mode
 const textInput = ref('')
 const textSeparator = ref<string>(';')
 const textParsedRows = ref<Array<Record<string, unknown>>>([])
+const textRawRows = ref<string[][]>([])
+
+const defaultRate = ref<number>(1)
+const categoryMappings = ref<Record<string, number | null>>({})
+const columnMapping = ref<{
+  date: string
+  name: string
+  type: string
+  amount: string
+  rate: string
+  category: string
+}>({
+  date: '',
+  name: '',
+  type: '',
+  amount: '',
+  rate: '',
+  category: ''
+})
 
 // Results
 const processingDryRun = ref(false)
 const processingImport = ref(false)
 const showResults = ref(false)
 const bulkResult = ref<BulkResult | null>(null)
+
+function safeText(value: unknown): string {
+  if (typeof value === 'string' || typeof value === 'number') return String(value)
+  return ''
+}
+
+function formatFieldErrors(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map((entry) => safeText(entry)).filter(Boolean).join(', ')
+  }
+  return safeText(value)
+}
+
+const failedResults = computed<BulkFailedResult[]>(() => {
+  if (!bulkResult.value?.results) return []
+  return bulkResult.value.results
+    .filter((res) => !res.ok)
+    .map((res) => ({
+      index: res.index,
+      client_row_id: res.client_row_id,
+      ok: res.ok,
+      errors: typeof res.errors === 'object' && res.errors !== null ? (res.errors as Record<string, unknown>) : undefined
+    }))
+})
 
 // Separator options for text mode
 const separatorOptions = [
@@ -447,11 +577,34 @@ const categoryOptions = computed(() => {
   return allCategories.value.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name }))
 })
 
+const columnMappingOptions = computed(() => {
+  if (activeTab.value === 'excel') {
+    return excelDetectedColumns.value.map((col) => ({ label: col, value: col }))
+  }
+  if (activeTab.value === 'text') {
+    const maxLen = textRawRows.value.reduce((acc, row) => Math.max(acc, row.length), 0)
+    return Array.from({ length: maxLen }, (_, i) => ({ label: `Columna ${i + 1}`, value: String(i) }))
+  }
+  return []
+})
+
+const detectedCategoryNames = computed(() => {
+  const sourceRows = activeTab.value === 'excel' ? excelParsedRows.value : activeTab.value === 'text' ? textParsedRows.value : []
+  const names = sourceRows
+    .map((row) => safeText(row.category_name).trim())
+    .filter((name) => name.length > 0)
+  return Array.from(new Set(names))
+})
+
 const hasData = computed(() => {
   if (activeTab.value === 'table') return tableRows.value.length > 0
   if (activeTab.value === 'excel') return excelParsedRows.value.length > 0
   if (activeTab.value === 'text') return textParsedRows.value.length > 0
   return false
+})
+
+watch(activeTab, () => {
+  showAdjustments.value = false
 })
 
 // Table functions
@@ -475,6 +628,8 @@ function removeTableRow(idx: number) {
 function handleExcelFile(file: File | null) {
   if (!file) {
     excelParsedRows.value = []
+    excelRawRows.value = []
+    excelDetectedColumns.value = []
     return
   }
   const reader = new FileReader()
@@ -493,11 +648,16 @@ function handleExcelFile(file: File | null) {
         return
       }
       const json = xlsxUtils.sheet_to_json(sheet)
-      
-      // Parse and normalize
-      excelParsedRows.value = (json as Array<Record<string, unknown>>).map((row, idx) => {
-        return normalizeRow(row, `excel-${idx}`)
+
+      excelRawRows.value = json as Array<Record<string, unknown>>
+      const columns = new Set<string>()
+      excelRawRows.value.forEach((row) => {
+        Object.keys(row).forEach((key) => columns.add(String(key)))
       })
+      excelDetectedColumns.value = Array.from(columns)
+      initColumnMappingDefaults()
+      applyColumnMapping()
+      showAdjustments.value = false
     } catch (err) {
       console.error('Error parsing Excel', err)
       Notify.create({ type: 'negative', message: 'Error al parsear Excel' })
@@ -511,22 +671,142 @@ function handleTextInput(value: string | number | null) {
   const strValue = value != null ? String(value) : ''
   if (!strValue.trim()) {
     textParsedRows.value = []
+    textRawRows.value = []
     return
   }
   const lines = strValue.split('\n').map(l => l.trim()).filter(l => l.length > 0)
   const sep = textSeparator.value
-  textParsedRows.value = lines.map((line, idx) => {
-    const parts = line.split(sep).map(p => p.trim())
-    if (parts.length < 4) return null
-    return normalizeRow({
-      Fecha: parts[0] || '',
-      Concepto: parts[1] || '',
-      Tipo: parts[2] || '',
-      Monto: parts[3] || '',
-      Tasa: parts[4] || null,
-      Categoría: parts[5] || '',
-    }, `text-${idx}`)
-  }).filter(r => r !== null)
+  textRawRows.value = lines.map((line) => line.split(sep).map(p => p.trim()))
+  initColumnMappingDefaults()
+  applyColumnMapping()
+  showAdjustments.value = false
+}
+
+function initColumnMappingDefaults() {
+  if (activeTab.value === 'excel') {
+    const findCol = (candidates: string[]) => {
+      const lowered = excelDetectedColumns.value.map((c) => ({ raw: c, norm: c.toLowerCase() }))
+      const found = lowered.find((c) => candidates.includes(c.norm))
+      return found?.raw || ''
+    }
+    columnMapping.value = {
+      date: findCol(['fecha', 'date']),
+      name: findCol(['concepto', 'name']),
+      type: findCol(['tipo', 'type']),
+      amount: findCol(['monto', 'amount']),
+      rate: findCol(['tasa', 'rate']),
+      category: findCol(['categoria', 'categoría', 'category'])
+    }
+    return
+  }
+
+  if (activeTab.value === 'text') {
+    columnMapping.value = {
+      date: '0',
+      name: '1',
+      type: '2',
+      amount: '3',
+      rate: '4',
+      category: '5'
+    }
+  }
+}
+
+function applyColumnMapping() {
+  if (activeTab.value === 'excel') {
+    excelParsedRows.value = excelRawRows.value.map((row, idx) => {
+      const mapped: Record<string, unknown> = {
+        Fecha: columnMapping.value.date ? row[columnMapping.value.date] : '',
+        Concepto: columnMapping.value.name ? row[columnMapping.value.name] : '',
+        Tipo: columnMapping.value.type ? row[columnMapping.value.type] : '',
+        Monto: columnMapping.value.amount ? row[columnMapping.value.amount] : '',
+        Tasa: columnMapping.value.rate ? row[columnMapping.value.rate] : null,
+        Categoría: columnMapping.value.category ? row[columnMapping.value.category] : ''
+      }
+      return normalizeRow(mapped, `excel-${idx}`)
+    })
+    Notify.create({ type: 'positive', message: 'Mapeo aplicado a filas Excel' })
+    return
+  }
+
+  if (activeTab.value === 'text') {
+    const safeIndex = (value: string) => {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : -1
+    }
+    const idxDate = safeIndex(columnMapping.value.date)
+    const idxName = safeIndex(columnMapping.value.name)
+    const idxType = safeIndex(columnMapping.value.type)
+    const idxAmount = safeIndex(columnMapping.value.amount)
+    const idxRate = safeIndex(columnMapping.value.rate)
+    const idxCategory = safeIndex(columnMapping.value.category)
+
+    textParsedRows.value = textRawRows.value.map((parts, idx) => {
+      const mapped: Record<string, unknown> = {
+        Fecha: idxDate >= 0 ? parts[idxDate] || '' : '',
+        Concepto: idxName >= 0 ? parts[idxName] || '' : '',
+        Tipo: idxType >= 0 ? parts[idxType] || '' : '',
+        Monto: idxAmount >= 0 ? parts[idxAmount] || '' : '',
+        Tasa: idxRate >= 0 ? parts[idxRate] || null : null,
+        Categoría: idxCategory >= 0 ? parts[idxCategory] || '' : ''
+      }
+      return normalizeRow(mapped, `text-${idx}`)
+    })
+    Notify.create({ type: 'positive', message: 'Mapeo aplicado a filas de texto' })
+  }
+}
+
+function applyDefaultRateToRows() {
+  if (!defaultRate.value || Number(defaultRate.value) <= 0) {
+    Notify.create({ type: 'warning', message: 'La tasa por defecto debe ser mayor a 0' })
+    return
+  }
+
+  const applyTo = (rows: Array<Record<string, unknown>>) => {
+    rows.forEach((row) => {
+      const current = Number(row.rate)
+      if (!Number.isFinite(current) || current <= 0) {
+        row.rate = Number(defaultRate.value)
+      }
+    })
+  }
+
+  if (activeTab.value === 'table') applyTo(tableRows.value as unknown as Array<Record<string, unknown>>)
+  if (activeTab.value === 'excel') applyTo(excelParsedRows.value)
+  if (activeTab.value === 'text') applyTo(textParsedRows.value)
+
+  Notify.create({ type: 'positive', message: 'Tasa por defecto aplicada a filas sin tasa' })
+}
+
+function applyCategoryMappings() {
+  if (activeTab.value !== 'excel' && activeTab.value !== 'text') {
+    return
+  }
+
+  const rows = activeTab.value === 'excel' ? excelParsedRows.value : textParsedRows.value
+  rows.forEach((row) => {
+    const key = safeText(row.category_name).trim()
+    if (!key) return
+    const mappedCategoryId = categoryMappings.value[key]
+    if (mappedCategoryId) {
+      row.category_id = mappedCategoryId
+      const selected = allCategories.value.find((c) => c.id === mappedCategoryId)
+      if (selected) row.category_name = selected.name
+    }
+  })
+
+  Notify.create({ type: 'positive', message: 'Categorías aplicadas a filas detectadas' })
+}
+
+function goToAdjustments() {
+  if (!hasData.value) return
+  showAdjustments.value = true
+  defaultRate.value = defaultRate.value > 0 ? defaultRate.value : 1
+  detectedCategoryNames.value.forEach((name) => {
+    if (!(name in categoryMappings.value)) {
+      categoryMappings.value[name] = null
+    }
+  })
 }
 
 // Normalize row from different sources
@@ -619,15 +899,16 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
   const clientRowId = typeof row.client_row_id === 'string' || typeof row.client_row_id === 'number' ? String(row.client_row_id) : ''
   const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
   
-  // Find category by name
-  const category = allCategories.value.find((c: { id: number; name: string }) => 
+  const explicitCategoryId = Number(row.category_id)
+  const hasExplicitCategoryId = Number.isFinite(explicitCategoryId) && explicitCategoryId > 0
+  const category = allCategories.value.find((c: { id: number; name: string }) =>
     c.name.toLowerCase() === String(row.category_name).toLowerCase()
   )
   
   return {
     name: nameValue,
     date: String(row.date) + ' 12:00:00',
-    category_id: category?.id || null,
+    category_id: hasExplicitCategoryId ? explicitCategoryId : (category?.id || null),
     include_in_balance: true,
     items: [
       {
