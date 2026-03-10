@@ -418,25 +418,25 @@
           <q-card v-if="parsedRowsForPreview.length > 0" flat bordered class="q-mb-md">
             <q-card-section>
               <div class="row items-center justify-between q-mb-md">
-                <div class="text-subtitle1">👁️ Vista previa ({{ parsedRowsForPreview.length }} filas)</div>
+                <div class="text-subtitle1">👁️ Vista previa editable ({{ parsedRowsForPreview.length }} filas)</div>
                 <q-badge color="info" :label="`${parsedRowsForPreview.length} filas cargadas`" />
               </div>
-              <div style="max-height: 300px; overflow-y: auto;">
-                <q-markup-table dense flat bordered>
-                  <thead>
+              <div style="max-height: 500px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px;">
+                <table class="full-width" style="border-collapse: collapse;">
+                  <thead style="position: sticky; top: 0; background: #f5f5f5; z-index: 1;">
                     <tr>
-                      <th style="width: 40px"></th>
-                      <th>Fecha</th>
-                      <th>Concepto</th>
-                      <th>Tipo</th>
-                      <th>Monto</th>
-                      <th v-if="needsRateForSelectedAccount">Tasa</th>
-                      <th>Categoría</th>
+                      <th style="width: 40px; padding: 8px; text-align: center; border: 1px solid #ddd;"></th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">Fecha</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 150px;">Concepto</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">Tipo</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">Monto</th>
+                      <th v-if="needsRateForSelectedAccount" style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 80px;">Tasa</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">Categoría</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(row, idx) in parsedRowsForPreview.slice(0, 50)" :key="`prev-${idx}`">
-                      <td>
+                    <tr v-for="(row, idx) in parsedRowsForPreview.slice(0, 50)" :key="`prev-${idx}`" style="border-bottom: 1px solid #ddd;">
+                      <td style="padding: 4px; text-align: center; border: 1px solid #ddd;">
                         <q-btn 
                           icon="delete" 
                           flat 
@@ -448,15 +448,45 @@
                           <q-tooltip>Eliminar fila</q-tooltip>
                         </q-btn>
                       </td>
-                      <td>{{ row.date }}</td>
-                      <td>{{ row.name }}</td>
-                      <td>{{ row.type }}</td>
-                      <td>{{ row.amount }}</td>
-                      <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
-                      <td>{{ getCategoryDisplay(row) }}</td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
+                        <q-input v-model="row.date" dense outlined type="date" style="width: 100%;" />
+                      </td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
+                        <q-input v-model="row.name" dense outlined style="width: 100%;" />
+                      </td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
+                        <q-select 
+                          v-model="row.type" 
+                          :options="['income', 'expense', 'transfer']" 
+                          dense 
+                          outlined 
+                          emit-value 
+                          style="width: 100%;"
+                        />
+                      </td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
+                        <q-input v-model.number="row.amount" dense outlined type="number" step="0.01" style="width: 100%;" />
+                      </td>
+                      <td v-if="needsRateForSelectedAccount" style="padding: 6px; border: 1px solid #ddd;">
+                        <q-input v-model.number="row.rate" dense outlined type="number" step="0.0001" style="width: 100%;" />
+                      </td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
+                        <q-select 
+                          v-model="row.category_id" 
+                          :options="categoryOptions" 
+                          option-value="id" 
+                          option-label="name" 
+                          dense 
+                          outlined 
+                          emit-value 
+                          map-options 
+                          use-input
+                          style="width: 100%;"
+                        />
+                      </td>
                     </tr>
                   </tbody>
-                </q-markup-table>
+                </table>
               </div>
             </q-card-section>
           </q-card>
