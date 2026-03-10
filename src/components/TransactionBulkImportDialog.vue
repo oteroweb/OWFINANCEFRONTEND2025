@@ -443,12 +443,13 @@ function handleExcelFile(file: File | null) {
 }
 
 // Text parser
-function handleTextInput(value: string) {
-  if (!value.trim()) {
+function handleTextInput(value: string | number | null) {
+  const strValue = value != null ? String(value) : ''
+  if (!strValue.trim()) {
     textParsedRows.value = []
     return
   }
-  const lines = value.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+  const lines = strValue.split('\n').map(l => l.trim()).filter(l => l.length > 0)
   textParsedRows.value = lines.map((line, idx) => {
     const parts = line.split(';').map(p => p.trim())
     if (parts.length < 4) return null
@@ -465,8 +466,10 @@ function handleTextInput(value: string) {
 
 // Normalize row from different sources
 function normalizeRow(row: Record<string, unknown>, clientId: string) {
-  const date = row.Fecha || row.fecha || row.Date || row.date || ''
-  const name = row.Concepto || row.concepto || row.Name || row.name || ''
+  const dateRaw = row.Fecha || row.fecha || row.Date || row.date
+  const date = typeof dateRaw === 'string' || typeof dateRaw === 'number' ? String(dateRaw) : ''
+  const nameRaw = row.Concepto || row.concepto || row.Name || row.name
+  const name = typeof nameRaw === 'string' || typeof nameRaw === 'number' ? String(nameRaw) : ''
   const typeRaw = row.Tipo || row.tipo || row.Type || row.type
   let type = ''
   if (typeof typeRaw === 'string') {
@@ -477,8 +480,10 @@ function normalizeRow(row: Record<string, unknown>, clientId: string) {
   const amountRaw = row.Monto || row.monto || row.Amount || row.amount
   const amountStr = typeof amountRaw === 'string' ? amountRaw : (typeof amountRaw === 'number' ? String(amountRaw) : '0')
   const amount = parseFloat(amountStr.replace(',', '.'))
-  const accountName = row.Cuenta || row.cuenta || row.Account || row.account || ''
-  const categoryName = row.Categoría || row.categoria || row.Category || row.category || ''
+  const accountNameRaw = row.Cuenta || row.cuenta || row.Account || row.account
+  const accountName = typeof accountNameRaw === 'string' || typeof accountNameRaw === 'number' ? String(accountNameRaw) : ''
+  const categoryNameRaw = row.Categoría || row.categoria || row.Category || row.category
+  const categoryName = typeof categoryNameRaw === 'string' || typeof categoryNameRaw === 'number' ? String(categoryNameRaw) : ''
   
   return {
     date,
