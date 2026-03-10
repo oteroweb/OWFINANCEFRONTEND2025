@@ -191,7 +191,7 @@
             />
             <div v-if="textParsedRows.length > 0" class="q-mt-md">
               <p class="text-body2">
-                <strong>{{ textParsedRows.length }}</strong> filas parseadas (delimitador: <code>{{ textSeparator === '\t' ? 'TAB' : textSeparator }}</code>).
+                <strong>{{ textParsedRows.length }}</strong> filas parseadas (delimitador: <code>{{ textSeparator === "\t" ? 'TAB' : textSeparator }}</code>).
               </p>
               <div style="max-height: 300px; overflow-y: auto">
                 <q-markup-table dense flat bordered>
@@ -400,7 +400,7 @@ const bulkResult = ref<BulkResult | null>(null)
 // Separator options for text mode
 const separatorOptions = [
   { label: 'Punto y coma (;)', value: ';' },
-  { label: 'Tabulador (TAB)', value: '\t' },
+  { label: 'Tabulador (TAB)', value: "\t" },
   { label: 'Coma (,)', value: ',' },
   { label: 'Pipe (|)', value: '|' }
 ]
