@@ -401,8 +401,9 @@ const hasData = computed(() => {
 
 // Table functions
 function addTableRow() {
+  const today = new Date().toISOString()
   tableRows.value.push({
-    date: new Date().toISOString().split('T')[0],
+    date: today.split('T')[0] || today,
     name: '',
     type: 'expense',
     amount: 0,
@@ -426,7 +427,11 @@ function handleExcelFile(file: File | null) {
     try {
       const data = e.target?.result
       const workbook = xlsxRead(data, { type: 'binary' })
-      const sheetName = workbook.SheetNames[0]
+      const sheetName = workbook.SheetNames[0] || workbook.SheetNames[0]
+      if (!sheetName) {
+        Notify.create({ type: 'warning', message: 'No se encontraron hojas en el archivo Excel' })
+        return
+      }
       const sheet = workbook.Sheets[sheetName]
       const json = xlsxUtils.sheet_to_json(sheet)
       
