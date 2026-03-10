@@ -861,19 +861,6 @@ const hasData = computed(() => {
   return false
 })
 
-// Helper: Get column number display
-function getColumnNumber(columnValue: string): string {
-  if (!columnValue) return '-'
-  if (activeTab.value === 'excel') {
-    return columnValue
-  }
-  if (activeTab.value === 'text') {
-    const num = parseInt(columnValue)
-    return Number.isFinite(num) ? `Col ${num + 1}` : columnValue
-  }
-  return columnValue
-}
-
 // Helper: Remove row from preview
 function removeRowFromPreview(index: number) {
   if (activeTab.value === 'table') {
