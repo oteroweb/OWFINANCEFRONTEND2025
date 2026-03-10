@@ -1869,28 +1869,6 @@ function applyColumnMapping() {
   }
 }
 
-function applyDefaultRateToRows() {
-  if (!defaultRate.value || Number(defaultRate.value) <= 0) {
-    Notify.create({ type: 'warning', message: 'La tasa por defecto debe ser mayor a 0' })
-    return
-  }
-
-  const applyTo = (rows: Array<Record<string, unknown>>) => {
-    rows.forEach((row) => {
-      const current = Number(row.rate)
-      if (!Number.isFinite(current) || current <= 0) {
-        row.rate = Number(defaultRate.value)
-      }
-    })
-  }
-
-  if (activeTab.value === 'table') applyTo(tableRows.value as unknown as Array<Record<string, unknown>>)
-  if (activeTab.value === 'excel') applyTo(excelParsedRows.value)
-  if (activeTab.value === 'text') applyTo(textParsedRows.value)
-
-  Notify.create({ type: 'positive', message: 'Tasa por defecto aplicada a filas sin tasa' })
-}
-
 function applyCategoryMappings() {
   if (activeTab.value !== 'excel' && activeTab.value !== 'text') {
     return
