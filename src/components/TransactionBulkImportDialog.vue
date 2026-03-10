@@ -603,7 +603,7 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
     ],
     payments: [
       {
-        account_id: selectedAccountId.value,
+        account_id: selectedAccountId.value as number,
         amount: amount,
         rate: rate
       }
@@ -637,7 +637,7 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
     ],
     payments: [
       {
-        account_id: selectedAccountId.value,
+        account_id: selectedAccountId.value as number,
         amount: amount,
         rate: rate
       }
