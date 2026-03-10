@@ -188,26 +188,20 @@
               <p class="text-body2">
                 <strong>{{ excelParsedRows.length }}</strong> filas detectadas.
               </p>
-              <div style="max-height: 400px; overflow-y: auto">
+              <div style="height: 400px; overflow: auto; border: 1px solid #e0e0e0; border-radius: 4px;">
                 <q-markup-table dense flat bordered>
-                  <thead>
+                  <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                     <tr>
-                      <th>Fecha (Columna 1)</th>
-                      <th>Concepto (Columna 2)</th>
-                      <th>Tipo (Columna 3)</th>
-                      <th>Monto (Columna 4)</th>
-                      <th v-if="needsRateForSelectedAccount">Tasa (Columna 5)</th>
-                      <th>Categoría (Columna {{ needsRateForSelectedAccount ? 6 : 5 }})</th>
+                      <th v-for="(col, idx) in excelDetectedColumns" :key="idx">
+                        {{ col }} ({{ idx + 1 }})
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(row, idx) in excelParsedRows.slice(0, 50)" :key="idx">
-                      <td>{{ row.date }}</td>
-                      <td>{{ row.name }}</td>
-                      <td>{{ row.type }}</td>
-                      <td>{{ row.amount }}</td>
-                      <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
-                      <td>{{ getCategoryDisplay(row) }}</td>
+                    <tr v-for="(row, idx) in excelRawRows.slice(0, 100)" :key="idx">
+                      <td v-for="col in excelDetectedColumns" :key="col" class="text-body2" style="min-width: 100px; word-break: break-word;">
+                        {{ row[col] }}
+                      </td>
                     </tr>
                   </tbody>
                 </q-markup-table>
@@ -253,26 +247,20 @@
               <p class="text-body2">
                 <strong>{{ textParsedRows.length }}</strong> filas parseadas (delimitador: <code>{{ textSeparator === "\t" ? 'TAB' : textSeparator }}</code>).
               </p>
-              <div style="max-height: 300px; overflow-y: auto">
+              <div style="height: 300px; overflow: auto; border: 1px solid #e0e0e0; border-radius: 4px;">
                 <q-markup-table dense flat bordered>
-                  <thead>
+                  <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                     <tr>
-                      <th>Fecha (Columna 1)</th>
-                      <th>Concepto (Columna 2)</th>
-                      <th>Tipo (Columna 3)</th>
-                      <th>Monto (Columna 4)</th>
-                      <th v-if="needsRateForSelectedAccount">Tasa (Columna 5)</th>
-                      <th>Categoría (Columna {{ needsRateForSelectedAccount ? 6 : 5 }})</th>
+                      <th v-for="(idx) in (textRawRows[0]?.length || 0)" :key="idx">
+                        Columna {{ idx + 1 }}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(row, idx) in textParsedRows.slice(0, 50)" :key="idx">
-                      <td>{{ row.date }}</td>
-                      <td>{{ row.name }}</td>
-                      <td>{{ row.type }}</td>
-                      <td>{{ row.amount }}</td>
-                      <td v-if="needsRateForSelectedAccount">{{ row.rate ?? 1 }}</td>
-                      <td>{{ getCategoryDisplay(row) }}</td>
+                    <tr v-for="(row, ridx) in textRawRows.slice(0, 100)" :key="ridx">
+                      <td v-for="(cell, cidx) in row" :key="cidx" class="text-body2" style="min-width: 100px; word-break: break-word;">
+                        {{ cell }}
+                      </td>
                     </tr>
                   </tbody>
                 </q-markup-table>
@@ -300,11 +288,15 @@
                     map-options
                     use-input
                     input-debounce="0"
+                    multiple
                     @filter="filterColumnOptions"
-                    :rules="[val => !!val || 'Requerido']"
+                    :rules="[val => (val && val.length > 0) || 'Requerido']"
                   >
                     <template v-slot:prepend>
-                      <q-badge color="primary" :label="getColumnNumber(columnMapping.date)" />
+                      <q-icon name="calendar_today" />
+                    </template>
+                    <template v-slot:hint>
+                      Selecciona 1 columna (fecha solamente)
                     </template>
                   </q-select>
                 </div>
@@ -319,11 +311,15 @@
                     map-options
                     use-input
                     input-debounce="0"
+                    multiple
                     @filter="filterColumnOptions"
-                    :rules="[val => !!val || 'Requerido']"
+                    :rules="[val => (val && val.length > 0) || 'Requerido']"
                   >
                     <template v-slot:prepend>
-                      <q-badge color="primary" :label="getColumnNumber(columnMapping.name)" />
+                      <q-icon name="description" />
+                    </template>
+                    <template v-slot:hint>
+                      Puedes seleccionar múltiples para concatenar
                     </template>
                   </q-select>
                 </div>
@@ -338,11 +334,15 @@
                     map-options
                     use-input
                     input-debounce="0"
+                    multiple
                     @filter="filterColumnOptions"
-                    :rules="[val => !!val || 'Requerido']"
+                    :rules="[val => (val && val.length > 0) || 'Requerido']"
                   >
                     <template v-slot:prepend>
-                      <q-badge color="primary" :label="getColumnNumber(columnMapping.type)" />
+                      <q-icon name="category" />
+                    </template>
+                    <template v-slot:hint>
+                      income, expense, transfer
                     </template>
                   </q-select>
                 </div>
@@ -357,11 +357,15 @@
                     map-options
                     use-input
                     input-debounce="0"
+                    multiple
                     @filter="filterColumnOptions"
-                    :rules="[val => !!val || 'Requerido']"
+                    :rules="[val => (val && val.length > 0) || 'Requerido']"
                   >
                     <template v-slot:prepend>
-                      <q-badge color="primary" :label="getColumnNumber(columnMapping.amount)" />
+                      <q-icon name="attach_money" />
+                    </template>
+                    <template v-slot:hint>
+                      Selecciona 1 columna (número solamente)
                     </template>
                   </q-select>
                 </div>
@@ -374,14 +378,16 @@
                     dense 
                     emit-value 
                     map-options 
-                    clearable
                     use-input
                     input-debounce="0"
+                    multiple
                     @filter="filterColumnOptions"
-                    hint="Opcional"
                   >
                     <template v-slot:prepend>
-                      <q-badge v-if="columnMapping.rate" color="primary" :label="getColumnNumber(columnMapping.rate)" />
+                      <q-icon name="currency_exchange" />
+                    </template>
+                    <template v-slot:hint>
+                      Opcional - necesario si hay transfer o moneda diferente
                     </template>
                   </q-select>
                 </div>
@@ -394,14 +400,16 @@
                     dense 
                     emit-value 
                     map-options 
-                    clearable
                     use-input
                     input-debounce="0"
+                    multiple
                     @filter="filterColumnOptions"
-                    hint="Opcional"
                   >
                     <template v-slot:prepend>
-                      <q-badge v-if="columnMapping.category" color="primary" :label="getColumnNumber(columnMapping.category)" />
+                      <q-icon name="folder" />
+                    </template>
+                    <template v-slot:hint>
+                      Opcional - puedes concatenar múltiples columnas
                     </template>
                   </q-select>
                 </div>
@@ -759,19 +767,19 @@ const textRawRows = ref<string[][]>([])
 const defaultRate = ref<number>(1)
 const categoryMappings = ref<Record<string, number | null>>({})
 const columnMapping = ref<{
-  date: string
-  name: string
-  type: string
-  amount: string
-  rate: string
-  category: string
+  date: string[]
+  name: string[]
+  type: string[]
+  amount: string[]
+  rate: string[]
+  category: string[]
 }>({
-  date: '',
-  name: '',
-  type: '',
-  amount: '',
-  rate: '',
-  category: ''
+  date: [],
+  name: [],
+  type: [],
+  amount: [],
+  rate: [],
+  category: []
 })
 
 // Results
@@ -973,10 +981,10 @@ function handleTextInput(value: string | number | null) {
 
 function initColumnMappingDefaults() {
   if (activeTab.value === 'excel') {
-    const findCol = (candidates: string[]) => {
+    const findCol = (candidates: string[]): string[] => {
       const lowered = excelDetectedColumns.value.map((c) => ({ raw: c, norm: c.toLowerCase() }))
       const found = lowered.find((c) => candidates.includes(c.norm))
-      return found?.raw || ''
+      return found ? [found.raw] : []
     }
     columnMapping.value = {
       date: findCol(['fecha', 'date']),
@@ -991,26 +999,42 @@ function initColumnMappingDefaults() {
 
   if (activeTab.value === 'text') {
     columnMapping.value = {
-      date: '0',
-      name: '1',
-      type: '2',
-      amount: '3',
-      rate: '4',
-      category: '5'
+      date: ['0'],
+      name: ['1'],
+      type: ['2'],
+      amount: ['3'],
+      rate: ['4'],
+      category: ['5']
     }
   }
 }
 
 function applyColumnMapping() {
+  // Helper: concatenar múltiples columnas
+  const concatColumns = (row: Record<string, unknown>, colNames: string[]): string => {
+    return colNames
+      .map((col) => safeText(row[col]).trim())
+      .filter((val) => val.length > 0)
+      .join(' ')
+  }
+
+  const concatColumnsText = (parts: string[], indices: number[]): string => {
+    return indices
+      .filter((idx) => idx >= 0 && idx < parts.length)
+      .map((idx) => safeText(parts[idx]).trim())
+      .filter((val) => val.length > 0)
+      .join(' ')
+  }
+
   if (activeTab.value === 'excel') {
     excelParsedRows.value = excelRawRows.value.map((row, idx) => {
       const mapped: Record<string, unknown> = {
-        Fecha: columnMapping.value.date ? row[columnMapping.value.date] : '',
-        Concepto: columnMapping.value.name ? row[columnMapping.value.name] : '',
-        Tipo: columnMapping.value.type ? row[columnMapping.value.type] : '',
-        Monto: columnMapping.value.amount ? row[columnMapping.value.amount] : '',
-        Tasa: columnMapping.value.rate ? row[columnMapping.value.rate] : null,
-        Categoría: columnMapping.value.category ? row[columnMapping.value.category] : ''
+        Fecha: columnMapping.value.date.length > 0 ? concatColumns(row, columnMapping.value.date) : '',
+        Concepto: columnMapping.value.name.length > 0 ? concatColumns(row, columnMapping.value.name) : '',
+        Tipo: columnMapping.value.type.length > 0 ? concatColumns(row, columnMapping.value.type) : '',
+        Monto: columnMapping.value.amount.length > 0 ? concatColumns(row, columnMapping.value.amount) : '',
+        Tasa: columnMapping.value.rate.length > 0 ? concatColumns(row, columnMapping.value.rate) || null : null,
+        Categoría: columnMapping.value.category.length > 0 ? concatColumns(row, columnMapping.value.category) : ''
       }
       return normalizeRow(mapped, `excel-${idx}`)
     })
@@ -1023,21 +1047,22 @@ function applyColumnMapping() {
       const parsed = Number(value)
       return Number.isFinite(parsed) ? parsed : -1
     }
-    const idxDate = safeIndex(columnMapping.value.date)
-    const idxName = safeIndex(columnMapping.value.name)
-    const idxType = safeIndex(columnMapping.value.type)
-    const idxAmount = safeIndex(columnMapping.value.amount)
-    const idxRate = safeIndex(columnMapping.value.rate)
-    const idxCategory = safeIndex(columnMapping.value.category)
+
+    const idxDate = columnMapping.value.date.map(safeIndex)
+    const idxName = columnMapping.value.name.map(safeIndex)
+    const idxType = columnMapping.value.type.map(safeIndex)
+    const idxAmount = columnMapping.value.amount.map(safeIndex)
+    const idxRate = columnMapping.value.rate.map(safeIndex)
+    const idxCategory = columnMapping.value.category.map(safeIndex)
 
     textParsedRows.value = textRawRows.value.map((parts, idx) => {
       const mapped: Record<string, unknown> = {
-        Fecha: idxDate >= 0 ? parts[idxDate] || '' : '',
-        Concepto: idxName >= 0 ? parts[idxName] || '' : '',
-        Tipo: idxType >= 0 ? parts[idxType] || '' : '',
-        Monto: idxAmount >= 0 ? parts[idxAmount] || '' : '',
-        Tasa: idxRate >= 0 ? parts[idxRate] || null : null,
-        Categoría: idxCategory >= 0 ? parts[idxCategory] || '' : ''
+        Fecha: concatColumnsText(parts, idxDate),
+        Concepto: concatColumnsText(parts, idxName),
+        Tipo: concatColumnsText(parts, idxType),
+        Monto: concatColumnsText(parts, idxAmount),
+        Tasa: concatColumnsText(parts, idxRate) || null,
+        Categoría: concatColumnsText(parts, idxCategory)
       }
       return normalizeRow(mapped, `text-${idx}`)
     })
