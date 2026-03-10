@@ -449,14 +449,23 @@
                         </q-btn>
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
-                        <q-input v-model="row.date" dense outlined type="date" style="width: 100%;" />
+                        <q-input 
+                          :model-value="(row as any).date" 
+                          @update:model-value="(val) => { (row as any).date = val }" 
+                          dense outlined type="date" style="width: 100%;" 
+                        />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
-                        <q-input v-model="row.name" dense outlined style="width: 100%;" />
+                        <q-input 
+                          :model-value="(row as any).name" 
+                          @update:model-value="(val) => { (row as any).name = val }" 
+                          dense outlined style="width: 100%;" 
+                        />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
                         <q-select 
-                          v-model="row.type" 
+                          :model-value="(row as any).type" 
+                          @update:model-value="(val) => { (row as any).type = val }" 
                           :options="['income', 'expense', 'transfer']" 
                           dense 
                           outlined 
@@ -465,14 +474,23 @@
                         />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
-                        <q-input v-model.number="row.amount" dense outlined type="number" step="0.01" style="width: 100%;" />
+                        <q-input 
+                          :model-value="(row as any).amount" 
+                          @update:model-value="(val) => { (row as any).amount = Number(val) }" 
+                          dense outlined type="number" step="0.01" style="width: 100%;" 
+                        />
                       </td>
                       <td v-if="needsRateForSelectedAccount" style="padding: 6px; border: 1px solid #ddd;">
-                        <q-input v-model.number="row.rate" dense outlined type="number" step="0.0001" style="width: 100%;" />
+                        <q-input 
+                          :model-value="(row as any).rate" 
+                          @update:model-value="(val) => { (row as any).rate = Number(val) }" 
+                          dense outlined type="number" step="0.0001" style="width: 100%;" 
+                        />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
                         <q-select 
-                          v-model="row.category_id" 
+                          :model-value="(row as any).category_id" 
+                          @update:model-value="(val) => { (row as any).category_id = val }" 
                           :options="categoryOptions" 
                           option-value="id" 
                           option-label="name" 
@@ -902,17 +920,6 @@ function removeRowFromPreview(index: number) {
   Notify.create({ type: 'info', message: `Fila ${index + 1} eliminada` })
 }
 
-// Helper: Get category display name
-function getCategoryDisplay(row: Record<string, unknown> | { date: string; name: string; type: string; amount: number; rate: number | null; category_id: number | null }): string {
-  if ('category_name' in row && row.category_name) {
-    return safeText(row.category_name)
-  }
-  if ('category_id' in row && row.category_id) {
-    const cat = allCategories.value.find((c) => c.id === row.category_id)
-    return cat ? cat.name : ''
-  }
-  return ''
-}
 
 // Helper: Get column color based on mapping
 function getColumnColor(colValue: string): { bg: string; text: string; color: string } {
