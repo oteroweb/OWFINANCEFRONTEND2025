@@ -46,6 +46,12 @@
                 <q-tooltip>Exportar CSV</q-tooltip>
               </q-btn>
               <q-btn flat icon="filter_alt_off" color="secondary" @click="clearFilters" />
+              <q-btn 
+                label="Carga Masiva" 
+                color="accent" 
+                icon="upload_file"
+                @click="showBulkImport = true" 
+              />
               <q-btn :label="dictionary.buttonNewLabel" color="primary" @click="openNewFab" />
             </div>
           </div>
@@ -333,6 +339,13 @@
       :id="ui.editTransactionId ?? null"
     />
 
+    <!-- Diálogo de carga masiva -->
+    <TransactionBulkImportDialog
+      v-if="showBulkImport"
+      @close="showBulkImport = false"
+      @imported="handleBulkImported"
+    />
+
     <!-- Botón flotante para crear transacción -->
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
       <q-fab color="primary" icon="add" direction="up" vertical-actions-align="right">
@@ -411,6 +424,7 @@ import { api } from 'boot/axios';
 import { useAuthStore } from 'stores/auth';
 import { dictionary as dictionaryDef } from './dictionary';
 import { AccountsSidebarWidget, TransactionFormDialog } from 'components';
+import TransactionBulkImportDialog from 'components/TransactionBulkImportDialog.vue';
 import { useTransactionsStore } from 'stores/transactions';
 import { usePeriodStore } from 'stores/period';
 import { useUiStore } from 'stores/ui';
@@ -1092,6 +1106,7 @@ function paymentAccountNames(row: Record<string, unknown>): string[] {
 
 // ===== Acciones de saldo (ajustar / recalcular) desde cabecera =====
 const showAdjustTop = ref(false);
+const showBulkImport = ref(false);
 const adjustBalanceTop = ref<string>('');
 const adjustingTop = ref(false);
 const includeInBalanceTop = ref(false);
@@ -1893,6 +1908,14 @@ function clearFilters(): void {
 // ===== Métodos faltantes referenciados en template =====
 function openNewFab(): void {
   ui.openNewTransactionDialog();
+}
+function handleBulkImported(count: number): void {
+  showBulkImport.value = false;
+  void fetchData();
+  $q.notify({
+    type: 'positive',
+    message: `${count} transacciones importadas exitosamente`,
+  });
 }
 // Selección de componente para filtros dinámicos (solo soportamos select/input/checkbox básicos)
 function selectComponent(type: string) {

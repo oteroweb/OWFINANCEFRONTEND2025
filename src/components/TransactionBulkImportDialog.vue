@@ -1,0 +1,565 @@
+<template>
+  <q-dialog
+    v-model="showDialog"
+    persistent
+    transition-show="slide-up"
+    transition-hide="slide-down"
+    maximized
+  >
+    <q-card class="column" style="height: 100%">
+      <q-card-section class="row items-center q-pb-none">
+        <div class="text-h6">Carga Masiva de Transacciones</div>
+        <q-space />
+        <q-btn icon="close" flat round dense v-close-popup />
+      </q-card-section>
+
+      <q-card-section class="col">
+        <q-tabs
+          v-model="activeTab"
+          dense
+          class="text-grey"
+          active-color="primary"
+          indicator-color="primary"
+          align="justify"
+        >
+          <q-tab name="table" label="Tabla" />
+          <q-tab name="excel" label="Excel" />
+          <q-tab name="text" label="Texto" />
+        </q-tabs>
+
+        <q-separator />
+
+        <q-tab-panels v-model="activeTab" animated class="q-mt-md">
+          <!-- TAB: Tabla -->
+          <q-tab-panel name="table">
+            <p class="text-caption text-grey-7">
+              Agrega filas manualmente usando el botón de abajo.
+            </p>
+            <q-btn
+              color="primary"
+              label="Agregar Fila"
+              icon="add"
+              @click="addTableRow"
+              class="q-mb-md"
+            />
+            <div v-if="tableRows.length > 0" class="q-mt-md" style="max-height: 400px; overflow-y: auto">
+              <q-markup-table dense flat bordered>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Tipo</th>
+                    <th>Monto</th>
+                    <th>Cuenta</th>
+                    <th>Categoría</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, idx) in tableRows" :key="idx">
+                    <td>
+                      <q-input v-model="row.date" dense type="date" />
+                    </td>
+                    <td>
+                      <q-input v-model="row.name" dense placeholder="Concepto" />
+                    </td>
+                    <td>
+                      <q-select
+                        v-model="row.type"
+                        :options="['income', 'expense', 'transfer']"
+                        dense
+                        map-options
+                        emit-value
+                      />
+                    </td>
+                    <td>
+                      <q-input v-model.number="row.amount" dense type="number" />
+                    </td>
+                    <td>
+                      <q-select
+                        v-model="row.account_id"
+                        :options="accountOptions"
+                        dense
+                        option-value="id"
+                        option-label="name"
+                        emit-value
+                        map-options
+                      />
+                    </td>
+                    <td>
+                      <q-select
+                        v-model="row.category_id"
+                        :options="categoryOptions"
+                        dense
+                        option-value="id"
+                        option-label="name"
+                        emit-value
+                        map-options
+                        clearable
+                      />
+                    </td>
+                    <td>
+                      <q-btn
+                        icon="delete"
+                        flat
+                        dense
+                        color="negative"
+                        @click="removeTableRow(idx)"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </q-markup-table>
+            </div>
+          </q-tab-panel>
+
+          <!-- TAB: Excel -->
+          <q-tab-panel name="excel">
+            <p class="text-caption text-grey-7">
+              Sube un archivo .xlsx. Se esperan columnas: Fecha, Concepto, Tipo, Monto, Cuenta, Categoría.
+            </p>
+            <q-file
+              v-model="excelFile"
+              label="Seleccionar archivo Excel"
+              accept=".xlsx,.xls"
+              @update:model-value="handleExcelFile"
+              clearable
+            >
+              <template v-slot:prepend>
+                <q-icon name="attach_file" />
+              </template>
+            </q-file>
+            <div v-if="excelParsedRows.length > 0" class="q-mt-md">
+              <p class="text-body2">
+                <strong>{{ excelParsedRows.length }}</strong> filas detectadas.
+              </p>
+              <div style="max-height: 400px; overflow-y: auto">
+                <q-markup-table dense flat bordered>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Concepto</th>
+                      <th>Tipo</th>
+                      <th>Monto</th>
+                      <th>Cuenta</th>
+                      <th>Categoría</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, idx) in excelParsedRows.slice(0, 50)" :key="idx">
+                      <td>{{ row.date }}</td>
+                      <td>{{ row.name }}</td>
+                      <td>{{ row.type }}</td>
+                      <td>{{ row.amount }}</td>
+                      <td>{{ row.account_name }}</td>
+                      <td>{{ row.category_name }}</td>
+                    </tr>
+                  </tbody>
+                </q-markup-table>
+              </div>
+            </div>
+          </q-tab-panel>
+
+          <!-- TAB: Texto -->
+          <q-tab-panel name="text">
+            <p class="text-caption text-grey-7">
+              Pega texto separado por <code>;</code> y nuevas líneas. <br />
+              Formato: <code>fecha;concepto;tipo;monto;cuenta;categoría</code>
+              <br />
+              Ejemplo:
+              <code>2026-03-09;Supermercado;expense;35.50;Cuenta Principal;Alimentos</code>
+            </p>
+            <q-input
+              v-model="textInput"
+              type="textarea"
+              rows="10"
+              filled
+              placeholder="Pega aquí tu texto..."
+              @update:model-value="handleTextInput"
+            />
+            <div v-if="textParsedRows.length > 0" class="q-mt-md">
+              <p class="text-body2">
+                <strong>{{ textParsedRows.length }}</strong> filas parseadas.
+              </p>
+              <div style="max-height: 300px; overflow-y: auto">
+                <q-markup-table dense flat bordered>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Concepto</th>
+                      <th>Tipo</th>
+                      <th>Monto</th>
+                      <th>Cuenta</th>
+                      <th>Categoría</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, idx) in textParsedRows.slice(0, 50)" :key="idx">
+                      <td>{{ row.date }}</td>
+                      <td>{{ row.name }}</td>
+                      <td>{{ row.type }}</td>
+                      <td>{{ row.amount }}</td>
+                      <td>{{ row.account_name }}</td>
+                      <td>{{ row.category_name }}</td>
+                    </tr>
+                  </tbody>
+                </q-markup-table>
+              </div>
+            </div>
+          </q-tab-panel>
+        </q-tab-panels>
+      </q-card-section>
+
+      <q-separator />
+
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn flat label="Cancelar" v-close-popup />
+        <q-btn
+          color="primary"
+          label="Vista Previa (Dry Run)"
+          @click="handleDryRun"
+          :loading="processingDryRun"
+          :disable="!hasData"
+        />
+        <q-btn
+          color="positive"
+          label="Importar Ahora"
+          @click="handleImport"
+          :loading="processingImport"
+          :disable="!hasData"
+        />
+      </q-card-actions>
+
+      <!-- Results Dialog -->
+      <q-dialog v-model="showResults" persistent>
+        <q-card style="min-width: 500px">
+          <q-card-section>
+            <div class="text-h6">Resultado de la Importación</div>
+          </q-card-section>
+          <q-card-section>
+            <div v-if="bulkResult">
+              <p>
+                <strong>Total:</strong> {{ bulkResult.total }} <br />
+                <strong>Creadas:</strong>
+                <span class="text-positive">{{ bulkResult.created }}</span> <br />
+                <strong>Fallidas:</strong>
+                <span class="text-negative">{{ bulkResult.failed }}</span>
+              </p>
+              <div v-if="bulkResult.failed > 0" class="q-mt-md">
+                <p class="text-body2 text-negative">Errores:</p>
+                <q-list dense bordered separator>
+                  <template v-for="(res, idx) in (bulkResult.results as Array<{ok: boolean; index: number; client_row_id?: string; errors?: Record<string, unknown>}>).filter(r => !r.ok)" :key="`error-${idx}`">
+                    <q-item>
+                      <q-item-section>
+                        <q-item-label overline>
+                          Fila {{ res.index + 1 }} ({{ res.client_row_id || 'sin id' }})
+                        </q-item-label>
+                        <template v-if="res.errors">
+                          <q-item-label caption v-for="(errs, field) in res.errors" :key="`err-${idx}-${String(field)}`">
+                            <strong>{{ field }}:</strong> {{ Array.isArray(errs) ? errs.join(', ') : String(errs) }}
+                          </q-item-label>
+                        </template>
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-list>
+              </div>
+            </div>
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn flat label="Cerrar" v-close-popup @click="closeResults" />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+    </q-card>
+  </q-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useTransactionsStore } from '../stores/transactions'
+import { useAccountsStore } from '../stores/accounts'
+import { useCategoriesStore } from '../stores/categories'
+import { read as xlsxRead, utils as xlsxUtils } from 'xlsx'
+import { Notify } from 'quasar'
+
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'imported', count: number): void
+}>()
+
+const transactionsStore = useTransactionsStore()
+const accountsStore = useAccountsStore()
+const categoriesStore = useCategoriesStore()
+
+const showDialog = ref(true)
+const activeTab = ref('table')
+
+// Table mode
+const tableRows = ref<Array<{
+  date: string
+  name: string
+  type: string
+  amount: number
+  account_id: number | null
+  category_id: number | null
+}>>([])
+
+// Excel mode
+const excelFile = ref<File | null>(null)
+const excelParsedRows = ref<Array<Record<string, unknown>>>([])
+
+// Text mode
+const textInput = ref('')
+const textParsedRows = ref<Array<Record<string, unknown>>>([])
+
+// Results
+const processingDryRun = ref(false)
+const processingImport = ref(false)
+const showResults = ref(false)
+const bulkResult = ref<Record<string, unknown> | null>(null)
+
+// Options for select dropdowns
+const accountOptions = computed(() => {
+  return accountsStore.accounts.map(a => ({ id: a.id, name: a.name }))
+})
+const categoryOptions = computed(() => {
+  return categoriesStore.categories.map(c => ({ id: c.id, name: c.name }))
+})
+
+const hasData = computed(() => {
+  if (activeTab.value === 'table') return tableRows.value.length > 0
+  if (activeTab.value === 'excel') return excelParsedRows.value.length > 0
+  if (activeTab.value === 'text') return textParsedRows.value.length > 0
+  return false
+})
+
+// Table functions
+function addTableRow() {
+  tableRows.value.push({
+    date: new Date().toISOString().split('T')[0],
+    name: '',
+    type: 'expense',
+    amount: 0,
+    account_id: null,
+    category_id: null
+  })
+}
+
+function removeTableRow(idx: number) {
+  tableRows.value.splice(idx, 1)
+}
+
+// Excel parser
+function handleExcelFile(file: File | null) {
+  if (!file) {
+    excelParsedRows.value = []
+    return
+  }
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const data = e.target?.result
+      const workbook = xlsxRead(data, { type: 'binary' })
+      const sheetName = workbook.SheetNames[0]
+      const sheet = workbook.Sheets[sheetName]
+      const json = xlsxUtils.sheet_to_json(sheet)
+      
+      // Parse and normalize
+      excelParsedRows.value = json.map((row: Record<string, unknown>, idx: number) => {
+        return normalizeRow(row, `excel-${idx}`)
+      })
+    } catch (err) {
+      console.error('Error parsing Excel', err)
+      Notify.create({ type: 'negative', message: 'Error al parsear Excel' })
+    }
+  }
+  reader.readAsBinaryString(file)
+}
+
+// Text parser
+function handleTextInput(value: string) {
+  if (!value.trim()) {
+    textParsedRows.value = []
+    return
+  }
+  const lines = value.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+  textParsedRows.value = lines.map((line, idx) => {
+    const parts = line.split(';').map(p => p.trim())
+    if (parts.length < 4) return null
+    return normalizeRow({
+      Fecha: parts[0] || '',
+      Concepto: parts[1] || '',
+      Tipo: parts[2] || '',
+      Monto: parts[3] || '',
+      Cuenta: parts[4] || '',
+      Categoría: parts[5] || '',
+    }, `text-${idx}`)
+  }).filter(r => r !== null)
+}
+
+// Normalize row from different sources
+function normalizeRow(row: Record<string, unknown>, clientId: string) {
+  const date = row.Fecha || row.fecha || row.Date || row.date || ''
+  const name = row.Concepto || row.concepto || row.Name || row.name || ''
+  const typeRaw = row.Tipo || row.tipo || row.Type || row.type
+  let type = ''
+  if (typeof typeRaw === 'string') {
+    type = typeRaw.toLowerCase()
+  } else if (typeof typeRaw === 'number') {
+    type = String(typeRaw)
+  }
+  const amountRaw = row.Monto || row.monto || row.Amount || row.amount
+  const amountStr = typeof amountRaw === 'string' ? amountRaw : (typeof amountRaw === 'number' ? String(amountRaw) : '0')
+  const amount = parseFloat(amountStr.replace(',', '.'))
+  const accountName = row.Cuenta || row.cuenta || row.Account || row.account || ''
+  const categoryName = row.Categoría || row.categoria || row.Category || row.category || ''
+  
+  return {
+    date,
+    name,
+    type,
+    amount,
+    account_name: accountName,
+    category_name: categoryName,
+    client_row_id: clientId
+  }
+}
+
+// Build payload
+function buildPayload(dryRun: boolean) {
+  let rows: Array<Record<string, unknown>> = []
+  
+  if (activeTab.value === 'table') {
+    rows = tableRows.value.map((row, idx) => buildRowPayload(row, `table-${idx}`))
+  } else if (activeTab.value === 'excel') {
+    rows = excelParsedRows.value.map((row) => buildRowPayloadFromNormalized(row))
+  } else if (activeTab.value === 'text') {
+    rows = textParsedRows.value.map((row) => buildRowPayloadFromNormalized(row))
+  }
+  
+  return {
+    mode: activeTab.value,
+    dry_run: dryRun,
+    rows
+  }
+}
+
+function buildRowPayload(row: Record<string, unknown>, clientId: string) {
+  const isExpense = row.type === 'expense'
+  const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
+  
+  return {
+    name: row.name,
+    date: String(row.date) + ' 12:00:00',
+    category_id: row.category_id,
+    include_in_balance: true,
+    items: [
+      {
+        name: row.name,
+        amount: amount
+      }
+    ],
+    payments: [
+      {
+        account_id: row.account_id,
+        amount: amount,
+        rate: 1
+      }
+    ],
+    client_row_id: clientId
+  }
+}
+
+function buildRowPayloadFromNormalized(row: Record<string, unknown>) {
+  const isExpense = String(row.type) === 'expense' || String(row.type) === 'egreso' || String(row.type) === 'gasto'
+  const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
+  
+  // Find account by name
+  const account = accountsStore.accounts.find(a => 
+    a.name.toLowerCase() === String(row.account_name).toLowerCase()
+  )
+  
+  // Find category by name
+  const category = categoriesStore.categories.find(c => 
+    c.name.toLowerCase() === String(row.category_name).toLowerCase()
+  )
+  
+  return {
+    name: row.name,
+    date: String(row.date) + ' 12:00:00',
+    category_id: category?.id || null,
+    include_in_balance: true,
+    items: [
+      {
+        name: row.name,
+        amount: amount
+      }
+    ],
+    payments: [
+      {
+        account_id: account?.id || null,
+        amount: amount,
+        rate: 1
+      }
+    ],
+    client_row_id: row.client_row_id
+  }
+}
+
+// Handlers
+async function handleDryRun() {
+  processingDryRun.value = true
+  try {
+    const payload = buildPayload(true)
+    const response = await transactionsStore.bulkAddTransactions(payload)
+    bulkResult.value = response.data?.data
+    showResults.value = true
+  } catch (err: unknown) {
+    console.error('Dry run error', err)
+    const error = err as { response?: { data?: { message?: string } } }
+    Notify.create({
+      type: 'negative',
+      message: error.response?.data?.message || 'Error en vista previa'
+    })
+  } finally {
+    processingDryRun.value = false
+  }
+}
+
+async function handleImport() {
+  processingImport.value = true
+  try {
+    const payload = buildPayload(false)
+    const response = await transactionsStore.bulkAddTransactions(payload)
+    bulkResult.value = response.data?.data
+    showResults.value = true
+    
+    if (bulkResult.value?.created && Number(bulkResult.value.created) > 0) {
+      const created = Number(bulkResult.value.created)
+      Notify.create({
+        type: 'positive',
+        message: `${created} transacciones creadas exitosamente`
+      })
+      emit('imported', created)
+    }
+  } catch (err: unknown) {
+    console.error('Import error', err)
+    const error = err as { response?: { data?: { message?: string } } }
+    Notify.create({
+      type: 'negative',
+      message: error.response?.data?.message || 'Error al importar'
+    })
+  } finally {
+    processingImport.value = false
+  }
+}
+
+function closeResults() {
+  if (bulkResult.value?.created > 0) {
+    // Close main dialog on success
+    showDialog.value = false
+    emit('close')
+  }
+}
+</script>

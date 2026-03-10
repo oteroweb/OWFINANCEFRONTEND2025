@@ -283,6 +283,50 @@ export const useTransactionsStore = defineStore('transactions', {
       } catch (error) {
         console.error('Error deleting transaction', error)
       }
+    },
+    async bulkAddTransactions(payload: {
+      mode: 'table' | 'excel' | 'text'
+      dry_run: boolean
+      rows: Array<{
+        name: string
+        date: string
+        transaction_type_id?: number | null
+        provider_id?: number | null
+        category_id?: number | null
+        include_in_balance?: boolean
+        amount?: number | null
+        description?: string | null
+        items: Array<{
+          name: string
+          amount: number
+          item_category_id?: number | null
+          quantity?: number
+        }>
+        payments: Array<{
+          account_id: number
+          amount: number
+          rate?: number | null
+          is_current?: boolean | null
+          is_official?: boolean | null
+        }>
+        client_row_id?: string
+      }>
+    }) {
+      try {
+        const response = await api.post('/transactions/bulk', payload)
+        
+        // If not dry_run and has successful creates, trigger refresh
+        if (!payload.dry_run && response.data?.data?.created > 0) {
+          window.dispatchEvent(new CustomEvent('ow:transactions:changed', { 
+            detail: { type: 'bulk_create', count: response.data.data.created } 
+          }))
+        }
+        
+        return response
+      } catch (error) {
+        console.error('Error bulk creating transactions', error)
+        throw error
+      }
     }
   }
 })
