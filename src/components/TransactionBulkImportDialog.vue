@@ -192,14 +192,14 @@
                 <q-markup-table dense flat bordered>
                   <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                     <tr>
-                      <th v-for="(col, idx) in excelDetectedColumns" :key="idx">
-                        {{ col }} ({{ idx + 1 }})
+                      <th v-for="(col, idx) in excelDetectedColumns" :key="idx" :style="getColumnHeaderStyle(col)">
+                        <span class="text-weight-bold">({{ idx + 1 }}) {{ col }}</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(row, idx) in excelRawRows.slice(0, 100)" :key="idx">
-                      <td v-for="col in excelDetectedColumns" :key="col" class="text-body2" style="min-width: 100px; word-break: break-word;">
+                      <td v-for="col in excelDetectedColumns" :key="col" class="text-body2" style="min-width: 100px; word-break: break-word;" :style="getColumnBodyStyle(col)">
                         {{ row[col] }}
                       </td>
                     </tr>
@@ -251,14 +251,14 @@
                 <q-markup-table dense flat bordered>
                   <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                     <tr>
-                      <th v-for="(idx) in (textRawRows[0]?.length || 0)" :key="idx">
-                        Columna {{ idx + 1 }}
+                      <th v-for="(idx) in (textRawRows[0]?.length || 0)" :key="idx" :style="getColumnHeaderStyleByIndex(idx - 1)">
+                        <span class="text-weight-bold">Columna {{ idx }}</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(row, ridx) in textRawRows.slice(0, 100)" :key="ridx">
-                      <td v-for="(cell, cidx) in row" :key="cidx" class="text-body2" style="min-width: 100px; word-break: break-word;">
+                      <td v-for="(cell, cidx) in row" :key="cidx" class="text-body2" style="min-width: 100px; word-break: break-word;" :style="getColumnBodyStyleByIndex(cidx)">
                         {{ cell }}
                       </td>
                     </tr>
@@ -563,6 +563,9 @@
               </div>
             </q-card-section>
           </q-card>
+
+          <!-- Espacio para evitar superposición de dropdowns con botones -->
+          <div class="q-mb-xl" style="height: 200px;"></div>
         </div>
       </q-card-section>
 
@@ -830,7 +833,7 @@ const categoryOptions = computed(() => {
 
 const columnMappingOptions = computed(() => {
   if (activeTab.value === 'excel') {
-    return excelDetectedColumns.value.map((col) => ({ label: col, value: col }))
+    return excelDetectedColumns.value.map((col, idx) => ({ label: `(${idx + 1}) ${col}`, value: col }))
   }
   if (activeTab.value === 'text') {
     const maxLen = textRawRows.value.reduce((acc, row) => Math.max(acc, row.length), 0)
@@ -885,6 +888,48 @@ function getCategoryDisplay(row: Record<string, unknown> | { date: string; name:
     return cat ? cat.name : ''
   }
   return ''
+}
+
+// Helper: Get column color based on mapping
+function getColumnColor(colValue: string): { bg: string; text: string; color: string } {
+  if (columnMapping.value.date.includes(colValue)) return { bg: '#E3F2FD', text: '#1976D2', color: 'blue' }
+  if (columnMapping.value.name.includes(colValue)) return { bg: '#F0F4C3', text: '#F57F17', color: 'orange' }
+  if (columnMapping.value.type.includes(colValue)) return { bg: '#FCE4EC', text: '#C2185B', color: 'red' }
+  if (columnMapping.value.amount.includes(colValue)) return { bg: '#E8F5E9', text: '#388E3C', color: 'green' }
+  if (columnMapping.value.rate.includes(colValue)) return { bg: '#F3E5F5', text: '#7B1FA2', color: 'purple' }
+  if (columnMapping.value.category.includes(colValue)) return { bg: '#F5F5F5', text: '#616161', color: 'grey' }
+  return { bg: 'transparent', text: 'inherit', color: '' }
+}
+
+function getColumnColorByIndex(idx: number): { bg: string; text: string; color: string } {
+  const colStr = String(idx)
+  if (columnMapping.value.date.includes(colStr)) return { bg: '#E3F2FD', text: '#1976D2', color: 'blue' }
+  if (columnMapping.value.name.includes(colStr)) return { bg: '#F0F4C3', text: '#F57F17', color: 'orange' }
+  if (columnMapping.value.type.includes(colStr)) return { bg: '#FCE4EC', text: '#C2185B', color: 'red' }
+  if (columnMapping.value.amount.includes(colStr)) return { bg: '#E8F5E9', text: '#388E3C', color: 'green' }
+  if (columnMapping.value.rate.includes(colStr)) return { bg: '#F3E5F5', text: '#7B1FA2', color: 'purple' }
+  if (columnMapping.value.category.includes(colStr)) return { bg: '#F5F5F5', text: '#616161', color: 'grey' }
+  return { bg: 'transparent', text: 'inherit', color: '' }
+}
+
+function getColumnHeaderStyle(col: string): string {
+  const colors = getColumnColor(col)
+  return `background-color: ${colors.bg}; color: ${colors.text}; font-weight: bold;`
+}
+
+function getColumnBodyStyle(col: string): string {
+  const colors = getColumnColor(col)
+  return `background-color: ${colors.bg};`
+}
+
+function getColumnHeaderStyleByIndex(idx: number): string {
+  const colors = getColumnColorByIndex(idx)
+  return `background-color: ${colors.bg}; color: ${colors.text}; font-weight: bold;`
+}
+
+function getColumnBodyStyleByIndex(idx: number): string {
+  const colors = getColumnColorByIndex(idx)
+  return `background-color: ${colors.bg};`
 }
 
 watch(activeTab, () => {
