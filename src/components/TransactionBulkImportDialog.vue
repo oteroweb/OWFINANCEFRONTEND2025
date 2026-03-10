@@ -562,10 +562,11 @@
                       <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">Tipo</th>
                       <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">Monto</th>
                       <th v-if="needsRateForSelectedAccount" style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 80px;">Tasa</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 160px;">Cuenta</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">Cuenta origen (transfer)</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">Cuenta destino (transfer)</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">Categoría</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">💱 Preview de conversión</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 160px;">🏦 Cuenta</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">↗️ Cuenta origen</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">↘️ Cuenta destino</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">📁 Categoría</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -622,6 +623,12 @@
                         />
                       </td>
                       <td style="padding: 6px; border: 1px solid #ddd;">
+                        <div v-if="String(getRowValue(row, 'type') || '') === 'transfer'" class="text-caption text-primary">
+                          {{ getConversionPreview(row) }}
+                        </div>
+                        <div v-else class="text-caption text-grey-6" style="font-style: italic; text-align: center;">-</div>
+                      </td>
+                      <td style="padding: 6px; border: 1px solid #ddd;">
                         <q-select
                           :model-value="String(getRowValue(row, 'account_name') || '')"
                           @update:model-value="(val) => setRowValue(row, 'account_name', val)"
@@ -637,9 +644,14 @@
                           @filter="filterAccountsByName"
                           clearable
                           style="width: 100%;"
-                        />
+                          hint="General, o para expense/income"
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="account_balance" size="xs" />
+                          </template>
+                        </q-select>
                       </td>
-                      <td style="padding: 6px; border: 1px solid #ddd;">
+                      <td v-if="String(getRowValue(row, 'type') || '') === 'transfer'" style="padding: 6px; border: 1px solid #ddd;">
                         <q-select
                           :model-value="String(getRowValue(row, 'from_account_name') || '')"
                           @update:model-value="(val) => setRowValue(row, 'from_account_name', val)"
@@ -654,11 +666,18 @@
                           input-debounce="300"
                           @filter="filterAccountsByName"
                           clearable
-                          :disable="String(getRowValue(row, 'type') || '') !== 'transfer'"
                           style="width: 100%;"
-                        />
+                          hint="De donde sale el dinero"
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="arrow_upward" size="xs" color="negative" />
+                          </template>
+                        </q-select>
                       </td>
-                      <td style="padding: 6px; border: 1px solid #ddd;">
+                      <td v-else style="padding: 6px; border: 1px solid #ddd; background: #f5f5f5;">
+                        <div class="text-caption text-grey-6" style="text-align: center; font-style: italic;">Solo transfer</div>
+                      </td>
+                      <td v-if="String(getRowValue(row, 'type') || '') === 'transfer'" style="padding: 6px; border: 1px solid #ddd;">
                         <q-select
                           :model-value="String(getRowValue(row, 'to_account_name') || '')"
                           @update:model-value="(val) => setRowValue(row, 'to_account_name', val)"
@@ -673,11 +692,18 @@
                           input-debounce="300"
                           @filter="filterAccountsByName"
                           clearable
-                          :disable="String(getRowValue(row, 'type') || '') !== 'transfer'"
                           style="width: 100%;"
-                        />
+                          hint="A donde llega el dinero"
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="arrow_downward" size="xs" color="positive" />
+                          </template>
+                        </q-select>
                       </td>
-                      <td style="padding: 6px; border: 1px solid #ddd;">
+                      <td v-else style="padding: 6px; border: 1px solid #ddd; background: #f5f5f5;">
+                        <div class="text-caption text-grey-6" style="text-align: center; font-style: italic;">Solo transfer</div>
+                      </td>
+                      <td v-if="String(getRowValue(row, 'type') || '') !== 'transfer'" style="padding: 6px; border: 1px solid #ddd;">
                         <q-select 
                           :model-value="getRowValue(row, 'category_id')" 
                           @update:model-value="(val) => setRowValue(row, 'category_id', val)" 
@@ -691,8 +717,17 @@
                           use-input
                           input-debounce="300"
                           @filter="filterCategories"
+                          clearable
                           style="width: 100%;"
-                        />
+                          hint="Gastos, Ingresos, etc."
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="category" size="xs" />
+                          </template>
+                        </q-select>
+                      </td>
+                      <td v-else style="padding: 6px; border: 1px solid #ddd; background: #f5f5f5;">
+                        <div class="text-caption text-grey-6" style="text-align: center; font-style: italic;">No aplica</div>
                       </td>
                     </tr>
                   </tbody>
@@ -1249,6 +1284,50 @@ function setRowValue(row: unknown, key: string, value: unknown): void {
   }
 }
 
+function getConversionPreview(row: unknown): string {
+  if (typeof row !== 'object' || row === null) return ''
+  
+  const rowObj = row as Record<string, unknown>
+  
+  // Extraer valores de forma segura usando safeText
+  const type = safeText(rowObj.type).trim()
+  if (type !== 'transfer') return ''
+  
+  const amount = Number(rowObj.amount || 0)
+  const rate = Number(rowObj.rate || 1)
+  const fromAccountName = safeText(rowObj.from_account_name).trim()
+  const toAccountName = safeText(rowObj.to_account_name).trim()
+  
+  if (!fromAccountName || !toAccountName || amount === 0) {
+    return 'Especifica cuentas y monto'
+  }
+  
+  // Buscar las cuentas en allAccounts
+  const fromAccount = allAccounts.value.find((a: { name: string }) => 
+    a.name.toLowerCase() === fromAccountName.toLowerCase()
+  ) as { name: string; currencySymbol?: string; currencyCode?: string } | undefined
+  
+  const toAccount = allAccounts.value.find((a: { name: string }) => 
+    a.name.toLowerCase() === toAccountName.toLowerCase()
+  ) as { name: string; currencySymbol?: string; currencyCode?: string } | undefined
+  
+  if (!fromAccount || !toAccount) {
+    return 'Cuentas no encontradas'
+  }
+  
+  const fromCurrency = fromAccount.currencySymbol || fromAccount.currencyCode || ''
+  const toCurrency = toAccount.currencySymbol || toAccount.currencyCode || ''
+  
+  // Si son la misma moneda, no hay conversión
+  if (fromCurrency === toCurrency) {
+    return `${fromCurrency}${amount.toFixed(2)} → ${toCurrency}${amount.toFixed(2)} (misma moneda)`
+  }
+  
+  // Hay conversión
+  const convertedAmount = amount * rate
+  return `${fromCurrency}${amount.toFixed(2)} → ${toCurrency}${convertedAmount.toFixed(2)} (tasa: ${rate})`
+}
+
 function toIsoDateString(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -1471,7 +1550,12 @@ const accountOptions = computed(() => {
   return allAccounts.value.map((a: { id: number; name: string }) => ({ id: a.id, name: a.name }))
 })
 const accountNameOptions = computed(() => {
-  return allAccounts.value.map((a: { name: string }) => ({ label: a.name, value: a.name }))
+  return allAccounts.value.map((a: { name: string; balance?: number; currencySymbol?: string; currencyCode?: string }) => {
+    const bal = a.balance ?? 0
+    const symbol = a.currencySymbol || a.currencyCode || ''
+    const balanceStr = bal !== 0 ? ` (${symbol}${bal.toFixed(2)})` : ''
+    return { label: `${a.name}${balanceStr}`, value: a.name }
+  })
 })
 const categoryOptions = computed(() => {
   return allCategories.value.map((c: { id: number; name: string }) => ({ id: c.id, name: c.name }))
