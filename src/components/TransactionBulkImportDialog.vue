@@ -289,7 +289,6 @@
                     use-input
                     input-debounce="0"
                     multiple
-                    @filter="filterColumnOptions"
                     :rules="[val => (val && val.length > 0) || 'Requerido']"
                   >
                     <template v-slot:prepend>
@@ -312,7 +311,6 @@
                     use-input
                     input-debounce="0"
                     multiple
-                    @filter="filterColumnOptions"
                     :rules="[val => (val && val.length > 0) || 'Requerido']"
                   >
                     <template v-slot:prepend>
@@ -335,7 +333,6 @@
                     use-input
                     input-debounce="0"
                     multiple
-                    @filter="filterColumnOptions"
                     :rules="[val => (val && val.length > 0) || 'Requerido']"
                   >
                     <template v-slot:prepend>
@@ -358,7 +355,6 @@
                     use-input
                     input-debounce="0"
                     multiple
-                    @filter="filterColumnOptions"
                     :rules="[val => (val && val.length > 0) || 'Requerido']"
                   >
                     <template v-slot:prepend>
@@ -381,7 +377,6 @@
                     use-input
                     input-debounce="0"
                     multiple
-                    @filter="filterColumnOptions"
                   >
                     <template v-slot:prepend>
                       <q-icon name="currency_exchange" />
@@ -403,7 +398,6 @@
                     use-input
                     input-debounce="0"
                     multiple
-                    @filter="filterColumnOptions"
                   >
                     <template v-slot:prepend>
                       <q-icon name="folder" />
@@ -1332,7 +1326,6 @@ function closeResults() {
 // Filter functions for select inputs
 const filteredAccounts = ref(accountOptions.value)
 const filteredCategories = ref(categoryOptions.value)
-const filteredColumnOptions = ref(columnMappingOptions.value)
 
 const typeOptions = [
   { label: 'Ingreso', value: 'income' },
@@ -1368,17 +1361,7 @@ function filterCategories(val: string, update: (fn: () => void) => void) {
   })
 }
 
-function filterColumnOptions(val: string, update: (fn: () => void) => void) {
-  update(() => {
-    const needle = val.toLowerCase()
-    filteredColumnOptions.value = needle
-      ? columnMappingOptions.value.filter((v: { label: string }) => v.label.toLowerCase().includes(needle))
-      : columnMappingOptions.value
-  })
-}
-
 // Watch para actualizar filtros cuando cambien las opciones
 watch(accountOptions, () => { filteredAccounts.value = accountOptions.value })
 watch(categoryOptions, () => { filteredCategories.value = categoryOptions.value })
-watch(columnMappingOptions, () => { filteredColumnOptions.value = columnMappingOptions.value })
 </script>
