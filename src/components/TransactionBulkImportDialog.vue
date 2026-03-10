@@ -20,7 +20,7 @@
             <div class="col-12 col-sm-auto">
               <q-select
                 v-model="selectedAccountId"
-                :options="accountOptions"
+                :options="filteredAccounts"
                 option-label="name"
                 option-value="id"
                 outlined
@@ -112,7 +112,7 @@
                     <td>
                       <q-select
                         v-model="row.type"
-                        :options="typeOptions"
+                        :options="filteredTypes"
                         option-label="label"
                         option-value="value"
                         dense
@@ -136,7 +136,7 @@
                     <td>
                       <q-select
                         v-model="row.category_id"
-                        :options="categoryOptions"
+                        :options="filteredCategories"
                         dense
                         option-value="id"
                         option-label="name"
@@ -541,7 +541,7 @@
                         <q-select 
                           :model-value="getRowValue(row, 'category_id')" 
                           @update:model-value="(val) => setRowValue(row, 'category_id', val)" 
-                          :options="categoryOptions" 
+                          :options="filteredCategories" 
                           option-value="id" 
                           option-label="name" 
                           dense 
@@ -549,6 +549,8 @@
                           emit-value 
                           map-options 
                           use-input
+                          input-debounce="300"
+                          @filter="filterCategories"
                           style="width: 100%;"
                         />
                       </td>
@@ -622,7 +624,7 @@
                   <div class="col-12 col-sm-6">
                     <q-select
                       v-model="categoryMappings[catName]"
-                      :options="categoryOptions"
+                      :options="filteredCategories"
                       option-value="id"
                       option-label="name"
                       emit-value
@@ -668,6 +670,15 @@
       </q-card-section>
 
       <q-separator />
+
+      <div class="q-px-md q-pt-sm">
+        <q-toggle
+          v-model="browserNotificationsEnabled"
+          color="primary"
+          label="Notificar al finalizar (navegador)"
+          @update:model-value="handleBrowserNotificationsToggle"
+        />
+      </div>
 
       <q-card-actions align="right" class="q-pa-md">
         <q-btn flat label="Cancelar" v-close-popup />
@@ -824,11 +835,15 @@ async function ensureCategoriesLoaded() {
 onMounted(async () => {
   await ensureAccountsLoaded()
   await ensureCategoriesLoaded()
+  if (browserNotificationsEnabled.value && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    void Notification.requestPermission()
+  }
 })
 
 const showDialog = ref(true)
 const activeTab = ref<'table' | 'excel' | 'text'>('table')
 const showAdjustments = ref(false)
+const browserNotificationsEnabled = ref<boolean>(localStorage.getItem('bulkImportBrowserNotifications') !== '0')
 
 // Account selection
 const selectedAccountId = ref<number | null>(null)
@@ -896,6 +911,32 @@ const bulkResult = ref<BulkResult | null>(null)
 function safeText(value: unknown): string {
   if (typeof value === 'string' || typeof value === 'number') return String(value)
   return ''
+}
+
+function handleBrowserNotificationsToggle(enabled: boolean | null) {
+  const value = !!enabled
+  browserNotificationsEnabled.value = value
+  localStorage.setItem('bulkImportBrowserNotifications', value ? '1' : '0')
+  if (!value) return
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    void Notification.requestPermission()
+  }
+}
+
+function notifyCompletion(title: string, body: string) {
+  if (!browserNotificationsEnabled.value) return
+  if (typeof Notification === 'undefined') return
+  if (Notification.permission !== 'granted') return
+  try {
+    const notification = new Notification(title, {
+      body,
+      tag: 'bulk-import-completion',
+      renotify: true
+    })
+    setTimeout(() => notification.close(), 10000)
+  } catch (err) {
+    console.warn('Browser notification error', err)
+  }
 }
 
 function getRowValue(row: unknown, key: string): unknown {
@@ -1477,6 +1518,12 @@ async function handleDryRun() {
     const response = await transactionsStore.bulkAddTransactions(payload)
     bulkResult.value = response.data?.data
     showResults.value = true
+    if (bulkResult.value) {
+      notifyCompletion(
+        'Vista previa de carga masiva lista',
+        `Total: ${bulkResult.value.total}, válidas: ${bulkResult.value.created}, con error: ${bulkResult.value.failed}`
+      )
+    }
   } catch (err: unknown) {
     console.error('Dry run error', err)
     const error = err as { response?: { data?: { message?: string } } }
@@ -1504,6 +1551,13 @@ async function handleImport() {
         message: `${created} transacciones creadas exitosamente`
       })
       emit('imported', created)
+    }
+
+    if (bulkResult.value) {
+      notifyCompletion(
+        'Importación masiva finalizada',
+        `Creadas: ${bulkResult.value.created}, fallidas: ${bulkResult.value.failed}, total: ${bulkResult.value.total}`
+      )
     }
   } catch (err: unknown) {
     console.error('Import error', err)
