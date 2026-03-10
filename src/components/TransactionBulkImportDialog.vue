@@ -283,6 +283,19 @@ import { useCategoriesStore } from '../stores/categories'
 import { read as xlsxRead, utils as xlsxUtils } from 'xlsx'
 import { Notify } from 'quasar'
 
+interface BulkResult {
+  total: number
+  created: number
+  failed: number
+  results: Array<{
+    index: number
+    client_row_id: string
+    ok: boolean
+    transaction_id?: number
+    errors?: unknown
+  }>
+}
+
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'imported', count: number): void
@@ -293,7 +306,7 @@ const accountsStore = useAccountsStore()
 const categoriesStore = useCategoriesStore()
 
 const showDialog = ref(true)
-const activeTab = ref('table')
+const activeTab = ref<'table' | 'excel' | 'text'>('table')
 
 // Table mode
 const tableRows = ref<Array<{
@@ -317,7 +330,7 @@ const textParsedRows = ref<Array<Record<string, unknown>>>([])
 const processingDryRun = ref(false)
 const processingImport = ref(false)
 const showResults = ref(false)
-const bulkResult = ref<Record<string, unknown> | null>(null)
+const bulkResult = ref<BulkResult | null>(null)
 
 // Options for select dropdowns
 const accountOptions = computed(() => {
@@ -366,7 +379,7 @@ function handleExcelFile(file: File | null) {
       const json = xlsxUtils.sheet_to_json(sheet)
       
       // Parse and normalize
-      excelParsedRows.value = json.map((row: Record<string, unknown>, idx: number) => {
+      excelParsedRows.value = (json as Array<Record<string, unknown>>).map((row, idx) => {
         return normalizeRow(row, `excel-${idx}`)
       })
     } catch (err) {
@@ -476,12 +489,12 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>) {
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   
   // Find account by name
-  const account = accountsStore.accounts.find(a => 
+  const account = accountsStore.accounts.find((a: { name: string }) => 
     a.name.toLowerCase() === String(row.account_name).toLowerCase()
   )
   
   // Find category by name
-  const category = categoriesStore.categories.find(c => 
+  const category = categoriesStore.categories.find((c: { name: string }) => 
     c.name.toLowerCase() === String(row.category_name).toLowerCase()
   )
   
@@ -556,7 +569,7 @@ async function handleImport() {
 }
 
 function closeResults() {
-  if (bulkResult.value?.created > 0) {
+  if (bulkResult.value?.created && bulkResult.value.created > 0) {
     // Close main dialog on success
     showDialog.value = false
     emit('close')
