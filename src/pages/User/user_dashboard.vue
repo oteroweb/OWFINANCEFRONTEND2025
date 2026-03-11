@@ -323,10 +323,14 @@ const summaryTotals = computed(() => {
 });
 
 function openExpenseAnalysis(jarId?: number) {
-  void router.push({
-    path: '/user/expense-analysis',
-    query: jarId ? { jar: String(jarId) } : undefined,
-  });
+  if (jarId) {
+    void router.push({
+      path: '/user/expense-analysis',
+      query: { jar: String(jarId) },
+    });
+    return;
+  }
+  void router.push({ path: '/user/expense-analysis' });
 }
 
 async function loadBalanceSummary() {
