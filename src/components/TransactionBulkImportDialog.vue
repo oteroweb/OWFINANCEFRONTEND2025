@@ -1729,7 +1729,7 @@ const fieldColorMap: Record<FieldColorKey, { bg: string; text: string; color: st
   to_account: { bg: '#E8F5E9', text: '#1B5E20', color: 'light-green' }
 }
 
-const mappingLegendItems = [
+const mappingLegendItems: Array<{ key: FieldColorKey; label: string; icon: string }> = [
   { key: 'date', label: 'Fecha', icon: 'calendar_today' },
   { key: 'name', label: 'Concepto', icon: 'description' },
   { key: 'type', label: 'Tipo', icon: 'category' },
@@ -1870,8 +1870,8 @@ function getMappingSwatchStyle(optionValue: string): string {
   return `background-color: ${colors.bg}; border-color: ${colors.text}55;`
 }
 
-function getLegendChipStyle(fieldKey: string): string {
-  const colors = fieldColorMap[fieldKey] || { bg: '#f5f5f5', text: '#424242' }
+function getLegendChipStyle(fieldKey: FieldColorKey): string {
+  const colors = fieldColorMap[fieldKey]
   return `background-color: ${colors.bg}; color: ${colors.text}; border: 1px solid ${colors.text}33;`
 }
 
