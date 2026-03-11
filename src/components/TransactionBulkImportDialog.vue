@@ -294,6 +294,28 @@
                     <template v-slot:prepend>
                       <q-icon name="calendar_today" />
                     </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip
+                        dense
+                        square
+                        removable
+                        class="q-ma-xs mapping-chip"
+                        :style="getMappingOptionChipStyle(scope.opt.value)"
+                        @remove="scope.removeAtIndex(scope.index)"
+                      >
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
                     <template v-slot:hint>
                       Selecciona 1 columna (fecha solamente)
                     </template>
@@ -315,6 +337,21 @@
                   >
                     <template v-slot:prepend>
                       <q-icon name="description" />
+                    </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip dense square removable class="q-ma-xs mapping-chip" :style="getMappingOptionChipStyle(scope.opt.value)" @remove="scope.removeAtIndex(scope.index)">
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
                     </template>
                     <template v-slot:hint>
                       Puedes seleccionar múltiples para concatenar
@@ -338,6 +375,21 @@
                     <template v-slot:prepend>
                       <q-icon name="category" />
                     </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip dense square removable class="q-ma-xs mapping-chip" :style="getMappingOptionChipStyle(scope.opt.value)" @remove="scope.removeAtIndex(scope.index)">
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
                     <template v-slot:hint>
                       income, expense, transfer
                     </template>
@@ -360,6 +412,21 @@
                     <template v-slot:prepend>
                       <q-icon name="attach_money" />
                     </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip dense square removable class="q-ma-xs mapping-chip" :style="getMappingOptionChipStyle(scope.opt.value)" @remove="scope.removeAtIndex(scope.index)">
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
                     <template v-slot:hint>
                       Selecciona 1 columna (número solamente)
                     </template>
@@ -380,6 +447,21 @@
                   >
                     <template v-slot:prepend>
                       <q-icon name="currency_exchange" />
+                    </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip dense square removable class="q-ma-xs mapping-chip" :style="getMappingOptionChipStyle(scope.opt.value)" @remove="scope.removeAtIndex(scope.index)">
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
                     </template>
                     <template v-slot:hint>
                       Opcional - necesario si hay transfer o moneda diferente
@@ -402,6 +484,21 @@
                     <template v-slot:prepend>
                       <q-icon name="folder" />
                     </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip dense square removable class="q-ma-xs mapping-chip" :style="getMappingOptionChipStyle(scope.opt.value)" @remove="scope.removeAtIndex(scope.index)">
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
                     <template v-slot:hint>
                       Opcional - puedes concatenar múltiples columnas
                     </template>
@@ -422,6 +519,21 @@
                   >
                     <template v-slot:prepend>
                       <q-icon name="account_balance" />
+                    </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip dense square removable class="q-ma-xs mapping-chip" :style="getMappingOptionChipStyle(scope.opt.value)" @remove="scope.removeAtIndex(scope.index)">
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
                     </template>
                     <template v-slot:hint>
                       Opcional - nombre de cuenta (si no se mapea, usa la seleccionada arriba)
@@ -444,6 +556,21 @@
                     <template v-slot:prepend>
                       <q-icon name="arrow_upward" />
                     </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip dense square removable class="q-ma-xs mapping-chip" :style="getMappingOptionChipStyle(scope.opt.value)" @remove="scope.removeAtIndex(scope.index)">
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
                     <template v-slot:hint>
                       Solo para transferencias - cuenta de donde sale el dinero
                     </template>
@@ -464,6 +591,21 @@
                   >
                     <template v-slot:prepend>
                       <q-icon name="arrow_downward" />
+                    </template>
+                    <template v-slot:selected-item="scope">
+                      <q-chip dense square removable class="q-ma-xs mapping-chip" :style="getMappingOptionChipStyle(scope.opt.value)" @remove="scope.removeAtIndex(scope.index)">
+                        {{ scope.opt.label }}
+                      </q-chip>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section avatar>
+                          <span class="mapping-swatch" :style="getMappingSwatchStyle(scope.opt.value)"></span>
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
                     </template>
                     <template v-slot:hint>
                       Solo para transferencias - cuenta a donde llega el dinero
@@ -1658,6 +1800,31 @@ function getColumnBodyStyleByIndex(idx: number): string {
   return `background-color: ${colors.bg};`
 }
 
+function getMappingOptionColors(optionValue: string): { bg: string; text: string } {
+  if (activeTab.value === 'excel') {
+    const colors = getColumnColor(optionValue)
+    return { bg: colors.bg, text: colors.text }
+  }
+
+  const parsedIndex = Number(optionValue)
+  if (Number.isFinite(parsedIndex)) {
+    const colors = getColumnColorByIndex(parsedIndex)
+    return { bg: colors.bg, text: colors.text }
+  }
+
+  return { bg: '#f5f5f5', text: '#424242' }
+}
+
+function getMappingOptionChipStyle(optionValue: string): string {
+  const colors = getMappingOptionColors(optionValue)
+  return `background-color: ${colors.bg}; color: ${colors.text}; border: 1px solid ${colors.text}33;`
+}
+
+function getMappingSwatchStyle(optionValue: string): string {
+  const colors = getMappingOptionColors(optionValue)
+  return `background-color: ${colors.bg}; border-color: ${colors.text}55;`
+}
+
 watch(activeTab, () => {
   showAdjustments.value = false
 })
@@ -2205,5 +2372,17 @@ watch(categoryOptions, () => { filteredCategories.value = categoryOptions.value 
 }
 .col-rh:hover {
   background-color: rgba(25, 118, 210, 0.25);
+}
+
+.mapping-chip {
+  max-width: 100%;
+}
+
+.mapping-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid transparent;
 }
 </style>
