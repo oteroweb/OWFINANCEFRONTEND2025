@@ -276,6 +276,19 @@
           <q-card v-if="activeTab !== 'table'" flat bordered class="q-mb-md">
             <q-card-section>
               <div class="text-subtitle1 q-mb-md">📋 Mapeo de columnas</div>
+              <div class="mapping-legend q-mb-md">
+                <div class="text-caption text-grey-8 q-mb-sm text-weight-medium">
+                  Guía visual: cada color representa un tipo de dato. Si un campo muestra varios chips, esas columnas se concatenan en ese orden.
+                </div>
+                <div class="row q-col-gutter-sm items-center">
+                  <div v-for="item in mappingLegendItems" :key="item.key" class="col-auto">
+                    <q-chip dense square class="mapping-legend-chip" :style="getLegendChipStyle(item.key)">
+                      <q-icon :name="item.icon" size="14px" class="q-mr-xs" />
+                      {{ item.label }}
+                    </q-chip>
+                  </div>
+                </div>
+              </div>
               <div class="row q-col-gutter-md">
                 <div class="col-12 col-sm-6 col-md-4">
                   <q-select 
@@ -1702,6 +1715,30 @@ const separatorOptions = [
   { label: 'Pipe (|)', value: '|' }
 ]
 
+const fieldColorMap: Record<string, { bg: string; text: string; color: string }> = {
+  date: { bg: '#E3F2FD', text: '#1976D2', color: 'blue' },
+  name: { bg: '#FFF8E1', text: '#F57F17', color: 'orange' },
+  type: { bg: '#FCE4EC', text: '#C2185B', color: 'red' },
+  amount: { bg: '#E8F5E9', text: '#2E7D32', color: 'green' },
+  rate: { bg: '#F3E5F5', text: '#7B1FA2', color: 'purple' },
+  category: { bg: '#F5F5F5', text: '#616161', color: 'grey' },
+  account: { bg: '#E0F2F1', text: '#00695C', color: 'teal' },
+  from_account: { bg: '#FFF3E0', text: '#EF6C00', color: 'deep-orange' },
+  to_account: { bg: '#E8F5E9', text: '#1B5E20', color: 'light-green' }
+}
+
+const mappingLegendItems = [
+  { key: 'date', label: 'Fecha', icon: 'calendar_today' },
+  { key: 'name', label: 'Concepto', icon: 'description' },
+  { key: 'type', label: 'Tipo', icon: 'category' },
+  { key: 'amount', label: 'Monto', icon: 'attach_money' },
+  { key: 'rate', label: 'Tasa', icon: 'currency_exchange' },
+  { key: 'category', label: 'Categoría', icon: 'folder' },
+  { key: 'account', label: 'Cuenta', icon: 'account_balance' },
+  { key: 'from_account', label: 'Origen', icon: 'arrow_upward' },
+  { key: 'to_account', label: 'Destino', icon: 'arrow_downward' }
+]
+
 // Options for select dropdowns
 const accountOptions = computed(() => {
   return allAccounts.value.map((a: { id: number; name: string }) => ({ id: a.id, name: a.name }))
@@ -1760,23 +1797,29 @@ function removeRowFromPreview(index: number) {
 
 // Helper: Get column color based on mapping
 function getColumnColor(colValue: string): { bg: string; text: string; color: string } {
-  if (columnMapping.value.date.includes(colValue)) return { bg: '#E3F2FD', text: '#1976D2', color: 'blue' }
-  if (columnMapping.value.name.includes(colValue)) return { bg: '#F0F4C3', text: '#F57F17', color: 'orange' }
-  if (columnMapping.value.type.includes(colValue)) return { bg: '#FCE4EC', text: '#C2185B', color: 'red' }
-  if (columnMapping.value.amount.includes(colValue)) return { bg: '#E8F5E9', text: '#388E3C', color: 'green' }
-  if (columnMapping.value.rate.includes(colValue)) return { bg: '#F3E5F5', text: '#7B1FA2', color: 'purple' }
-  if (columnMapping.value.category.includes(colValue)) return { bg: '#F5F5F5', text: '#616161', color: 'grey' }
+  if (columnMapping.value.date.includes(colValue)) return fieldColorMap.date
+  if (columnMapping.value.name.includes(colValue)) return fieldColorMap.name
+  if (columnMapping.value.type.includes(colValue)) return fieldColorMap.type
+  if (columnMapping.value.amount.includes(colValue)) return fieldColorMap.amount
+  if (columnMapping.value.rate.includes(colValue)) return fieldColorMap.rate
+  if (columnMapping.value.category.includes(colValue)) return fieldColorMap.category
+  if (columnMapping.value.account.includes(colValue)) return fieldColorMap.account
+  if (columnMapping.value.from_account.includes(colValue)) return fieldColorMap.from_account
+  if (columnMapping.value.to_account.includes(colValue)) return fieldColorMap.to_account
   return { bg: 'transparent', text: 'inherit', color: '' }
 }
 
 function getColumnColorByIndex(idx: number): { bg: string; text: string; color: string } {
   const colStr = String(idx)
-  if (columnMapping.value.date.includes(colStr)) return { bg: '#E3F2FD', text: '#1976D2', color: 'blue' }
-  if (columnMapping.value.name.includes(colStr)) return { bg: '#F0F4C3', text: '#F57F17', color: 'orange' }
-  if (columnMapping.value.type.includes(colStr)) return { bg: '#FCE4EC', text: '#C2185B', color: 'red' }
-  if (columnMapping.value.amount.includes(colStr)) return { bg: '#E8F5E9', text: '#388E3C', color: 'green' }
-  if (columnMapping.value.rate.includes(colStr)) return { bg: '#F3E5F5', text: '#7B1FA2', color: 'purple' }
-  if (columnMapping.value.category.includes(colStr)) return { bg: '#F5F5F5', text: '#616161', color: 'grey' }
+  if (columnMapping.value.date.includes(colStr)) return fieldColorMap.date
+  if (columnMapping.value.name.includes(colStr)) return fieldColorMap.name
+  if (columnMapping.value.type.includes(colStr)) return fieldColorMap.type
+  if (columnMapping.value.amount.includes(colStr)) return fieldColorMap.amount
+  if (columnMapping.value.rate.includes(colStr)) return fieldColorMap.rate
+  if (columnMapping.value.category.includes(colStr)) return fieldColorMap.category
+  if (columnMapping.value.account.includes(colStr)) return fieldColorMap.account
+  if (columnMapping.value.from_account.includes(colStr)) return fieldColorMap.from_account
+  if (columnMapping.value.to_account.includes(colStr)) return fieldColorMap.to_account
   return { bg: 'transparent', text: 'inherit', color: '' }
 }
 
@@ -1823,6 +1866,11 @@ function getMappingOptionChipStyle(optionValue: string): string {
 function getMappingSwatchStyle(optionValue: string): string {
   const colors = getMappingOptionColors(optionValue)
   return `background-color: ${colors.bg}; border-color: ${colors.text}55;`
+}
+
+function getLegendChipStyle(fieldKey: string): string {
+  const colors = fieldColorMap[fieldKey] || { bg: '#f5f5f5', text: '#424242' }
+  return `background-color: ${colors.bg}; color: ${colors.text}; border: 1px solid ${colors.text}33;`
 }
 
 watch(activeTab, () => {
@@ -2376,6 +2424,17 @@ watch(categoryOptions, () => { filteredCategories.value = categoryOptions.value 
 
 .mapping-chip {
   max-width: 100%;
+}
+
+.mapping-legend {
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fafafa 0%, #f6f7f9 100%);
+}
+
+.mapping-legend-chip {
+  border-radius: 8px;
 }
 
 .mapping-swatch {
