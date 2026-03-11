@@ -1715,7 +1715,9 @@ const separatorOptions = [
   { label: 'Pipe (|)', value: '|' }
 ]
 
-const fieldColorMap: Record<string, { bg: string; text: string; color: string }> = {
+type FieldColorKey = 'date' | 'name' | 'type' | 'amount' | 'rate' | 'category' | 'account' | 'from_account' | 'to_account'
+
+const fieldColorMap: Record<FieldColorKey, { bg: string; text: string; color: string }> = {
   date: { bg: '#E3F2FD', text: '#1976D2', color: 'blue' },
   name: { bg: '#FFF8E1', text: '#F57F17', color: 'orange' },
   type: { bg: '#FCE4EC', text: '#C2185B', color: 'red' },
