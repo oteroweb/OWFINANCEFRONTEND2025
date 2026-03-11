@@ -13,7 +13,7 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <q-card-section class="col">
+      <q-card-section class="col" style="overflow-y: auto;">
         <!-- Selector de Cuenta Única -->
         <div class="q-mb-md">
           <div class="row items-center gap-md">
@@ -989,7 +989,6 @@
           </q-card>
 
           <!-- Espacio para evitar superposición de dropdowns con botones -->
-          <div class="q-mb-xl" style="height: 200px;"></div>
         </div>
       </q-card-section>
 
