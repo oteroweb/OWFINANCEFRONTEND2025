@@ -552,19 +552,20 @@
                 <div class="text-subtitle1">👁️ Vista previa editable ({{ parsedRowsForPreview.length }} filas)</div>
                 <q-badge color="info" :label="`${parsedRowsForPreview.length} filas cargadas`" />
               </div>
-              <div style="max-height: 500px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px;">
+              <div style="max-height: 500px; overflow-y: auto; overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 4px;">
                 <table class="full-width" style="border-collapse: collapse;">
                   <thead style="position: sticky; top: 0; background: #f5f5f5; z-index: 1;">
                     <tr>
-                      <th style="width: 40px; padding: 8px; text-align: center; border: 1px solid #ddd;">#</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">1. Fecha</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 150px;">2. Concepto</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">3. Tipo</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 100px;">4. Monto</th>
-                      <th v-if="needsRateForSelectedAccount" style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 80px;">5. Tasa</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">6. Conversión</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 180px;">7. Cuenta aplicada</th>
-                      <th style="padding: 8px; border: 1px solid #ddd; text-align: left; min-width: 120px;">8. Categoría</th>
+                      <th :style="`width:${colWidths.del}px; padding:8px; text-align:center; border:1px solid #ddd; position:relative; white-space:nowrap;`">#</th>
+                      <th :style="`width:${colWidths.date}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">1. Fecha<div class="col-rh" @mousedown="(e) => startColResize('date', e)" /></th>
+                      <th :style="`width:${colWidths.name}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">2. Concepto<div class="col-rh" @mousedown="(e) => startColResize('name', e)" /></th>
+                      <th :style="`width:${colWidths.type}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">3. Tipo<div class="col-rh" @mousedown="(e) => startColResize('type', e)" /></th>
+                      <th :style="`width:${colWidths.amount}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">4. Monto<div class="col-rh" @mousedown="(e) => startColResize('amount', e)" /></th>
+                      <th v-if="needsRateForSelectedAccount" :style="`width:${colWidths.rate}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">5. Tasa<div class="col-rh" @mousedown="(e) => startColResize('rate', e)" /></th>
+                      <th :style="`width:${colWidths.conversion}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">6. Conversión<div class="col-rh" @mousedown="(e) => startColResize('conversion', e)" /></th>
+                      <th :style="`width:${colWidths.account}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">7. Cuenta<div class="col-rh" @mousedown="(e) => startColResize('account', e)" /></th>
+                      <th :style="`width:${colWidths.category}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">8. Cat./Origen<div class="col-rh" @mousedown="(e) => startColResize('category', e)" /></th>
+                      <th :style="`width:${colWidths.dest}px; padding:8px; border:1px solid #ddd; text-align:left; position:relative; white-space:nowrap;`">9. Destino<div class="col-rh" @mousedown="(e) => startColResize('dest', e)" /></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -648,6 +649,7 @@
                           :options="filteredCategories" 
                           option-value="id" 
                           option-label="name" 
+                          :display-value="getRowValue(row, 'category_id') ? getCategoryLabel(getRowValue(row, 'category_id')) : ''"
                           dense 
                           outlined 
                           emit-value 
@@ -663,8 +665,55 @@
                           </template>
                         </q-select>
                       </td>
-                      <td v-else style="padding: 6px; border: 1px solid #ddd; background: #f5f5f5;">
-                        <div class="text-caption text-grey-6" style="text-align: center; font-style: italic;">No aplica</div>
+                      <td v-else style="padding: 6px; border: 1px solid #ddd;">
+                        <q-select
+                          :model-value="getRowValue(row, 'from_account_id')"
+                          @update:model-value="(val) => setRowValue(row, 'from_account_id', val)"
+                          :options="filteredAccounts"
+                          option-value="id"
+                          option-label="name"
+                          :display-value="getRowValue(row, 'from_account_id') ? getAccountLabel(getRowValue(row, 'from_account_id')) : ''"
+                          dense
+                          outlined
+                          emit-value
+                          map-options
+                          use-input
+                          input-debounce="300"
+                          @filter="filterAccounts"
+                          clearable
+                          placeholder="Cuenta origen"
+                          style="width: 100%;"
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="arrow_upward" size="xs" color="warning" />
+                          </template>
+                        </q-select>
+                      </td>
+                      <!-- Column 9: Destino -->
+                      <td v-if="String(getRowValue(row, 'type') || '') !== 'transfer'" style="padding: 6px; border: 1px solid #ddd; background: #fafafa;" />
+                      <td v-else style="padding: 6px; border: 1px solid #ddd;">
+                        <q-select
+                          :model-value="getRowValue(row, 'to_account_id')"
+                          @update:model-value="(val) => setRowValue(row, 'to_account_id', val)"
+                          :options="filteredAccounts"
+                          option-value="id"
+                          option-label="name"
+                          :display-value="getRowValue(row, 'to_account_id') ? getAccountLabel(getRowValue(row, 'to_account_id')) : ''"
+                          dense
+                          outlined
+                          emit-value
+                          map-options
+                          use-input
+                          input-debounce="300"
+                          @filter="filterAccounts"
+                          clearable
+                          placeholder="Cuenta destino"
+                          style="width: 100%;"
+                        >
+                          <template v-slot:prepend>
+                            <q-icon name="arrow_downward" size="xs" color="positive" />
+                          </template>
+                        </q-select>
                       </td>
                     </tr>
                   </tbody>
@@ -1024,7 +1073,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useTransactionsStore } from '../stores/transactions'
 import { useTransactionForm } from 'src/composables/useTransactionForm'
 import { useAuthStore } from 'src/stores/auth'
@@ -1157,6 +1206,8 @@ const tableRows = ref<Array<{
   amount: number
   rate: number | null
   category_id: number | null
+  from_account_id?: number | null
+  to_account_id?: number | null
   account_name?: string
   from_account_name?: string
   to_account_name?: string
@@ -1277,6 +1328,20 @@ function getConversionPreview(row: unknown): string {
   const userAmount = amount / rate
 
   return `${fromCurrency}${amount.toFixed(2)} -> USD${userAmount.toFixed(2)} (÷ ${rate})`
+}
+
+function getCategoryLabel(id: unknown): string {
+  if (!id && id !== 0) return ''
+  const numId = Number(id)
+  const found = allCategories.value.find((c: { id: number; name: string }) => c.id === numId)
+  return found ? found.name : `#${numId}`
+}
+
+function getAccountLabel(id: unknown): string {
+  if (!id && id !== 0) return ''
+  const numId = Number(id)
+  const found = allAccounts.value.find((a: { id: number; name: string }) => a.id === numId)
+  return found ? found.name : `#${numId}`
 }
 
 function toIsoDateString(date: Date): string {
@@ -1608,6 +1673,8 @@ function addTableRow() {
     amount: 0,
     rate: needsRateForSelectedAccount.value ? 1 : null,
     category_id: null,
+    from_account_id: null,
+    to_account_id: null,
     account_name: '',
     from_account_name: '',
     to_account_name: ''
@@ -2041,6 +2108,49 @@ function closeResults() {
   }
 }
 
+// Resizable columns
+const colWidths = reactive({
+  del: 40,
+  date: 120,
+  name: 160,
+  type: 110,
+  amount: 100,
+  rate: 135,
+  conversion: 155,
+  account: 150,
+  category: 135,
+  dest: 145
+})
+
+let _resizingCol = ''
+let _resizeStartX = 0
+let _resizeStartW = 0
+
+function startColResize(col: string, e: MouseEvent) {
+  _resizingCol = col
+  _resizeStartX = e.clientX
+  _resizeStartW = (colWidths as Record<string, number>)[col] ?? 100
+  document.addEventListener('mousemove', handleColResizeMove)
+  document.addEventListener('mouseup', stopColResize)
+  e.preventDefault()
+}
+
+function handleColResizeMove(e: MouseEvent) {
+  if (!_resizingCol) return
+  ;(colWidths as Record<string, number>)[_resizingCol] = Math.max(50, _resizeStartW + (e.clientX - _resizeStartX))
+}
+
+function stopColResize() {
+  _resizingCol = ''
+  document.removeEventListener('mousemove', handleColResizeMove)
+  document.removeEventListener('mouseup', stopColResize)
+}
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousemove', handleColResizeMove)
+  document.removeEventListener('mouseup', stopColResize)
+})
+
 // Filter functions for select inputs
 const filteredAccounts = ref(accountOptions.value)
 const filteredCategories = ref(categoryOptions.value)
@@ -2083,3 +2193,18 @@ function filterCategories(val: string, update: (fn: () => void) => void) {
 watch(accountOptions, () => { filteredAccounts.value = accountOptions.value })
 watch(categoryOptions, () => { filteredCategories.value = categoryOptions.value })
 </script>
+
+<style scoped>
+.col-rh {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  cursor: col-resize;
+  z-index: 2;
+}
+.col-rh:hover {
+  background-color: rgba(25, 118, 210, 0.25);
+}
+</style>
