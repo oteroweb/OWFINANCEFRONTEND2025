@@ -39,6 +39,45 @@
       </div>
     </div>
 
+    <div class="row items-center q-pa-sm q-gutter-sm">
+      <div class="col-12 col-md-6">
+        <q-input
+          v-model="filterText"
+          dense
+          outlined
+          clearable
+          label="Filtrar categorías"
+          placeholder="Nombre de categoría o carpeta"
+        >
+          <template #append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </div>
+      <div class="col-auto">
+        <q-toggle v-model="showFolders" label="Carpetas" dense />
+      </div>
+      <div class="col-auto">
+        <q-toggle v-model="showCategories" label="Categorías" dense />
+      </div>
+      <div class="col-auto">
+        <q-btn flat dense icon="filter_alt_off" label="Quitar filtros" @click="resetFilters" />
+      </div>
+    </div>
+
+    <div v-if="activeFilterChips.length" class="q-px-sm q-pb-sm">
+      <q-chip
+        v-for="chip in activeFilterChips"
+        :key="chip.key"
+        removable
+        color="blue-1"
+        text-color="primary"
+        @remove="removeFilter(chip.key)"
+      >
+        {{ chip.label }}
+      </q-chip>
+    </div>
+
     <q-card flat bordered>
       <q-scroll-area class="tree-scroll">
         <div v-if="dragNodeId && dragNodeLabel" class="drag-floating">
@@ -196,6 +235,9 @@ export default defineComponent({
     const dragOverNodeId = ref<string | null>(null);
     const dragOverRoot = ref<boolean>(false);
     const expandedKeys = ref<string[]>([]);
+    const filterText = ref<string>('');
+    const showFolders = ref<boolean>(true);
+    const showCategories = ref<boolean>(true);
     // UI state
     const selectedIsCategory = ref<boolean>(false);
 
@@ -348,11 +390,52 @@ export default defineComponent({
     }
 
     // Map internal nodes to QTreeNode typing for template consumption
+    function filterTreeNode(node: TreeNode): TreeNode | null {
+      const needle = filterText.value.trim().toLowerCase();
+      const childMatches = (node.children || [])
+        .map((c) => filterTreeNode(c))
+        .filter((n): n is TreeNode => Boolean(n));
+
+      const typeVisible =
+        node.type === 'folder' ? showFolders.value : showCategories.value;
+      const labelMatch = needle.length === 0 || node.label.toLowerCase().includes(needle);
+      const includeNode = (typeVisible && labelMatch) || childMatches.length > 0;
+
+      if (!includeNode) return null;
+      return {
+        ...node,
+        children: childMatches,
+      };
+    }
+
+    const activeFilterChips = computed<Array<{ key: string; label: string }>>(() => {
+      const chips: Array<{ key: string; label: string }> = [];
+      if (filterText.value.trim()) chips.push({ key: 'text', label: `Texto: ${filterText.value.trim()}` });
+      if (!showFolders.value) chips.push({ key: 'folders', label: 'Sin carpetas' });
+      if (!showCategories.value) chips.push({ key: 'categories', label: 'Sin categorías' });
+      return chips;
+    });
+
+    function resetFilters() {
+      filterText.value = '';
+      showFolders.value = true;
+      showCategories.value = true;
+    }
+
+    function removeFilter(key: string) {
+      if (key === 'text') filterText.value = '';
+      if (key === 'folders') showFolders.value = true;
+      if (key === 'categories') showCategories.value = true;
+    }
+
     const nodesToRender = computed<QTreeNode<unknown>[]>(() => {
       const rootNode = tree.value[0];
       const kids = rootNode?.children || [];
+      const filtered = kids
+        .map((n) => filterTreeNode(n))
+        .filter((n): n is TreeNode => Boolean(n));
       // Cast is safe for QTree as it ignores extra fields.
-      return kids as unknown as QTreeNode<unknown>[];
+      return filtered as unknown as QTreeNode<unknown>[];
     });
 
     const columnsCount = computed(() => Math.max(1, Number(props.columns || 1)));
@@ -635,6 +718,12 @@ export default defineComponent({
       expandedKeys,
 
       selectedIsCategory,
+      filterText,
+      showFolders,
+      showCategories,
+      activeFilterChips,
+      resetFilters,
+      removeFilter,
       onRequestCreateCategory,
       onRequestCreateFolder,
       onDragStart,

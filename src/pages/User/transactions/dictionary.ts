@@ -18,8 +18,9 @@ export const dictionary = {
     { id: 0, col: 4, vmodel: 'provider_id', vmodel_api: 'provider_id', vmodel_url: 'providers', type: 'select', label: 'Proveedor', select_label: 'name', value: '', items: [], order_by: 'name', order_dir: 'asc' },
   { id: 1, col: 4, vmodel: 'account_id', vmodel_api: 'payment_account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 2, col: 4, vmodel: 'transaction_type_id', vmodel_api: 'transaction_type_id', vmodel_url: 'transaction_types', type: 'select', label: 'Tipo', select_label: 'name', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 3, col: 3, vmodel: 'date_from', vmodel_api: 'date_from', type: 'datetime', label: 'Desde', value: '' },
-    { id: 4, col: 3, vmodel: 'date_to', vmodel_api: 'date_to', type: 'datetime', label: 'Hasta', value: '' },
+    { id: 3, col: 4, vmodel: 'category_id', vmodel_api: 'category_id', vmodel_url: 'categories', type: 'select', label: 'Categoría', select_label: 'name', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 4, col: 4, vmodel: 'date_from', vmodel_api: 'date_from', type: 'datetime', label: 'Desde', value: '' },
+    { id: 5, col: 4, vmodel: 'date_to', vmodel_api: 'date_to', type: 'datetime', label: 'Hasta', value: '' },
   ],
   columns: [
     { name: 'ID', key: 'id' },

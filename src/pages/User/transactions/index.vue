@@ -133,6 +133,24 @@
           </div>
         </div>
 
+        <div v-if="activeFilterChips.length" class="q-mb-md">
+          <div class="row q-col-gutter-sm items-center">
+            <div class="col-auto text-caption text-grey-7">Filtros activos:</div>
+            <div class="col">
+              <q-chip
+                v-for="chip in activeFilterChips"
+                :key="chip.key"
+                removable
+                color="blue-1"
+                text-color="primary"
+                @remove="removeFilterChip(chip.key)"
+              >
+                {{ chip.label }}: {{ chip.value }}
+              </q-chip>
+            </div>
+          </div>
+        </div>
+
         <!-- Tabla de datos -->
         <div v-if="showRunningBalanceColumn && singleAccountBalance != null" class="q-mb-sm">
           <q-banner class="bg-blue-1 text-primary q-pa-sm" rounded>
@@ -550,6 +568,8 @@ const dictionary = dictionaryDef as unknown as CrudDictionary;
 type FilterValue = string | number | boolean | null | undefined;
 type Filters = Record<string, FilterValue> & { search: string };
 const filters = reactive<Filters>({ search: '' });
+
+type ActiveFilterChip = { key: string; label: string; value: string };
 
 // Tabla
 type Row = Record<string, unknown>;
@@ -1981,8 +2001,62 @@ function clearFilters(): void {
   for (const f of dictionary.forms_filter) {
     (filters as Record<string, FilterValue>)[f.vmodel] = '';
   }
+  txStore.setSelectedAccountIds([]);
+  periodStore.setType('all');
   pagination.value.page = 1;
-  void runFetch();
+  void runFetch(true);
+}
+
+function getFilterDisplayValue(field: CrudField, value: FilterValue): string {
+  if (value == null || value === '') return '';
+  if (field.type === 'select') {
+    const list = selectOptionsAll[field.vmodel] || [];
+    const labelKey = field.select_label || 'name';
+    const found = list.find((o) => String(o['id']) === String(value));
+    if (found) return toStringLabel(found[labelKey]) || String(value);
+  }
+  return String(value);
+}
+
+const activeFilterChips = computed<ActiveFilterChip[]>(() => {
+  const chips: ActiveFilterChip[] = [];
+  if (filters.search) {
+    chips.push({ key: '__search', label: 'Buscar', value: String(filters.search) });
+  }
+  for (const f of dictionary.forms_filter as unknown as CrudField[]) {
+    const val = (filters as Record<string, FilterValue>)[f.vmodel];
+    if (val === undefined || val === null || val === '') continue;
+    chips.push({
+      key: f.vmodel,
+      label: f.label,
+      value: getFilterDisplayValue(f, val),
+    });
+  }
+  if (Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length > 1) {
+    chips.push({
+      key: '__accounts_multi',
+      label: 'Cuentas',
+      value: `${txStore.selectedAccountIds.length} seleccionadas`,
+    });
+  }
+  if (periodStore.state.type !== 'all') {
+    chips.push({ key: '__period', label: 'Periodo', value: periodStore.label });
+  }
+  return chips;
+});
+
+function removeFilterChip(key: string): void {
+  if (key === '__search') {
+    filters.search = '';
+  } else if (key === '__accounts_multi') {
+    txStore.setSelectedAccountIds([]);
+  } else if (key === '__period') {
+    periodStore.setType('all');
+  } else {
+    (filters as Record<string, FilterValue>)[key] = '';
+  }
+  pagination.value.page = 1;
+  void runFetch(true);
 }
 
 // ===== Métodos faltantes referenciados en template =====
