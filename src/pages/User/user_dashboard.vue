@@ -1,36 +1,41 @@
 <template>
   <q-page class="q-pa-md column q-gutter-md">
-    <div class="row items-center q-col-gutter-md">
-      <div class="col-grow">
-        <div class="text-h5">Hola, {{ auth.user?.name || 'Usuario' }}</div>
-        <div class="text-caption text-grey-7">Dashboard limpio.</div>
-      </div>
-      <div class="col-auto">
-        <q-btn
-          color="primary"
-          icon="add"
-          label="Nueva transacción"
-          @click="ui.openNewTransactionDialog()"
-        />
-      </div>
-    </div>
+    <q-card flat bordered class="hero-card">
+      <q-card-section class="hero-card__section">
+        <div class="hero-copy-wrap">
+          <div class="text-overline text-primary">Centro financiero</div>
+          <div class="text-h4 text-weight-bold">Hola, {{ auth.user?.name || 'Usuario' }}</div>
+          <div class="text-body2 text-grey-7 hero-copy">
+            Visualiza distribucion por cántaro, balance global y comportamiento del periodo con una vista más clara y accionable.
+          </div>
+        </div>
+        <div class="hero-actions">
+          <q-btn color="primary" icon="add" label="Nueva transacción" @click="ui.openNewTransactionDialog()" />
+          <q-btn flat color="primary" icon="insights" label="Analizar gastos" @click="openExpenseAnalysis()" />
+        </div>
+      </q-card-section>
+    </q-card>
     <!-- Moneda por defecto + tasas actuales -->
     <div class="row items-center q-gutter-xs q-mt-sm rates-row">
       <q-chip dense color="grey-2" text-color="dark" class="text-weight-medium">
         {{ defaultCurrencyCode || 'USD' }}
       </q-chip>
-      <template v-for="r in currentRates" :key="r.code">
-        <q-chip dense color="blue-1" text-color="primary" class="rate-chip-item">
-          {{ r.code }}: {{ r.rateLabel }}
-          <q-badge v-if="r.is_official" color="teal" class="q-ml-xs">oficial</q-badge>
-        </q-chip>
-      </template>
+      <q-chip
+        v-for="r in currentRates"
+        :key="r.code"
+        dense
+        color="blue-1"
+        text-color="primary"
+        class="rate-chip-item"
+      >
+        {{ r.code }}: {{ r.rateLabel }}
+        <q-badge v-if="r.is_official" color="teal" class="q-ml-xs">oficial</q-badge>
+      </q-chip>
     </div>
-    <q-separator spaced />
     <!-- Balance global de cuentas -->
     <div class="row q-col-gutter-md">
       <div class="col-12 col-sm-6">
-        <q-card flat bordered>
+        <q-card flat bordered class="metric-card">
           <q-card-section class="q-pa-sm">
             <div class="row items-center q-gutter-xs">
               <q-icon name="account_balance_wallet" color="primary" size="22px" />
@@ -59,7 +64,7 @@
         </q-card>
       </div>
       <div class="col-12 col-sm-6">
-        <q-card flat bordered>
+        <q-card flat bordered class="metric-card">
           <q-card-section class="q-pa-sm">
             <div class="row items-center q-gutter-xs">
               <q-icon name="account_balance" color="teal" size="22px" />
@@ -71,8 +76,8 @@
             <div class="text-caption text-grey-6">Solo cuentas marcadas para balance global</div>
             <q-tooltip v-if="accountsSummary.length" max-width="320px">
               <div class="q-gutter-y-xs">
-                <template v-for="a in accountsSummary" :key="a.id">
-                  <div v-if="a.include_in_global_balance" class="row items-center justify-between q-gutter-x-sm">
+                <template v-for="a in accountsSummary">
+                  <div :key="a.id" v-if="a.include_in_global_balance" class="row items-center justify-between q-gutter-x-sm">
                     <span>{{ a.name }}</span>
                     <span class="text-right">
                       <span v-if="a.currency_code !== 'USD' && a.currency_code !== defaultCurrencyCode">
@@ -96,20 +101,22 @@
       <div class="col-auto">
         <PeriodFilterBar />
       </div>
+      <div class="col-auto">
+        <q-btn outline color="primary" icon="travel_explore" label="Ir al navegador de gastos" @click="openExpenseAnalysis()" />
+      </div>
     </div>
 
-    <!-- Pie chart de distribución por cántaro -->
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section>
-        <div class="text-subtitle2">Distribución por cántaro</div>
-        <div class="text-caption text-grey-7">Visualiza cómo se distribuyen tus fondos entre cántaros este periodo.</div>
-      </q-card-section>
-      <q-separator />
-      <q-card-section>
-        <div style="max-width: 420px; margin: 0 auto;">
-          <q-img :src="pieChartUrl" style="width: 100%; max-width: 400px;" v-if="pieChartUrl" />
-          <div v-else class="text-grey-5 text-center q-pa-md">Sin datos para graficar</div>
-        </div>
+    <ExpenseDistributionChart
+      v-if="jarMonthlySummary.length"
+      :rows="jarMonthlySummary"
+      :currency-code="currencyCode"
+      :hide-values="ui.hideValues"
+      class="q-mb-md"
+    />
+
+    <q-card v-else flat bordered class="q-mb-md metric-card">
+      <q-card-section class="text-center q-py-xl text-grey-6">
+        Sin datos de cántaros para graficar en este periodo.
       </q-card-section>
     </q-card>
 
@@ -135,7 +142,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in jarMonthlySummary" :key="row.id">
+              <tr v-for="row in jarMonthlySummary" :key="row.id" class="summary-row-clickable" @click="openExpenseAnalysis(row.id)">
                 <td>
                   <span class="summary-dot" :style="{ background: row.color, display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', marginRight: '6px' }"></span>
                   {{ row.name }}
@@ -210,13 +217,15 @@
   </q-page>
 </template>
 <script setup lang="ts">
-import { api } from 'boot/axios';
-import PeriodFilterBar from 'components/PeriodFilterBar.vue';
+import { api } from '../../boot/axios';
+import { ExpenseDistributionChart } from '../../components';
 import { computed, onMounted, ref, watch } from 'vue';
-import { useUserRates } from 'src/composables/useUserRates';
-import { useAuthStore } from 'stores/auth';
-import { usePeriodStore } from 'stores/period';
-import { useUiStore } from 'stores/ui';
+import { useUserRates } from '../../composables/useUserRates';
+import { useAuthStore } from '../../stores/auth';
+import { usePeriodStore } from '../../stores/period';
+import { useUiStore } from '../../stores/ui';
+import { PeriodFilterBar } from '../../components/models';
+import { useRouter } from 'vue-router';
 
 defineOptions({ name: 'user_dashboard' });
 
@@ -224,6 +233,7 @@ const HIDDEN = '••••••';
 const auth = useAuthStore();
 const ui = useUiStore();
 const periodStore = usePeriodStore();
+const router = useRouter();
 const { defaultCurrencyCode, currentRates } = useUserRates();
 
 const balanceSummary = ref({ total_all: 0, total_global_balance: 0 });
@@ -312,24 +322,12 @@ const summaryTotals = computed(() => {
   };
 });
 
-const pieChartUrl = computed(() => {
-  const rows = jarMonthlySummary.value;
-  if (!rows.length) return '';
-  const labels = rows.map((r) => r.name);
-  const data = rows.map((r) => Math.max(0, Number(r.assignedExpected || 0)));
-  const colors = rows.map((r) => r.color || '#6b7280');
-  const chart = {
-    type: 'pie',
-    data: {
-      labels,
-      datasets: [{ data, backgroundColor: colors }],
-    },
-    options: {
-      plugins: { legend: { position: 'bottom' } },
-    },
-  };
-  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chart))}`;
-});
+function openExpenseAnalysis(jarId?: number) {
+  void router.push({
+    path: '/user/expense-analysis',
+    query: jarId ? { jar: String(jarId) } : undefined,
+  });
+}
 
 async function loadBalanceSummary() {
   balanceSummaryLoading.value = true;
@@ -452,18 +450,58 @@ watch(
 );
 </script>
 <style scoped>
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+.hero-card,
+.metric-card {
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
 }
-.widget {
-  min-height: 100px;
+
+.hero-card__section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
 }
+
+.hero-copy-wrap {
+  max-width: 760px;
+}
+
+.hero-copy {
+  margin-top: 6px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .rates-row .q-chip {
   height: 24px;
 }
+
 .rate-chip-item {
   white-space: nowrap;
+}
+
+.summary-row-clickable {
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.summary-row-clickable:hover {
+  background: rgba(56, 189, 248, 0.06);
+}
+
+@media (max-width: 768px) {
+  .hero-card__section {
+    flex-direction: column;
+  }
 }
 </style>

@@ -48,6 +48,7 @@ const routes: RouteRecordRaw[] = [
   // Landing now points to user dashboard home
   { path: '', redirect: '/user/home' },
   { path: 'home', component: () => import('src/pages/user/user_dashboard.vue') },
+  { path: 'expense-analysis', component: () => import('src/pages/user/expense-analysis/index.vue') },
   { path: 'transactions', component: () => import('src/pages/user/transactions/index.vue') },
   { path: 'accounts', component: () => import('src/pages/user/accounts/index.vue') },
   { path: 'categories', component: () => import('src/pages/user/categories/index.vue') },
