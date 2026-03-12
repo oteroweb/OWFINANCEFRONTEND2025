@@ -2175,12 +2175,43 @@ function buildPayload(dryRun: boolean) {
 
 function buildRowPayload(row: Record<string, unknown>, clientId: string): TransactionBulkRow {
   const normalizedType = normalizeTypeValue(row.type)
+  const isTransfer = normalizedType === 'transfer'
   const isExpense = normalizedType === 'expense'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
-  const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
+  const rateCandidate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : Number(defaultRate.value)
+  const rate = Number.isFinite(rateCandidate) && rateCandidate > 0 ? rateCandidate : 1
   const normalizedDate = normalizeDateValue(row.date)
+
+  if (isTransfer) {
+    const fallbackFrom = selectedAccountId.value ? Number(selectedAccountId.value) : NaN
+    const fromAccountId = Number(row.from_account_id ?? fallbackFrom)
+    const toAccountId = Number(row.to_account_id)
+    const transferAmount = Math.abs(Number(row.amount))
+
+    if (!Number.isFinite(fromAccountId) || fromAccountId <= 0 || !Number.isFinite(toAccountId) || toAccountId <= 0) {
+      throw new Error(`La fila ${clientId} es transferencia y requiere cuenta origen y destino`)
+    }
+
+    if (!Number.isFinite(transferAmount) || transferAmount <= 0) {
+      throw new Error(`La fila ${clientId} de transferencia tiene un monto inválido`)
+    }
+
+    return {
+      name: nameValue,
+      date: normalizedDate + ' 12:00:00',
+      include_in_balance: true,
+      items: [],
+      payments: [
+        { account_id: fromAccountId, amount: -transferAmount, rate },
+        { account_id: toAccountId, amount: transferAmount, rate }
+      ],
+      client_row_id: clientId
+    }
+  }
+
   const accountId = selectedAccountId.value as number
+  const itemAmount = amount / rate
   const payments: Array<{ account_id: number; amount: number; rate: number }> = [
     { account_id: accountId, amount, rate }
   ]
@@ -2193,7 +2224,7 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
     items: [
       {
         name: nameValue,
-        amount: amount
+        amount: itemAmount
       }
     ],
     payments,
@@ -2203,12 +2234,41 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
 
 function buildRowPayloadFromNormalized(row: Record<string, unknown>): TransactionBulkRow {
   const normalizedType = normalizeTypeValue(row.type)
+  const isTransfer = normalizedType === 'transfer'
   const isExpense = normalizedType === 'expense'
   const amount = isExpense ? -Math.abs(Number(row.amount)) : Math.abs(Number(row.amount))
   const nameValue = typeof row.name === 'string' || typeof row.name === 'number' ? String(row.name) : ''
   const clientRowId = typeof row.client_row_id === 'string' || typeof row.client_row_id === 'number' ? String(row.client_row_id) : ''
-  const rate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : 1
+  const rateCandidate = row.rate !== null && row.rate !== undefined ? Number(row.rate) : Number(defaultRate.value)
+  const rate = Number.isFinite(rateCandidate) && rateCandidate > 0 ? rateCandidate : 1
   const normalizedDate = normalizeDateValue(row.date)
+
+  if (isTransfer) {
+    const fallbackFrom = selectedAccountId.value ? Number(selectedAccountId.value) : NaN
+    const fromAccountId = Number(row.from_account_id ?? fallbackFrom)
+    const toAccountId = Number(row.to_account_id)
+    const transferAmount = Math.abs(Number(row.amount))
+
+    if (!Number.isFinite(fromAccountId) || fromAccountId <= 0 || !Number.isFinite(toAccountId) || toAccountId <= 0) {
+      throw new Error(`La fila ${clientRowId || 'transfer'} es transferencia y requiere cuenta origen y destino`)
+    }
+
+    if (!Number.isFinite(transferAmount) || transferAmount <= 0) {
+      throw new Error(`La fila ${clientRowId || 'transfer'} de transferencia tiene un monto inválido`)
+    }
+
+    return {
+      name: nameValue,
+      date: normalizedDate + ' 12:00:00',
+      include_in_balance: true,
+      items: [],
+      payments: [
+        { account_id: fromAccountId, amount: -transferAmount, rate },
+        { account_id: toAccountId, amount: transferAmount, rate }
+      ],
+      client_row_id: clientRowId
+    }
+  }
   
   const explicitCategoryId = Number(row.category_id)
   const hasExplicitCategoryId = Number.isFinite(explicitCategoryId) && explicitCategoryId > 0
@@ -2217,6 +2277,7 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
   )
 
   const accountId = selectedAccountId.value as number
+  const itemAmount = amount / rate
   const payments: Array<{ account_id: number; amount: number; rate: number }> = [
     { account_id: accountId, amount, rate }
   ]
@@ -2229,7 +2290,7 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
     items: [
       {
         name: nameValue,
-        amount: amount
+        amount: itemAmount
       }
     ],
     payments,
