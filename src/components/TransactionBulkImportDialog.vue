@@ -2200,6 +2200,7 @@ function buildRowPayload(row: Record<string, unknown>, clientId: string): Transa
     return {
       name: nameValue,
       date: normalizedDate + ' 12:00:00',
+      amount: transferAmount / rate,
       include_in_balance: true,
       items: [],
       payments: [
@@ -2260,6 +2261,7 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
     return {
       name: nameValue,
       date: normalizedDate + ' 12:00:00',
+      amount: transferAmount / rate,
       include_in_balance: true,
       items: [],
       payments: [
