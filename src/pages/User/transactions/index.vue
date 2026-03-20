@@ -151,6 +151,34 @@
           </div>
         </div>
 
+        <div v-if="categorySpendTags.length" class="q-mb-md">
+          <div class="row q-col-gutter-sm items-center">
+            <div class="col-auto text-caption text-grey-7">Categorías del periodo:</div>
+            <div class="col">
+              <q-chip
+                clickable
+                :outline="!hasCategoryFilterSelected"
+                :color="!hasCategoryFilterSelected ? 'blue-1' : 'grey-3'"
+                :text-color="!hasCategoryFilterSelected ? 'primary' : 'grey-7'"
+                @click="clearCategoryTagFilter"
+              >
+                Todas
+              </q-chip>
+              <q-chip
+                v-for="tag in categorySpendTags"
+                :key="tag.key"
+                clickable
+                :outline="selectedCategoryFilterId !== tag.id"
+                :color="selectedCategoryFilterId === tag.id ? 'primary' : 'blue-1'"
+                :text-color="selectedCategoryFilterId === tag.id ? 'white' : 'primary'"
+                @click="applyCategoryTagFilter(tag.id)"
+              >
+                {{ tag.name }}: {{ formatMoney(tag.total) }}
+              </q-chip>
+            </div>
+          </div>
+        </div>
+
         <!-- Tabla de datos -->
         <div v-if="showRunningBalanceColumn && singleAccountBalance != null" class="q-mb-sm">
           <q-banner class="bg-blue-1 text-primary q-pa-sm" rounded>
@@ -277,6 +305,12 @@
               <div v-if="showUsdUnderAmounts" class="amount-sub">
                 {{ formatAmountConversionLine(props.row) }}
               </div>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-category_summary="props">
+            <q-td :props="props">
+              {{ categoryLabelForRow(props.row) }}
             </q-td>
           </template>
 
@@ -686,6 +720,14 @@ const baseColumns = (dictionary.columns as CrudColumn[]).map((col) => ({
       }
     : {}),
 }));
+
+const categorySummaryColumn: ColumnDef = {
+  name: 'category_summary',
+  label: 'Categoría',
+  field: (row: Row) => categoryLabelForRow(row),
+  align: 'left' as const,
+  sortable: false,
+};
 
 // Running balance support
 const runningBalanceMap = ref<Record<string | number, number>>({});
@@ -1129,14 +1171,247 @@ const runningBalanceColumn: ColumnDef = {
 };
 const columns = computed<ColumnDef[]>(() => {
   const base = baseColumns as unknown as ColumnDef[];
-  if (!showRunningBalanceColumn.value) return base;
-  const clone = [...base];
+  const withCategory = [...base];
+  if (!withCategory.find((c) => c.name === 'category_summary')) {
+    const insertAt = withCategory.findIndex((c) => c.name === 'transaction_type.name');
+    if (insertAt >= 0) withCategory.splice(insertAt + 1, 0, categorySummaryColumn);
+    else withCategory.splice(Math.min(2, withCategory.length), 0, categorySummaryColumn);
+  }
+  if (!showRunningBalanceColumn.value) return withCategory;
+  const clone = [...withCategory];
   const idx = clone.findIndex((c) => c.name === 'amount');
   if (idx >= 0 && !clone.find((c) => c.name === 'running_balance'))
     clone.splice(idx + 1, 0, runningBalanceColumn);
   else if (!clone.find((c) => c.name === 'running_balance')) clone.push(runningBalanceColumn);
   return clone;
 });
+
+type CategorySpendTag = {
+  key: string;
+  id: number;
+  name: string;
+  total: number;
+};
+
+const categorySpendTags = ref<CategorySpendTag[]>([]);
+const hasCategoryFilterSelected = computed(() => {
+  const raw = (filters as Record<string, FilterValue>)['category_id'];
+  return raw !== undefined && raw !== null && String(raw) !== '';
+});
+const selectedCategoryFilterId = computed<number | null>(() => {
+  const raw = (filters as Record<string, FilterValue>)['category_id'];
+  if (raw === undefined || raw === null || String(raw) === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+});
+
+function rowCategoryCandidates(row: Row): Array<{ id: number; name: string }> {
+  const out: Array<{ id: number; name: string }> = [];
+  const seen = new Set<number>();
+  const push = (idRaw: unknown, nameRaw: unknown) => {
+    const id = Number(idRaw);
+    const name = typeof nameRaw === 'string' ? nameRaw.trim() : '';
+    if (!Number.isFinite(id) || id <= 0 || !name || seen.has(id)) return;
+    seen.add(id);
+    out.push({ id, name });
+  };
+
+  const topCategory = (row as AnyRecord)['category'];
+  if (topCategory && typeof topCategory === 'object') {
+    const cat = topCategory as AnyRecord;
+    push(cat['id'], cat['name']);
+  }
+  push((row as AnyRecord)['category_id'], (row as AnyRecord)['category_name']);
+
+  const items = (row as AnyRecord)['item_transactions'];
+  if (Array.isArray(items)) {
+    for (const item of items) {
+      if (!item || typeof item !== 'object') continue;
+      const it = item as AnyRecord;
+      const cat = it['category'];
+      if (cat && typeof cat === 'object') {
+        const c = cat as AnyRecord;
+        push(c['id'], c['name']);
+      }
+      const itemCat = it['item_category'];
+      if (itemCat && typeof itemCat === 'object') {
+        const ic = itemCat as AnyRecord;
+        push(ic['id'], ic['name']);
+      }
+      push(it['category_id'], it['category_name']);
+    }
+  }
+
+  return out;
+}
+
+function categoryLabelForRow(row: Row): string {
+  const labels = rowCategoryCandidates(row).map((c) => c.name);
+  if (!labels.length) return 'Sin categoría';
+  return labels.join(', ');
+}
+
+function buildCategoryStatsParams(): Record<string, unknown> {
+  const pmap = dictionary.pagination_params || {
+    page: 'page',
+    per_page: 'per_page',
+    sort_by: 'sort_by',
+    descending: 'descending',
+    search: 'search',
+  };
+  const params = buildQueryParams();
+  delete params[pmap.page];
+  delete params[pmap.per_page];
+  delete params[pmap.sort_by];
+  delete params[pmap.descending];
+  delete params['category_id'];
+  params[pmap.page] = 1;
+  params[pmap.per_page] = 1000;
+  return params;
+}
+
+function extractRowsAndTotal(payload: unknown): { list: Row[]; total: number } {
+  let list: Row[] = [];
+  let total = 0;
+  if (Array.isArray(payload)) {
+    list = payload as Row[];
+    total = list.length;
+    return { list, total };
+  }
+  if (payload && typeof payload === 'object') {
+    const obj = payload as Record<string, unknown>;
+    if (Array.isArray(obj.data)) list = obj.data as Row[];
+    else if (Array.isArray(obj.items)) list = obj.items as Row[];
+    else if (Array.isArray(obj.results)) list = obj.results as Row[];
+    else if (Array.isArray(obj.rows)) list = obj.rows as Row[];
+    else if (Array.isArray(obj.records)) list = obj.records as Row[];
+    else if (Array.isArray(obj.transactions)) list = obj.transactions as Row[];
+    else if (obj.data && typeof obj.data === 'object') {
+      const inner = obj.data as Record<string, unknown>;
+      if (Array.isArray(inner.data)) list = inner.data as Row[];
+      else if (Array.isArray(inner.items)) list = inner.items as Row[];
+      else if (Array.isArray(inner.results)) list = inner.results as Row[];
+      else if (Array.isArray(inner.rows)) list = inner.rows as Row[];
+      else if (Array.isArray(inner.records)) list = inner.records as Row[];
+      else if (Array.isArray(inner.transactions)) list = inner.transactions as Row[];
+    }
+    let rawTotal: unknown =
+      (obj.meta && typeof obj.meta === 'object'
+        ? (obj.meta as Record<string, unknown>)['total']
+        : undefined) ||
+      (obj.pagination && typeof obj.pagination === 'object'
+        ? (obj.pagination as Record<string, unknown>)['total']
+        : undefined) ||
+      obj.total;
+    if (rawTotal === undefined && obj.data && typeof obj.data === 'object') {
+      rawTotal = (obj.data as Record<string, unknown>)['total'];
+    }
+    if (typeof rawTotal === 'number' && Number.isFinite(rawTotal)) total = rawTotal;
+    else if (typeof rawTotal === 'string' && rawTotal.trim() !== '') {
+      const n = Number(rawTotal);
+      total = Number.isFinite(n) ? n : list.length;
+    } else {
+      total = list.length;
+    }
+  }
+  return { list, total };
+}
+
+function buildCategorySpendTags(rowsInput: Row[]): CategorySpendTag[] {
+  const map = new Map<number, CategorySpendTag>();
+  const addSpend = (id: number, name: string, amount: number) => {
+    if (!(amount > 0)) return;
+    const prev = map.get(id);
+    if (prev) {
+      prev.total += amount;
+      return;
+    }
+    map.set(id, { key: `cat-${id}`, id, name, total: amount });
+  };
+
+  for (const row of rowsInput) {
+    if (isTransferRow(row)) continue;
+    const rowAmount = parseNumber((row as AnyRecord)['amount']);
+    const items = (row as AnyRecord)['item_transactions'];
+
+    let usedItemBreakdown = false;
+    if (Array.isArray(items) && items.length) {
+      for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        const it = item as AnyRecord;
+        const amt = parseNumber(it['amount']);
+        if (!(amt < 0)) continue;
+        const itemRow = { item_transactions: [it] } as unknown as Row;
+        const cats = rowCategoryCandidates(itemRow);
+        if (!cats.length) continue;
+        const spend = Math.abs(amt);
+        const perCategory = spend / cats.length;
+        for (const cat of cats) addSpend(cat.id, cat.name, perCategory);
+        usedItemBreakdown = true;
+      }
+    }
+
+    if (usedItemBreakdown || !(rowAmount < 0)) continue;
+    const cats = rowCategoryCandidates(row);
+    if (!cats.length) continue;
+    const spend = Math.abs(rowAmount);
+    const perCategory = spend / cats.length;
+    for (const cat of cats) addSpend(cat.id, cat.name, perCategory);
+  }
+
+  return Array.from(map.values()).sort((a, b) => b.total - a.total);
+}
+
+let categoryStatsSignature = '';
+async function fetchCategorySpendTags(force = false): Promise<void> {
+  const pmap = dictionary.pagination_params || {
+    page: 'page',
+    per_page: 'per_page',
+    sort_by: 'sort_by',
+    descending: 'descending',
+    search: 'search',
+  };
+  const params = buildCategoryStatsParams();
+  const sig = stableSignature(params);
+  if (!force && sig === categoryStatsSignature) return;
+  categoryStatsSignature = sig;
+
+  try {
+    const collected: Row[] = [];
+    const pageKey = pmap.page;
+    const perPageKey = pmap.per_page;
+    const perPage = 1000;
+    const maxPages = 8;
+    let page = 1;
+    let total = 0;
+
+    while (page <= maxPages) {
+      params[pageKey] = page;
+      params[perPageKey] = perPage;
+      const res = await api.get(`/${dictionary.url_apis}`, { params });
+      const parsed = extractRowsAndTotal(res.data);
+      if (!parsed.list.length) break;
+      collected.push(...parsed.list);
+      total = parsed.total;
+      if (collected.length >= total) break;
+      if (parsed.list.length < perPage) break;
+      page += 1;
+    }
+
+    categorySpendTags.value = buildCategorySpendTags(collected);
+  } catch {
+    categorySpendTags.value = [];
+  }
+}
+
+function applyCategoryTagFilter(categoryId: number): void {
+  const current = selectedCategoryFilterId.value;
+  (filters as Record<string, FilterValue>)['category_id'] = current === categoryId ? '' : categoryId;
+}
+
+function clearCategoryTagFilter(): void {
+  (filters as Record<string, FilterValue>)['category_id'] = '';
+}
 
 const columnVisibilityOptions = computed(() =>
   columns.value
@@ -1338,49 +1613,9 @@ async function fetchData(params?: Record<string, unknown>): Promise<void> {
       params: params || { ...filters },
       signal: controller.signal,
     });
-    const data: unknown = res.data;
-    let arr: Row[] = [];
-    if (Array.isArray(data)) {
-      arr = data as Row[];
-    } else if (data && typeof data === 'object') {
-      const obj = data as Record<string, unknown>;
-      if (Array.isArray(obj.data)) arr = obj.data as Row[];
-      else if (Array.isArray(obj.items)) arr = obj.items as Row[];
-      else if (Array.isArray(obj.results)) arr = obj.results as Row[];
-      else if (Array.isArray(obj.rows)) arr = obj.rows as Row[];
-      else if (Array.isArray(obj.records)) arr = obj.records as Row[];
-      else if (Array.isArray(obj.transactions)) arr = obj.transactions as Row[];
-      else if (obj.data && typeof obj.data === 'object') {
-        const inner = obj.data as Record<string, unknown>;
-        if (Array.isArray(inner.data)) arr = inner.data as Row[];
-        else if (Array.isArray(inner.items)) arr = inner.items as Row[];
-        else if (Array.isArray(inner.results)) arr = inner.results as Row[];
-        else if (Array.isArray(inner.rows)) arr = inner.rows as Row[];
-        else if (Array.isArray(inner.records)) arr = inner.records as Row[];
-        else if (Array.isArray(inner.transactions)) arr = inner.transactions as Row[];
-      }
-    }
-    rows.value = arr;
-    let total = arr.length;
-    if (data && typeof data === 'object') {
-      const obj = data as Record<string, unknown>;
-      const meta = (obj['meta'] as Record<string, unknown> | undefined) || undefined;
-      const paginationObj = (obj['pagination'] as Record<string, unknown> | undefined) || undefined;
-      let rawTotal =
-        (meta ? meta['total'] : undefined) ||
-        (paginationObj ? paginationObj['total'] : undefined) ||
-        obj['total'];
-      if (rawTotal === undefined && obj.data && typeof obj.data === 'object') {
-        const inner = obj.data as Record<string, unknown>;
-        rawTotal = inner['total'];
-      }
-      if (typeof rawTotal === 'number') total = rawTotal;
-      else if (typeof rawTotal === 'string' && rawTotal.trim() !== '') {
-        const n = Number(rawTotal);
-        if (Number.isFinite(n)) total = n;
-      }
-    }
-    pagination.value.rowsNumber = Number(total) || 0;
+    const parsed = extractRowsAndTotal(res.data);
+    rows.value = parsed.list;
+    pagination.value.rowsNumber = Number(parsed.total) || 0;
   } catch (err) {
     const e = err as { name?: string } | undefined;
     if ((e && e.name === 'CanceledError') || controller.signal.aborted) return;
@@ -1408,6 +1643,7 @@ async function runFetch(force = false): Promise<void> {
   if (!force && sig === lastParamsSignature) return;
   lastParamsSignature = sig;
   await fetchData(params);
+  await fetchCategorySpendTags(force);
   selectedRows.value = [];
   computeRunningBalances();
   if (singleAccountSelected.value) void fetchSingleAccountBalance();
