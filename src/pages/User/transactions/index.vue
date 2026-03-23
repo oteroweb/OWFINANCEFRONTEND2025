@@ -157,9 +157,8 @@
             <div class="col">
               <q-chip
                 clickable
-                :outline="!hasCategoryFilterSelected"
-                :color="!hasCategoryFilterSelected ? 'blue-1' : 'grey-3'"
-                :text-color="!hasCategoryFilterSelected ? 'primary' : 'grey-7'"
+                class="category-chip"
+                :style="allCategoryChipStyle"
                 @click="clearCategoryTagFilter"
               >
                 Todas
@@ -168,9 +167,8 @@
                 v-for="tag in categorySpendTags"
                 :key="tag.key"
                 clickable
-                :outline="selectedCategoryFilterId !== tag.id"
-                :color="selectedCategoryFilterId === tag.id ? 'primary' : 'blue-1'"
-                :text-color="selectedCategoryFilterId === tag.id ? 'white' : 'primary'"
+                class="category-chip"
+                :style="categoryChipStyle(tag)"
                 @click="applyCategoryTagFilter(tag.id)"
               >
                 {{ tag.name }}: {{ formatMoney(tag.total) }}
@@ -1191,6 +1189,8 @@ type CategorySpendTag = {
   id: number;
   name: string;
   total: number;
+  bgColor: string;
+  textColor: string;
 };
 
 const categorySpendTags = ref<CategorySpendTag[]>([]);
@@ -1204,6 +1204,46 @@ const selectedCategoryFilterId = computed<number | null>(() => {
   const n = Number(raw);
   return Number.isFinite(n) ? n : null;
 });
+
+const TAG_COLOR_POOL: Array<{ bgColor: string; textColor: string }> = [
+  { bgColor: '#B91C1C', textColor: '#FFFFFF' },
+  { bgColor: '#C2410C', textColor: '#FFFFFF' },
+  { bgColor: '#A16207', textColor: '#FFFFFF' },
+  { bgColor: '#15803D', textColor: '#FFFFFF' },
+  { bgColor: '#0F766E', textColor: '#FFFFFF' },
+  { bgColor: '#0369A1', textColor: '#FFFFFF' },
+  { bgColor: '#1D4ED8', textColor: '#FFFFFF' },
+  { bgColor: '#6D28D9', textColor: '#FFFFFF' },
+  { bgColor: '#BE185D', textColor: '#FFFFFF' },
+  { bgColor: '#4338CA', textColor: '#FFFFFF' },
+  { bgColor: '#374151', textColor: '#FFFFFF' },
+  { bgColor: '#111827', textColor: '#FFFFFF' },
+];
+
+const allCategoryChipStyle = computed(() => {
+  const selected = !hasCategoryFilterSelected.value;
+  return {
+    backgroundColor: selected ? '#111827' : '#9CA3AF',
+    color: selected ? '#FFFFFF' : '#111827',
+    border: selected ? '3px solid #111827' : '3px solid #4B5563',
+    opacity: 1,
+    fontWeight: selected ? '800' : '700',
+    boxShadow: selected ? '0 2px 0 rgba(0,0,0,.28)' : '0 1px 0 rgba(0,0,0,.2)',
+  };
+});
+
+function categoryChipStyle(tag: CategorySpendTag): Record<string, string> {
+  const selected = selectedCategoryFilterId.value === tag.id;
+  return {
+    backgroundColor: tag.bgColor,
+    color: tag.textColor,
+    border: selected ? '3px solid #111827' : '2px solid rgba(255,255,255,.4)',
+    opacity: '1',
+    fontWeight: selected ? '800' : '700',
+    boxShadow: selected ? '0 0 0 2px rgba(17,24,39,.3), 0 3px 8px rgba(0,0,0,.35)' : '0 2px 6px rgba(0,0,0,.18)',
+    textShadow: '0 1px 1px rgba(0,0,0,.35)',
+  };
+}
 
 function rowCategoryCandidates(row: Row): Array<{ id: number; name: string }> {
   const out: Array<{ id: number; name: string }> = [];
@@ -1319,6 +1359,13 @@ function extractRowsAndTotal(payload: unknown): { list: Row[]; total: number } {
 
 function buildCategorySpendTags(rowsInput: Row[]): CategorySpendTag[] {
   const map = new Map<number, CategorySpendTag>();
+  const shuffledPool = [...TAG_COLOR_POOL].sort(() => Math.random() - 0.5);
+  let colorCursor = 0;
+  const nextColor = () => {
+    const color = shuffledPool[colorCursor % shuffledPool.length] ?? TAG_COLOR_POOL[0]!;
+    colorCursor += 1;
+    return color;
+  };
   const addSpend = (id: number, name: string, amount: number) => {
     if (!(amount > 0)) return;
     const prev = map.get(id);
@@ -1326,7 +1373,15 @@ function buildCategorySpendTags(rowsInput: Row[]): CategorySpendTag[] {
       prev.total += amount;
       return;
     }
-    map.set(id, { key: `cat-${id}`, id, name, total: amount });
+    const c = nextColor();
+    map.set(id, {
+      key: `cat-${id}`,
+      id,
+      name,
+      total: amount,
+      bgColor: c.bgColor,
+      textColor: c.textColor,
+    });
   };
 
   for (const row of rowsInput) {
@@ -2513,6 +2568,18 @@ function exportCSV(): void {
 .amount-sub {
   font-size: 11px;
   opacity: 0.7;
+}
+
+.category-chip {
+  opacity: 1 !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  min-height: 32px;
+  letter-spacing: 0.2px;
+}
+
+.category-chip:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 .balance-main-line {
   line-height: 1.1;
