@@ -1,10 +1,10 @@
 <template>
   <div class="expense-chart-grid">
-    <q-card flat bordered class="chart-card">
+    <q-card flat class="glass-panel chart-card">
       <q-card-section class="chart-card__header">
         <div>
           <div class="text-subtitle1 text-weight-bold">Distribucion por cantaro</div>
-          <div class="text-caption text-grey-7">
+          <div class="text-caption text-grey-7" style="opacity:0.8">
             Peso visual del presupuesto esperado en el periodo actual.
           </div>
         </div>
@@ -15,7 +15,7 @@
       </q-card-section>
     </q-card>
 
-    <q-card flat bordered class="chart-card">
+    <q-card flat class="glass-panel chart-card">
       <q-card-section class="chart-card__header">
         <div>
           <div class="text-subtitle1 text-weight-bold">Asignado vs gastado</div>
@@ -119,6 +119,8 @@ const pieOption = computed(() => ({
       })),
     },
   ],
+  animationEasing: 'cubicOut',
+  animationDuration: 1200,
 }));
 
 const barOption = computed(() => ({
@@ -170,7 +172,7 @@ const barOption = computed(() => ({
       name: 'Asignado',
       type: 'bar',
       barMaxWidth: 18,
-      itemStyle: { color: '#38bdf8', borderRadius: [0, 8, 8, 0] },
+      itemStyle: { color: '#0ea5e9', borderRadius: [0, 8, 8, 0] },
       data: safeRows.value.map((row) => Number(row.assignedExpected || 0)),
     },
     {
@@ -184,10 +186,12 @@ const barOption = computed(() => ({
       name: 'Balance',
       type: 'bar',
       barMaxWidth: 18,
-      itemStyle: { color: '#22c55e', borderRadius: [0, 8, 8, 0] },
+      itemStyle: { color: '#10b981', borderRadius: [0, 8, 8, 0] },
       data: safeRows.value.map((row) => Number(row.balance || 0)),
     },
   ],
+  animationEasing: 'cubicOut',
+  animationDuration: 1200,
 }));
 </script>
 
@@ -199,11 +203,8 @@ const barOption = computed(() => ({
 }
 
 .chart-card {
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
 }
 
 .chart-card__header {

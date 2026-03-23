@@ -1,6 +1,6 @@
 <template>
   <q-layout view="hHh lpR fFf">
-    <q-header elevated class="bg-primary text-white">
+    <q-header class="glass-panel text-white" style="background: rgba(14, 165, 233, 0.85) !important; border-bottom: none !important; border-radius: 0 !important;">
       <q-toolbar class="topbar">
         <!-- Botón menú móvil -->
         <q-btn
@@ -15,7 +15,7 @@
 
         <!-- Perfil -->
         <div class="profile-mini row items-center no-wrap q-gutter-sm">
-          <q-avatar size="34px" class="bg-white text-primary">
+          <q-avatar size="34px" class="bg-white text-primary shadow-2">
             <img :src="avatarUrl" alt="avatar" />
           </q-avatar>
           <div class="user-line ellipsis">
@@ -57,12 +57,12 @@
       </q-toolbar>
 
       <!-- Moneda por defecto + tasas actuales del usuario -->
-      <div class="bg-primary text-white q-px-md q-pb-sm q-pt-xs rates-strip">
+      <div class="text-white q-px-md q-pb-sm q-pt-xs rates-strip">
         <div
           class="row items-center q-gutter-xs no-wrap"
           :class="{ 'scroll-x': !$q.screen.lt.md, 'justify-center': $q.screen.lt.md }"
         >
-          <q-chip dense color="white" text-color="primary" class="text-weight-medium gt-xs">
+          <q-chip dense color="white" text-color="primary" class="text-weight-bold shadow-1 gt-xs">
             {{ defaultCurrencyCode || 'USD' }}
           </q-chip>
           <template v-for="r in currentRates" :key="r.code">
@@ -71,7 +71,7 @@
               clickable
               color="white"
               text-color="primary"
-              class="rate-chip-item"
+              class="rate-chip-item shadow-1"
               title="Clic para editar tasa"
               @click="openRateEdit(r)"
             >
@@ -82,15 +82,19 @@
         </div>
       </div>
       <!-- Cántaros: disponible por mes -->
-      <JarsBalanceBar ref="jarsBarRef" />
+      <JarsBalanceBar ref="jarsBarRef" class="glass-panel" style="background: rgba(255,255,255,0.1) !important; border:none!important; border-radius:0!important;" />
       <!-- Barra de periodos global -->
-      <div class="bg-white text-dark">
+      <div class="bg-white text-dark shadow-1" style="border-radius: 0 0 16px 16px;">
         <PeriodFilterBar />
       </div>
     </q-header>
 
-    <q-page-container>
-      <router-view />
+    <q-page-container class="q-pa-md">
+      <router-view v-slot="{ Component }">
+        <transition name="slide-fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
 
     <!-- Drawer lateral para móvil -->

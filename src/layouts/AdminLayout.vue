@@ -57,8 +57,12 @@
         </q-item>
       </q-list>
     </q-drawer>
-    <q-page-container>
-      <router-view />
+    <q-page-container class="q-pa-md">
+      <router-view v-slot="{ Component }">
+        <transition name="slide-fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
   </q-layout>
 </template>

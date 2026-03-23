@@ -1,17 +1,17 @@
 <template>
   <q-page class="q-pa-md column q-gutter-md">
-    <q-card flat bordered class="hero-card">
+    <q-card flat class="glass-panel text-white">
       <q-card-section class="hero-card__section">
         <div class="hero-copy-wrap">
-          <div class="text-overline text-primary">Centro financiero</div>
+          <div class="text-overline text-white" style="opacity: 0.8">Centro financiero</div>
           <div class="text-h4 text-weight-bold">Hola, {{ auth.user?.name || 'Usuario' }}</div>
-          <div class="text-body2 text-grey-7 hero-copy">
+          <div class="text-body2 hero-copy" style="opacity: 0.9">
             Visualiza distribucion por cántaro, balance global y comportamiento del periodo con una vista más clara y accionable.
           </div>
         </div>
         <div class="hero-actions">
-          <q-btn color="primary" icon="add" label="Nueva transacción" @click="ui.openNewTransactionDialog()" />
-          <q-btn flat color="primary" icon="insights" label="Analizar gastos" @click="openExpenseAnalysis()" />
+          <q-btn color="white" text-color="primary" icon="add" label="Nueva transacción" @click="ui.openNewTransactionDialog()" class="shadow-1" />
+          <q-btn outline color="white" icon="insights" label="Analizar gastos" @click="openExpenseAnalysis()" />
         </div>
       </q-card-section>
     </q-card>
@@ -35,7 +35,7 @@
     <!-- Balance global de cuentas -->
     <div class="row q-col-gutter-md">
       <div class="col-12 col-sm-6">
-        <q-card flat bordered class="metric-card">
+        <q-card flat class="glass-panel metric-card">
           <q-card-section class="q-pa-sm">
             <div class="row items-center q-gutter-xs">
               <q-icon name="account_balance_wallet" color="primary" size="22px" />
@@ -64,7 +64,7 @@
         </q-card>
       </div>
       <div class="col-12 col-sm-6">
-        <q-card flat bordered class="metric-card">
+        <q-card flat class="glass-panel metric-card">
           <q-card-section class="q-pa-sm">
             <div class="row items-center q-gutter-xs">
               <q-icon name="account_balance" color="teal" size="22px" />
@@ -114,14 +114,14 @@
       class="q-mb-md"
     />
 
-    <q-card v-else flat bordered class="q-mb-md metric-card">
+    <q-card v-else flat class="glass-panel q-mb-md metric-card">
       <q-card-section class="text-center q-py-xl text-grey-6">
         Sin datos de cántaros para graficar en este periodo.
       </q-card-section>
     </q-card>
 
     <!-- Resumen mensual de cántaros (tabla) -->
-    <q-card flat bordered class="q-mb-md">
+    <q-card flat class="glass-panel q-mb-md summary-card">
       <q-card-section>
         <div class="text-subtitle2">Resumen del mes</div>
         <div class="text-caption text-grey-7">
@@ -176,7 +176,7 @@
     </q-card>
 
     <!-- Tabla dinero ocioso mensual -->
-    <q-card v-if="idleMonths.length > 0" flat bordered>
+    <q-card v-if="idleMonths.length > 0" flat class="glass-panel summary-card">
       <q-card-section class="q-pb-none">
         <div class="text-subtitle2 text-weight-medium">Dinero ocioso en cántaros reset</div>
         <div class="text-caption text-grey-6">Dinero asignado pero no gastado cada mes &mdash; se pierde al resetear</div>
@@ -455,12 +455,14 @@ watch(
 </script>
 <style scoped>
 .hero-card,
-.metric-card {
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
-  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+.metric-card,
+.summary-card {
+  border-radius: var(--radius-lg) !important;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, var(--q-primary), var(--q-secondary)) !important;
+  color: white;
 }
 
 .hero-card__section {
