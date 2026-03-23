@@ -119,8 +119,6 @@ const pieOption = computed(() => ({
       })),
     },
   ],
-  animationEasing: 'cubicOut',
-  animationDuration: 1200,
 }));
 
 const barOption = computed(() => ({
@@ -190,8 +188,6 @@ const barOption = computed(() => ({
       data: safeRows.value.map((row) => Number(row.balance || 0)),
     },
   ],
-  animationEasing: 'cubicOut',
-  animationDuration: 1200,
 }));
 </script>
 
