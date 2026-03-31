@@ -111,9 +111,10 @@ async function submit() {
         token: body['token'] as string,
         user: (body['data'] ?? null) as Parameters<typeof auth.$patch>[0] extends { user?: infer U } ? U : never,
       });
-      localStorage.setItem('token', body['token'] as string);
+      const tokenStr = body['token'] as string;
+      localStorage.setItem('token', tokenStr);
       localStorage.setItem('user', JSON.stringify(body['data'] ?? null));
-      api.defaults.headers.common.Authorization = `Bearer ${body['token']}`;
+      api.defaults.headers.common.Authorization = `Bearer ${tokenStr}`;
 
       if (auth.role === 'admin') {
         void router.push('/admin');
@@ -129,7 +130,7 @@ async function submit() {
       const rawErrors = axiosError.response.data.errors;
       const flat: Record<string, string> = {};
       for (const key in rawErrors) {
-        flat[key] = Array.isArray(rawErrors[key]) ? rawErrors[key][0] : rawErrors[key];
+        flat[key] = (Array.isArray(rawErrors[key]) ? rawErrors[key][0] : rawErrors[key]) ?? '';
       }
       errors.value = flat;
     } else {
