@@ -57,6 +57,41 @@
         <div class="text-caption text-grey q-mt-sm">Acceder con huella</div>
       </q-card-section>
     </q-card>
+
+    <!-- Register link -->
+    <div class="q-mt-md text-center">
+      <span class="text-caption text-grey-6">¿No tienes cuenta? </span>
+      <router-link to="/register" class="text-caption text-primary">Regístrate</router-link>
+    </div>
+
+    <!-- Download App Section -->
+    <div class="q-mt-lg text-center">
+      <q-separator class="q-mb-md" style="max-width: 320px; margin: 0 auto 12px auto;" />
+      <div class="text-caption text-grey-6 q-mb-sm">📱 Descarga la app para Android</div>
+      <div class="row justify-center q-gutter-sm">
+        <q-btn
+          unelevated
+          size="sm"
+          color="positive"
+          icon="android"
+          label="DEV (Beta)"
+          href="https://appfinanzasdev.blockshift.website/downloads/owfinance-dev.apk"
+          type="a"
+          no-caps
+        />
+        <q-btn
+          unelevated
+          size="sm"
+          color="primary"
+          icon="android"
+          label="Stage"
+          href="https://appfinanzas.blockshift.website/downloads/owfinance-stage.apk"
+          type="a"
+          no-caps
+        />
+      </div>
+      <div class="text-caption text-grey-5 q-mt-xs">Los enlaces siempre apuntan a la versión más reciente</div>
+    </div>
   </q-page>
 </template>
 
