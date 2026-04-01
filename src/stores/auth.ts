@@ -62,15 +62,20 @@ interface User {
   currency_rates?: UserCurrencyRate[]
   current_currency_rates?: UserCurrencyRate[]
   rates?: UserRateEntry[]
-  role_slug?: string
   role_name?: string
 }
 
+export interface UserSetting {
+  layout_mode: 'lite' | 'pro' | 'legacy' | null;
+  has_seen_onboarding: boolean;
+  preferences: Record<string, unknown> | null;
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: null as string | null,
-    user: null as User | null
+    user: null as User | null,
+    settings: null as UserSetting | null,
   }),
   getters: {
     isLoggedIn: (state) => !!state.token,
@@ -114,6 +119,9 @@ export const useAuthStore = defineStore('auth', {
 
         // Establece el token en axios para futuras peticiones
         api.defaults.headers.common.Authorization = `Bearer ${this.token}`
+
+        // Carga configuraciones de usuario
+        await this.fetchSettings();
       } catch (error: unknown) {
         interface AxiosError {
           response?: {
@@ -148,6 +156,20 @@ export const useAuthStore = defineStore('auth', {
         // Silencioso: si falla, mantenemos el user actual
       }
     },
+    /** Carga configuraciones de usuario (layout, onboarding) */
+    async fetchSettings() {
+      if (!this.token) return
+      try {
+        const res = await api.get('/user/settings')
+        const data = res.data?.data as UserSetting
+        if (data) {
+          this.settings = data
+          localStorage.setItem('settings', JSON.stringify(this.settings))
+        }
+      } catch {
+        // Fallback u oculto
+      }
+    },
     /** Refresca únicamente las tasas de moneda del usuario desde /user_currencies */
     async refreshUserCurrencies() {
       if (!this.token || !this.user?.id) return
@@ -168,20 +190,27 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.token = null
       this.user = null
+      this.settings = null
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      localStorage.removeItem('settings')
       delete api.defaults.headers.common.Authorization
     },
 
     loadFromStorage() {
       const token = localStorage.getItem('token')
       const user = localStorage.getItem('user')
+      const settings = localStorage.getItem('settings')
       if (token && user) {
         this.token = token
         try {
           this.user = JSON.parse(user) as User
+          if (settings) {
+            this.settings = JSON.parse(settings) as UserSetting
+          }
         } catch {
           this.user = null
+          this.settings = null
         }
         api.defaults.headers.common.Authorization = `Bearer ${this.token}`
       }

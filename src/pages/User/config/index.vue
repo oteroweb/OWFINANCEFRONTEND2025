@@ -110,6 +110,36 @@
               </div>
             </q-card>
 
+            <!-- Experiencia Visual (Layout Mode) -->
+            <q-card flat bordered class="q-pa-md">
+              <div class="text-subtitle1 q-mb-sm">
+                <q-icon name="dashboard_customize" class="q-mr-sm" />
+                Experiencia Visual
+              </div>
+              <div class="text-caption text-grey-7 q-mb-md">
+                Elige la interfaz que mejor se adapte a ti. Versión Lite (Rápida intuitiva y móvil) o Versión Pro (Analítica y datos detallados de desktop).
+              </div>
+              <div class="row q-col-gutter-md">
+                <div class="col-12 col-sm-6">
+                  <q-select
+                    v-model="layoutModeModel"
+                    :options="layoutOptions"
+                    emit-value
+                    map-options
+                    label="Modo de Interfaz"
+                    outlined
+                    dense
+                  />
+                </div>
+              </div>
+              <q-banner v-if="layoutModeChanged" class="bg-amber-1 text-amber-9 q-mt-md" dense rounded>
+                <template #avatar>
+                  <q-icon name="warning" color="amber" />
+                </template>
+                Al guardar tus preferencias, la aplicación forzará una recarga completa para asegurar un rendimiento óptimo de tus finanzas.
+              </q-banner>
+            </q-card>
+
             <!-- Botón de guardar -->
             <div class="row justify-end q-gutter-sm">
               <q-btn outline color="grey-7" label="Cancelar" @click="resetForm" />
@@ -751,6 +781,16 @@ function deleteRate(rate: UserRate) {
     })();
   });
 }
+
+const layoutOptions = [
+  { label: 'Lite (Móvil)', value: 'lite' },
+  { label: 'Pro (Escritorio)', value: 'pro' },
+  { label: 'Legacy (Antiguo)', value: 'legacy' }
+];
+const initialLayoutMode = auth.settings?.layout_mode || 'legacy';
+const layoutModeModel = ref(initialLayoutMode);
+const layoutModeChanged = computed(() => layoutModeModel.value !== initialLayoutMode);
+
 
 const name = ref(auth.user?.name || '');
 const email = ref(auth.user?.email || '');
@@ -1559,7 +1599,25 @@ async function saveProfile() {
       localStorage.setItem('user', JSON.stringify(auth.user));
     }
 
+    // Guardar preferencia de Layout Mode
+    if (layoutModeChanged.value) {
+      const respLayout = await api.put('/user/settings', {
+        layout_mode: layoutModeModel.value
+      });
+      if (respLayout.data?.data) {
+        auth.settings = { ...auth.settings, ...respLayout.data.data };
+        localStorage.setItem('settings', JSON.stringify(auth.settings));
+      }
+    }
+
     Notify.create({ type: 'positive', message: 'Perfil actualizado' });
+    
+    // Si el modo de visualización cambió, forzamos recarga para levantar el nuevo router sin problemas de memoria
+    if (layoutModeChanged.value) {
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
   } catch (e: unknown) {
     const msg = (e as { message?: string })?.message || 'Error al guardar';
     Notify.create({ type: 'negative', message: msg });
