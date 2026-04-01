@@ -56,6 +56,8 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: 'user' },
     children: [
       { path: '', redirect: '/app/home' },
+      // Redirect legacy subpaths to clean paths
+      { path: 'user/:pathMatch(.*)*', redirect: (to) => ({ path: '/app/' + (to.params.pathMatch || 'home') }) },
       { path: 'home', component: () => import('src/pages/user/DynamicHomePage.vue') },
       { path: 'expense-analysis', component: () => import('src/pages/user/expense-analysis/index.vue') },
       { path: 'transactions', component: () => import('src/pages/user/transactions/index.vue') },

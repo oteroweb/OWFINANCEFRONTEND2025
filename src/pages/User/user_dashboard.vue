@@ -325,12 +325,12 @@ const summaryTotals = computed(() => {
 function openExpenseAnalysis(jarId?: number) {
   if (jarId) {
     void router.push({
-      path: '/user/expense-analysis',
+      path: '/app/expense-analysis',
       query: { jar: String(jarId) },
     });
     return;
   }
-  void router.push({ path: '/user/expense-analysis' });
+  void router.push({ path: '/app/expense-analysis' });
 }
 
 async function loadBalanceSummary() {
