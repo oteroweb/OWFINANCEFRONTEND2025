@@ -33,29 +33,51 @@ const navItems = [
 </script>
 
 <style lang="scss" scoped>
-  margin: 0 auto;
-  display: flex;
+.glass-nav-wrapper {
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.liquid-bottom-nav {
+  pointer-events: auto;
+  width: 90%;
+  max-width: 400px;
+  height: 80px;
+  border-radius: 40px;
+  background: rgba(18, 24, 38, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   position: relative;
-  overflow: visible;
 }
 
 .nav-item {
-  flex: 1;
-  height: 100%;
-  border-radius: 20px;
-  font-size: 26px;
+  position: relative;
+  width: 48px;
+  height: 48px;
   color: var(--text-soft);
   transition: all 0.3s ease;
 
-  &.active-nav {
+  &.is-active {
     color: var(--primary-cyan);
-    transform: scale(1.1);
-    filter: drop-shadow(0 0 8px rgba(137, 206, 255, 0.4));
   }
 }
 
-.fab-placeholder {
-  width: 72px;
-  flex-shrink: 0;
+.active-indicator {
+  position: absolute;
+  bottom: -6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary-cyan);
+  box-shadow: 0 0 10px var(--primary-cyan);
+}
+
+.fab-container {
+  position: absolute;
+  left: 50%;
+  top: -24px;
+  transform: translateX(-50%);
 }
 </style>
