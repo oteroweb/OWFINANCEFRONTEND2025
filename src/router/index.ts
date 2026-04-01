@@ -23,10 +23,7 @@ export default route(function () {
       if (auth.role === 'admin') {
         return next('/admin')
       } else if (auth.role === 'user') {
-        const layout = auth.settings?.layout_mode;
-        if (layout === 'pro') return next('/pro/home');
-        if (layout === 'legacy') return next('/user/home');
-        return next('/lite/home');
+        return next('/app/home')
       }
       return next('/')
     }
