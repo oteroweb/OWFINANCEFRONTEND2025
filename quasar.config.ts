@@ -29,7 +29,7 @@ export default defineConfig((ctx) => {
       // 'line-awesome',
       // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
 
-      'roboto-font', // optional, you are not bound to it
+      // 'roboto-font', // disabled in favor of Satoshi
       'material-icons', // optional, you are not bound to it
     ],
 
@@ -108,7 +108,18 @@ export default defineConfig((ctx) => {
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
     framework: {
-      config: {},
+      config: {
+        brand: {
+          primary: '#1E3A8A',
+          secondary: '#64748B',
+          accent: '#0EA5E9',
+          dark: '#0F172A',
+          positive: '#10B981',
+          negative: '#EF4444',
+          info: '#31CCEC',
+          warning: '#F2C037'
+        }
+      },
 
       // iconSet: 'material-icons', // Quasar icon set
       // lang: 'en-US', // Quasar language pack
