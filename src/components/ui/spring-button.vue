@@ -5,6 +5,8 @@
     :class="[
       variant === 'primary' ? 'bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 hover:shadow-indigo-500/30' : '',
       variant === 'secondary' ? 'bg-slate-100 text-slate-800 hover:bg-slate-200' : '',
+      variant === 'success' ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 hover:shadow-emerald-500/30' : '',
+      variant === 'danger' ? 'bg-red-600 text-white shadow-lg hover:bg-red-700 hover:shadow-red-500/30' : '',
       variant === 'glass' ? 'bg-white/10 backdrop-blur-md text-white border border-white/20 hover:bg-white/20' : '',
       size === 'sm' ? 'px-3 py-1.5 text-sm rounded-lg' : '',
       size === 'md' ? 'px-4 py-2 text-base rounded-xl' : '',
@@ -20,7 +22,7 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
   tag?: string;
-  variant?: 'primary' | 'secondary' | 'glass';
+  variant?: 'primary' | 'secondary' | 'glass' | 'success' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   block?: boolean;
 }>(), {
