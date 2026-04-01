@@ -1,18 +1,20 @@
 <template>
-  <q-layout view="lHh lpr lFf" class="bg-app">
-    <!-- Top Summary Header (Sticky) -->
-    <q-header class="bg-transparent text-strong q-py-md q-px-lg" flat>
+  <q-layout view="lHh lpr lFf" class="bg-primary-dark">
+    <!-- Ethereal Vault Header (Sticky) -->
+    <q-header class="bg-transparent q-py-lg q-px-xl" flat>
       <div class="row items-center justify-between">
         <div class="column">
-          <span class="text-caption text-muted font-medium">Balance Total</span>
-          <span class="text-h5 font-bold tracking-tight text-primary">$4,250.00</span>
+          <span class="text-overline text-soft tracking-widest uppercase">Ethereal Vault</span>
+          <div class="row items-baseline q-gutter-x-xs">
+            <span class="text-h4 text-editorial text-pure">$24,850</span>
+            <span class="text-h6 text-editorial text-primary-cyan opacity-80">.00</span>
+          </div>
         </div>
         <q-btn
           round
           flat
-          color="primary"
           icon="notifications_none"
-          class="bg-surface-soft"
+          class="liquid-btn-soft text-primary-cyan"
         />
       </div>
     </q-header>
@@ -26,15 +28,15 @@
       </router-view>
     </q-page-container>
 
-    <!-- Bottom Navigation Shell -->
-    <q-footer class="bg-transparent q-px-md q-pb-lg" flat v-if="!$q.screen.gt.sm">
-      <div class="nav-shell glass-panel row items-center justify-between q-px-sm">
+    <!-- Liquid Navigation Shell -->
+    <q-footer class="bg-transparent q-px-lg q-pb-xl" flat v-if="!$q.screen.gt.sm">
+      <div class="nav-shell liquid-panel row items-center justify-between q-px-md">
         <!-- Home -->
         <q-btn
           flat
           dense
-          :color="$route.path.includes('/home') ? 'primary' : 'muted'"
-          icon="home"
+          :class="{ 'active-nav': $route.path.includes('/home') }"
+          icon="solar:home-2-bold-duotone"
           class="nav-item"
           to="/app/home"
         />
@@ -43,8 +45,8 @@
         <q-btn
           flat
           dense
-          :color="$route.path.includes('/transactions') ? 'primary' : 'muted'"
-          icon="receipt_long"
+          :class="{ 'active-nav': $route.path.includes('/transactions') }"
+          icon="solar:bill-list-bold-duotone"
           class="nav-item"
           to="/app/transactions"
         />
@@ -56,8 +58,8 @@
         <q-btn
           flat
           dense
-          :color="$route.path.includes('/jars') ? 'primary' : 'muted'"
-          icon="account_balance_wallet"
+          :class="{ 'active-nav': $route.path.includes('/jars') }"
+          icon="solar:jar-bold-duotone"
           class="nav-item"
           to="/app/jars"
         />
@@ -66,20 +68,19 @@
         <q-btn
           flat
           dense
-          :color="$route.path.includes('/config') ? 'primary' : 'muted'"
-          icon="settings"
+          :class="{ 'active-nav': $route.path.includes('/config') }"
+          icon="solar:settings-bold-duotone"
           class="nav-item"
           to="/app/config"
         />
       </div>
 
-      <!-- Center FAB -->
-      <q-page-sticky position="bottom" :offset="[0, 18]" class="fab-sticky">
+      <!-- Center FAB: Liquid Core -->
+      <q-page-sticky position="bottom" :offset="[0, 24]" class="fab-sticky">
         <q-btn
           fab
           icon="add"
-          color="primary"
-          class="main-fab shadow-8"
+          class="liquid-fab"
           @click="showAddTransaction = true"
         />
       </q-page-sticky>
@@ -94,27 +95,28 @@ const showAddTransaction = ref(false);
 </script>
 
 <style lang="scss" scoped>
-.bg-app {
+.bg-primary-dark {
   background-color: var(--bg-app);
 }
 
-.text-strong {
-  color: var(--text-strong);
+.text-pure { color: var(--text-pure); }
+.text-soft { color: var(--text-soft); }
+.text-primary-cyan { color: var(--primary-cyan); }
+
+.liquid-btn-soft {
+  background: rgba(137, 206, 255, 0.1);
+  width: 44px;
+  height: 44px;
 }
 
-.text-muted {
-  color: var(--text-muted);
-}
-
-.font-medium { font-weight: 500; }
-.font-bold { font-weight: 700; }
+.opacity-80 { opacity: 0.8; }
 
 .nav-shell {
-  height: 64px;
+  height: 72px;
   width: 100%;
-  max-width: 500px;
+  max-width: 440px;
   margin: 0 auto;
-  border-radius: var(--radius-pill) !important;
+  border-radius: 24px !important;
   display: flex;
   position: relative;
   overflow: visible;
@@ -123,12 +125,20 @@ const showAddTransaction = ref(false);
 .nav-item {
   flex: 1;
   height: 100%;
-  border-radius: var(--radius-pill);
-  font-size: 20px;
+  border-radius: 20px;
+  font-size: 26px;
+  color: var(--text-soft);
+  transition: all 0.3s ease;
+
+  &.active-nav {
+    color: var(--primary-cyan);
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(137, 206, 255, 0.4));
+  }
 }
 
 .fab-placeholder {
-  width: 64px;
+  width: 72px;
   flex-shrink: 0;
 }
 
@@ -136,21 +146,21 @@ const showAddTransaction = ref(false);
   z-index: 2000;
 }
 
-.main-fab {
-  width: 56px;
-  height: 56px;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+.liquid-fab {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #89ceff 0%, #7c4dff 100%) !important;
+  color: white !important;
+  box-shadow: 0 12px 24px rgba(124, 77, 255, 0.4) !important;
+  border: none !important;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   
   &:active {
-    transform: scale(0.9);
+    transform: scale(0.85) rotate(90deg);
   }
 }
 
-.bg-surface-soft {
-  background-color: var(--surface-soft);
-}
-
-.tracking-tight {
-  letter-spacing: -0.02em;
+.tracking-widest {
+  letter-spacing: 0.15em;
 }
 </style>
