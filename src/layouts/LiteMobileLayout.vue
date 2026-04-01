@@ -13,11 +13,7 @@
     </q-page-container>
 
     <!-- Liquid Navigation -->
-    <LiquidBottomNav>
-      <template #fab>
-        <LiquidFAB @click="showAddTransaction = true" />
-      </template>
-    </LiquidBottomNav>
+    <LiquidBottomNav @fab-click="showAddTransaction = true" />
   </q-layout>
 </template>
 
@@ -25,7 +21,6 @@
 import { ref } from 'vue';
 import LiquidHeader from 'components/liquid/LiquidHeader.vue';
 import LiquidBottomNav from 'components/liquid/LiquidBottomNav.vue';
-import LiquidFAB from 'components/liquid/LiquidFAB.vue';
 
 const showAddTransaction = ref(false);
 </script>
