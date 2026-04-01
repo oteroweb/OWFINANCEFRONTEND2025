@@ -57,7 +57,15 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: '/app/home' },
       // Redirect legacy subpaths to clean paths
-      { path: 'user/:pathMatch(.*)*', redirect: (to) => ({ path: '/app/' + (to.params.pathMatch || 'home') }) },
+      { 
+        path: 'user/:pathMatch(.*)*', 
+        redirect: (to) => {
+          const path = Array.isArray(to.params.pathMatch) 
+            ? to.params.pathMatch.join('/') 
+            : (to.params.pathMatch || 'home');
+          return { path: '/app/' + path };
+        } 
+      },
       { path: 'home', component: () => import('src/pages/user/DynamicHomePage.vue') },
       { path: 'expense-analysis', component: () => import('src/pages/user/expense-analysis/index.vue') },
       { path: 'transactions', component: () => import('src/pages/user/transactions/index.vue') },
