@@ -85,7 +85,7 @@ const selectLayout = async (mode: 'lite' | 'pro') => {
     }
     
     // Redirigir según la selección a la ruta unificada
-    router.push('/app/home').then(() => {
+    void router.push('/app/home').then(() => {
       window.location.reload();
     });
   } catch (error) {

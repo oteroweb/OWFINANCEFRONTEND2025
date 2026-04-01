@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 
-const props = defineProps({
+defineProps({
   modelValue: {
     type: Boolean,
     default: false,
@@ -47,7 +47,7 @@ const closeSheet = () => {
 let startY = 0;
 const startDrag = (e: MouseEvent | TouchEvent) => {
   isDragging.value = true;
-  startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+  startY = 'touches' in e && e.touches[0] ? e.touches[0].clientY : (e as MouseEvent).clientY;
 };
 
 const stopDrag = () => {
@@ -56,7 +56,7 @@ const stopDrag = () => {
 
 const onDrag = (e: MouseEvent | TouchEvent) => {
   if (!isDragging.value) return;
-  const currentY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+  const currentY = 'touches' in e && e.touches[0] ? e.touches[0].clientY : (e as MouseEvent).clientY;
   const delta = currentY - startY;
 
   // Simple heuristic to close if swiped down far enough
