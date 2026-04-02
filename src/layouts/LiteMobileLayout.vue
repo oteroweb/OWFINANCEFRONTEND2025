@@ -3,8 +3,8 @@
     <!-- LITE Header (fixed top, 64px) -->
     <LiquidHeader />
 
-    <!-- Page Container: padded to avoid overlap with header (pt-16) and nav (pb-24) -->
-    <q-page-container class="pt-16 pb-24 min-h-screen">
+    <!-- Page Container: padded to avoid overlap with header (pt-16); q-footer handles bottom offset -->
+    <q-page-container class="pt-16 min-h-screen">
       <router-view v-slot="{ Component }">
         <transition name="lite-page" mode="out-in">
           <component :is="Component" />
@@ -12,15 +12,15 @@
       </router-view>
     </q-page-container>
 
-    <!-- LITE Bottom Navigation (fixed bottom) -->
-    <LiquidBottomNav @fab-click="showAddTransaction = true" />
+    <!-- LITE Bottom Navigation (q-footer, Quasar layout integrated) -->
+    <LiquidBottomNavNew @fab-click="showAddTransaction = true" />
   </q-layout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import LiquidHeader from 'components/liquid/LiquidHeader.vue';
-import LiquidBottomNav from 'components/liquid/LiquidBottomNav.vue';
+import LiquidBottomNavNew from 'components/liquid/LiquidBottomNavNew.vue';
 
 const showAddTransaction = ref(false);
 </script>
