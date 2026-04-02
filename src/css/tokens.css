@@ -1,0 +1,16 @@
+:root {
+  --bg-app: #F8FAFC;
+  --surface-card: #FFFFFF;
+  --surface-soft: #F1F5F9;
+  --surface-glass: rgba(255, 255, 255, 0.72);
+  --brand-primary: #1E3A8A;
+  --brand-primary-hover: #1D4ED8;
+  --brand-soft: #DBEAFE;
+  --text-strong: #0F172A;
+  --text-muted: #64748B;
+  --state-success: #10B981;
+  --state-danger: #EF4444;
+  --state-warning: #F59E0B;
+  --state-info: #0EA5E9;
+  --border-soft: #E2E8F0;
+}

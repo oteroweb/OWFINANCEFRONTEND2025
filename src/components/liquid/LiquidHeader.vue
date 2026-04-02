@@ -1,75 +1,29 @@
 <template>
-  <q-header class="bg-transparent q-py-lg q-px-xl" flat>
-    <div class="row items-center justify-between">
-      <div class="column">
-        <span class="text-overline text-soft tracking-widest uppercase">
-          {{ title }}
-        </span>
-        <div class="row items-baseline q-gutter-x-xs">
-          <span class="text-h4 text-editorial text-pure">
-            {{ currencySymbol }}{{ formattedWholePart }}
-          </span>
-          <span class="text-h6 text-editorial text-primary-cyan opacity-80">
-            .{{ formattedDecimalPart }}
-          </span>
-        </div>
+  <header class="bg-[#F8FAFC] flex justify-between items-center w-full px-6 py-4 fixed top-0 z-40 h-16">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-[#DBEAFE] flex-shrink-0">
+        <img alt="Profile" class="w-full h-full object-cover" :src="userAvatar" />
       </div>
-      <slot name="right-action">
-        <q-btn
-          round
-          flat
-          icon="notifications_none"
-          class="liquid-btn-soft text-primary-cyan"
-        />
-      </slot>
+      <h1 class="text-xl font-bold font-headline text-[#1E3A8A]">{{ greeting }}</h1>
     </div>
-  </q-header>
+    <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#DBEAFE] transition-colors duration-200">
+      <span class="material-symbols-outlined text-[#1E3A8A]">notifications</span>
+    </button>
+  </header>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-
 interface Props {
-  title?: string;
-  balance?: number | string;
-  currencySymbol?: string;
+  greeting?: string;
+  userAvatar?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: 'Ethereal Vault',
-  balance: 0,
-  currencySymbol: '$'
-});
-
-const formattedWholePart = computed(() => {
-  const b = Number(props.balance);
-  return Math.floor(b).toLocaleString();
-});
-
-const formattedDecimalPart = computed(() => {
-  const b = Number(props.balance);
-  const decimals = (b % 1).toFixed(2).split('.')[1];
-  return decimals || '00';
+  greeting: 'Hola, José!',
+  userAvatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD5aK-_Y-htTIqAx-T9Gl2fDO7OAifgry5RH__ztH9yBW9Hl5_8LUwXHMFzdentNHQ2yHxiUNjRnWTRTHxbI99lZ7RCjwCEK0ECc5xLbZgE6xmNiK5tmBHHpWluIcISCf1iJvmBFO0iufZ-PmwzLxJyhmP4UOC2N98gIaBa0kueIOJ4WCSsJSIdcEzB6pnhl5HPIBkIzrsib5y0oNX619K9AeH73W6vPiKV1Pnzhhti93N9vP3MrGLITZW9jMWXHAW8GWdLMNS13nM'
 });
 </script>
 
 <style lang="scss" scoped>
-.text-pure { color: var(--text-pure); }
-.text-soft { color: var(--text-soft); }
-.text-primary-cyan { color: var(--primary-cyan); }
-
-.liquid-btn-soft {
-  background: rgba(137, 206, 255, 0.1);
-  width: 44px;
-  height: 44px;
-}
-
-.opacity-80 { opacity: 0.8; }
-.tracking-widest { letter-spacing: 0.15em; }
-
-.text-editorial {
-  font-family: 'Manrope', sans-serif !important;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-}
+/* Tailwind handles styling */
 </style>
