@@ -13,7 +13,10 @@
     </q-page-container>
 
     <!-- LITE Bottom Navigation (q-footer, Quasar layout integrated) -->
-    <LiquidBottomNavNew @fab-click="showAddTransaction = true" />
+    <LiquidBottomNavNew @fab-click="showQuickActions = true" />
+
+    <!-- FAB Quick Action Bottom Sheet -->
+    <QuickActionSheet v-model="showQuickActions" />
   </q-layout>
 </template>
 
@@ -21,8 +24,9 @@
 import { ref } from 'vue';
 import LiquidHeader from 'components/liquid/LiquidHeader.vue';
 import LiquidBottomNavNew from 'components/liquid/LiquidBottomNavNew.vue';
+import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
 
-const showAddTransaction = ref(false);
+const showQuickActions = ref(false);
 </script>
 
 <style lang="scss" scoped>
