@@ -23,7 +23,7 @@
     </q-page-container>
 
     <!-- LITE Bottom Navigation -->
-    <LiquidBottomNavNew @fab-click="showQuickActions = true" @tab-change="onTabChange" />
+    <LiquidBottomNavNew :active-tab="activeTab" @fab-click="showQuickActions = true" @tab-change="onTabChange" />
 
     <!-- FAB Quick Action Bottom Sheet -->
     <QuickActionSheet v-model="showQuickActions" />
@@ -50,6 +50,7 @@ const authStore = useAuthStore();
 const showQuickActions = ref(false);
 const showBalance = ref(true);
 const currentCurrency = ref('USD');
+const activeTab = ref<'home' | 'transactions' | 'jars' | 'settings'>('home');
 
 // Currency options (can be extended from store/config)
 const currencyOptions = ['USD', 'EUR', 'GBP', 'CHF', 'CAD', 'MXN'];
@@ -100,21 +101,20 @@ function onCurrencyChange(currency: string): void {
 
 /**
  * Handle avatar/user menu click
- * Opens profile menu or settings sheet
+ * Navigates to settings/config page
  */
 function onAvatarClick(): void {
-  // TODO: Open user profile menu or sheet
-  // Could implement: showUserMenu.value = true
-  // Or navigate: router.push('/app/config')
+  router.push('/app/config').catch(() => {
+    // Silently handle navigation failures
+  });
 }
 
 /**
  * Handle menu click
- * Opens sidebar or mobile menu
+ * Placeholder for mobile menu/drawer functionality
  */
 function onMenuClick(): void {
-  // TODO: Open mobile menu/drawer if exists
-  // Could implement: showDrawer.value = true
+  // TODO: Open mobile menu/drawer if implemented
 }
 
 // ============================================================
@@ -143,13 +143,13 @@ function syncActiveTabWithRoute(): void {
   const path = route.path;
 
   if (path.includes('/app/transactions')) {
-    // Transactions tab is active
+    activeTab.value = 'transactions';
   } else if (path.includes('/app/jars')) {
-    // Jars tab is active
+    activeTab.value = 'jars';
   } else if (path.includes('/app/config') || path.includes('/app/settings')) {
-    // Settings tab is active
+    activeTab.value = 'settings';
   } else {
-    // Default to home tab
+    activeTab.value = 'home';
   }
 }
 </script>
