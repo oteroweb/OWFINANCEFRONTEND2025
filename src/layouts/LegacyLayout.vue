@@ -1,6 +1,8 @@
 <template>
-  <q-layout view="hHh lpR fFf">
-    <q-header class="glass-panel text-white" style="background: rgba(14, 165, 233, 0.85) !important; border-bottom: none !important; border-radius: 0 !important;">
+  <q-layout view="hHh lpR fFf" :class="['user-shell', `user-shell--${activeLayoutMode}`]">
+    <q-header
+      :class="['user-shell__header', 'shell-surface', 'shell-surface--header', headerToneClass]"
+    >
       <q-toolbar class="topbar">
         <!-- Botón menú móvil -->
         <q-btn
@@ -15,17 +17,42 @@
 
         <!-- Perfil -->
         <div class="profile-mini row items-center no-wrap q-gutter-sm">
-          <q-avatar size="34px" class="bg-white text-primary shadow-2">
+          <q-avatar size="36px" class="profile-mini__avatar">
             <img :src="avatarUrl" alt="avatar" />
           </q-avatar>
-          <div class="user-line ellipsis">
-            <span class="name text-weight-medium">{{ auth.user?.name || 'Usuario' }}</span>
-            <span v-if="!$q.screen.lt.md" class="sep">•</span>
-            <span v-if="!$q.screen.lt.md" class="email">{{ auth.user?.email }}</span>
-            <span v-if="defaultCurrencyCode" class="currency-chip q-ml-sm">{{
-              defaultCurrencyCode
-            }}</span>
+          <div class="profile-mini__meta">
+            <div class="user-line ellipsis">
+              <span class="name text-weight-medium">{{ auth.user?.name || 'Usuario' }}</span>
+              <span v-if="!$q.screen.lt.md" class="sep">•</span>
+              <span v-if="!$q.screen.lt.md" class="email">{{ auth.user?.email }}</span>
+              <span v-if="defaultCurrencyCode" class="currency-chip q-ml-sm">{{
+                defaultCurrencyCode
+              }}</span>
+            </div>
+            <div v-if="!$q.screen.lt.md" class="profile-mini__layout-row">
+              <span class="profile-mini__layout-label">Shell</span>
+              <q-select
+                :model-value="activeLayoutMode"
+                :options="layoutModeOptions"
+                emit-value
+                map-options
+                dense
+                outlined
+                options-dense
+                behavior="menu"
+                dropdown-icon="swap_vert"
+                class="layout-select"
+                popup-content-class="layout-select__menu"
+                :disable="layoutModeSaving"
+                @update:model-value="onLayoutModeChange"
+              />
+            </div>
           </div>
+        </div>
+
+        <div v-if="!$q.screen.lt.md" class="shell-mode-summary">
+          <div class="shell-mode-summary__eyebrow">{{ shellTitle }}</div>
+          <div class="shell-mode-summary__caption">{{ shellSubtitle }}</div>
         </div>
 
         <q-space />
@@ -34,7 +61,7 @@
         <div class="actions" v-if="!$q.screen.lt.md">
           <div class="menu-row">
             <q-btn
-              v-for="link in menuLinks"
+              v-for="link in desktopMenuLinks"
               :key="link.to"
               dense
               no-caps
@@ -42,36 +69,44 @@
               :to="link.to"
               :icon="link.icon"
               :label="link.title"
-              class="menu-btn"
+              :class="['menu-btn', { 'menu-btn--active': isActiveLink(link.to) }]"
             />
           </div>
           <q-btn
-            flat round dense
+            flat
+            round
+            dense
             :icon="ui.hideValues ? 'visibility_off' : 'visibility'"
             :aria-label="ui.hideValues ? 'Mostrar valores' : 'Ocultar valores'"
             :title="ui.hideValues ? 'Mostrar valores' : 'Ocultar valores'"
+            class="toolbar-icon-btn"
             @click="ui.toggleHideValues()"
           />
-          <q-btn flat round dense icon="logout" aria-label="Cerrar sesión" @click="handleLogout" />
+          <q-btn
+            flat
+            round
+            dense
+            icon="logout"
+            aria-label="Cerrar sesión"
+            class="toolbar-icon-btn"
+            @click="handleLogout"
+          />
         </div>
       </q-toolbar>
 
-      <!-- Moneda por defecto + tasas actuales del usuario -->
-      <div class="text-white q-px-md q-pb-sm q-pt-xs rates-strip">
+      <div :class="['q-px-md q-pb-sm q-pt-xs rates-strip', headerToneClass]">
         <div
           class="row items-center q-gutter-xs no-wrap"
           :class="{ 'scroll-x': !$q.screen.lt.md, 'justify-center': $q.screen.lt.md }"
         >
-          <q-chip dense color="white" text-color="primary" class="text-weight-bold shadow-1 gt-xs">
+          <q-chip dense class="base-currency-chip text-weight-bold gt-xs">
             {{ defaultCurrencyCode || 'USD' }}
           </q-chip>
           <template v-for="r in currentRates" :key="r.code">
             <q-chip
               dense
               clickable
-              color="white"
-              text-color="primary"
-              class="rate-chip-item shadow-1"
+              class="rate-chip-item"
               title="Clic para editar tasa"
               @click="openRateEdit(r)"
             >
@@ -81,34 +116,36 @@
           </template>
         </div>
       </div>
-      <!-- Cántaros: disponible por mes -->
-      <JarsBalanceBar ref="jarsBarRef" class="glass-panel" style="background: rgba(255,255,255,0.1) !important; border:none!important; border-radius:0!important;" />
-      <!-- Barra de periodos global -->
-      <div class="bg-white text-dark shadow-1" style="border-radius: 0 0 16px 16px;">
+      <JarsBalanceBar
+        ref="jarsBarRef"
+        class="user-shell__jars shell-surface shell-surface--subtle"
+      />
+      <div class="period-strip shell-surface shell-surface--panel" :class="`period-strip--${activeLayoutMode}`">
         <PeriodFilterBar />
       </div>
     </q-header>
 
-    <q-page-container class="q-pa-md">
-      <router-view v-slot="{ Component }">
-        <transition name="slide-fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+    <q-page-container class="user-shell__page-container">
+      <div class="user-shell__content q-pa-md q-pb-xl" :class="pageContainerClasses">
+        <router-view v-slot="{ Component }">
+          <transition name="slide-fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </div>
     </q-page-container>
 
-    <!-- Drawer lateral para móvil -->
     <q-drawer
       v-model="drawerOpen"
       side="left"
       overlay
-      bordered
       :width="250"
-      content-class="bg-white"
+      content-class="user-shell__drawer-content"
+      class="user-shell__drawer"
       v-if="$q.screen.lt.md"
     >
       <div class="drawer-profile q-pa-md row items-center q-gutter-sm">
-        <q-avatar size="40px" class="bg-primary text-white">
+        <q-avatar size="40px" class="profile-mini__avatar">
           <img :src="avatarUrl" alt="avatar" />
         </q-avatar>
         <div class="col">
@@ -118,6 +155,24 @@
           <div class="text-caption ellipsis">{{ auth.user?.email }}</div>
         </div>
       </div>
+      <div class="q-px-md q-pb-sm">
+        <div class="profile-mini__layout-label q-mb-xs">Shell</div>
+        <q-select
+          :model-value="activeLayoutMode"
+          :options="layoutModeOptions"
+          emit-value
+          map-options
+          dense
+          outlined
+          options-dense
+          behavior="menu"
+          dropdown-icon="swap_vert"
+          class="layout-select layout-select--drawer full-width"
+          popup-content-class="layout-select__menu"
+          :disable="layoutModeSaving"
+          @update:model-value="onLayoutModeChange"
+        />
+      </div>
       <q-separator />
       <q-list padding>
         <q-item
@@ -126,6 +181,8 @@
           clickable
           v-ripple
           :to="link.to"
+          :active="isActiveLink(link.to)"
+          active-class="drawer-link--active"
           @click="drawerOpen = false"
         >
           <q-item-section avatar>
@@ -136,7 +193,7 @@
       </q-list>
       <div class="q-pa-md column q-gutter-sm">
         <q-btn
-          :color="ui.hideValues ? 'orange' : 'grey-7'"
+          :color="ui.hideValues ? 'accent' : 'secondary'"
           outline
           :icon="ui.hideValues ? 'visibility_off' : 'visibility'"
           :label="ui.hideValues ? 'Mostrar valores' : 'Ocultar valores'"
@@ -159,8 +216,7 @@
       </div>
     </q-drawer>
 
-    <!-- Bottom navigation para móvil -->
-    <q-footer v-if="$q.screen.lt.md" elevated class="bg-white text-primary">
+    <q-footer v-if="$q.screen.lt.md" class="user-shell__footer shell-surface shell-surface--panel">
       <q-tabs
         v-model="bottomNav"
         dense
@@ -184,8 +240,7 @@
       :prefill-transaction-id="ui.prefillTransactionId"
     />
 
-    <!-- Botón flotante global para nueva transacción -->
-    <q-page-sticky position="bottom-right" :offset="[18, 18]">
+    <q-page-sticky position="bottom-right" :offset="fabOffset">
       <q-btn fab color="primary" icon="add" @click="ui.openNewTransactionDialog()" />
     </q-page-sticky>
   </q-layout>
@@ -195,7 +250,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
-import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
+import { userMenuLinks, defaultAvatarUrl } from 'src/pages/User/config';
 import { TransactionCreateDialog } from 'components';
 import { PeriodFilterBar } from 'components/models';
 import JarsBalanceBar from 'src/components/JarsBalanceBar.vue';
@@ -203,6 +258,8 @@ import { useUiStore } from 'stores/ui';
 import { useQuasar } from 'quasar';
 import { useUserRates } from 'src/composables/useUserRates';
 import { api } from 'boot/axios';
+import { layoutModeOptions, normalizeLayoutMode, type UserLayoutMode } from 'src/utils/layoutMode';
+
 const auth = useAuthStore();
 const avatarUrl = computed(() => defaultAvatarUrl);
 const { defaultCurrencyCode, currentRates } = useUserRates();
@@ -212,6 +269,52 @@ const $q = useQuasar();
 const router = useRouter();
 const drawerOpen = ref(false);
 const jarsBarRef = ref<InstanceType<typeof JarsBalanceBar>>();
+const fabOffset = computed<[number, number]>(() => ($q.screen.lt.md ? [18, 86] : [24, 24]));
+const layoutModeSaving = ref(false);
+
+const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.user?.layout_mode));
+const headerToneClass = computed(() =>
+  activeLayoutMode.value === 'legacy' ? 'text-dark' : 'text-white'
+);
+const shellTitle = computed(() => {
+  if (activeLayoutMode.value === 'legacy') return 'Workspace Legacy';
+  if (activeLayoutMode.value === 'lite') return 'Workspace Lite';
+  return 'Workspace Pro';
+});
+const shellSubtitle = computed(() => {
+  if (activeLayoutMode.value === 'legacy') return 'Mas contexto, mas densidad y navegacion clasica.';
+  if (activeLayoutMode.value === 'lite') return 'Menos ruido, foco rapido y cabecera compacta.';
+  return 'Balance entre densidad, atajos y lectura.';
+});
+const desktopMenuLinks = computed(() =>
+  activeLayoutMode.value === 'lite' ? menuLinks.slice(0, 4) : menuLinks
+);
+const pageContainerClasses = computed(() => ({
+  'user-shell__content--legacy': activeLayoutMode.value === 'legacy',
+  'user-shell__content--lite': activeLayoutMode.value === 'lite',
+}));
+
+function isActiveLink(target: string) {
+  return router.currentRoute.value.path.startsWith(target);
+}
+
+async function onLayoutModeChange(nextMode: UserLayoutMode | null) {
+  const normalizedMode = normalizeLayoutMode(nextMode);
+  if (normalizedMode === activeLayoutMode.value || layoutModeSaving.value) return;
+
+  layoutModeSaving.value = true;
+  try {
+    await auth.updateLayoutMode(normalizedMode);
+  } catch {
+    $q.notify({
+      type: 'negative',
+      message: 'No se pudo actualizar el shell visual. Intenta nuevamente.',
+    });
+  } finally {
+    layoutModeSaving.value = false;
+  }
+}
+
 // Refresh jars bar when new-transaction dialog closes
 watch(
   () => ui.showDialogNewTransaction,
@@ -219,7 +322,7 @@ watch(
     if (!isOpen) {
       jarsBarRef.value?.refresh();
     }
-  }
+  },
 );
 // bottom navigation state
 const bottomNav = ref<string>('');
@@ -232,7 +335,7 @@ watch(
     const match = bottomNavLinks.value.find((l) => path.startsWith(l.to));
     if (match) bottomNav.value = match.to;
   },
-  { immediate: true }
+  { immediate: true },
 );
 function onBottomNav(val: string) {
   if (val && val !== router.currentRoute.value.fullPath) {
@@ -265,10 +368,15 @@ function openRateEdit(r: RateChip) {
           params: { user_id: auth.user?.id, per_page: 100 },
         });
         const raw = listRes.data?.data?.data || listRes.data?.data || listRes.data || [];
-        const records: Array<{ id: number; currency?: { code?: string } }> = Array.isArray(raw) ? raw : [];
+        const records: Array<{ id: number; currency?: { code?: string } }> = Array.isArray(raw)
+          ? raw
+          : [];
         const found = records.find((rec) => rec.currency?.code === r.code);
         if (found) {
-          await api.put(`/user_currencies/${found.id}`, { current_rate: newRate, is_current: true });
+          await api.put(`/user_currencies/${found.id}`, {
+            current_rate: newRate,
+            is_current: true,
+          });
         }
         await auth.refreshUserCurrencies();
         $q.notify({ type: 'positive', message: `Tasa ${r.code} actualizada a ${newRate}` });
@@ -349,7 +457,9 @@ onMounted(() => {
         api.get('/accounts'),
       ]);
       const ratesRaw = ratesRes.data?.data?.data || ratesRes.data?.data || ratesRes.data || [];
-      const rates: Array<{ currency_id: number; is_current?: boolean }> = Array.isArray(ratesRaw) ? ratesRaw : [];
+      const rates: Array<{ currency_id: number; is_current?: boolean }> = Array.isArray(ratesRaw)
+        ? ratesRaw
+        : [];
       const configuredIds = new Set(rates.map((r) => r.currency_id));
 
       type RawAcct = { currency?: { id?: number; code?: string }; currency_id?: number };
@@ -402,17 +512,60 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* topbar actions spacing handled inline */
-/* Top single toolbar */
+.user-shell {
+  color: var(--ow-text-primary);
+}
+
+.user-shell__header {
+  border-bottom: none;
+}
+
 .topbar {
-  min-height: 60px;
+  min-height: 68px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
 .profile-mini {
   max-width: 420px;
 }
+
+.shell-mode-summary {
+  min-width: 200px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shell-mode-summary__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shell-mode-summary__caption {
+  font-size: 12px;
+  opacity: 0.82;
+  line-height: 1.3;
+}
+
+.profile-mini__meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-mini__avatar {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+}
+
 .user-line {
   display: flex;
   align-items: center;
@@ -431,50 +584,176 @@ onMounted(() => {
   opacity: 0.6;
 }
 .currency-chip {
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: 999px;
   font-size: 11px;
   line-height: 1;
   letter-spacing: 0.5px;
   font-weight: 600;
   backdrop-filter: saturate(180%) blur(4px);
 }
-.rates-strip .q-chip {
-  height: 22px;
+
+.profile-mini__layout-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+
+.profile-mini__layout-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.layout-select {
+  width: 148px;
+}
+
+.layout-select :deep(.q-field__control) {
+  min-height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.layout-select :deep(.q-field__native),
+.layout-select :deep(.q-field__marginal),
+.layout-select :deep(.q-field__label) {
+  color: currentColor;
+}
+
+.layout-select :deep(.q-field__control::before),
+.layout-select :deep(.q-field__control::after) {
+  border-radius: 999px;
+}
+
+.layout-select--drawer {
+  width: 100%;
+}
+
+.layout-select--drawer :deep(.q-field__control) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.rates-strip .q-chip {
+  height: 28px;
+}
+
+.base-currency-chip,
+.rate-chip-item {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ow-color-primary-strong);
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  box-shadow: 0 10px 24px rgba(8, 47, 73, 0.12);
+}
+
 .scroll-x {
   overflow-x: auto;
 }
+
 .rate-chip-item {
   white-space: nowrap;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
+
+.rate-chip-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(8, 47, 73, 0.16);
+}
+
 .actions {
   margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
 }
-.menu-scroll {
-  height: 42px;
-  max-width: 100%;
-}
+
 .menu-row {
   display: flex;
   align-items: center;
   gap: 6px;
   padding-right: 8px;
 }
+
+.menu-btn {
+  min-height: 40px;
+  padding-inline: 12px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.82);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.menu-btn--active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.toolbar-icon-btn {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.user-shell__jars {
+  margin-inline: 12px;
+  border-radius: var(--radius-md);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.period-strip {
+  margin: 10px 12px 0;
+  border-radius: var(--radius-md);
+  color: var(--ow-text-primary);
+}
+
+.period-strip--legacy {
+  margin-top: 8px;
+}
+
+.period-strip--lite {
+  margin-top: 6px;
+}
+
+.user-shell__page-container {
+  padding-top: 12px;
+}
+
+.user-shell__content {
+  min-height: 100%;
+  width: 100%;
+  max-width: var(--user-shell-content-max-width, 1440px);
+  margin: 0 auto;
+  transition:
+    max-width 0.2s ease,
+    padding 0.2s ease;
+}
+
+.user-shell__content--legacy {
+  padding-inline: 8px;
+}
+
+.user-shell__content--lite {
+  padding-inline: 6px;
+}
+
 .bottom-nav-tabs :deep(.q-tab__content) {
   padding: 0px 0px;
   margin: 0px;
   min-height: 52px;
 }
-/* Hacer que cada tab ocupe el mismo ancho y minimizar espacios */
+
 .bottom-nav-tabs :deep(.q-tabs__content) {
   width: 100%;
 }
+
 .bottom-nav-tabs :deep(.q-tab) {
   flex: 1 1 0;
   min-width: 0;
@@ -485,10 +764,12 @@ onMounted(() => {
   width: 100%;
   justify-content: center;
 }
+
 .bottom-nav-tabs :deep(.q-tab__icon) {
   font-size: 22px;
   line-height: 1;
 }
+
 .bottom-nav-tabs :deep(.q-tab__label) {
   font-size: 10px;
   line-height: 1.05;
@@ -498,9 +779,31 @@ onMounted(() => {
 .bottom-nav-tabs :deep(.q-tab--active .q-tab__label) {
   font-weight: 600;
 }
+
 .bottom-nav-tabs :deep(.q-tab__indicator) {
   height: 2px;
 }
+
+.user-shell__drawer {
+  color: var(--ow-text-primary);
+}
+
+.user-shell__drawer-content {
+  background: linear-gradient(180deg, rgba(248, 252, 255, 0.98) 0%, rgba(239, 246, 255, 0.98) 100%);
+}
+
+.drawer-link--active {
+  color: var(--ow-color-primary-strong);
+  background: rgba(14, 165, 233, 0.12);
+}
+
+.user-shell__footer {
+  margin: 0 12px 12px;
+  border-radius: 22px;
+  border: 1px solid var(--ow-surface-border);
+  overflow: hidden;
+}
+
 @media (max-width: 380px) {
   .bottom-nav-tabs :deep(.q-tab__label) {
     font-size: 9px;
@@ -515,28 +818,106 @@ onMounted(() => {
     display: none;
   }
 }
+
 @media (max-width: 1023px) {
   .actions {
     display: none;
   }
 }
+
 .menu-btn :deep(.q-btn__content) {
   gap: 6px;
 }
+
 @media (max-width: 599px) {
   .profile-mini {
     max-width: 260px;
   }
-  .menu-scroll {
-    height: 38px;
+
+  .topbar {
+    min-height: 62px;
+  }
+
+  .user-shell__page-container {
+    padding-top: 8px;
   }
 }
-/* Drawer tweaks */
+
 .drawer-profile {
-  background: var(--q-primary);
+  background: var(--ow-shell-header-bg);
   color: #fff;
 }
+
 .drawer-profile .text-caption {
   opacity: 0.85;
+}
+
+.user-shell--pro {
+  --user-shell-content-max-width: 1440px;
+}
+
+.user-shell--lite {
+  --ow-shell-header-bg: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.94) 0%,
+    rgba(8, 47, 73, 0.9) 45%,
+    rgba(14, 165, 233, 0.82) 100%
+  );
+  --user-shell-content-max-width: 1120px;
+}
+
+.user-shell--lite .shell-mode-summary__caption {
+  max-width: 220px;
+}
+
+.user-shell--lite .menu-row {
+  gap: 4px;
+}
+
+.user-shell--lite .menu-btn {
+  padding-inline: 10px;
+}
+
+.user-shell--legacy {
+  --ow-shell-header-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(241, 245, 249, 0.96) 100%);
+  --ow-surface-border-strong: rgba(148, 163, 184, 0.28);
+  --ow-shadow-strong: 0 16px 34px rgba(15, 23, 42, 0.08);
+  --user-shell-content-max-width: 100%;
+}
+
+.user-shell--legacy .shell-mode-summary__caption {
+  color: var(--ow-text-muted);
+}
+
+.user-shell--legacy .profile-mini__avatar {
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.2);
+  color: var(--ow-color-primary-strong);
+}
+
+.user-shell--legacy .menu-btn,
+.user-shell--legacy .toolbar-icon-btn,
+.user-shell--legacy .user-line .email,
+.user-shell--legacy .user-line .sep,
+.user-shell--legacy .profile-mini__layout-label,
+.user-shell--legacy .drawer-profile .text-caption {
+  color: var(--ow-text-muted);
+}
+
+.user-shell--legacy .menu-btn--active {
+  color: var(--ow-color-primary-strong);
+  background: rgba(14, 165, 233, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.12);
+}
+
+.user-shell--legacy .toolbar-icon-btn,
+.user-shell--legacy .currency-chip,
+.user-shell--legacy .layout-select :deep(.q-field__control),
+.user-shell--legacy .layout-select--drawer :deep(.q-field__control) {
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.user-shell--legacy .drawer-profile {
+  color: var(--ow-text-primary);
 }
 </style>

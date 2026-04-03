@@ -1,183 +1,273 @@
 <template>
-  <q-page padding>
-    <!-- Panel de ingreso mensual y disponible -->
-    <MonthlyIncomePanel
-      ref="incomePanelRef"
-      v-model:use-real-income="useRealIncome"
-      :total-assigned="totalAssignedAmount"
-      :month="currentMonth"
-      class="q-mb-md"
-      @income-updated="handleIncomeUpdated"
-    />
+  <q-page padding :class="jarsPageClasses">
+    <div class="jars-page__overview q-mb-md">
+      <MonthlyIncomePanel
+        ref="incomePanelRef"
+        v-model:use-real-income="useRealIncome"
+        :total-assigned="totalAssignedAmount"
+        :month="currentMonth"
+        :class="isLiteLayout ? 'q-mb-sm' : 'q-mb-md'"
+        @income-updated="handleIncomeUpdated"
+      />
 
-    <!-- Resumen mensual de cántaros -->
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section>
-        <div class="text-subtitle2">Resumen del mes</div>
-        <div class="text-caption text-grey-7">
-          Totales de gasto, asignación y ahorro por cántaro.
-        </div>
-      </q-card-section>
-      <q-separator />
-
-      <!-- KPIs rápidos -->
-      <q-card-section>
-        <div class="row items-center q-col-gutter-md">
-          <div class="col-6 col-sm-3">
-            <div class="text-caption text-grey-7">Total gastado</div>
-            <div class="text-h6 text-negative">{{ formatCurrency(summaryTotals.spent) }}</div>
-          </div>
-          <div class="col-6 col-sm-3">
-            <div class="text-caption text-grey-7">Total ajustes</div>
-            <div class="text-h6" :class="summaryTotals.adjustment >= 0 ? 'text-positive' : 'text-negative'">
-              {{ summaryTotals.adjustment >= 0 ? '+' : '' }}{{ formatCurrency(summaryTotals.adjustment) }}
+      <div :class="overviewDetailGridClasses">
+        <q-card flat bordered class="jars-page__overview-card">
+          <q-card-section class="row items-start justify-between q-col-gutter-md">
+            <div class="col-12 col-md">
+              <div class="row items-center q-col-gutter-sm">
+                <div class="col-auto">
+                  <div class="text-subtitle2">Resumen del mes</div>
+                </div>
+                <div class="col-auto">
+                  <q-chip dense color="blue-1" text-color="primary" class="text-weight-medium">
+                    {{ activeLayoutModeOption.label }}
+                  </q-chip>
+                </div>
+              </div>
+              <div class="text-caption text-grey-7">
+                {{ summaryCardDescription }}
+              </div>
             </div>
-          </div>
-          <div class="col-6 col-sm-3">
-            <div class="text-caption text-grey-7">No usado este mes</div>
-            <div class="text-h6">{{ formatCurrency(theoreticalSavings.total_unused) }}</div>
-            <div class="text-caption text-grey-6">Cántaros en reset</div>
-          </div>
-          <div class="col-6 col-sm-3">
-            <div class="text-caption text-grey-7">Ocioso acumulado</div>
-            <div class="text-h6 text-warning">{{ formatCurrency(theoreticalSavings.accumulated_unused) }}</div>
-            <div class="text-caption text-grey-6">Reset sin usar desde el inicio</div>
-          </div>
-          <div class="col-6 col-sm-3">
-            <div class="text-caption text-grey-7">Ahorro teórico total</div>
-            <div class="text-h6 text-primary">{{ formatCurrency(theoreticalSavings.total_theoretical) }}</div>
-            <div class="text-caption text-grey-6">Incluye cuentas de ahorro: {{ formatCurrency(theoreticalSavings.total_savings_accounts) }}</div>
-          </div>
-        </div>
-      </q-card-section>
+            <div v-if="isLiteLayout" class="col-12 col-md-auto text-caption text-grey-6">
+              Menos paneles abiertos, mas foco en asignacion y guardado rapido.
+            </div>
+          </q-card-section>
+          <q-separator />
 
-      <q-separator />
-
-      <!-- Tabla desglose por cántaro -->
-      <q-card-section class="q-pa-none">
-        <div class="summary-table-wrap">
-          <table class="summary-table">
-            <thead>
-              <tr>
-                <th class="text-left">Cántaro</th>
-                <th v-if="hasAnyAccumulative" class="text-right">
-                  Saldo anterior
-                  <div class="th-sub text-grey-6">mes previo</div>
-                </th>
-                <th class="text-right">
-                  Asignado
-                  <div class="th-sub text-info">esperado</div>
-                </th>
-                <th class="text-right">
-                  Asignado
-                  <div class="th-sub text-positive">real</div>
-                </th>
-                <th v-if="hasAnyAccumulative" class="text-right">
-                  Disponible mes
-                  <div class="th-sub text-purple-4">anterior + asignado</div>
-                </th>
-                <th class="text-right">Gastado</th>
-                <th class="text-right">Ajuste</th>
-                <th class="text-right">Total gasto</th>
-                <th class="text-right">Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in jarMonthlySummary" :key="row.id">
-                <td>
-                  <div class="summary-jar-name">
-                    <span class="summary-dot" :style="{ background: row.color }"></span>
-                    {{ row.name }}
-                    <span class="text-caption text-grey-6 q-ml-xs">
-                      {{ row.type === 'percent' ? `${row.percent}%` : 'Fijo' }}
-                    </span>
+          <q-card-section>
+            <div class="row items-stretch q-col-gutter-md jars-page__summary-metrics">
+              <div
+                v-for="item in summaryHighlightItems"
+                :key="item.key"
+                :class="summaryMetricColumnClasses"
+              >
+                <div class="jars-page__metric-card shell-surface shell-surface--subtle">
+                  <div class="text-caption text-grey-7">{{ item.label }}</div>
+                  <div class="text-h6" :class="summaryToneClass(item.tone)">
+                    {{ item.value }}
                   </div>
-                </td>
-                <td v-if="hasAnyAccumulative" class="text-right" :class="row.carryOver > 0 ? 'text-positive' : row.carryOver < 0 ? 'text-negative' : 'text-grey-6'">
-                  <template v-if="row.isAccumulative && row.carryOver !== 0">
-                    <q-icon :name="row.carryOver > 0 ? 'trending_up' : 'trending_down'" size="14px" class="q-mr-xs" />
-                    {{ row.carryOver > 0 ? '+' : '' }}{{ formatCurrency(row.carryOver) }}
-                    <div class="text-caption" :class="row.carryOver > 0 ? 'text-positive' : 'text-negative'">
-                      {{ row.carryOver > 0 ? 'superávit' : 'excedido' }}
-                    </div>
-                  </template>
-                  <template v-else-if="row.isAccumulative">
-                    $0.00
-                  </template>
-                  <template v-else>
-                    —
-                  </template>
-                </td>
-                <td class="text-right text-info">{{ formatCurrency(row.assignedExpected) }}</td>
-                <td class="text-right text-positive">{{ formatCurrency(row.assignedReal) }}</td>
-                <td v-if="hasAnyAccumulative" class="text-right text-weight-bold text-purple-4">
-                  {{ row.isAccumulative ? formatCurrency(row.carryOver + row.assignedExpected) : formatCurrency(row.assignedExpected) }}
-                </td>
-                <td class="text-right text-negative">{{ formatCurrency(row.spent) }}</td>
-                <td class="text-right" :class="row.adjustment > 0 ? 'text-positive' : row.adjustment < 0 ? 'text-negative' : ''">
-                  <div class="row items-center justify-end no-wrap q-gutter-xs">
-                    <span>{{ row.adjustment !== 0 ? ((row.adjustment > 0 ? '+' : '') + formatCurrency(row.adjustment)) : '—' }}</span>
-                    <q-btn
-                      v-if="row.id"
-                      flat
-                      dense
-                      round
-                      size="sm"
-                      icon="edit"
-                      color="primary"
-                      @click="openAdjustmentModal(row.id)"
-                      class="q-ml-xs"
-                    >
-                      <q-tooltip>Editar ajuste de {{ row.name }}</q-tooltip>
-                    </q-btn>
-                  </div>
-                </td>
-                <td class="text-right text-weight-bold text-negative">
-                  {{ formatCurrency(row.spent + Math.abs(Math.min(row.adjustment, 0))) }}
-                </td>
-                <td class="text-right text-weight-bold" :class="row.balance < 0 ? 'text-negative' : row.balance > 0 ? 'text-positive' : 'text-grey-6'">
-                  {{ formatCurrency(row.balance) }}
-                </td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr class="summary-total-row">
-                <td class="text-weight-bold">Total</td>
-                <td v-if="hasAnyAccumulative" class="text-right text-weight-bold" :class="summaryTotals.carryOver > 0 ? 'text-positive' : summaryTotals.carryOver < 0 ? 'text-negative' : 'text-grey-6'">
-                  {{ summaryTotals.carryOver !== 0 ? ((summaryTotals.carryOver > 0 ? '+' : '') + formatCurrency(summaryTotals.carryOver)) : '—' }}
-                </td>
-                <td class="text-right text-weight-bold text-info">{{ formatCurrency(summaryTotals.assignedExpected) }}</td>
-                <td class="text-right text-weight-bold text-positive">{{ formatCurrency(summaryTotals.assignedReal) }}</td>
-                <td v-if="hasAnyAccumulative" class="text-right text-weight-bold text-purple-4">
-                  {{ formatCurrency(summaryTotals.carryOver + summaryTotals.assignedExpected) }}
-                </td>
-                <td class="text-right text-weight-bold text-negative">{{ formatCurrency(summaryTotals.spent) }}</td>
-                <td class="text-right text-weight-bold" :class="summaryTotals.adjustment >= 0 ? 'text-positive' : 'text-negative'">
-                  {{ summaryTotals.adjustment !== 0 ? ((summaryTotals.adjustment > 0 ? '+' : '') + formatCurrency(summaryTotals.adjustment)) : '—' }}
-                </td>
-                <td class="text-right text-weight-bold text-negative">
-                  {{ formatCurrency(summaryTotals.totalSpent) }}
-                </td>
-                <td class="text-right text-weight-bold" :class="summaryTotals.balance < 0 ? 'text-negative' : 'text-positive'">
-                  {{ formatCurrency(summaryTotals.balance) }}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </q-card-section>
-    </q-card>
+                  <div class="text-caption text-grey-6">{{ item.caption }}</div>
+                </div>
+              </div>
+            </div>
+          </q-card-section>
 
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section>
-        <div class="text-subtitle2">Configuración global de cántaros</div>
-        <div class="text-caption text-grey-7">
-          Define el inicio de contabilidad y valores por defecto.
-        </div>
-      </q-card-section>
-      <q-separator />
-      <q-card-section>
-        <div class="row q-col-gutter-md items-center">
+          <template v-if="!isLiteLayout">
+            <q-separator />
+            <q-card-section class="q-pa-none">
+              <div class="summary-table-wrap">
+                <table class="summary-table">
+                  <thead>
+                    <tr>
+                      <th class="text-left">Cántaro</th>
+                      <th v-if="hasAnyAccumulative" class="text-right">
+                        Saldo anterior
+                        <div class="th-sub text-grey-6">mes previo</div>
+                      </th>
+                      <th class="text-right">
+                        Asignado
+                        <div class="th-sub text-info">esperado</div>
+                      </th>
+                      <th class="text-right">
+                        Asignado
+                        <div class="th-sub text-positive">real</div>
+                      </th>
+                      <th v-if="hasAnyAccumulative" class="text-right">
+                        Disponible mes
+                        <div class="th-sub text-purple-4">anterior + asignado</div>
+                      </th>
+                      <th class="text-right">Gastado</th>
+                      <th class="text-right">Ajuste</th>
+                      <th class="text-right">Total gasto</th>
+                      <th class="text-right">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in jarMonthlySummary" :key="row.id">
+                      <td>
+                        <div class="summary-jar-name">
+                          <span class="summary-dot" :style="{ background: row.color }"></span>
+                          {{ row.name }}
+                          <span class="text-caption text-grey-6 q-ml-xs">
+                            {{ row.type === 'percent' ? `${row.percent}%` : 'Fijo' }}
+                          </span>
+                        </div>
+                      </td>
+                      <td v-if="hasAnyAccumulative" class="text-right" :class="row.carryOver > 0 ? 'text-positive' : row.carryOver < 0 ? 'text-negative' : 'text-grey-6'">
+                        <template v-if="row.isAccumulative && row.carryOver !== 0">
+                          <q-icon :name="row.carryOver > 0 ? 'trending_up' : 'trending_down'" size="14px" class="q-mr-xs" />
+                          {{ row.carryOver > 0 ? '+' : '' }}{{ formatCurrency(row.carryOver) }}
+                          <div class="text-caption" :class="row.carryOver > 0 ? 'text-positive' : 'text-negative'">
+                            {{ row.carryOver > 0 ? 'superávit' : 'excedido' }}
+                          </div>
+                        </template>
+                        <template v-else-if="row.isAccumulative">
+                          $0.00
+                        </template>
+                        <template v-else>
+                          —
+                        </template>
+                      </td>
+                      <td class="text-right text-info">{{ formatCurrency(row.assignedExpected) }}</td>
+                      <td class="text-right text-positive">{{ formatCurrency(row.assignedReal) }}</td>
+                      <td v-if="hasAnyAccumulative" class="text-right text-weight-bold text-purple-4">
+                        {{ row.isAccumulative ? formatCurrency(row.carryOver + row.assignedExpected) : formatCurrency(row.assignedExpected) }}
+                      </td>
+                      <td class="text-right text-negative">{{ formatCurrency(row.spent) }}</td>
+                      <td class="text-right" :class="row.adjustment > 0 ? 'text-positive' : row.adjustment < 0 ? 'text-negative' : ''">
+                        <div class="row items-center justify-end no-wrap q-gutter-xs">
+                          <span>{{ row.adjustment !== 0 ? ((row.adjustment > 0 ? '+' : '') + formatCurrency(row.adjustment)) : '—' }}</span>
+                          <q-btn
+                            v-if="row.id"
+                            flat
+                            dense
+                            round
+                            size="sm"
+                            icon="edit"
+                            color="primary"
+                            @click="openAdjustmentModal(row.id)"
+                            class="q-ml-xs"
+                          >
+                            <q-tooltip>Editar ajuste de {{ row.name }}</q-tooltip>
+                          </q-btn>
+                        </div>
+                      </td>
+                      <td class="text-right text-weight-bold text-negative">
+                        {{ formatCurrency(row.spent + Math.abs(Math.min(row.adjustment, 0))) }}
+                      </td>
+                      <td class="text-right text-weight-bold" :class="row.balance < 0 ? 'text-negative' : row.balance > 0 ? 'text-positive' : 'text-grey-6'">
+                        {{ formatCurrency(row.balance) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr class="summary-total-row">
+                      <td class="text-weight-bold">Total</td>
+                      <td v-if="hasAnyAccumulative" class="text-right text-weight-bold" :class="summaryTotals.carryOver > 0 ? 'text-positive' : summaryTotals.carryOver < 0 ? 'text-negative' : 'text-grey-6'">
+                        {{ summaryTotals.carryOver !== 0 ? ((summaryTotals.carryOver > 0 ? '+' : '') + formatCurrency(summaryTotals.carryOver)) : '—' }}
+                      </td>
+                      <td class="text-right text-weight-bold text-info">{{ formatCurrency(summaryTotals.assignedExpected) }}</td>
+                      <td class="text-right text-weight-bold text-positive">{{ formatCurrency(summaryTotals.assignedReal) }}</td>
+                      <td v-if="hasAnyAccumulative" class="text-right text-weight-bold text-purple-4">
+                        {{ formatCurrency(summaryTotals.carryOver + summaryTotals.assignedExpected) }}
+                      </td>
+                      <td class="text-right text-weight-bold text-negative">{{ formatCurrency(summaryTotals.spent) }}</td>
+                      <td class="text-right text-weight-bold" :class="summaryTotals.adjustment >= 0 ? 'text-positive' : 'text-negative'">
+                        {{ summaryTotals.adjustment !== 0 ? ((summaryTotals.adjustment > 0 ? '+' : '') + formatCurrency(summaryTotals.adjustment)) : '—' }}
+                      </td>
+                      <td class="text-right text-weight-bold text-negative">
+                        {{ formatCurrency(summaryTotals.totalSpent) }}
+                      </td>
+                      <td class="text-right text-weight-bold" :class="summaryTotals.balance < 0 ? 'text-negative' : 'text-positive'">
+                        {{ formatCurrency(summaryTotals.balance) }}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </q-card-section>
+          </template>
+          <q-expansion-item
+            v-else
+            dense
+            expand-separator
+            icon="table_chart"
+            :label="summaryExpansionLabel"
+            header-class="jars-page__expansion-header"
+          >
+            <q-card-section class="q-pa-none">
+              <div class="summary-table-wrap">
+                <table class="summary-table">
+                  <thead>
+                    <tr>
+                      <th class="text-left">Cántaro</th>
+                      <th v-if="hasAnyAccumulative" class="text-right">
+                        Saldo anterior
+                        <div class="th-sub text-grey-6">mes previo</div>
+                      </th>
+                      <th class="text-right">
+                        Asignado
+                        <div class="th-sub text-info">esperado</div>
+                      </th>
+                      <th class="text-right">
+                        Asignado
+                        <div class="th-sub text-positive">real</div>
+                      </th>
+                      <th v-if="hasAnyAccumulative" class="text-right">
+                        Disponible mes
+                        <div class="th-sub text-purple-4">anterior + asignado</div>
+                      </th>
+                      <th class="text-right">Gastado</th>
+                      <th class="text-right">Ajuste</th>
+                      <th class="text-right">Total gasto</th>
+                      <th class="text-right">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in jarMonthlySummary" :key="`lite-${row.id}`">
+                      <td>
+                        <div class="summary-jar-name">
+                          <span class="summary-dot" :style="{ background: row.color }"></span>
+                          {{ row.name }}
+                          <span class="text-caption text-grey-6 q-ml-xs">
+                            {{ row.type === 'percent' ? `${row.percent}%` : 'Fijo' }}
+                          </span>
+                        </div>
+                      </td>
+                      <td v-if="hasAnyAccumulative" class="text-right" :class="row.carryOver > 0 ? 'text-positive' : row.carryOver < 0 ? 'text-negative' : 'text-grey-6'">
+                        <template v-if="row.isAccumulative && row.carryOver !== 0">
+                          <q-icon :name="row.carryOver > 0 ? 'trending_up' : 'trending_down'" size="14px" class="q-mr-xs" />
+                          {{ row.carryOver > 0 ? '+' : '' }}{{ formatCurrency(row.carryOver) }}
+                        </template>
+                        <template v-else-if="row.isAccumulative">
+                          $0.00
+                        </template>
+                        <template v-else>
+                          —
+                        </template>
+                      </td>
+                      <td class="text-right text-info">{{ formatCurrency(row.assignedExpected) }}</td>
+                      <td class="text-right text-positive">{{ formatCurrency(row.assignedReal) }}</td>
+                      <td v-if="hasAnyAccumulative" class="text-right text-weight-bold text-purple-4">
+                        {{ row.isAccumulative ? formatCurrency(row.carryOver + row.assignedExpected) : formatCurrency(row.assignedExpected) }}
+                      </td>
+                      <td class="text-right text-negative">{{ formatCurrency(row.spent) }}</td>
+                      <td class="text-right" :class="row.adjustment > 0 ? 'text-positive' : row.adjustment < 0 ? 'text-negative' : ''">
+                        {{ row.adjustment !== 0 ? ((row.adjustment > 0 ? '+' : '') + formatCurrency(row.adjustment)) : '—' }}
+                      </td>
+                      <td class="text-right text-weight-bold text-negative">
+                        {{ formatCurrency(row.spent + Math.abs(Math.min(row.adjustment, 0))) }}
+                      </td>
+                      <td class="text-right text-weight-bold" :class="row.balance < 0 ? 'text-negative' : row.balance > 0 ? 'text-positive' : 'text-grey-6'">
+                        {{ formatCurrency(row.balance) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </q-card-section>
+          </q-expansion-item>
+        </q-card>
+
+        <q-card flat bordered class="jars-page__overview-card">
+          <q-card-section>
+            <div class="row items-center justify-between q-col-gutter-sm">
+              <div class="col">
+                <div class="text-subtitle2">Configuración global de cántaros</div>
+                <div class="text-caption text-grey-7">
+                  {{ settingsCardDescription }}
+                </div>
+              </div>
+              <div class="col-auto">
+                <q-chip dense color="grey-2" text-color="dark">
+                  {{ isLegacyLayout ? 'Workspace amplio' : isLiteLayout ? 'Controles compactos' : 'Balanceado' }}
+                </q-chip>
+              </div>
+            </div>
+          </q-card-section>
+          <q-separator />
+          <q-card-section v-if="!isLiteLayout">
+            <div class="row q-col-gutter-md items-center">
           <div class="col-12 col-sm-4">
             <q-input
               v-model="jarSettings.global_start_date"
@@ -285,8 +375,128 @@
             </div>
           </div>
         </div>
-      </q-card-section>
-    </q-card>
+          </q-card-section>
+          <q-expansion-item
+            v-else
+            dense
+            expand-separator
+            icon="settings"
+            :label="settingsExpansionLabel"
+            header-class="jars-page__expansion-header"
+          >
+            <q-card-section>
+              <div class="row q-col-gutter-md items-center">
+                <div class="col-12 col-sm-4">
+                  <q-input
+                    v-model="jarSettings.global_start_date"
+                    type="date"
+                    dense
+                    filled
+                    label="Inicio de contabilidad (global)"
+                  />
+                </div>
+                <div class="col-12 col-sm-4">
+                  <q-toggle
+                    v-model="jarSettings.default_allow_negative"
+                    dense
+                    color="primary"
+                    label="Permitir negativos por defecto"
+                  />
+                </div>
+                <div class="col-12 col-sm-4">
+                  <q-input
+                    v-model.number="jarSettings.default_negative_limit"
+                    type="number"
+                    dense
+                    filled
+                    label="Límite negativo por defecto"
+                    prefix="$"
+                    :disable="!jarSettings.default_allow_negative"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div class="col-12 col-sm-4">
+                  <q-select
+                    v-model="jarSettings.default_reset_cycle"
+                    :options="resetCycleOptions"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    dense
+                    filled
+                    label="Ciclo por defecto"
+                  />
+                </div>
+                <div class="col-12 col-sm-4">
+                  <q-input
+                    v-model.number="jarSettings.default_reset_cycle_day"
+                    type="number"
+                    dense
+                    filled
+                    label="Día del ciclo por defecto"
+                    min="1"
+                    max="28"
+                  />
+                </div>
+                <div class="col-12 col-sm-6">
+                  <q-select
+                    v-model="jarSettings.leverage_jar_id"
+                    :options="[
+                      { label: 'Ninguno', value: null },
+                      ...jarElements
+                        .filter((j) => j.id)
+                        .map((j) => ({ label: j.name, value: j.id }))
+                    ]"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    clearable
+                    dense
+                    filled
+                    label="Cántaro de apalancamiento"
+                    hint="Se usa para cubrir excesos automáticamente"
+                  />
+                </div>
+                <div class="col-12 col-sm-6">
+                  <q-select
+                    v-model="monthlyLeverageJarId"
+                    :options="[
+                      { label: 'Ninguno', value: null },
+                      ...jarElements
+                        .filter((j) => j.id)
+                        .map((j) => ({ label: j.name, value: j.id }))
+                    ]"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    clearable
+                    dense
+                    filled
+                    :label="`Cántaro de apalancamiento (${currentMonth})`"
+                    hint="Se aplica solo al mes seleccionado"
+                  />
+                </div>
+                <div class="col-12">
+                  <q-toggle
+                    v-model="jarSettings.auto_leverage_enabled"
+                    dense
+                    color="primary"
+                    label="Habilitar apalancamiento automático"
+                  />
+                  <div class="text-caption text-grey-6 q-mt-sm">
+                    Si está habilitado, los cántaros negativos se reabsorben automáticamente desde el cántaro de apalancamiento
+                  </div>
+                </div>
+              </div>
+            </q-card-section>
+          </q-expansion-item>
+        </q-card>
+      </div>
+    </div>
 
     <q-card flat bordered>
       <q-card-section class="header-grid">
@@ -1027,6 +1237,12 @@ import { useCalculatedIncome } from 'src/composables/useCalculatedIncome';
 import JarCard from 'components/JarCard.vue';
 import AdjustmentModal from 'components/AdjustmentModal.vue';
 import MonthlyIncomePanel from 'components/MonthlyIncomePanel.vue';
+import {
+  layoutModeOptions,
+  normalizeLayoutMode,
+  type LayoutModeOption,
+  type UserLayoutMode,
+} from 'src/utils/layoutMode';
 
 defineOptions({ name: 'JarsOverviewPage' });
 
@@ -1101,6 +1317,20 @@ const auth = useAuthStore();
 const periodStore = usePeriodStore();
 const route = useRoute();
 const router = useRouter();
+const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.user?.layout_mode));
+const fallbackLayoutModeOption: LayoutModeOption = {
+  label: 'Pro',
+  value: 'pro',
+  description: 'Balance general entre densidad, navegacion y visibilidad.',
+};
+const activeLayoutModeOption = computed<LayoutModeOption>(
+  () =>
+    layoutModeOptions.find((option) => option.value === activeLayoutMode.value) ||
+    fallbackLayoutModeOption
+);
+const isLegacyLayout = computed(() => activeLayoutMode.value === 'legacy');
+const isLiteLayout = computed(() => activeLayoutMode.value === 'lite');
+const jarsPageClasses = computed(() => ['jars-page', `jars-page--${activeLayoutMode.value}`]);
 const jarElements = ref<Jar[]>([]);
 const jarsStore = useJarsStore();
 const serverJarIds = ref<Set<number>>(new Set());
@@ -1628,6 +1858,105 @@ const summaryTotals = computed(() => {
     totalSpent: spent + Math.abs(Math.min(adjustment, 0)),
   };
 });
+
+type SummaryTone = 'default' | 'positive' | 'negative' | 'warning' | 'primary';
+
+const overviewDetailGridClasses = computed(() => {
+  if (isLegacyLayout.value) return 'row q-col-gutter-md items-start';
+  if (isLiteLayout.value) return 'row q-col-gutter-sm items-start';
+  return 'row q-col-gutter-md items-start';
+});
+
+const summaryMetricColumnClasses = computed(() => {
+  if (isLiteLayout.value) return 'col-12 col-sm-6';
+  if (isLegacyLayout.value) return 'col-12 col-sm-6 col-xl-3';
+  return 'col-12 col-sm-6 col-xl';
+});
+
+const summaryCardDescription = computed(() => {
+  if (isLegacyLayout.value) {
+    return 'Totales, ahorro teorico y detalle completo visibles al mismo tiempo para revisar distribucion y arrastre.';
+  }
+  if (isLiteLayout.value) {
+    return 'Lectura rapida del periodo con acceso bajo demanda al detalle por cantaro.';
+  }
+  return 'Balance del mes con los indicadores clave arriba y la tabla de seguimiento debajo.';
+});
+
+const settingsCardDescription = computed(() => {
+  if (isLegacyLayout.value) {
+    return 'Mantiene los defaults del workspace a la vista para ajustar reglas globales mientras revisas el detalle.';
+  }
+  if (isLiteLayout.value) {
+    return 'Compacta los defaults en un panel plegable para priorizar la edicion de cantaros.';
+  }
+  return 'Define el inicio de contabilidad y los valores por defecto sin salir del flujo principal.';
+});
+
+const summaryExpansionLabel = computed(() =>
+  isLiteLayout.value ? 'Ver desglose mensual completo' : 'Desglose mensual'
+);
+
+const settingsExpansionLabel = computed(() =>
+  isLiteLayout.value ? 'Abrir configuracion global' : 'Configuracion global'
+);
+
+const summaryHighlightItems = computed(() => {
+  const base = [
+    {
+      key: 'spent',
+      label: 'Total gastado',
+      value: formatCurrency(summaryTotals.value.spent),
+      caption: 'Consumo acumulado entre todos los cantaros activos.',
+      tone: 'negative' as SummaryTone,
+    },
+    {
+      key: 'adjustment',
+      label: 'Total ajustes',
+      value: `${summaryTotals.value.adjustment >= 0 ? '+' : ''}${formatCurrency(summaryTotals.value.adjustment)}`,
+      caption: 'Correcciones manuales aplicadas al periodo.',
+      tone: (summaryTotals.value.adjustment >= 0 ? 'positive' : 'negative') as SummaryTone,
+    },
+    {
+      key: 'unused',
+      label: 'No usado este mes',
+      value: formatCurrency(theoreticalSavings.value.total_unused),
+      caption: 'Disponible no ejecutado en cantaros reset.',
+      tone: 'default' as SummaryTone,
+    },
+    {
+      key: 'theoretical',
+      label: 'Ahorro teorico total',
+      value: formatCurrency(theoreticalSavings.value.total_theoretical),
+      caption: `Incluye ahorro en cuentas: ${formatCurrency(theoreticalSavings.value.total_savings_accounts)}`,
+      tone: 'primary' as SummaryTone,
+    },
+  ];
+
+  if (isLegacyLayout.value) {
+    base.splice(3, 0, {
+      key: 'idle',
+      label: 'Ocioso acumulado',
+      value: formatCurrency(theoreticalSavings.value.accumulated_unused),
+      caption: 'Reset sin usar desde el inicio del historial.',
+      tone: 'warning' as SummaryTone,
+    });
+  }
+
+  if (isLiteLayout.value) {
+    return base.slice(0, 3);
+  }
+
+  return base;
+});
+
+function summaryToneClass(tone: SummaryTone): string {
+  if (tone === 'positive') return 'text-positive';
+  if (tone === 'negative') return 'text-negative';
+  if (tone === 'warning') return 'text-warning';
+  if (tone === 'primary') return 'text-primary';
+  return '';
+}
 
 // Segments for horizontal bar: active percent jars, plus empty remainder up to 100%
 const hbarSegments = computed(() => {
@@ -3166,6 +3495,60 @@ watch(
 </script>
 
 <style scoped>
+.jars-page__overview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jars-page__overview-card {
+  height: 100%;
+}
+
+.jars-page__metric-card {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.jars-page__expansion-header {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.64);
+}
+
+.jars-page--lite .jars-page__overview {
+  gap: 12px;
+}
+
+.jars-page--lite .jars-page__overview-card {
+  border-radius: 16px;
+}
+
+.jars-page--lite .summary-table {
+  font-size: 12px;
+}
+
+.jars-page--lite .summary-table th,
+.jars-page--lite .summary-table td {
+  padding: 7px 10px;
+}
+
+.jars-page--legacy .jars-page__overview-card {
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.jars-page--legacy .jars-page__metric-card {
+  padding: 16px;
+}
+
+.jars-page--legacy .summary-table-wrap {
+  max-height: 420px;
+}
+
 /* ── Summary table ── */
 .summary-table-wrap {
   overflow-x: auto;
@@ -3476,6 +3859,10 @@ watch(
 }
 
 @media (max-width: 1023px) {
+  .jars-page__overview {
+    gap: 12px;
+  }
+
   .header-grid {
     grid-template-columns: 1fr;
     grid-row-gap: 8px;
@@ -3486,6 +3873,12 @@ watch(
   .header-actions {
     order: 3;
     justify-self: start;
+  }
+}
+
+@media (max-width: 599px) {
+  .jars-page__metric-card {
+    padding: 12px;
   }
 }
 
