@@ -1,208 +1,385 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row q-col-gutter-lg">
-      <!-- Sidebar de cuentas (siempre visible) -->
-      <div class="col-12 col-md-3 col-lg-3">
-        <div class="sticky-sidebar">
-          <AccountsSidebarWidget />
-        </div>
+  <q-page :class="transactionsPageClasses">
+    <div class="row q-col-gutter-lg items-start">
+      <div :class="sidebarColumnClasses">
+        <q-card flat class="glass-panel transactions-lite__sidebar-card">
+          <q-card-section class="row items-center justify-between q-pb-sm">
+            <div>
+              <div class="text-overline transactions-lite__eyebrow">Contexto</div>
+              <div class="text-subtitle1 text-weight-bold">{{ contextPanelTitle }}</div>
+            </div>
+            <q-chip dense color="blue-1" text-color="primary" class="text-weight-medium">
+              {{ selectedAccountsLabel }}
+            </q-chip>
+          </q-card-section>
+
+          <q-card-section class="q-pt-none">
+            <div class="text-caption text-grey-7 transactions-lite__sidebar-copy q-mb-md">
+              {{ contextPanelCopy }}
+            </div>
+            <div :class="sidebarWidgetClasses">
+              <AccountsSidebarWidget />
+            </div>
+          </q-card-section>
+        </q-card>
       </div>
 
-      <!-- Contenido principal: header + filtros + tabla -->
-      <div class="col-12 col-md-9 col-lg-9">
-        <!-- Encabezado -->
-        <div class="row items-center q-mb-md">
-          <div class="col">
-            <div class="text-h5">{{ dictionary.title }}</div>
-            <div class="text-caption text-grey-7">{{ dictionary.description }}</div>
-          </div>
-          <div class="col-auto">
-            <div class="row items-center q-gutter-sm">
-              <q-btn 
-                label="Carga Masiva" 
-                color="accent" 
-                icon="upload_file"
-                @click="showBulkImport = true" 
+      <div :class="mainColumnClasses">
+        <q-card flat class="glass-panel transactions-lite__hero-card">
+          <q-card-section class="transactions-lite__hero-section">
+            <div class="transactions-lite__hero-copy">
+              <div class="row items-center q-col-gutter-sm transactions-lite__hero-heading">
+                <div class="col-auto">
+                  <div class="text-overline transactions-lite__eyebrow">{{ heroEyebrow }}</div>
+                </div>
+                <div class="col-auto">
+                  <q-chip dense color="white" text-color="primary" class="transactions-lite__mode-chip">
+                    {{ activeLayoutModeOption.label }}
+                  </q-chip>
+                </div>
+              </div>
+              <div class="text-h4 text-weight-bold">{{ heroTitle }}</div>
+              <div class="text-body2 text-grey-7 transactions-lite__hero-text">
+                {{ transactionsHeroText }}
+              </div>
+              <div class="row q-col-gutter-sm q-mt-md transactions-lite__hero-stats">
+                <div
+                  v-for="stat in heroStats"
+                  :key="stat.key"
+                  :class="heroStatColumnClasses"
+                >
+                  <div class="transactions-lite__hero-stat shell-surface shell-surface--subtle">
+                    <div class="text-caption text-grey-7">{{ stat.label }}</div>
+                    <div
+                      class="text-h6 text-weight-bold"
+                      :class="{
+                        'text-positive': stat.tone === 'positive',
+                        'text-negative': stat.tone === 'negative',
+                      }"
+                    >
+                      {{ stat.value }}
+                    </div>
+                    <div class="text-caption text-grey-7">{{ stat.caption }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="transactions-lite__hero-actions">
+              <q-btn
+                color="primary"
+                icon="add"
+                label="Agregar movimiento"
+                class="transactions-lite__primary-cta"
+                @click="openNewFab"
               />
-              <q-btn :label="dictionary.buttonNewLabel" color="primary" @click="openNewFab" />
+              <div class="transactions-lite__action-grid">
+                <q-btn
+                  unelevated
+                  color="white"
+                  text-color="positive"
+                  icon="trending_up"
+                  label="Ingreso"
+                  @click="ui.openNewTransactionDialog('income')"
+                />
+                <q-btn
+                  unelevated
+                  color="white"
+                  text-color="negative"
+                  icon="trending_down"
+                  label="Egreso"
+                  @click="ui.openNewTransactionDialog('expense')"
+                />
+                <q-btn
+                  unelevated
+                  color="white"
+                  text-color="primary"
+                  icon="swap_horiz"
+                  label="Transferencia"
+                  @click="ui.openNewTransactionDialog('transfer')"
+                />
+                <q-btn
+                  outline
+                  color="primary"
+                  icon="upload_file"
+                  label="Carga masiva"
+                  @click="showBulkImport = true"
+                />
+              </div>
             </div>
-          </div>
-        </div>
+          </q-card-section>
+        </q-card>
 
-        <!-- Barra de herramientas -->
-        <div class="row items-center q-mb-md q-gutter-sm">
-          <q-btn
-            flat
-            dense
-            icon="tune"
-            color="primary"
-            @click="openAdjustTop"
-            :disable="!singleAccountSelected"
-          >
-            <q-tooltip>Ajustar saldo (cuenta seleccionada)</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            icon="autorenew"
-            color="secondary"
-            @click="recalcSingleAccountTop"
-            :disable="!singleAccountSelected"
-          >
-            <q-tooltip>Recalcular saldo (cuenta seleccionada)</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            icon="download"
-            color="primary"
-            @click="exportCSV"
-            :disable="!rows.length"
-          >
-            <q-tooltip>Exportar CSV</q-tooltip>
-          </q-btn>
-          <q-btn
-            flat
-            dense
-            icon="delete_sweep"
-            color="negative"
-            @click="removeSelectedRows"
-            :disable="selectedRows.length === 0"
-          >
-            <q-tooltip>Eliminar seleccionadas ({{ selectedRows.length }})</q-tooltip>
-          </q-btn>
-          <q-btn 
-            flat 
-            dense
-            icon="filter_alt_off" 
-            color="secondary" 
-            @click="clearFilters"
-          >
-            <q-tooltip>Limpiar filtros</q-tooltip>
-          </q-btn>
-          <q-space />
-          <q-select
-            v-model="visibleColumnNames"
-            :options="columnVisibilityOptions"
-            option-label="label"
-            option-value="value"
-            emit-value
-            map-options
-            multiple
-            use-chips
-            dense
-            outlined
-            label="Columnas visibles"
-            style="min-width: 300px; max-width: 500px"
-            class="col-auto"
-          />
-        </div>
+        <div class="row q-col-gutter-md q-mt-md">
+          <div :class="filtersColumnClasses">
+            <q-card flat class="glass-panel transactions-lite__filters-card">
+              <q-card-section class="row items-start justify-between q-col-gutter-md q-pb-sm">
+                <div class="col-12 col-md">
+                  <div class="text-subtitle1 text-weight-bold">{{ filtersPanelTitle }}</div>
+                  <div class="text-caption text-grey-7">
+                    {{ filtersPanelDescription }}
+                  </div>
+                </div>
+                <div class="col-12 col-md-auto row q-gutter-sm transactions-lite__top-actions">
+                  <q-btn
+                    flat
+                    color="primary"
+                    icon="tune"
+                    label="Ajustar saldo"
+                    :disable="!singleAccountSelected"
+                    @click="openAdjustTop"
+                  />
+                  <q-btn
+                    flat
+                    color="secondary"
+                    icon="autorenew"
+                    label="Recalcular"
+                    :disable="!singleAccountSelected"
+                    @click="recalcSingleAccountTop"
+                  />
+                  <q-btn
+                    flat
+                    color="secondary"
+                    icon="filter_alt_off"
+                    label="Limpiar"
+                    @click="clearFilters"
+                  />
+                </div>
+              </q-card-section>
 
-        <!-- Búsqueda global -->
-        <div class="row q-col-gutter-md items-start q-mb-md">
-          <div class="col-12 col-sm-6 col-md-6">
-            <div class="text-caption q-mb-xs">{{ dictionary.finderLabel }}</div>
-            <q-input
-              class="full-width"
-              dense
-              filled
-              debounce="300"
-              v-model="filters.search"
-              :placeholder="dictionary.finderLabel + '...'"
+              <q-card-section class="q-pt-none">
+                <div class="row q-col-gutter-md items-start">
+                  <div class="col-12 col-md-7">
+                    <div class="text-caption q-mb-xs">{{ dictionary.finderLabel }}</div>
+                    <q-input
+                      v-model="filters.search"
+                      dense
+                      filled
+                      debounce="300"
+                      class="full-width"
+                      :placeholder="dictionary.finderLabel + ' por concepto, cuenta o tipo'"
+                    >
+                      <template #append>
+                        <q-icon name="search" />
+                      </template>
+                    </q-input>
+                  </div>
+
+                  <div class="col-12 col-md-5">
+                    <div class="text-caption q-mb-xs">Acciones de tabla</div>
+                    <div class="row q-col-gutter-sm">
+                      <div class="col-6">
+                        <q-btn
+                          outline
+                          color="primary"
+                          icon="download"
+                          label="Exportar"
+                          class="full-width"
+                          :disable="!rows.length"
+                          @click="exportCSV"
+                        />
+                      </div>
+                      <div class="col-6">
+                        <q-btn
+                          outline
+                          color="negative"
+                          icon="delete_sweep"
+                          label="Eliminar"
+                          class="full-width"
+                          :disable="selectedRows.length === 0"
+                          @click="removeSelectedRows"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="activeFilterChips.length" class="q-mt-md">
+                  <div class="text-caption text-grey-7 q-mb-xs">Filtros activos</div>
+                  <div class="row q-col-gutter-sm items-center">
+                    <div class="col-12">
+                      <q-chip
+                        v-for="chip in activeFilterChips"
+                        :key="chip.key"
+                        removable
+                        color="blue-1"
+                        text-color="primary"
+                        class="transactions-lite__filter-chip"
+                        @remove="removeFilterChip(chip.key)"
+                      >
+                        {{ chip.label }}: {{ chip.value }}
+                      </q-chip>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="categorySpendTags.length" class="q-mt-md">
+                  <div class="text-caption text-grey-7 q-mb-xs">Categorias del periodo</div>
+                  <div class="transactions-lite__category-row">
+                    <q-chip
+                      clickable
+                      class="category-chip"
+                      :style="allCategoryChipStyle"
+                      @click="clearCategoryTagFilter"
+                    >
+                      Todas
+                    </q-chip>
+                    <q-chip
+                      v-for="tag in categorySpendTags"
+                      :key="tag.key"
+                      clickable
+                      class="category-chip"
+                      :style="categoryChipStyle(tag)"
+                      @click="applyCategoryTagFilter(tag.id)"
+                    >
+                      {{ tag.name }}: {{ formatMoney(tag.total) }}
+                    </q-chip>
+                  </div>
+                </div>
+
+                <q-expansion-item
+                  v-model="filtersExpanded"
+                  dense
+                  dense-toggle
+                  expand-separator
+                  icon="tune"
+                  label="Filtros avanzados y columnas"
+                  header-class="transactions-lite__expansion-header"
+                  class="q-mt-md"
+                >
+                  <div class="q-pt-md">
+                    <div class="row q-col-gutter-md items-start">
+                      <div
+                        v-for="field in dictionary.forms_filter"
+                        :key="field.id"
+                        :class="`col-12 col-md-${field.col || 12}`"
+                      >
+                        <component
+                          :is="selectComponent(field.type)"
+                          v-model="filters[field.vmodel]"
+                          class="full-width"
+                          v-bind="fieldProps(field)"
+                        />
+                      </div>
+                      <div class="col-12">
+                        <q-select
+                          v-model="visibleColumnNames"
+                          :options="columnVisibilityOptions"
+                          option-label="label"
+                          option-value="value"
+                          emit-value
+                          map-options
+                          multiple
+                          use-chips
+                          dense
+                          outlined
+                          label="Columnas visibles"
+                          class="full-width"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </q-expansion-item>
+              </q-card-section>
+            </q-card>
+
+            <q-card
+              v-if="showCompactWorkspaceStrip"
+              flat
+              class="glass-panel transactions-lite__compact-workspace-card q-mt-md"
             >
-              <template v-slot:append><q-icon name="search" /></template>
-            </q-input>
+              <q-card-section class="q-pb-sm">
+                <div class="text-subtitle2 text-weight-bold">Workspace rapido</div>
+                <div class="text-caption text-grey-7">
+                  El modo Lite condensa el panel secundario en una franja de decision corta.
+                </div>
+              </q-card-section>
+              <q-card-section class="q-pt-none">
+                <div class="row q-col-gutter-sm">
+                  <div
+                    v-for="item in compactWorkspaceItems"
+                    :key="item.label"
+                    class="col-12 col-sm-4"
+                  >
+                    <div class="transactions-lite__compact-workspace-item shell-surface shell-surface--subtle">
+                      <div class="text-caption text-grey-7">{{ item.label }}</div>
+                      <div class="text-body1 text-weight-medium">{{ item.value }}</div>
+                      <div class="text-caption text-grey-7 q-mt-xs">{{ item.caption }}</div>
+                    </div>
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
           </div>
-        </div>
 
-        <!-- Filtros dinámicos -->
-        <div class="q-pa-xs q-mb-md">
-          <div class="row q-col-gutter-md items-start">
-            <div
-              v-for="field in dictionary.forms_filter"
-              :key="field.id"
-              :class="`col-${field.col || 12}`"
-            >
-              <component
-                :is="selectComponent(field.type)"
-                class="full-width"
-                v-model="filters[field.vmodel]"
-                v-bind="fieldProps(field)"
-              />
-            </div>
-          </div>
-        </div>
+          <div v-if="showSecondaryFocusCard" :class="focusColumnClasses">
+            <q-card flat class="glass-panel transactions-lite__focus-card full-height">
+              <q-card-section class="q-pb-sm">
+                <div class="text-subtitle1 text-weight-bold">{{ secondaryPanelTitle }}</div>
+                <div class="text-caption text-grey-7">
+                  {{ secondaryPanelDescription }}
+                </div>
+              </q-card-section>
+              <q-card-section class="q-pt-none column q-gutter-sm">
+                <div class="transactions-lite__focus-item shell-surface shell-surface--subtle">
+                  <div class="text-caption text-grey-7">Seleccion</div>
+                  <div class="text-body1 text-weight-medium">
+                    {{ selectedRows.length ? `${selectedRows.length} filas marcadas` : 'Sin seleccion' }}
+                  </div>
+                </div>
 
-        <div v-if="activeFilterChips.length" class="q-mb-md">
-          <div class="row q-col-gutter-sm items-center">
-            <div class="col-auto text-caption text-grey-7">Filtros activos:</div>
-            <div class="col">
-              <q-chip
-                v-for="chip in activeFilterChips"
-                :key="chip.key"
-                removable
-                color="blue-1"
-                text-color="primary"
-                @remove="removeFilterChip(chip.key)"
-              >
-                {{ chip.label }}: {{ chip.value }}
-              </q-chip>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="categorySpendTags.length" class="q-mb-md">
-          <div class="row q-col-gutter-sm items-center">
-            <div class="col-auto text-caption text-grey-7">Categorías del periodo:</div>
-            <div class="col">
-              <q-chip
-                clickable
-                class="category-chip"
-                :style="allCategoryChipStyle"
-                @click="clearCategoryTagFilter"
-              >
-                Todas
-              </q-chip>
-              <q-chip
-                v-for="tag in categorySpendTags"
-                :key="tag.key"
-                clickable
-                class="category-chip"
-                :style="categoryChipStyle(tag)"
-                @click="applyCategoryTagFilter(tag.id)"
-              >
-                {{ tag.name }}: {{ formatMoney(tag.total) }}
-              </q-chip>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tabla de datos -->
-        <div v-if="showRunningBalanceColumn && singleAccountBalance != null" class="q-mb-sm">
-          <q-banner class="bg-blue-1 text-primary q-pa-sm" rounded>
-            <div class="row items-center no-wrap full-width">
-              <div class="col-auto text-weight-medium">Saldo actual de la cuenta:</div>
-              <div class="col-auto text-weight-bold">
-                <template v-if="singleAccountBalanceLoading">
-                  <q-spinner size="16px" class="q-mr-xs" />
-                </template>
-                <span v-else>
-                  <div class="balance-main-line">{{ formatSingleAccountBalanceMain() }}</div>
-                  <div v-if="showSecondaryUsdBalance" class="balance-sub-line">
+                <div class="transactions-lite__focus-item shell-surface shell-surface--subtle">
+                  <div class="text-caption text-grey-7">Cuenta activa</div>
+                  <div class="text-body1 text-weight-medium">{{ selectedAccountDetail }}</div>
+                  <div
+                    v-if="showRunningBalanceColumn && singleAccountBalance != null"
+                    class="text-caption text-grey-7 q-mt-xs"
+                  >
+                    {{ formatSingleAccountBalanceMain() }}
+                  </div>
+                  <div
+                    v-if="showRunningBalanceColumn && showSecondaryUsdBalance"
+                    class="text-caption text-grey-7"
+                  >
                     {{ formatSingleAccountBalanceConversionLine() }}
                   </div>
-                </span>
-              </div>
-              <div
-                class="col text-right text-caption text-grey-7"
-                v-if="pagination.sortBy === 'date'"
-              >
-                (Columna Balance muestra saldo tras cada transacción)
+                </div>
+
+                <div class="transactions-lite__focus-item shell-surface shell-surface--subtle">
+                  <div class="text-caption text-grey-7">Periodo</div>
+                  <div class="text-body1 text-weight-medium">{{ periodStore.label }}</div>
+                  <div class="text-caption text-grey-7 q-mt-xs">
+                    {{ activeFilterChips.length }} filtro(s) activos
+                  </div>
+                </div>
+
+                <div class="transactions-lite__focus-item shell-surface shell-surface--subtle">
+                  <div class="text-caption text-grey-7">Impuesto visible</div>
+                  <div class="text-body1 text-weight-medium">{{ formatMoney(summary.impuestos) }}</div>
+                  <div class="text-caption text-grey-7 q-mt-xs">
+                    {{ effectiveVisibleColumnNames.length - 1 }} columnas visibles
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+
+        <q-card flat class="glass-panel transactions-lite__table-card q-mt-md">
+          <q-card-section class="row items-center justify-between q-pb-sm">
+            <div>
+              <div class="text-subtitle1 text-weight-bold">Lista de movimientos</div>
+              <div class="text-caption text-grey-7">
+                {{ tablePanelDescription }}
               </div>
             </div>
-          </q-banner>
-        </div>
-        <q-table
+            <q-chip dense color="grey-2" text-color="dark" class="text-weight-medium">
+              {{ rows.length }} en pantalla
+            </q-chip>
+          </q-card-section>
+
+          <q-card-section class="q-pt-none">
+            <q-table
           :columns="columns"
           :rows="rows"
           :visible-columns="effectiveVisibleColumnNames"
@@ -210,12 +387,13 @@
           row-key="id"
           selection="multiple"
           v-model:selected="selectedRows"
+          :dense="isLiteLayout"
           flat
           bordered
           class="shadow-1"
           v-model:pagination="pagination"
           @request="onRequest"
-        >
+            >
           <!--
             Fila ancla superior:
             - Ascendente (oldest→newest): "Saldo anterior" = preListBalance
@@ -375,55 +553,9 @@
               </div>
             </q-td>
           </template>
-        </q-table>
-
-        <!-- Resumen inferior -->
-        <div class="q-mt-md">
-          <q-separator class="q-mb-md" />
-          <div class="row items-stretch no-wrap q-gutter-md summary-row">
-            <div class="col summary-col">
-              <q-card flat bordered class="q-pa-sm">
-                <div class="text-caption text-grey-7">Nº Movimientos</div>
-                <div class="text-h6 q-mt-xs">{{ summary.count }}</div>
-                <div class="text-caption text-grey-7">
-                  registros encontrados: {{ pagination.rowsNumber }}
-                </div>
-              </q-card>
-            </div>
-            <div class="col summary-col">
-              <q-card flat bordered class="q-pa-sm">
-                <div class="text-caption text-grey-7">Total Gastos</div>
-                <div class="text-h6 text-negative q-mt-xs">{{ formatMoney(summary.gastos) }}</div>
-              </q-card>
-            </div>
-            <div class="col summary-col">
-              <q-card flat bordered class="q-pa-sm">
-                <div class="text-caption text-grey-7">Total Ingresos</div>
-                <div class="text-h6 text-positive q-mt-xs">{{ formatMoney(summary.ingresos) }}</div>
-              </q-card>
-            </div>
-            <div class="col summary-col">
-              <q-card flat bordered class="q-pa-sm">
-                <div class="text-caption text-grey-7">Impuesto gastado</div>
-                <div class="text-h6 q-mt-xs">{{ formatMoney(summary.impuestos) }}</div>
-              </q-card>
-            </div>
-            <div class="col summary-col">
-              <q-card flat bordered class="q-pa-sm">
-                <div class="text-caption text-grey-7">Balance Total</div>
-                <div
-                  :class="[
-                    'text-h6',
-                    'q-mt-xs',
-                    summary.balance >= 0 ? 'text-positive' : 'text-negative',
-                  ]"
-                >
-                  {{ formatMoney(summary.balance) }}
-                </div>
-              </q-card>
-            </div>
-          </div>
-        </div>
+            </q-table>
+          </q-card-section>
+        </q-card>
       </div>
     </div>
 
@@ -439,33 +571,6 @@
       @close="showBulkImport = false"
       @imported="handleBulkImported"
     />
-
-    <!-- Botón flotante para crear transacción -->
-    <q-page-sticky position="bottom-right" :offset="[18, 18]">
-      <q-fab color="primary" icon="add" direction="up" vertical-actions-align="right">
-        <q-fab-action
-          color="green"
-          icon="trending_up"
-          label="Ingreso"
-          label-position="left"
-          @click="ui.openNewTransactionDialog('income')"
-        />
-        <q-fab-action
-          color="red"
-          icon="trending_down"
-          label="Egreso"
-          label-position="left"
-          @click="ui.openNewTransactionDialog('expense')"
-        />
-        <q-fab-action
-          color="blue"
-          icon="swap_horiz"
-          label="Transferencia"
-          label-position="left"
-          @click="ui.openNewTransactionDialog('transfer')"
-        />
-      </q-fab>
-    </q-page-sticky>
 
     <!-- Dialogo ajustar saldo desde transacciones -->
     <q-dialog v-model="showAdjustTop">
@@ -522,6 +627,12 @@ import TransactionBulkImportDialog from 'components/TransactionBulkImportDialog.
 import { useTransactionsStore } from 'stores/transactions';
 import { usePeriodStore } from 'stores/period';
 import { useUiStore } from 'stores/ui';
+import {
+  layoutModeOptions,
+  normalizeLayoutMode,
+  type LayoutModeOption,
+  type UserLayoutMode,
+} from 'src/utils/layoutMode';
 defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
@@ -531,6 +642,44 @@ const defaultCurrencyCode = computed(() => authStore.defaultCurrencyCode);
 const txStore = useTransactionsStore();
 const ui = useUiStore();
 const periodStore = usePeriodStore();
+const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(authStore.user?.layout_mode));
+const fallbackLayoutModeOption: LayoutModeOption = {
+  label: 'Pro',
+  value: 'pro',
+  description: 'Balance general entre densidad, navegacion y visibilidad.',
+};
+const activeLayoutModeOption = computed<LayoutModeOption>(
+  () =>
+    layoutModeOptions.find((option) => option.value === activeLayoutMode.value) ||
+    fallbackLayoutModeOption
+);
+const isLegacyLayout = computed(() => activeLayoutMode.value === 'legacy');
+const isLiteLayout = computed(() => activeLayoutMode.value === 'lite');
+const transactionsPageClasses = computed(() => [
+  'transactions-lite',
+  'q-pa-md',
+  `transactions-page--${activeLayoutMode.value}`,
+]);
+const sidebarColumnClasses = computed(() =>
+  isLiteLayout.value ? 'col-12' : 'col-12 col-lg-4 col-xl-3'
+);
+const mainColumnClasses = computed(() =>
+  isLiteLayout.value ? 'col-12' : 'col-12 col-lg-8 col-xl-9'
+);
+const filtersColumnClasses = computed(() => {
+  if (isLiteLayout.value) return 'col-12';
+  if (isLegacyLayout.value) return 'col-12 col-xl-7';
+  return 'col-12 col-xl-8';
+});
+const focusColumnClasses = computed(() =>
+  isLegacyLayout.value ? 'col-12 col-xl-5' : 'col-12 col-xl-4'
+);
+const sidebarWidgetClasses = computed(() => [
+  'sticky-sidebar',
+  { 'sticky-sidebar--disabled': isLiteLayout.value },
+]);
+const showSecondaryFocusCard = computed(() => !isLiteLayout.value);
+const showCompactWorkspaceStrip = computed(() => isLiteLayout.value);
 // (rates chips removed from this page; now shown globally in layout/dashboard)
 
 // Tipos del diccionario para ayuda local
@@ -1194,6 +1343,7 @@ type CategorySpendTag = {
 };
 
 const categorySpendTags = ref<CategorySpendTag[]>([]);
+const filtersExpanded = ref(false);
 const hasCategoryFilterSelected = computed(() => {
   const raw = (filters as Record<string, FilterValue>)['category_id'];
   return raw !== undefined && raw !== null && String(raw) !== '';
@@ -1475,6 +1625,64 @@ const columnVisibilityOptions = computed(() =>
 );
 
 const visibleColumnNames = ref<string[]>([]);
+
+const selectedAccountsLabel = computed(() => {
+  const count = txStore.selectedAccountIds.length;
+  if (count === 0) return 'Todas';
+  if (count === 1) return '1 cuenta';
+  return `${count} cuentas`;
+});
+
+const selectedAccountDetail = computed(() => {
+  if (!txStore.selectedAccountIds.length) return 'Todas las cuentas';
+  if (singleAccountSelected.value) return singleAccountName.value || 'Cuenta seleccionada';
+  return `${txStore.selectedAccountIds.length} cuentas combinadas`;
+});
+
+const transactionsHeroText = computed(() => {
+  if (singleAccountSelected.value) {
+    const accountName = singleAccountName.value || 'la cuenta seleccionada';
+    return `Sigue el movimiento de ${accountName}, revisa el balance corrido y resuelve ajustes sin salir de la vista principal.`;
+  }
+  if (txStore.selectedAccountIds.length > 1) {
+    return 'Compara varias cuentas a la vez, limpia el ruido con filtros rapidos y deja listas las siguientes acciones.';
+  }
+  return 'Usa esta lista como centro de control para buscar, depurar y actuar sobre tus movimientos del periodo actual.';
+});
+
+const contextPanelTitle = computed(() => {
+  if (isLegacyLayout.value) return 'Workspace de cuentas';
+  if (isLiteLayout.value) return 'Cuenta en foco';
+  return 'Cuentas activas';
+});
+
+const contextPanelCopy = computed(() => {
+  if (isLegacyLayout.value) {
+    return 'Legacy mantiene la cuenta y su lectura operativa visibles para que el balance corrido y los ajustes queden siempre a mano.';
+  }
+  if (isLiteLayout.value) {
+    return 'Lite deja el selector en una franja compacta para entrar rapido al listado y conservar solo el contexto necesario.';
+  }
+  return 'Selecciona una cuenta para ver balance corrido y habilitar los ajustes rapidos.';
+});
+
+const heroEyebrow = computed(() => {
+  if (isLegacyLayout.value) return 'Legacy movements';
+  if (isLiteLayout.value) return 'Lite movements';
+  return 'Pro movements';
+});
+
+const heroTitle = computed(() => {
+  if (isLegacyLayout.value) return `${dictionary.title} con contexto ampliado`;
+  if (isLiteLayout.value) return dictionary.title;
+  return `${dictionary.title} en flujo balanceado`;
+});
+
+const heroStatColumnClasses = computed(() => {
+  if (isLiteLayout.value) return 'col-12 col-sm-6';
+  if (isLegacyLayout.value) return 'col-12 col-sm-6 col-xl-3';
+  return 'col-12 col-sm-6 col-xl-4';
+});
 
 const effectiveVisibleColumnNames = computed(() => {
   const valid = new Set(columns.value.map((c) => c.name));
@@ -2336,6 +2544,155 @@ const activeFilterChips = computed<ActiveFilterChip[]>(() => {
   return chips;
 });
 
+type HeroStat = {
+  key: string;
+  label: string;
+  value: string;
+  caption: string;
+  tone?: 'positive' | 'negative';
+};
+
+const heroStats = computed<HeroStat[]>(() => {
+  if (isLegacyLayout.value) {
+    return [
+      {
+        key: 'visible',
+        label: 'Movimientos visibles',
+        value: String(summary.value.count),
+        caption: `${pagination.value.rowsNumber} en el resultado actual`,
+      },
+      {
+        key: 'income',
+        label: 'Ingresos',
+        value: formatMoney(summary.value.ingresos),
+        caption: 'Entradas del filtro actual',
+        tone: 'positive',
+      },
+      {
+        key: 'expense',
+        label: 'Gastos',
+        value: formatMoney(summary.value.gastos),
+        caption: 'Incluye impuestos visibles',
+        tone: 'negative',
+      },
+      {
+        key: 'balance',
+        label: 'Balance neto',
+        value: formatMoney(summary.value.balance),
+        caption: periodStore.label,
+        tone: summary.value.balance >= 0 ? 'positive' : 'negative',
+      },
+    ];
+  }
+
+  if (isLiteLayout.value) {
+    return [
+      {
+        key: 'balance',
+        label: 'Balance neto',
+        value: formatMoney(summary.value.balance),
+        caption: periodStore.label,
+        tone: summary.value.balance >= 0 ? 'positive' : 'negative',
+      },
+      {
+        key: 'account',
+        label: singleAccountSelected.value ? 'Cuenta activa' : 'Cobertura',
+        value: selectedAccountDetail.value,
+        caption: `${activeFilterChips.value.length} filtro(s) activos`,
+      },
+    ];
+  }
+
+  return [
+    {
+      key: 'visible',
+      label: 'Movimientos visibles',
+      value: String(summary.value.count),
+      caption: `${pagination.value.rowsNumber} en el resultado actual`,
+    },
+    {
+      key: 'balance',
+      label: 'Balance neto',
+      value: formatMoney(summary.value.balance),
+      caption: periodStore.label,
+      tone: summary.value.balance >= 0 ? 'positive' : 'negative',
+    },
+    {
+      key: 'tax',
+      label: 'Impuesto visible',
+      value: formatMoney(summary.value.impuestos),
+      caption: `${effectiveVisibleColumnNames.value.length - 1} columnas visibles`,
+    },
+  ];
+});
+
+const filtersPanelTitle = computed(() => {
+  if (isLegacyLayout.value) return 'Filtros, columnas y workspace auxiliar';
+  if (isLiteLayout.value) return 'Filtros compactos';
+  return 'Filtros y enfoque rapido';
+});
+
+const filtersPanelDescription = computed(() => {
+  if (isLegacyLayout.value) {
+    return 'Legacy deja mas controles abiertos para operar sin esconder contexto secundario ni balance corrido.';
+  }
+  if (isLiteLayout.value) {
+    return 'Lite resume la parte operativa para buscar, recortar el periodo y saltar a la tabla con menos ruido.';
+  }
+  return 'Busca, recorta el periodo y ajusta columnas sin salir del flujo principal.';
+});
+
+const secondaryPanelTitle = computed(() =>
+  isLegacyLayout.value ? 'Panel auxiliar expandido' : 'Estado rapido'
+);
+
+const secondaryPanelDescription = computed(() => {
+  if (isLegacyLayout.value) {
+    return 'Legacy reserva una region lateral fija para mantener el estado operativo sin competir con la tabla principal.';
+  }
+  return 'Lo esencial para decidir tu siguiente accion desde esta vista.';
+});
+
+const compactWorkspaceItems = computed(() => [
+  {
+    label: 'Seleccion',
+    value: selectedRows.value.length ? `${selectedRows.value.length} filas marcadas` : 'Sin seleccion',
+    caption: 'Atajo visual para actuar sobre la tabla sin abrir otro panel.',
+  },
+  {
+    label: 'Cuenta activa',
+    value: selectedAccountDetail.value,
+    caption: showRunningBalanceColumn.value && singleAccountBalance.value != null
+      ? formatSingleAccountBalanceMain()
+      : 'Sin balance corrido expandido',
+  },
+  {
+    label: 'Periodo',
+    value: periodStore.label,
+    caption: `${activeFilterChips.value.length} filtro(s) activos en esta vista.`,
+  },
+]);
+
+const tablePanelDescription = computed(() => {
+  if (isLegacyLayout.value) {
+    return 'Tabla completa con edicion rapida, balance corrido y un workspace lateral que no desaparece al profundizar.';
+  }
+  if (isLiteLayout.value) {
+    return 'Tabla mas densa y directa para ejecutar acciones sin cargar una composicion secundaria completa.';
+  }
+  return 'Tabla completa con edicion rapida, balance corrido y exportacion directa.';
+});
+
+watch(
+  activeLayoutMode,
+  (mode) => {
+    if (!activeFilterChips.value.length) {
+      filtersExpanded.value = mode === 'legacy';
+    }
+  },
+  { immediate: true }
+);
+
 function removeFilterChip(key: string): void {
   if (key === '__search') {
     filters.search = '';
@@ -2532,17 +2889,134 @@ function exportCSV(): void {
 
 
 <style scoped>
+.transactions-lite {
+  gap: 16px;
+}
+
+.transactions-lite__hero-heading {
+  margin-bottom: 4px;
+}
+
+.transactions-lite__mode-chip {
+  font-weight: 700;
+}
+
+.transactions-lite__sidebar-card,
+.transactions-lite__hero-card,
+.transactions-lite__filters-card,
+.transactions-lite__compact-workspace-card,
+.transactions-lite__focus-card,
+.transactions-lite__table-card {
+  border-radius: var(--radius-lg) !important;
+}
+
+.transactions-lite__eyebrow {
+  color: var(--ow-color-primary-strong);
+  letter-spacing: 0.06em;
+}
+
+.transactions-lite__sidebar-copy,
+.transactions-lite__hero-text {
+  line-height: 1.6;
+}
+
+.transactions-lite__hero-card {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.22), transparent 32%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.92)) !important;
+}
+
+.body--dark .transactions-lite__hero-card {
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(8, 47, 73, 0.92)) !important;
+}
+
+.transactions-lite__hero-section {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+}
+
+.transactions-lite__hero-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.transactions-lite__hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  min-width: 260px;
+}
+
+.transactions-lite__primary-cta {
+  min-height: 50px;
+}
+
+.transactions-lite__action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.transactions-lite__hero-stats {
+  align-items: stretch;
+}
+
+.transactions-lite__hero-stat,
+.transactions-lite__compact-workspace-item,
+.transactions-lite__focus-item {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  min-height: 100%;
+}
+
+.transactions-lite__compact-workspace-card {
+  border: 1px solid rgba(14, 165, 233, 0.14);
+}
+
+.transactions-lite__top-actions {
+  justify-content: flex-end;
+}
+
+.transactions-lite__category-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.transactions-lite__expansion-header {
+  border-radius: var(--radius-md);
+}
+
+.transactions-lite__filter-chip {
+  margin: 0 8px 8px 0;
+}
+
+.transactions-lite__table-card :deep(.q-table__top),
+.transactions-lite__table-card :deep(.q-table__bottom) {
+  padding-inline: 0;
+}
+
+.transactions-lite__table-card :deep(.q-table) {
+  border-radius: var(--radius-md);
+}
+
 .sticky-sidebar {
   position: sticky;
   top: 12px;
   z-index: 1;
 }
-.summary-row {
-  overflow-x: auto;
+
+.sticky-sidebar--disabled {
+  position: static;
+  top: auto;
 }
-.summary-col {
-  min-width: 220px;
-}
+
 .cell-stack > div + div {
   margin-top: 2px;
 }
@@ -2599,6 +3073,7 @@ function exportCSV(): void {
   opacity: 0.8;
   margin-left: 6px;
 }
+
 .initial-balance-row td {
   background: rgba(0, 128, 96, 0.06);
   border-bottom: 2px dashed rgba(0, 128, 96, 0.25);
@@ -2606,5 +3081,92 @@ function exportCSV(): void {
 .current-balance-row td {
   background: rgba(0, 100, 200, 0.06);
   border-top: 2px dashed rgba(0, 100, 200, 0.25);
+}
+
+.transactions-page--legacy {
+  gap: 20px;
+}
+
+.transactions-page--legacy .transactions-lite__hero-section {
+  padding: 28px;
+  gap: 28px;
+}
+
+.transactions-page--legacy .transactions-lite__hero-actions {
+  min-width: 300px;
+}
+
+.transactions-page--legacy .transactions-lite__focus-card {
+  position: sticky;
+  top: 12px;
+}
+
+.transactions-page--pro .transactions-lite__focus-card {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.transactions-page--lite {
+  gap: 12px;
+}
+
+.transactions-page--lite .transactions-lite__sidebar-card,
+.transactions-page--lite .transactions-lite__filters-card,
+.transactions-page--lite .transactions-lite__table-card {
+  border-radius: var(--radius-md) !important;
+}
+
+.transactions-page--lite .transactions-lite__hero-section {
+  padding: 18px 18px 16px;
+  gap: 18px;
+}
+
+.transactions-page--lite .transactions-lite__hero-actions {
+  min-width: 0;
+}
+
+.transactions-page--lite .transactions-lite__hero-stat,
+.transactions-page--lite .transactions-lite__compact-workspace-item {
+  padding: 12px;
+}
+
+.transactions-page--lite .transactions-lite__table-card :deep(.q-table th),
+.transactions-page--lite .transactions-lite__table-card :deep(.q-table td) {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+@media (max-width: 1439px) {
+  .transactions-lite__hero-actions {
+    min-width: 220px;
+  }
+
+  .transactions-page--legacy .transactions-lite__hero-actions {
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .transactions-lite__hero-section {
+    flex-direction: column;
+  }
+
+  .transactions-lite__hero-actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .transactions-lite__top-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 599px) {
+  .transactions-lite__action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .transactions-lite__hero-section {
+    padding: 18px;
+  }
 }
 </style>

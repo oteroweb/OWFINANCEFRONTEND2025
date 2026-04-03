@@ -1,12 +1,21 @@
 <template>
-  <q-page class="expense-analysis-page q-pa-md">
+  <q-page :class="expenseAnalysisPageClasses">
     <div class="analysis-shell">
       <section class="hero-card">
-        <div>
-          <div class="text-overline text-primary">Analitica de gastos</div>
-          <div class="text-h4 text-weight-bold">Navegador financiero por cantaro</div>
-          <div class="text-body2 text-grey-7 hero-copy">
-            Explora movimientos por cantaro, categoria, cuenta o tipo. Cada fila muestra el monto en tu moneda base y la tasa usada para esa transaccion.
+        <div class="hero-copy">
+          <div class="row items-center q-col-gutter-sm q-mb-sm">
+            <div class="col-auto">
+              <div class="text-overline text-primary">{{ heroEyebrow }}</div>
+            </div>
+            <div class="col-auto">
+              <q-chip dense color="blue-1" text-color="primary" class="text-weight-medium">
+                {{ activeLayoutModeOption.label }}
+              </q-chip>
+            </div>
+          </div>
+          <div class="text-h4 text-weight-bold">{{ heroTitle }}</div>
+          <div class="text-body2 text-grey-7 hero-copy__body">
+            {{ heroCopy }}
           </div>
         </div>
         <div class="hero-actions">
@@ -16,44 +25,32 @@
       </section>
 
       <section class="metric-grid">
-        <q-card flat bordered class="metric-card">
+        <q-card v-for="item in metricCards" :key="item.key" flat bordered class="metric-card">
           <q-card-section>
-            <div class="metric-label">Transacciones visibles</div>
-            <div class="metric-value">{{ filteredRows.length }}</div>
-            <div class="metric-hint">Periodo actual: {{ periodStore.label }}</div>
-          </q-card-section>
-        </q-card>
-        <q-card flat bordered class="metric-card">
-          <q-card-section>
-            <div class="metric-label">Gastos</div>
-            <div class="metric-value text-negative">{{ formatMoney(summary.gastosBase) }}</div>
-            <div class="metric-hint">Convertido a {{ baseCurrencyCode }}</div>
-          </q-card-section>
-        </q-card>
-        <q-card flat bordered class="metric-card">
-          <q-card-section>
-            <div class="metric-label">Ingresos</div>
-            <div class="metric-value text-positive">{{ formatMoney(summary.ingresosBase) }}</div>
-            <div class="metric-hint">Convertido a {{ baseCurrencyCode }}</div>
-          </q-card-section>
-        </q-card>
-        <q-card flat bordered class="metric-card">
-          <q-card-section>
-            <div class="metric-label">Balance</div>
-            <div class="metric-value" :class="summary.balanceBase >= 0 ? 'text-positive' : 'text-negative'">
-              {{ formatMoney(summary.balanceBase) }}
+            <div class="metric-label">{{ item.label }}</div>
+            <div class="metric-value" :class="item.toneClass">
+              {{ item.value }}
             </div>
-            <div class="metric-hint">Resultado neto del conjunto filtrado</div>
+            <div class="metric-hint">{{ item.caption }}</div>
           </q-card-section>
         </q-card>
       </section>
 
-      <section class="content-grid">
-        <aside class="filters-panel">
+      <section :class="contentGridClasses">
+        <aside :class="filtersPanelClasses">
           <q-card flat bordered class="panel-card">
-            <q-card-section>
-              <div class="text-subtitle1 text-weight-bold">Vista</div>
-              <div class="text-caption text-grey-7 q-mb-md">Agrupa y recorre el detalle como prefieras.</div>
+            <q-card-section class="row items-center justify-between q-col-gutter-sm">
+              <div class="col">
+                <div class="text-subtitle1 text-weight-bold">{{ filtersPanelTitle }}</div>
+                <div class="text-caption text-grey-7">{{ filtersPanelCopy }}</div>
+              </div>
+              <div class="col-auto text-caption text-grey-6">
+                {{ groupModeHint }}
+              </div>
+            </q-card-section>
+            <q-separator />
+
+            <q-card-section v-if="showInlineFilters">
               <q-select
                 v-model="groupMode"
                 :options="groupModeOptions"
@@ -120,9 +117,96 @@
                 label="Filtrar por tipo"
               />
             </q-card-section>
+
+            <q-expansion-item
+              v-else
+              v-model="liteFiltersExpanded"
+              dense
+              dense-toggle
+              expand-separator
+              icon="tune"
+              label="Controles y agrupacion"
+              header-class="analysis-expansion-header"
+            >
+              <q-card-section>
+                <q-select
+                  v-model="groupMode"
+                  :options="groupModeOptions"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  label="Agrupacion principal"
+                  class="q-mb-sm"
+                />
+                <q-input
+                  v-model="search"
+                  outlined
+                  dense
+                  clearable
+                  label="Buscar concepto, categoria o cuenta"
+                  class="q-mb-sm"
+                >
+                  <template #append>
+                    <q-icon name="search" />
+                  </template>
+                </q-input>
+                <q-select
+                  v-model="selectedJarId"
+                  :options="jarOptions"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  clearable
+                  label="Filtrar por cantaro"
+                  class="q-mb-sm"
+                />
+                <q-select
+                  v-model="selectedCategory"
+                  :options="categoryOptions"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  clearable
+                  label="Filtrar por categoria"
+                  class="q-mb-sm"
+                />
+                <q-select
+                  v-model="selectedAccount"
+                  :options="accountOptions"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  clearable
+                  label="Filtrar por cuenta"
+                  class="q-mb-sm"
+                />
+                <q-select
+                  v-model="selectedType"
+                  :options="typeOptions"
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  clearable
+                  label="Filtrar por tipo"
+                />
+              </q-card-section>
+            </q-expansion-item>
+
             <q-separator />
             <q-card-section>
-              <div class="text-subtitle2 text-weight-medium q-mb-sm">Filtros activos</div>
+              <div class="row items-center justify-between q-col-gutter-sm q-mb-sm">
+                <div class="col-auto">
+                  <div class="text-subtitle2 text-weight-medium">Filtros activos</div>
+                </div>
+                <div class="col-auto text-caption text-grey-6">
+                  {{ activeFilterCount }} activos
+                </div>
+              </div>
               <div v-if="activeFilterChips.length" class="chip-stack">
                 <q-chip
                   v-for="chip in activeFilterChips"
@@ -143,22 +227,44 @@
 
         <div class="analysis-main">
           <ExpenseDistributionChart
+            v-if="showInlineChart"
             :rows="chartRows"
             :currency-code="baseCurrencyCode"
             :hide-values="ui.hideValues"
             class="q-mb-md"
           />
 
+          <q-card v-else flat bordered class="panel-card q-mb-md">
+            <q-expansion-item
+              v-model="liteChartExpanded"
+              dense
+              dense-toggle
+              expand-separator
+              icon="donut_large"
+              label="Distribucion del periodo"
+              header-class="analysis-expansion-header"
+            >
+              <q-card-section>
+                <ExpenseDistributionChart
+                  :rows="chartRows"
+                  :currency-code="baseCurrencyCode"
+                  :hide-values="ui.hideValues"
+                />
+              </q-card-section>
+            </q-expansion-item>
+          </q-card>
+
           <q-card flat bordered class="panel-card">
             <q-card-section class="row items-center q-col-gutter-md">
               <div class="col">
-                <div class="text-subtitle1 text-weight-bold">Detalle agrupado</div>
+                <div class="text-subtitle1 text-weight-bold">{{ detailPanelTitle }}</div>
                 <div class="text-caption text-grey-7">
-                  Haz click en cualquier transaccion para abrir la edicion completa.
+                  {{ detailPanelCopy }}
                 </div>
               </div>
-              <div class="col-auto text-caption text-grey-7">
-                Moneda base: <strong>{{ baseCurrencyCode }}</strong>
+              <div class="col-auto text-caption text-grey-7 text-right">
+                <div>Moneda base: <strong>{{ baseCurrencyCode }}</strong></div>
+                <div>{{ groupModeSummary }}</div>
               </div>
             </q-card-section>
             <q-separator />
@@ -173,9 +279,9 @@
               </div>
               <div v-else class="group-stack">
                 <q-expansion-item
-                  v-for="group in groupedRows"
+                  v-for="(group, groupIndex) in groupedRows"
                   :key="group.key"
-                  default-opened
+                  :default-opened="shouldOpenGroup(groupIndex)"
                   expand-separator
                   class="group-card"
                   header-class="group-card__header"
@@ -187,8 +293,10 @@
                         <div class="text-caption text-grey-6">{{ group.rows.length }} transacciones</div>
                       </div>
                       <div class="group-totals">
-                        <div class="text-caption text-grey-7">Gastos {{ formatMoney(group.summary.gastosBase) }}</div>
-                        <div class="text-caption text-grey-7">Ingresos {{ formatMoney(group.summary.ingresosBase) }}</div>
+                        <template v-if="!isLiteLayout">
+                          <div class="text-caption text-grey-7">Gastos {{ formatMoney(group.summary.gastosBase) }}</div>
+                          <div class="text-caption text-grey-7">Ingresos {{ formatMoney(group.summary.ingresosBase) }}</div>
+                        </template>
                         <div class="text-caption" :class="group.summary.balanceBase >= 0 ? 'text-positive' : 'text-negative'">
                           Balance {{ formatMoney(group.summary.balanceBase) }}
                         </div>
@@ -198,10 +306,10 @@
 
                   <div v-if="group.children?.length" class="subgroup-stack">
                     <q-expansion-item
-                      v-for="child in group.children"
+                      v-for="(child, childIndex) in group.children"
                       :key="child.key"
                       dense
-                      default-opened
+                      :default-opened="shouldOpenSubgroup(childIndex)"
                       expand-separator
                       class="subgroup-card"
                     >
@@ -221,7 +329,7 @@
                           v-for="row in child.rows"
                           :key="row.id"
                           type="button"
-                          class="tx-row"
+                          :class="txRowClasses"
                           @click="openTransaction(row.id)"
                         >
                           <div class="tx-main">
@@ -253,7 +361,7 @@
                       v-for="row in group.rows"
                       :key="row.id"
                       type="button"
-                      class="tx-row"
+                      :class="txRowClasses"
                       @click="openTransaction(row.id)"
                     >
                       <div class="tx-main">
@@ -291,10 +399,17 @@
 import { api } from '../../../boot/axios';
 import { ExpenseDistributionChart } from '../../../components';
 import { useUserRates } from '../../../composables/useUserRates';
+import { useAuthStore } from '../../../stores/auth';
 import { useUiStore } from '../../../stores/ui';
 import { computed, onMounted, ref, watch } from 'vue';
 import { usePeriodStore } from '../../../stores/period';
 import { useRoute } from 'vue-router';
+import {
+  layoutModeOptions,
+  normalizeLayoutMode,
+  type LayoutModeOption,
+  type UserLayoutMode,
+} from '../../../utils/layoutMode';
 
 defineOptions({ name: 'user_expense_analysis_page' });
 
@@ -339,7 +454,18 @@ type GroupNode = {
   children?: GroupNode[];
 };
 
+type GroupMode = 'jar' | 'category' | 'account' | 'type';
+
+type MetricCard = {
+  key: string;
+  label: string;
+  value: string;
+  caption: string;
+  toneClass: string;
+};
+
 const route = useRoute();
+const auth = useAuthStore();
 const ui = useUiStore();
 const periodStore = usePeriodStore();
 const { defaultCurrencyCode, currentRates, toRateLabel } = useUserRates();
@@ -348,21 +474,85 @@ const loading = ref(false);
 const rows = ref<EnrichedTx[]>([]);
 const jars = ref<JarRecord[]>([]);
 
-const groupMode = ref<'jar' | 'category' | 'account' | 'type'>('jar');
+const fallbackLayoutModeOption: LayoutModeOption = {
+  label: 'Pro',
+  value: 'pro',
+  description: 'Balance general entre densidad, navegacion y visibilidad.',
+};
+
+const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.user?.layout_mode));
+const activeLayoutModeOption = computed<LayoutModeOption>(
+  () =>
+    layoutModeOptions.find((option) => option.value === activeLayoutMode.value) ||
+    fallbackLayoutModeOption
+);
+const isLegacyLayout = computed(() => activeLayoutMode.value === 'legacy');
+const isLiteLayout = computed(() => activeLayoutMode.value === 'lite');
+const expenseAnalysisPageClasses = computed(() => [
+  'expense-analysis-page',
+  'q-pa-md',
+  `expense-analysis-page--${activeLayoutMode.value}`,
+]);
+const contentGridClasses = computed(() => [
+  'content-grid',
+  `content-grid--${activeLayoutMode.value}`,
+]);
+const filtersPanelClasses = computed(() => [
+  'filters-panel',
+  { 'filters-panel--lite': isLiteLayout.value },
+]);
+const txRowClasses = computed(() => [
+  'tx-row',
+  { 'tx-row--compact': isLiteLayout.value },
+]);
+
+const groupMode = ref<GroupMode>('jar');
 const search = ref('');
 const selectedJarId = ref<number | null>(null);
 const selectedCategory = ref<string | null>(null);
 const selectedAccount = ref<string | null>(null);
 const selectedType = ref<string | null>(null);
+const liteFiltersExpanded = ref(true);
+const liteChartExpanded = ref(true);
 
-const groupModeOptions = [
+const allGroupModeOptions: Array<{ label: string; value: GroupMode }> = [
   { label: 'Cantaro > Categoria > Transacciones', value: 'jar' },
   { label: 'Categoria > Transacciones', value: 'category' },
   { label: 'Cuenta > Transacciones', value: 'account' },
   { label: 'Tipo > Transacciones', value: 'type' },
 ];
 
+const groupModeOptions = computed(() =>
+  isLiteLayout.value
+    ? allGroupModeOptions.filter((option) => option.value !== 'jar')
+    : allGroupModeOptions
+);
+
 const baseCurrencyCode = computed(() => defaultCurrencyCode.value || 'USD');
+const showInlineFilters = computed(() => !isLiteLayout.value);
+const showInlineChart = computed(() => !isLiteLayout.value);
+
+const heroEyebrow = computed(() => {
+  if (isLegacyLayout.value) return 'Analitica expandida';
+  if (isLiteLayout.value) return 'Analitica compacta';
+  return 'Analitica de gastos';
+});
+
+const heroTitle = computed(() => {
+  if (isLegacyLayout.value) return 'Navegador financiero por cantaro';
+  if (isLiteLayout.value) return 'Vista rapida por categoria';
+  return 'Analisis balanceado del periodo';
+});
+
+const heroCopy = computed(() => {
+  if (isLegacyLayout.value) {
+    return 'Mantiene chart, filtros y desglose jerarquico visibles para revisar cantaros, categorias y cuentas sin cambiar de contexto.';
+  }
+  if (isLiteLayout.value) {
+    return 'Reduce ruido visual y prioriza filtros compactos, agrupaciones simples y un recorrido rapido por los movimientos del periodo.';
+  }
+  return 'Equilibra lectura ejecutiva y detalle navegable. Cada fila muestra el monto en tu moneda base y la tasa usada para esa transaccion.';
+});
 
 function getRatePerUsd(code: string): number {
   const normalized = (code || 'USD').toUpperCase();
@@ -634,6 +824,107 @@ const activeFilterChips = computed(() => {
   return chips;
 });
 
+const activeFilterCount = computed(() => activeFilterChips.value.length);
+
+const metricCards = computed<MetricCard[]>(() => {
+  const visibleCard: MetricCard = {
+    key: 'visible',
+    label: 'Transacciones visibles',
+    value: String(filteredRows.value.length),
+    caption: `Periodo actual: ${periodStore.label}`,
+    toneClass: '',
+  };
+  const balanceCard: MetricCard = {
+    key: 'balance',
+    label: 'Balance',
+    value: formatMoney(summary.value.balanceBase),
+    caption: 'Resultado neto del conjunto filtrado',
+    toneClass: summary.value.balanceBase >= 0 ? 'text-positive' : 'text-negative',
+  };
+
+  if (isLiteLayout.value) {
+    return [
+      visibleCard,
+      balanceCard,
+      {
+        key: 'filters',
+        label: 'Filtros activos',
+        value: String(activeFilterCount.value),
+        caption: groupModeSummary.value,
+        toneClass: '',
+      },
+    ];
+  }
+
+  return [
+    visibleCard,
+    {
+      key: 'gastos',
+      label: 'Gastos',
+      value: formatMoney(summary.value.gastosBase),
+      caption: `Convertido a ${baseCurrencyCode.value}`,
+      toneClass: 'text-negative',
+    },
+    {
+      key: 'ingresos',
+      label: 'Ingresos',
+      value: formatMoney(summary.value.ingresosBase),
+      caption: `Convertido a ${baseCurrencyCode.value}`,
+      toneClass: 'text-positive',
+    },
+    balanceCard,
+  ];
+});
+
+const filtersPanelTitle = computed(() => {
+  if (isLegacyLayout.value) return 'Workspace de filtros';
+  if (isLiteLayout.value) return 'Controles compactos';
+  return 'Vista';
+});
+
+const filtersPanelCopy = computed(() => {
+  if (isLegacyLayout.value) return 'Agrupa y filtra sin perder el panel principal ni el chart del periodo.';
+  if (isLiteLayout.value) return 'Abre solo los controles necesarios y vuelve rapido al listado.';
+  return 'Agrupa y recorre el detalle como prefieras.';
+});
+
+const groupModeHint = computed(() => {
+  if (isLegacyLayout.value) return 'Jerarquia amplia';
+  if (isLiteLayout.value) return 'Menos niveles';
+  return 'Modo balanceado';
+});
+
+const detailPanelTitle = computed(() => {
+  if (isLegacyLayout.value) return 'Detalle expandido';
+  if (isLiteLayout.value) return 'Detalle compacto';
+  return 'Detalle agrupado';
+});
+
+const detailPanelCopy = computed(() => {
+  if (isLegacyLayout.value) {
+    return 'Abre cada grupo para revisar gastos, ingresos y balance por bloque antes de editar cualquier transaccion.';
+  }
+  if (isLiteLayout.value) {
+    return 'La lista prioriza lectura rapida y un solo nivel principal de navegacion por bloque.';
+  }
+  return 'Haz click en cualquier transaccion para abrir la edicion completa.';
+});
+
+const groupModeSummary = computed(() => {
+  const option = groupModeOptions.value.find((item) => item.value === groupMode.value);
+  return option ? `Agrupando por ${option.label}` : 'Agrupacion activa';
+});
+
+watch(
+  groupModeOptions,
+  (options) => {
+    if (!options.some((option) => option.value === groupMode.value)) {
+      groupMode.value = options[0]?.value ?? 'category';
+    }
+  },
+  { immediate: true }
+);
+
 function removeFilter(key: string): void {
   if (key === 'search') search.value = '';
   if (key === 'jar') selectedJarId.value = null;
@@ -652,6 +943,17 @@ function clearFilters(): void {
 
 function openTransaction(id: number): void {
   ui.openEditTransactionDialog(id);
+}
+
+function shouldOpenGroup(index: number): boolean {
+  if (isLegacyLayout.value) return true;
+  if (isLiteLayout.value) return index === 0;
+  return index < 2;
+}
+
+function shouldOpenSubgroup(index: number): boolean {
+  if (isLegacyLayout.value) return true;
+  return index === 0;
 }
 
 async function loadJars(): Promise<void> {
@@ -757,6 +1059,10 @@ onMounted(() => {
   max-width: 760px;
 }
 
+.hero-copy__body {
+  max-width: 760px;
+}
+
 .hero-actions {
   display: flex;
   gap: 10px;
@@ -797,9 +1103,25 @@ onMounted(() => {
   align-items: start;
 }
 
+.content-grid--legacy {
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+
+.content-grid--lite {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .filters-panel {
   position: sticky;
   top: 12px;
+}
+
+.filters-panel--lite {
+  position: static;
+}
+
+.analysis-expansion-header {
+  min-height: 52px;
 }
 
 .chip-stack {
@@ -871,6 +1193,11 @@ onMounted(() => {
   transform: translateY(-1px);
   border-color: rgba(56, 189, 248, 0.35);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.tx-row--compact {
+  padding: 12px;
+  gap: 10px;
 }
 
 .tx-main,
