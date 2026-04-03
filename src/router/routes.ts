@@ -13,16 +13,6 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   {
-    path: '/register',
-    component: () => import('layouts/MainLayout.vue'),
-    children: [
-      {
-        path: '',
-        component: () => import('pages/RegisterPage.vue'),
-      },
-    ],
-  },
-  {
     path: '/admin',
     component: () => import('layouts/AdminLayout.vue'),
     meta: { requiresAuth: true, role: 'admin' },
@@ -51,29 +41,20 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   {
-    path: '/app',
+    path: '/user',
     component: () => import('layouts/DynamicRoleLayout.vue'),
     meta: { requiresAuth: true, role: 'user' },
     children: [
-      { path: '', redirect: '/app/home' },
-      // Redirect legacy subpaths to clean paths
-      { 
-        path: 'user/:pathMatch(.*)*', 
-        redirect: (to) => {
-          const path = Array.isArray(to.params.pathMatch) 
-            ? to.params.pathMatch.join('/') 
-            : (to.params.pathMatch || 'home');
-          return { path: '/app/' + path };
-        } 
-      },
-      { path: 'home', component: () => import('src/pages/user/DynamicHomePage.vue') },
-      { path: 'expense-analysis', component: () => import('src/pages/user/expense-analysis/index.vue') },
-      { path: 'transactions', component: () => import('src/pages/user/transactions/index.vue') },
-      { path: 'accounts', component: () => import('src/pages/user/accounts/index.vue') },
-      { path: 'categories', component: () => import('src/pages/user/categories/index.vue') },
-      { path: 'taxes', component: () => import('src/pages/user/taxes/index.vue') },
-      { path: 'config', component: () => import('src/pages/user/config/index.vue') },
-      { path: 'jars', component: () => import('src/pages/user/jars/index.vue') },
+  // Landing now points to user dashboard home
+  { path: '', redirect: '/user/home' },
+  { path: 'home', component: () => import('src/pages/user/user_dashboard.vue') },
+  { path: 'expense-analysis', component: () => import('src/pages/user/expense-analysis/index.vue') },
+  { path: 'transactions', component: () => import('src/pages/user/transactions/index.vue') },
+  { path: 'accounts', component: () => import('src/pages/user/accounts/index.vue') },
+  { path: 'categories', component: () => import('src/pages/user/categories/index.vue') },
+  { path: 'taxes', component: () => import('src/pages/user/taxes/index.vue') },
+  { path: 'config', component: () => import('src/pages/user/config/index.vue') },
+  { path: 'jars', component: () => import('src/pages/user/jars/index.vue') },
     ],
   },
   {
@@ -88,7 +69,7 @@ const routes: RouteRecordRaw[] = [
       if (!auth.token) auth.loadFromStorage()
       if (!auth.isLoggedIn) return '/login'
       if (auth.role === 'admin') return '/admin'
-      if (auth.role === 'user') return '/app/home'
+      if (auth.role === 'user') return '/user/home'
       return '/login'
     }
   },
