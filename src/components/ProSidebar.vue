@@ -3,12 +3,12 @@
     <!-- User Profile Card -->
     <div class="p-4 border-b border-slate-200 cursor-pointer hover:bg-slate-50 transition" @click="emit('profileClick')">
       <div class="flex gap-3">
-        <q-avatar size="56px" :src="user.avatar" color="primary" text-color="white">
-          {{ user.name?.charAt(0).toUpperCase() }}
+        <q-avatar size="56px" :src="user?.avatar || ''" color="primary" text-color="white">
+          {{ user?.name?.charAt(0).toUpperCase() }}
         </q-avatar>
         <div v-show="!collapsed" class="flex-1 min-w-0">
-          <p class="font-semibold text-slate-900 truncate">{{ user.name }}</p>
-          <p class="text-sm text-slate-500 truncate">{{ user.email }}</p>
+          <p class="font-semibold text-slate-900 truncate">{{ user?.name }}</p>
+          <p class="text-sm text-slate-500 truncate">{{ user?.email }}</p>
         </div>
       </div>
     </div>
@@ -35,7 +35,7 @@
     <!-- Custom Sections (Draggable) -->
     <div v-if="!collapsed" class="flex-1 px-2 py-4 border-t border-slate-200 overflow-y-auto">
       <div
-        v-if="customSections.length === 0"
+        v-if="(customSections?.length ?? 0) === 0"
         class="text-center text-sm text-slate-500 py-8"
       >
         No custom sections yet
@@ -166,7 +166,7 @@ function onNavClick(item: NavItem): void {
  * Handle drag start
  */
 function onDragStart(e: DragEvent, index: number): void {
-  draggedItem.value = props.customSections[index]
+  draggedItem.value = props.customSections?.[index] ?? null
   draggedFromIndex.value = index
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move'
@@ -194,9 +194,9 @@ function onDrop(e: DragEvent, toIndex: number): void {
     return
   }
 
-  const newOrder = [...props.customSections]
+  const newOrder = [...(props.customSections ?? [])]
   const [removed] = newOrder.splice(draggedFromIndex.value, 1)
-  newOrder.splice(toIndex, 0, removed)
+  if (removed) newOrder.splice(toIndex, 0, removed)
 
   emit('sectionReorder', { newOrder })
   saveToLocalStorage(newOrder)

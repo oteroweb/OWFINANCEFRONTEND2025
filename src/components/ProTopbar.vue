@@ -59,10 +59,10 @@
           @click="handleNotificationClick"
         />
         <span
-          v-if="notificationCount > 0"
+          v-if="(notificationCount ?? 0) > 0"
           class="absolute -top-1 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"
         >
-          {{ notificationCount > 9 ? '9+' : notificationCount }}
+          {{ (notificationCount ?? 0) > 9 ? '9+' : (notificationCount ?? 0) }}
         </span>
       </div>
 
@@ -78,8 +78,8 @@
       />
 
       <!-- User Menu (Right) -->
-      <q-menu anchor="bottom right" self="top right" transition-show="scale" transition-hide="scale">
-        <template #default="scope">
+      <q-menu ref="userMenuRef" anchor="bottom right" self="top right" transition-show="scale" transition-hide="scale">
+        <template #default>
           <q-card style="min-width: 200px">
             <q-card-section class="row items-center q-pb-none">
               <q-avatar
@@ -94,13 +94,13 @@
                 <div class="text-caption text-grey">{{ userEmail }}</div>
               </div>
               <q-space />
-              <q-btn icon="close" flat dense round size="sm" @click="scope.hide()" />
+              <q-btn icon="close" flat dense round size="sm" @click="userMenuRef?.hide()" />
             </q-card-section>
 
             <q-separator class="q-my-sm" />
 
             <q-card-section class="q-pa-none">
-              <q-item clickable v-ripple @click="handleUserMenuAction('profile', scope)">
+              <q-item clickable v-ripple @click="handleUserMenuAction('profile')">
                 <q-item-section avatar>
                   <q-icon name="person" />
                 </q-item-section>
@@ -109,7 +109,7 @@
                 </q-item-section>
               </q-item>
 
-              <q-item clickable v-ripple @click="handleUserMenuAction('preferences', scope)">
+              <q-item clickable v-ripple @click="handleUserMenuAction('preferences')">
                 <q-item-section avatar>
                   <q-icon name="tune" />
                 </q-item-section>
@@ -120,7 +120,7 @@
 
               <q-separator class="q-my-sm" />
 
-              <q-item clickable v-ripple @click="handleUserMenuAction('logout', scope)">
+              <q-item clickable v-ripple @click="handleUserMenuAction('logout')">
                 <q-item-section avatar>
                   <q-icon name="logout" color="negative" />
                 </q-item-section>
@@ -154,8 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onUnmounted } from 'vue'
 
 /**
  * Props interface for ProTopbar component
@@ -200,29 +199,15 @@ const props = withDefaults(defineProps<Props>(), {
  * Component emits
  */
 const emit = defineEmits<{
-  /**
-   * Emitted when user performs a search
-   */
   search: [payload: { query: string }]
-  /**
-   * Emitted when notification bell is clicked
-   */
   notificationOpen: []
-  /**
-   * Emitted when settings icon is clicked
-   */
   settingsOpen: []
-  /**
-   * Emitted when user menu item is selected
-   */
   userMenu: [action: 'profile' | 'preferences']
-  /**
-   * Emitted when user clicks logout
-   */
   logout: []
+  menuClose: []
 }>()
 
-const router = useRouter()
+const userMenuRef = ref<{ hide: () => void } | null>(null)
 const searchQuery = ref<string>('')
 const showSearchResults = ref<boolean>(false)
 const searchResults = ref<SearchResult[]>([])
@@ -252,13 +237,14 @@ function mockSearchResults(query: string): SearchResult[] {
 /**
  * Handle search input with debouncing
  */
-function onSearchInput(value: string): void {
+function onSearchInput(value: string | number | null): void {
+  const str = typeof value === 'string' ? value : String(value ?? '');
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer)
   }
 
   searchDebounceTimer = setTimeout(() => {
-    const trimmed = value.trim()
+    const trimmed = str.trim()
     searchResults.value = mockSearchResults(trimmed)
     emit('search', { query: trimmed })
   }, props.searchDebounce)
@@ -300,10 +286,9 @@ function handleSettingsClick(): void {
  * Handle user menu actions
  */
 function handleUserMenuAction(
-  action: 'profile' | 'preferences' | 'logout',
-  scope: { hide: () => void }
+  action: 'profile' | 'preferences' | 'logout'
 ): void {
-  scope.hide()
+  userMenuRef.value?.hide()
 
   if (action === 'logout') {
     emit('logout')

@@ -21,21 +21,21 @@
       <div class="flex flex-col items-center">
         <span class="text-xs uppercase tracking-wider text-[#64748B] font-medium">Total Balance</span>
         <div class="flex items-baseline gap-1 mt-0.5">
-          <span v-if="showBalance" class="text-2xl font-bold text-[#1E3A8A]">
-            {{ formatBalance(balanceAmount) }}
+          <span v-if="localShowBalance" class="text-2xl font-bold text-[#1E3A8A]">
+            {{ formatBalance(balanceAmount ?? 0) }}
           </span>
-          <span v-else class="text-2xl font-bold text-[#1E3A8A]">••••••</span>
+          <span v-else class="text-2xl font-bold text-[#1E3A8A]" style="letter-spacing:2px">••••••</span>
           <span class="text-sm font-semibold text-[#64748B]">{{ balanceCurrency }}</span>
         </div>
       </div>
       <button
         class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#DBEAFE] transition-colors duration-200 active:scale-95 flex-shrink-0"
         @click="handleBalanceToggle"
-        :aria-label="`${showBalance ? 'Hide' : 'Show'} balance`"
-        :title="`${showBalance ? 'Hide' : 'Show'} balance`"
+        :aria-label="`${localShowBalance ? 'Hide' : 'Show'} balance`"
+        :title="`${localShowBalance ? 'Hide' : 'Show'} balance`"
       >
         <span class="material-symbols-outlined text-[#1E3A8A] text-lg">
-          {{ showBalance ? 'visibility' : 'visibility_off' }}
+          {{ localShowBalance ? 'visibility' : 'visibility_off' }}
         </span>
       </button>
     </div>
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 
 /**
  * LiquidHeader - LITE Header Component
@@ -142,14 +142,7 @@ const emit = defineEmits<{
 const localShowBalance = ref(props.showBalance);
 const selectedCurrency = ref(props.balanceCurrency);
 
-// Computed property for balance visibility
-const showBalance = computed({
-  get: () => localShowBalance.value,
-  set: (val) => {
-    localShowBalance.value = val;
-    emit('balance-toggle', val);
-  }
-});
+// No writable computed needed — localShowBalance is the source of truth
 
 /**
  * Format balance amount with thousand separators and decimal places
@@ -162,14 +155,15 @@ function formatBalance(amount: number): string {
     currency: selectedCurrency.value,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).replace(/^\D/, '$'); // Replace currency symbol with $
+  }).format(amount).replace(/^\D/, '$'); // Replace currency symbol with $
 }
 
 /**
  * Handle balance visibility toggle
  */
 function handleBalanceToggle(): void {
-  showBalance.value = !showBalance.value;
+  localShowBalance.value = !localShowBalance.value;
+  emit('balance-toggle', localShowBalance.value);
 }
 
 /**

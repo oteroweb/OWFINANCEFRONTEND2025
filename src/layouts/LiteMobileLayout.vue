@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import LiquidHeader from 'components/liquid/LiquidHeader.vue';
@@ -56,11 +56,18 @@ const activeTab = ref<'home' | 'transactions' | 'jars' | 'settings'>('home');
 const currencyOptions = ['USD', 'EUR', 'GBP', 'CHF', 'CAD', 'MXN'];
 
 // User data (from auth store)
-const userData = computed(() => ({
+const userData = ref({
   name: authStore.user?.name || 'User',
-  avatar: authStore.user?.avatar || '',
+  avatar: (authStore.user as { avatar?: string } | null)?.avatar || '',
   initials: authStore.user?.name?.substring(0, 2).toUpperCase() || 'U'
-}));
+});
+watch(() => authStore.user, (u) => {
+  userData.value = {
+    name: u?.name || 'User',
+    avatar: (u as { avatar?: string } | null)?.avatar || '',
+    initials: u?.name?.substring(0, 2).toUpperCase() || 'U'
+  };
+});
 
 // User balance (mock - should be fetched from store)
 const userBalance = ref(0);
@@ -83,7 +90,7 @@ function onTabChange(tabId: string): void {
 
   const targetRoute = routes[tabId];
   if (targetRoute) {
-    router.push(targetRoute).catch(() => {
+    void router.push(targetRoute).catch(() => {
       // Silently handle navigation failures
     });
   }
@@ -104,7 +111,7 @@ function onCurrencyChange(currency: string): void {
  * Navigates to settings/config page
  */
 function onAvatarClick(): void {
-  router.push('/app/config').catch(() => {
+  void router.push('/app/config').catch(() => {
     // Silently handle navigation failures
   });
 }

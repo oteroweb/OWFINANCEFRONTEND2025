@@ -67,8 +67,6 @@ interface LiquidBottomNavProps {
   activeTab?: TabId
   /** Show/hide the entire bottom nav */
   modelValue?: boolean
-  /** Tab configuration (can be extended) */
-  tabs?: TabItem[]
 }
 
 const props = withDefaults(defineProps<LiquidBottomNavProps>(), {

@@ -250,7 +250,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
-import { userMenuLinks, defaultAvatarUrl } from 'src/pages/User/config';
+import { userMenuLinks, defaultAvatarUrl } from 'src/pages/user/config';
 import { TransactionCreateDialog } from 'components';
 import { PeriodFilterBar } from 'components/models';
 import JarsBalanceBar from 'src/components/JarsBalanceBar.vue';
@@ -298,13 +298,13 @@ function isActiveLink(target: string) {
   return router.currentRoute.value.path.startsWith(target);
 }
 
-async function onLayoutModeChange(nextMode: UserLayoutMode | null) {
+function onLayoutModeChange(nextMode: UserLayoutMode | null) {
   const normalizedMode = normalizeLayoutMode(nextMode);
   if (normalizedMode === activeLayoutMode.value || layoutModeSaving.value) return;
 
   layoutModeSaving.value = true;
   try {
-    await auth.updateLayoutMode(normalizedMode);
+    auth.updateLayoutMode(normalizedMode);
   } catch {
     $q.notify({
       type: 'negative',

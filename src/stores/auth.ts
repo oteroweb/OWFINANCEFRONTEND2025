@@ -57,6 +57,8 @@ interface User {
     updated_at?: string
   }
   currency?: Currency | null
+  avatar?: string | null
+  layout_mode?: 'lite' | 'pro' | 'legacy' | null
   // Extra collections added by login payload
   accounts?: Array<Record<string, unknown>>
   currency_rates?: UserCurrencyRate[]
@@ -227,6 +229,17 @@ export const useAuthStore = defineStore('auth', {
       const inAll = (this.user.currency_rates || []).find(r => r.currency?.code?.toLowerCase() === cc && r.is_current)
       if (inAll && typeof inAll.current_rate === 'number' && inAll.current_rate > 0) return inAll.current_rate
       return null
+    },
+    updateLayoutMode(mode: 'lite' | 'pro' | 'legacy') {
+      if (this.user) {
+        this.user = { ...this.user, layout_mode: mode }
+      }
+      if (this.settings) {
+        this.settings = { ...this.settings, layout_mode: mode }
+      }
+    },
+    setLayoutMode(mode: 'lite' | 'pro' | 'legacy') {
+      this.updateLayoutMode(mode)
     }
   }
 })

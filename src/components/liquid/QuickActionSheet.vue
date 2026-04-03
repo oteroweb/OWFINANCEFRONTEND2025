@@ -51,7 +51,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 
 type ActionType = 'income' | 'expense' | 'transfer' | 'jar'
 
@@ -67,7 +66,7 @@ interface Action {
   color: string
 }
 
-const props = withDefaults(defineProps<QuickActionSheetProps>(), {
+withDefaults(defineProps<QuickActionSheetProps>(), {
   modelValue: false,
   isLoading: false,
 })
