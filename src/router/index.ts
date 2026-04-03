@@ -23,7 +23,7 @@ export default route(function () {
       if (auth.role === 'admin') {
         return next('/admin')
       } else if (auth.role === 'user') {
-        return next('/app/home')
+        return next('/user/home')
       }
       return next('/')
     }
