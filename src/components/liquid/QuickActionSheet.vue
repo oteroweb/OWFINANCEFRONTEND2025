@@ -1,220 +1,171 @@
 <template>
-  <!-- Overlay backdrop -->
-  <Teleport to="body">
-    <Transition name="sheet-fade">
-      <div v-if="modelValue" class="sheet-backdrop" @click="$emit('update:modelValue', false)" />
-    </Transition>
+  <transition name="backdrop" @enter="onEnter" @leave="onLeave">
+    <div
+      v-if="modelValue"
+      class="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-50 transition-opacity"
+      @click="onBackdropClick"
+    />
+  </transition>
 
-    <Transition name="sheet-slide">
-      <div v-if="modelValue" class="sheet-container">
-        <!-- Handle bar -->
-        <div class="sheet-handle" />
+  <transition name="slide-up">
+    <div
+      v-if="modelValue"
+      class="fixed bottom-0 left-0 right-0 w-full bg-white rounded-t-3xl shadow-2xl z-50 pb-safe"
+      style="height: 50vh; backdrop-filter: blur(8px)"
+    >
+      <!-- Drag Handle -->
+      <div class="flex justify-center pt-3 pb-4">
+        <div class="w-12 h-1 bg-slate-300 rounded-full" />
+      </div>
 
-        <!-- Title -->
-        <h3 class="sheet-title">Acción rápida</h3>
+      <!-- Title -->
+      <h2 class="text-xl font-bold text-slate-900 px-6 mb-6">Agregar Rápidamente</h2>
 
-        <!-- Actions grid -->
-        <div class="sheet-actions">
-          <button
-            v-for="action in actions"
-            :key="action.id"
-            class="action-btn"
-            @click="handleAction(action)"
-          >
-            <div class="action-icon-wrap" :style="{ background: action.bgColor }">
-              <q-icon :name="action.icon" size="28px" :style="{ color: action.iconColor }" />
-            </div>
-            <span class="action-label">{{ action.label }}</span>
-          </button>
-        </div>
+      <!-- Actions Grid 2x2 -->
+      <div class="grid grid-cols-2 gap-4 px-6 mb-8">
+        <button
+          v-for="action in actions"
+          :key="action.type"
+          class="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl transition hover:scale-105 active:scale-95"
+          :class="`bg-${action.color}-50 text-${action.color}-600 hover:bg-${action.color}-100`"
+          @click="onActionSelect(action.type)"
+        >
+          <div class="w-12 h-12 rounded-full flex items-center justify-center" :class="`bg-${action.color}-600 text-white`">
+            <q-icon :name="action.icon" size="24px" />
+          </div>
+          <span class="text-sm font-semibold text-center">{{ action.label }}</span>
+        </button>
+      </div>
 
-        <!-- Close button -->
-        <button class="sheet-close" @click="$emit('update:modelValue', false)">
-          <q-icon name="close" size="20px" />
+      <!-- Cancel Button -->
+      <div class="px-6 pb-6">
+        <button
+          class="w-full py-3 px-4 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition"
+          @click="onCancel"
+        >
           Cancelar
         </button>
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+  </transition>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 
-defineProps<{ modelValue: boolean }>()
-const emit = defineEmits(['update:modelValue', 'action'])
+type ActionType = 'income' | 'expense' | 'transfer' | 'jar'
 
-const router = useRouter()
+interface QuickActionSheetProps {
+  modelValue?: boolean
+  isLoading?: boolean
+}
 
-const actions = [
+interface Action {
+  type: ActionType
+  label: string
+  icon: string
+  color: string
+}
+
+const props = withDefaults(defineProps<QuickActionSheetProps>(), {
+  modelValue: false,
+  isLoading: false,
+})
+
+const emit = defineEmits<{
+  'update:modelValue': [visible: boolean]
+  'action-selected': [{ type: ActionType }]
+}>()
+
+const actions: Action[] = [
   {
-    id: 'expense',
-    label: 'Gasto',
-    icon: 'remove_circle_outline',
-    iconColor: '#EF4444',
-    bgColor: 'rgba(239,68,68,0.10)',
-    route: '/app/transactions/new?type=expense'
+    type: 'income',
+    label: 'Income',
+    icon: 'add_circle',
+    color: 'green',
   },
   {
-    id: 'income',
-    label: 'Ingreso',
-    icon: 'add_circle_outline',
-    iconColor: '#10B981',
-    bgColor: 'rgba(16,185,129,0.10)',
-    route: '/app/transactions/new?type=income'
+    type: 'expense',
+    label: 'Expense',
+    icon: 'remove_circle',
+    color: 'red',
   },
   {
-    id: 'transfer',
-    label: 'Transferencia',
-    icon: 'swap_horiz',
-    iconColor: '#1E3A8A',
-    bgColor: 'rgba(30,58,138,0.10)',
-    route: '/app/transactions/new?type=transfer'
+    type: 'transfer',
+    label: 'Transfer',
+    icon: 'compare_arrows',
+    color: 'blue',
   },
   {
-    id: 'import',
-    label: 'Importar',
-    icon: 'upload_file',
-    iconColor: '#F59E0B',
-    bgColor: 'rgba(245,158,11,0.10)',
-    route: '/app/transactions/import'
-  }
+    type: 'jar',
+    label: 'Jar',
+    icon: 'savings',
+    color: 'amber',
+  },
 ]
 
-const handleAction = (action: typeof actions[0]) => {
+/**
+ * Handle backdrop click - close sheet
+ */
+function onBackdropClick() {
   emit('update:modelValue', false)
-  emit('action', action.id)
-  router.push(action.route).catch(() => {})
+}
+
+/**
+ * Handle action selection
+ */
+function onActionSelect(type: ActionType) {
+  emit('action-selected', { type })
+  emit('update:modelValue', false)
+}
+
+/**
+ * Handle cancel button
+ */
+function onCancel() {
+  emit('update:modelValue', false)
+}
+
+/**
+ * Transition enter hook
+ */
+function onEnter() {
+  // Animation handled by CSS
+}
+
+/**
+ * Transition leave hook
+ */
+function onLeave() {
+  // Animation handled by CSS
 }
 </script>
 
-<style scoped>
-/* Backdrop */
-.sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 100;
+<style lang="scss" scoped>
+.backdrop-enter-active,
+.backdrop-leave-active {
+  transition: opacity 300ms ease-in-out;
 }
 
-/* Sheet container */
-.sheet-container {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 101;
-  background: rgba(255, 255, 255, 0.96);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border-radius: 32px 32px 0 0;
-  padding: 12px 24px 40px;
-  box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.12);
-}
-
-/* Handle */
-.sheet-handle {
-  width: 40px;
-  height: 4px;
-  background: #E2E8F0;
-  border-radius: 9999px;
-  margin: 0 auto 20px;
-}
-
-/* Title */
-.sheet-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0F172A;
-  text-align: center;
-  margin: 0 0 24px;
-  letter-spacing: -0.01em;
-}
-
-/* Actions grid */
-.sheet-actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-/* Action button */
-.action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 16px;
-  transition: all 220ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.action-btn:active {
-  transform: scale(0.95);
-}
-
-.action-icon-wrap {
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.action-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748B;
-  text-align: center;
-  letter-spacing: 0.01em;
-}
-
-/* Close button */
-.sheet-close {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 14px;
-  border: 1.5px solid #E2E8F0;
-  border-radius: 16px;
-  background: transparent;
-  color: #64748B;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 220ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.sheet-close:active {
-  background: #F1F5F9;
-  transform: scale(0.98);
-}
-
-/* Transitions */
-.sheet-fade-enter-active,
-.sheet-fade-leave-active {
-  transition: opacity 220ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.sheet-fade-enter-from,
-.sheet-fade-leave-to {
+.backdrop-enter-from,
+.backdrop-leave-to {
   opacity: 0;
 }
 
-.sheet-slide-enter-active,
-.sheet-slide-leave-active {
-  transition: transform 280ms cubic-bezier(0.23, 1, 0.32, 1);
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition:
+    opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.sheet-slide-enter-from,
-.sheet-slide-leave-to {
+
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
   transform: translateY(100%);
 }
 </style>
