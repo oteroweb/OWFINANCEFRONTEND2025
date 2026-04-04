@@ -29,7 +29,9 @@
   </nav>
 </template>
 
+
 <script setup lang="ts">
+import { computed } from 'vue';
 const props = defineProps<{ currentTab: string; theme?: 'light' | 'dark' }>();
 const themeClass = computed(() => props.theme === 'dark' ? 'lite-nav--dark' : 'lite-nav--light');
 </script>
