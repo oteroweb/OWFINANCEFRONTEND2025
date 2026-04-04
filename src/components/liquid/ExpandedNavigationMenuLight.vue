@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ items: { key: string; label: string; icon: string }[] }>();
+defineProps<{ items: { key: string; label: string; icon: string }[] }>();
 </script>
 
 <style scoped>
