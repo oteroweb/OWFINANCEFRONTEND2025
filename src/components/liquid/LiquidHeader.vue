@@ -12,19 +12,42 @@
       </button>
       <h1 class="lite-header__greeting">Hola, {{ firstName }} 👋</h1>
     </div>
-    <!-- Right: Notification Bell -->
-    <button
-      class="lite-header__bell"
-      @click="$emit('menu-click')"
-      aria-label="Notificaciones"
-    >
-      <q-icon name="notifications" size="24px" />
-    </button>
+    
+    <!-- Right: Theme Toggle + AI + Notifications -->
+    <div class="lite-header__right">
+      <!-- Theme Toggle -->
+      <button
+        class="lite-header__theme-toggle"
+        @click="toggleTheme"
+        :aria-label="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+      >
+        <q-icon :name="isDarkMode ? 'light_mode' : 'dark_mode'" size="20px" />
+      </button>
+      
+      <!-- AI Agent -->
+      <button
+        class="lite-header__ai-btn"
+        @click="$emit('ai-click')"
+        aria-label="Asistente IA"
+      >
+        <q-icon name="psychology" size="20px" />
+      </button>
+      
+      <!-- Notifications Bell -->
+      <button
+        class="lite-header__bell"
+        @click="$emit('menu-click')"
+        aria-label="Notificaciones"
+      >
+        <q-icon name="notifications" size="20px" />
+      </button>
+    </div>
   </header>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useQuasar } from 'quasar';
 
 interface User {
   name?: string;
@@ -49,14 +72,25 @@ const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
 });
 
-defineEmits<{
+const emit = defineEmits<{
   'menu-click': [];
   'balance-toggle': [showBalance: boolean];
   'currency-change': [currency: string];
   'avatar-click': [];
+  'ai-click': [];
+  'theme-toggle': [];
 }>();
 
+const $q = useQuasar();
+
+const isDarkMode = computed(() => $q.dark.isActive);
+
 const firstName = computed(() => props.user?.name?.split(' ')[0] || 'José');
+
+const toggleTheme = () => {
+  $q.dark.toggle();
+  emit('theme-toggle');
+};
 </script>
 
 <style lang="scss" scoped>
@@ -118,9 +152,17 @@ const firstName = computed(() => props.user?.name?.split(' ')[0] || 'José');
     line-height: 1.2;
   }
 
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__theme-toggle,
+  &__ai-btn,
   &__bell {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -133,6 +175,15 @@ const firstName = computed(() => props.user?.name?.split(' ')[0] || 'José');
 
     &:hover { background: #f1f5f9; }
     &:active { transform: scale(0.93); }
+  }
+
+  &__ai-btn {
+    background: linear-gradient(135deg, #6366f1, #06b6d4);
+    color: white;
+    
+    &:hover {
+      background: linear-gradient(135deg, #5b5bd6, #0891b2);
+    }
   }
 }
 </style>
