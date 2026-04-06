@@ -11,7 +11,7 @@
     </div>
 
     <!-- Empty -->
-    <div v-else-if="!jars.length" class="jars-section__empty">
+    <div v-else-if="!(jars && jars.length)" class="jars-section__empty">
       <q-icon name="savings" size="48px" color="grey-4" />
       <p>No tienes cántaros. ¡Crea el primero!</p>
       <button class="jars-section__link" @click="router.push('/user/jars')">Crear cántaro</button>

@@ -14,7 +14,7 @@
       </template>
 
       <!-- Empty state -->
-      <template v-else-if="!transactions.length">
+      <template v-else-if="!(transactions && transactions.length)">
         <div class="txns-card__empty">
           <q-icon name="receipt_long" size="40px" color="grey-4" />
           <p>No hay transacciones recientes</p>
@@ -24,7 +24,7 @@
       <!-- Transaction rows -->
       <template v-else>
         <div
-          v-for="(tx, idx) in transactions"
+          v-for="(tx, idx) in (transactions ?? [])"
           :key="tx.id"
           class="txn-row"
           :class="{ 'txn-row--last': idx === transactions.length - 1 }"
