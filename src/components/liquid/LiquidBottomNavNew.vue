@@ -85,10 +85,10 @@ const router = useRouter();
 const route = useRoute();
 
 const tabs: TabItem[] = [
-  { id: 'home', route: '/app/home' },
-  { id: 'transactions', route: '/app/transactions' },
-  { id: 'jars', route: '/app/jars' },
-  { id: 'settings', route: '/app/config' },
+  { id: 'home', route: '/user/home' },
+  { id: 'transactions', route: '/user/transactions' },
+  { id: 'jars', route: '/user/jars' },
+  { id: 'settings', route: '/user/config' },
 ];
 
 const currentTab = computed((): TabId => {
