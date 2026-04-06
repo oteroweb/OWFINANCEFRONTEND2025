@@ -82,7 +82,7 @@ const formattedTransactions = computed(() =>
     date: formatDate(tx.date),
     category: tx.category,
     isIncome: tx.type === 'income',
-    account: tx.accountName,
+    ...(tx.accountName !== undefined ? { account: tx.accountName } : {}),
   }))
 );
 
@@ -178,7 +178,7 @@ async function loadRecentTransactions() {
         ?? ((tx.category as Record<string, unknown> | undefined)?.name as string | undefined)
         ?? 'General',
       type: Number(tx.amount ?? 0) >= 0 ? ('income' as const) : ('expense' as const),
-      accountName: ((tx.account as Record<string, unknown> | undefined)?.name as string | undefined) ?? undefined,
+      ...(((tx.account as Record<string, unknown> | undefined)?.name as string | undefined) !== undefined ? { accountName: ((tx.account as Record<string, unknown> | undefined)?.name as string) } : {}),
     }));
   } catch (err) {
     console.warn('[LiteHome] Transactions error:', err);
