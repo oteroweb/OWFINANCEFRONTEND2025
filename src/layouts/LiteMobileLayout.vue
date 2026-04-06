@@ -22,8 +22,8 @@
       </router-view>
     </q-page-container>
 
-    <!-- LITE Bottom Navigation -->
-    <LiquidBottomNavNew :active-tab="activeTab" @fab-click="showQuickActions = true" @tab-change="onTabChange" />
+    <!-- Floating Bottom Nav -->
+    <LiteFloatingBottomNav @fab-click="showQuickActions = true" />
 
     <!-- FAB Quick Action Bottom Sheet -->
     <QuickActionSheet v-model="showQuickActions" />
@@ -31,31 +31,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import LiquidHeader from 'components/liquid/LiquidHeader.vue';
-import LiquidBottomNavNew from 'components/liquid/LiquidBottomNavNew.vue';
+import LiteFloatingBottomNav from 'components/liquid/LiteFloatingBottomNav.vue';
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
 
 const router = useRouter();
-const route = useRoute();
 const authStore = useAuthStore();
 
-// ============================================================
-// State Management
-// ============================================================
-
-// Modal and UI state
 const showQuickActions = ref(false);
 const showBalance = ref(true);
 const currentCurrency = ref('USD');
-const activeTab = ref<'home' | 'transactions' | 'jars' | 'settings'>('home');
-
-// Currency options (can be extended from store/config)
 const currencyOptions = ['USD', 'EUR', 'GBP', 'CHF', 'CAD', 'MXN'];
+const userBalance = ref(0);
 
-// User data (from auth store)
 const userData = ref({
   name: authStore.user?.name || 'User',
   avatar: (authStore.user as { avatar?: string } | null)?.avatar || '',
@@ -69,96 +60,9 @@ watch(() => authStore.user, (u) => {
   };
 });
 
-// User balance (mock - should be fetched from store)
-const userBalance = ref(0);
-
-// ============================================================
-// Event Handlers
-// ============================================================
-
-/**
- * Handle tab navigation changes
- * Maps tab IDs to route paths and navigates
- */
-function onTabChange(tabId: string): void {
-  const routes: Record<string, string> = {
-    home: '/user/home',
-    transactions: '/user/transactions',
-    jars: '/user/jars',
-    settings: '/user/config'
-  };
-
-  const targetRoute = routes[tabId];
-  if (targetRoute) {
-    void router.push(targetRoute).catch(() => {
-      // Silently handle navigation failures
-    });
-  }
-}
-
-/**
- * Handle currency selection change
- * Updates local state and could emit to store if needed
- */
-function onCurrencyChange(currency: string): void {
-  currentCurrency.value = currency;
-  // TODO: Emit to Pinia store to update currency globally
-  // Could dispatch: currencyStore.setCurrency(currency)
-}
-
-/**
- * Handle avatar/user menu click
- * Navigates to settings/config page
- */
-function onAvatarClick(): void {
-  void router.push('/user/config').catch(() => {
-    // Silently handle navigation failures
-  });
-}
-
-/**
- * Handle menu click
- * Placeholder for mobile menu/drawer functionality
- */
-function onMenuClick(): void {
-  // TODO: Open mobile menu/drawer if implemented
-}
-
-// ============================================================
-// Lifecycle Hooks
-// ============================================================
-
-/**
- * Sync active tab on component mount based on current route
- */
-onMounted(() => {
-  syncActiveTabWithRoute();
-});
-
-/**
- * Watch route changes and sync active tab
- */
-watch(() => route.path, () => {
-  syncActiveTabWithRoute();
-});
-
-/**
- * Synchronize the active tab state with the current route
- * Maps route paths to tab IDs for active state indication
- */
-function syncActiveTabWithRoute(): void {
-  const path = route.path;
-
-  if (path.includes('/user/transactions')) {
-    activeTab.value = 'transactions';
-  } else if (path.includes('/user/jars')) {
-    activeTab.value = 'jars';
-  } else if (path.includes('/user/config') || path.includes('/user/settings')) {
-    activeTab.value = 'settings';
-  } else {
-    activeTab.value = 'home';
-  }
-}
+function onCurrencyChange(currency: string): void { currentCurrency.value = currency; }
+function onAvatarClick(): void { void router.push('/user/config'); }
+function onMenuClick(): void { /* reserved */ }
 </script>
 
 <style lang="scss" scoped>

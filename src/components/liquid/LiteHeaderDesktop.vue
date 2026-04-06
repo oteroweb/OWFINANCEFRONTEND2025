@@ -9,17 +9,18 @@
         <span class="dte-header__logo-text">OW Finance <span class="dte-header__logo-lite">Lite</span></span>
       </div>
 
-      <!-- Center: Nav Pill -->
+      <!-- Center: Nav Pill (icon-only) -->
       <nav class="dte-header__nav" role="navigation">
         <button
           v-for="tab in navTabs"
           :key="tab.id"
           class="dte-header__tab"
           :class="{ 'dte-header__tab--active': currentTab === tab.id }"
+          :title="tab.label"
+          :aria-label="tab.label"
           @click="onTabClick(tab)"
         >
-          <q-icon :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon" size="19px" />
-          <span>{{ tab.label }}</span>
+          <q-icon :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon" size="22px" />
         </button>
       </nav>
 
@@ -158,16 +159,14 @@ function onTabClick(tab: { route: string }) {
   &__tab {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    border-radius: 16px;
+    justify-content: center;
+    width: 44px;
+    height: 38px;
+    border-radius: 14px;
     border: none;
     background: transparent;
     color: #94a3b8;
-    font-size: 13px;
-    font-weight: 500;
     cursor: pointer;
-    white-space: nowrap;
     transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
 
     .body--dark & { color: #64748b; }

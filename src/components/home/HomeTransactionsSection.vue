@@ -10,7 +10,7 @@
     <div class="txns-card">
       <!-- Loading skeletons -->
       <template v-if="isLoading">
-        <div v-for="i in 5" :key="i" class="txn-skeleton" />
+        <div v-for="i in 7" :key="i" class="txn-skeleton" />
       </template>
 
       <!-- Empty state -->
@@ -27,7 +27,7 @@
           v-for="(tx, idx) in (transactions ?? [])"
           :key="tx.id"
           class="txn-row"
-          :class="{ 'txn-row--last': idx === transactions.length - 1 }"
+          :class="{ 'txn-row--last': idx === (transactions?.length ?? 1) - 1 && (totalPages ?? 1) <= 1 }"
           role="button"
           tabindex="0"
           @keydown.enter="router.push(`/user/transactions`)"
@@ -50,6 +50,31 @@
           </div>
         </div>
       </template>
+
+      <!-- Pagination bar -->
+      <div v-if="!isLoading && (totalPages ?? 1) > 1" class="txns-pager">
+        <button
+          class="txns-pager__btn"
+          :disabled="(currentPage ?? 1) <= 1"
+          aria-label="Página anterior"
+          @click="emit('page-change', (currentPage ?? 1) - 1)"
+        >
+          <q-icon name="chevron_left" size="18px" />
+        </button>
+
+        <span class="txns-pager__info">
+          {{ currentPage ?? 1 }} / {{ totalPages ?? 1 }}
+        </span>
+
+        <button
+          class="txns-pager__btn"
+          :disabled="(currentPage ?? 1) >= (totalPages ?? 1)"
+          aria-label="Página siguiente"
+          @click="emit('page-change', (currentPage ?? 1) + 1)"
+        >
+          <q-icon name="chevron_right" size="18px" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -71,13 +96,19 @@ interface Props {
   transactions?: Transaction[];
   isLoading?: boolean;
   currency?: string;
+  currentPage?: number;
+  totalPages?: number;
 }
 
 withDefaults(defineProps<Props>(), {
   transactions: () => [],
   isLoading: false,
   currency: '$',
+  currentPage: 1,
+  totalPages: 1,
 });
+
+const emit = defineEmits<{ 'page-change': [page: number] }>();
 
 const router = useRouter();
 </script>
@@ -253,5 +284,57 @@ const router = useRouter();
 @keyframes shimmer {
   0% { background-position: 400% 0; }
   100% { background-position: -400% 0; }
+}
+
+.txns-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-top: 1px solid #f1f5f9;
+
+  .body--dark & { border-top-color: #1e293b; }
+
+  &__btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #1e3a8a;
+    transition: all 150ms ease;
+
+    .body--dark & {
+      background: #1e293b;
+      border-color: #334155;
+      color: #93c5fd;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    &:not(:disabled):hover {
+      background: #1e3a8a;
+      color: white;
+      border-color: #1e3a8a;
+    }
+  }
+
+  &__info {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    min-width: 48px;
+    text-align: center;
+
+    .body--dark & { color: #94a3b8; }
+  }
 }
 </style>

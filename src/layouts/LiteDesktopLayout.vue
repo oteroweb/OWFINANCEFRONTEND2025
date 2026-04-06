@@ -16,6 +16,9 @@
       <router-view />
     </q-page-container>
 
+    <!-- Floating Bottom Nav -->
+    <LiteFloatingBottomNav @fab-click="showQuickActions = true" />
+
     <!-- Quick Action Sheet -->
     <QuickActionSheet
       v-model="showQuickActions"
@@ -30,6 +33,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import LiteHeaderDesktop from 'components/liquid/LiteHeaderDesktop.vue';
+import LiteFloatingBottomNav from 'components/liquid/LiteFloatingBottomNav.vue';
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
 
 const router = useRouter();

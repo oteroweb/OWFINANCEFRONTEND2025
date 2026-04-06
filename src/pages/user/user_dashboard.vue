@@ -27,6 +27,9 @@
           :transactions="formattedTransactions"
           :is-loading="transactionsLoading"
           :currency="currencySymbol"
+          :current-page="txCurrentPage"
+          :total-pages="txTotalPages"
+          @page-change="onTxPageChange"
         />
       </div>
 
@@ -62,6 +65,7 @@ const activePeriod = ref<'monthly' | 'weekly' | 'yearly'>('monthly');
 
 function onPeriodChange(p: string) {
   activePeriod.value = p as 'monthly' | 'weekly' | 'yearly';
+  void loadMonthSummary(activePeriod.value);
 }
 
 // ─── Jars ─────────────────────────────────────────────────────────────────────
@@ -73,6 +77,9 @@ const jarsLoading = ref(false);
 type TxRaw = { id: number; name: string; amount: number; date: string; category: string; type: 'income' | 'expense'; accountName?: string };
 const recentTransactions = ref<TxRaw[]>([]);
 const transactionsLoading = ref(false);
+const txCurrentPage = ref(1);
+const txTotalPages = ref(1);
+const TX_PER_PAGE = 7;
 
 const formattedTransactions = computed(() =>
   recentTransactions.value.map((tx) => ({
@@ -114,11 +121,28 @@ async function loadBalanceSummary() {
   }
 }
 
-async function loadMonthSummary() {
+async function loadMonthSummary(period: 'monthly' | 'weekly' | 'yearly' = 'monthly') {
   const now = new Date();
-  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  let params: Record<string, string> = {};
+
+  if (period === 'monthly') {
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    params = { month, per_page: '500' };
+  } else if (period === 'weekly') {
+    const day = now.getDay(); // 0=Sun
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((day + 6) % 7));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    params = { from: fmt(monday), to: fmt(sunday), per_page: '500' };
+  } else {
+    // yearly
+    params = { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31`, per_page: '500' };
+  }
+
   try {
-    const res = await api.get('/transactions', { params: { month, per_page: 500 } });
+    const res = await api.get('/transactions', { params });
     const data = res.data?.data;
     const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[]) : [];
     monthlyIncome.value = list.reduce((s, tx) => {
@@ -163,12 +187,16 @@ async function loadJars() {
   }
 }
 
-async function loadRecentTransactions() {
+async function loadRecentTransactions(page = 1) {
   transactionsLoading.value = true;
   try {
-    const res = await api.get('/transactions', { params: { per_page: 7, sort_by: 'date', sort_order: 'desc' } });
+    const res = await api.get('/transactions', { params: { per_page: TX_PER_PAGE, page, sort_by: 'date', sort_order: 'desc' } });
     const data = res.data?.data;
     const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[]) : [];
+    // Read pagination meta (Laravel paginator)
+    const meta = (res.data?.meta || data?.meta || {}) as Record<string, unknown>;
+    txCurrentPage.value = Number(meta.current_page ?? page);
+    txTotalPages.value = Number(meta.last_page ?? 1);
     recentTransactions.value = list.map((tx) => ({
       id: Number(tx.id),
       name: typeof tx.name === 'string' ? tx.name : (typeof tx.description === 'string' ? tx.description : 'Transacción'),
@@ -187,6 +215,10 @@ async function loadRecentTransactions() {
   }
 }
 
+function onTxPageChange(page: number) {
+  void loadRecentTransactions(page);
+}
+
 onMounted(() => {
   void Promise.all([loadBalanceSummary(), loadMonthSummary(), loadJars(), loadRecentTransactions()]);
 });
@@ -203,10 +235,10 @@ onMounted(() => {
 .dash-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 40px 32px;
+  padding: 40px 32px 120px; /* extra bottom for floating nav */
 
-  @media (max-width: 1023px) { padding: 32px 24px; }
-  @media (max-width: 599px)  { padding: 20px 14px; }
+  @media (max-width: 1023px) { padding: 32px 24px 112px; }
+  @media (max-width: 599px)  { padding: 20px 14px 104px; }
 }
 
 .dash-hero {
