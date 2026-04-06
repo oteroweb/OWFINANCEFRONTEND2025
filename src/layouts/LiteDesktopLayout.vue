@@ -44,9 +44,9 @@ const auth = useAuthStore();
 const showQuickActions = ref(false);
 
 const user = computed(() => ({
-  name: auth.user?.name || 'Usuario',
+  name: auth.user?.name,
   avatar: auth.user?.avatar,
-  initials: auth.user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'
+  initials: auth.user?.name?.split(' ').map(n => n[0]).join('').toUpperCase()
 }));
 
 const currentTab = computed(() => {
