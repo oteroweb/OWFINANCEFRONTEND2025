@@ -87,7 +87,7 @@
             :category="tx.category || 'Sin categoría'"
             :is-income="tx.type === 'income'"
             :currency="currencySymbol"
-            :account="tx.accountName"
+            v-bind="tx.accountName ? { account: tx.accountName } : {}"
             icon="solar:card-2-bold-duotone"
             @click="router.push(`/user/transactions/${tx.id}`)"
           />
@@ -147,7 +147,7 @@ type TransactionItem = {
   date: string;
   category: string;
   type: 'income' | 'expense';
-  accountName?: string;
+  accountName: string | undefined;
 };
 
 const recentTransactions = ref<TransactionItem[]>([]);
@@ -239,7 +239,7 @@ async function loadRecentTransactions() {
         date: txDate,
         category: txCategory,
         type: Number(tx.amount || 0) >= 0 ? ('income' as const) : ('expense' as const),
-        accountName: txAccount,
+        accountName: txAccount ?? undefined,
       };
     });
   } catch (err) {
