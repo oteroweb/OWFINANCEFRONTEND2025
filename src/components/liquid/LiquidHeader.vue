@@ -12,7 +12,7 @@
       </button>
       <h1 class="lite-header__greeting">Hola, {{ firstName }} 👋</h1>
     </div>
-    
+
     <!-- Right: Theme Toggle + AI + Notifications -->
     <div class="lite-header__right">
       <!-- Theme Toggle -->
@@ -23,7 +23,7 @@
       >
         <q-icon :name="isDarkMode ? 'light_mode' : 'dark_mode'" size="20px" />
       </button>
-      
+
       <!-- AI Agent -->
       <button
         class="lite-header__ai-btn"
@@ -32,7 +32,7 @@
       >
         <q-icon name="psychology" size="20px" />
       </button>
-      
+
       <!-- Notifications Bell -->
       <button
         class="lite-header__bell"
@@ -180,7 +180,7 @@ const toggleTheme = () => {
   &__ai-btn {
     background: linear-gradient(135deg, #6366f1, #06b6d4);
     color: white;
-    
+
     &:hover {
       background: linear-gradient(135deg, #5b5bd6, #0891b2);
     }

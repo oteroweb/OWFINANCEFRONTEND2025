@@ -8,19 +8,19 @@
       @menu-click="onMenuClick"
       @theme-toggle="onThemeToggle"
     />
-    
+
     <!-- Main Content Area -->
     <main class="lite-desktop-main">
       <router-view />
     </main>
-    
+
     <!-- Bottom Navigation (Desktop Adapted) -->
     <LiquidBottomNavNew
       :active-tab="currentTab"
       @fab-click="onQuickActionToggle"
       @tab-change="onTabChange"
     />
-    
+
     <!-- Quick Action Sheet -->
     <QuickActionSheet
       v-model="showQuickActions"
@@ -52,7 +52,7 @@ const user = computed(() => ({
 const currentTab = computed(() => {
   const path = route.path;
   if (path.includes('/transactions')) return 'transactions';
-  if (path.includes('/jars')) return 'jars'; 
+  if (path.includes('/jars')) return 'jars';
   if (path.includes('/config') || path.includes('/settings')) return 'settings';
   return 'home';
 });
@@ -108,12 +108,12 @@ const onActionSelected = (action: { type: string }) => {
   width: 100%;
   padding-left: 24px;
   padding-right: 24px;
-  
+
   @media (min-width: 768px) {
     padding-left: 48px;
     padding-right: 48px;
   }
-  
+
   @media (min-width: 1024px) {
     padding-left: 64px;
     padding-right: 64px;

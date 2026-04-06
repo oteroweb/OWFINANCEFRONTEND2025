@@ -19,12 +19,12 @@ const $q = useQuasar();
 
 const activeLayout = computed(() => {
   const mode = auth.settings?.layout_mode || 'legacy';
-  
+
   if (mode === 'lite') {
     // For Lite mode, choose layout based on screen size/device type
     return $q.platform.is.desktop || $q.screen.gt.sm ? LiteDesktopLayout : LiteMobileLayout;
   }
-  
+
   if (mode === 'pro') return ProLayout;
   return LegacyLayout;
 });
