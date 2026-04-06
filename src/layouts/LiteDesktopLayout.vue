@@ -41,7 +41,7 @@ const user = computed(() => {
   const u = auth.user;
   const result: { name?: string; avatar?: string | null; initials?: string } = {};
   if (u?.name) result.name = u.name;
-  if (u?.avatar !== undefined) result.avatar = u.avatar as string | null;
+  if (u?.avatar !== undefined) result.avatar = u.avatar;
   const initials = u?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   if (initials) result.initials = initials;
   return result;
