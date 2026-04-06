@@ -1,5 +1,5 @@
 <template>
-  <div class="lite-desktop-layout">
+  <q-layout view="lHh lpr lFf" class="lite-desktop-layout">
     <!-- Header -->
     <LiquidHeader
       :user="user"
@@ -10,9 +10,9 @@
     />
 
     <!-- Main Content Area -->
-    <main class="lite-desktop-main">
+    <q-page-container class="lite-desktop-main">
       <router-view />
-    </main>
+    </q-page-container>
 
     <!-- Bottom Navigation (Desktop Adapted) -->
     <LiquidBottomNavNew
@@ -26,7 +26,7 @@
       v-model="showQuickActions"
       @action-selected="onActionSelected"
     />
-  </div>
+  </q-layout>
 </template>
 
 <script setup lang="ts">
@@ -93,19 +93,17 @@ const onActionSelected = (action: { type: string }) => {
 
 <style scoped lang="scss">
 .lite-desktop-layout {
-  min-height: 100vh;
   background: var(--q-color-background, #f7f9fb);
-  display: flex;
-  flex-direction: column;
 }
 
-.lite-desktop-main {
-  flex: 1;
-  padding-top: 64px; // Header height
-  padding-bottom: 120px; // Bottom nav height + padding
+// q-page-container: Quasar handles top/bottom offset automatically.
+// We only add horizontal constraints here.
+:deep(.lite-desktop-main) {
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  padding-top: 64px;
+  padding-bottom: 80px;
   padding-left: 24px;
   padding-right: 24px;
 

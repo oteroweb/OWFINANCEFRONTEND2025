@@ -73,6 +73,11 @@ const routes: RouteRecordRaw[] = [
       return '/login'
     }
   },
+  // Short aliases → redirect to canonical routes
+  {
+    path: '/home',
+    redirect: '/user/home'
+  },
   // Catch-all 404
   {
     path: '/:catchAll(.*)*',
