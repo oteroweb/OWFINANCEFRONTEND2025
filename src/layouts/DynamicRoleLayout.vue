@@ -1,7 +1,6 @@
 <template>
-  <component :is="activeLayout">
-    <router-view />
-  </component>
+  <!-- El router-view está dentro de cada layout hijo, no aquí -->
+  <component :is="activeLayout" />
 </template>
 
 <script setup lang="ts">
