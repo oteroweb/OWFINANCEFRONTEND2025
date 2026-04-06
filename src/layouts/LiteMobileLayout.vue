@@ -82,10 +82,10 @@ const userBalance = ref(0);
  */
 function onTabChange(tabId: string): void {
   const routes: Record<string, string> = {
-    home: '/app/home',
-    transactions: '/app/transactions',
-    jars: '/app/jars',
-    settings: '/app/config'
+    home: '/user/home',
+    transactions: '/user/transactions',
+    jars: '/user/jars',
+    settings: '/user/config'
   };
 
   const targetRoute = routes[tabId];
@@ -111,7 +111,7 @@ function onCurrencyChange(currency: string): void {
  * Navigates to settings/config page
  */
 function onAvatarClick(): void {
-  void router.push('/app/config').catch(() => {
+  void router.push('/user/config').catch(() => {
     // Silently handle navigation failures
   });
 }
