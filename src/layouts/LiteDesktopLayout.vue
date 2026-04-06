@@ -1,44 +1,38 @@
 <template>
   <q-layout view="lHh lpr lFf" class="lite-desktop-layout">
-    <!-- Header -->
-    <LiquidHeader
-      :user="user"
-      @avatar-click="onAvatarClick"
-      @ai-click="onAiClick"
-      @menu-click="onMenuClick"
-      @theme-toggle="onThemeToggle"
-    />
+
+    <!-- Desktop Header (Quasar-managed, auto-offsets q-page) -->
+    <q-header flat bordered class="dte-layout-header">
+      <LiteHeaderDesktop
+        :user="user"
+        @nuevo-click="showQuickActions = true"
+        @avatar-click="onAvatarClick"
+        @notifications-click="onMenuClick"
+      />
+    </q-header>
 
     <!-- Main Content Area -->
-    <q-page-container class="lite-desktop-main">
+    <q-page-container>
       <router-view />
     </q-page-container>
-
-    <!-- Bottom Navigation (Desktop Adapted) -->
-    <LiquidBottomNavNew
-      :active-tab="currentTab"
-      @fab-click="onQuickActionToggle"
-      @tab-change="onTabChange"
-    />
 
     <!-- Quick Action Sheet -->
     <QuickActionSheet
       v-model="showQuickActions"
       @action-selected="onActionSelected"
     />
+
   </q-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
-import LiquidHeader from 'components/liquid/LiquidHeader.vue';
-import LiquidBottomNavNew from 'components/liquid/LiquidBottomNavNew.vue';
+import LiteHeaderDesktop from 'components/liquid/LiteHeaderDesktop.vue';
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
 
 const router = useRouter();
-const route = useRoute();
 const auth = useAuthStore();
 
 const showQuickActions = ref(false);
@@ -46,80 +40,26 @@ const showQuickActions = ref(false);
 const user = computed(() => ({
   name: auth.user?.name,
   avatar: auth.user?.avatar,
-  initials: auth.user?.name?.split(' ').map(n => n[0]).join('').toUpperCase()
+  initials: auth.user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
 }));
 
-const currentTab = computed(() => {
-  const path = route.path;
-  if (path.includes('/transactions')) return 'transactions';
-  if (path.includes('/jars')) return 'jars';
-  if (path.includes('/config') || path.includes('/settings')) return 'settings';
-  return 'home';
-});
-
-const onAvatarClick = () => {
-  void router.push('/user/config');
-};
-
-const onAiClick = () => {
-  // TODO: Crear ruta /user/ai-coach en routes.ts
-  void router.push('/user/home');
-};
-
-const onMenuClick = () => {
-  // TODO: Crear ruta /user/notifications en routes.ts
-  void router.push('/user/home');
-};
-
-const onThemeToggle = () => {
-  // Theme toggle is handled by the header component
-  console.log('Theme toggled');
-};
-
-const onQuickActionToggle = () => {
-  showQuickActions.value = !showQuickActions.value;
-};
-
-const onTabChange = (tabId: string) => {
-  console.log('Tab changed:', tabId);
-  // Navigation is handled by the bottom nav component
-};
+const onAvatarClick = () => { void router.push('/user/config'); };
+const onMenuClick  = () => { void router.push('/user/home'); };
 
 const onActionSelected = (action: { type: string }) => {
-  console.log('Action selected:', action.type);
-  // Action handling is handled by the QuickActionSheet component
+  console.log('[LiteDesktopLayout] Action selected:', action.type);
 };
 </script>
 
 <style scoped lang="scss">
 .lite-desktop-layout {
-  background: var(--q-color-background, #f7f9fb);
+  background: #f8fafc;
+
+  .body--dark & { background: #0f172a; }
 }
 
-// q-page-container: Quasar handles top/bottom offset automatically.
-// We only add horizontal constraints here.
-:deep(.lite-desktop-main) {
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-  padding-top: 64px;
-  padding-bottom: 80px;
-  padding-left: 24px;
-  padding-right: 24px;
-
-  @media (min-width: 768px) {
-    padding-left: 48px;
-    padding-right: 48px;
-  }
-
-  @media (min-width: 1024px) {
-    padding-left: 64px;
-    padding-right: 64px;
-  }
-}
-
-/* Dark mode support */
-.body--dark .lite-desktop-layout {
-  background: var(--q-color-dark, #1a1a1a);
+.dte-layout-header {
+  background: transparent;
+  height: 72px;
 }
 </style>

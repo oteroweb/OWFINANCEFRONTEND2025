@@ -1,36 +1,279 @@
 <template>
-  <header class="lite-header-desktop" :class="themeClass" role="banner">
-    <div class="lite-header-desktop__left">
-      <button class="lite-header-desktop__avatar" @click="$emit('avatar-click')" aria-label="Perfil de usuario">
-        <img v-if="user?.avatar" :src="user.avatar" :alt="user?.name || 'Usuario'" />
-        <span v-else class="lite-header-desktop__initials">{{ user?.initials || 'U' }}</span>
-      </button>
-      <h1 class="lite-header-desktop__greeting">Bienvenido, {{ firstName }} 👋</h1>
+  <div class="dte-header">
+    <div class="dte-header__inner">
+      <!-- Left: Logo -->
+      <div class="dte-header__logo" @click="router.push('/user/home')" role="button" tabindex="0">
+        <div class="dte-header__logo-icon">
+          <q-icon name="savings" color="white" size="18px" />
+        </div>
+        <span class="dte-header__logo-text">OW Finance <span class="dte-header__logo-lite">Lite</span></span>
+      </div>
+
+      <!-- Center: Nav Pill -->
+      <nav class="dte-header__nav" role="navigation">
+        <button
+          v-for="tab in navTabs"
+          :key="tab.id"
+          class="dte-header__tab"
+          :class="{ 'dte-header__tab--active': currentTab === tab.id }"
+          @click="onTabClick(tab)"
+        >
+          <q-icon :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon" size="19px" />
+          <span>{{ tab.label }}</span>
+        </button>
+      </nav>
+
+      <!-- Right: Actions -->
+      <div class="dte-header__actions">
+        <button class="dte-header__btn-nuevo" @click="$emit('nuevo-click')" aria-label="Nuevo">
+          <q-icon name="add" size="18px" />
+          <span>Nuevo</span>
+        </button>
+        <button class="dte-header__icon-btn" @click="$emit('notifications-click')" aria-label="Notificaciones">
+          <q-icon name="notifications" size="20px" />
+        </button>
+        <button class="dte-header__avatar" @click="$emit('avatar-click')" aria-label="Perfil">
+          <img v-if="user?.avatar" :src="user.avatar" :alt="user?.name || 'U'" />
+          <span v-else class="dte-header__avatar-initials">{{ user?.initials || 'JO' }}</span>
+        </button>
+      </div>
     </div>
-    <div class="lite-header-desktop__right">
-      <button class="lite-header-desktop__bell" @click="$emit('menu-click')" aria-label="Notificaciones">
-        <q-icon name="notifications" size="24px" />
-      </button>
-      <button class="lite-header-desktop__settings" @click="$emit('settings-click')" aria-label="Configuración">
-        <q-icon name="settings" size="24px" />
-      </button>
-    </div>
-  </header>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-interface User { name?: string; avatar?: string; initials?: string; }
-const props = defineProps<{ user?: User; theme?: 'light' | 'dark' }>();
-const firstName = computed(() => props.user?.name?.split(' ')[0] || 'Usuario');
-const themeClass = computed(() => props.theme === 'dark' ? 'lite-header-desktop--dark' : 'lite-header-desktop--light');
+import { useRouter, useRoute } from 'vue-router';
+
+interface User {
+  name?: string;
+  avatar?: string | null;
+  initials?: string;
+}
+
+defineProps<{ user?: User }>();
+
+defineEmits<{
+  'nuevo-click': [];
+  'avatar-click': [];
+  'notifications-click': [];
+}>();
+
+const router = useRouter();
+const route = useRoute();
+
+const navTabs = [
+  { id: 'home', label: 'Inicio', icon: 'home', route: '/user/home' },
+  { id: 'transactions', label: 'Movimientos', icon: 'receipt_long', route: '/user/transactions' },
+  { id: 'jars', label: 'Cántaros', icon: 'savings', route: '/user/jars' },
+  { id: 'settings', label: 'Ajustes', icon: 'settings', route: '/user/config' },
+];
+
+const currentTab = computed(() => {
+  const path = route.path;
+  if (path.includes('/transactions')) return 'transactions';
+  if (path.includes('/jars')) return 'jars';
+  if (path.includes('/config') || path.includes('/settings')) return 'settings';
+  return 'home';
+});
+
+function onTabClick(tab: { route: string }) {
+  void router.push(tab.route);
+}
 </script>
 
-<style scoped>
-.lite-header-desktop { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; border-radius: 2.5rem; }
-.lite-header-desktop--dark { background: #131b2e; color: #fff; }
-.lite-header-desktop--light { background: #fff; color: #0b1326; }
-.lite-header-desktop__avatar { border: none; background: none; margin-right: 1.5rem; }
-.lite-header-desktop__greeting { font-size: 2rem; font-weight: 700; }
-.lite-header-desktop__bell, .lite-header-desktop__settings { border: none; background: none; margin-left: 1rem; }
+<style lang="scss" scoped>
+.dte-header {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  height: 72px;
+
+  .body--dark & {
+    background: rgba(15, 23, 42, 0.92);
+  }
+
+  &__inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    height: 100%;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  &__logo-icon {
+    width: 32px;
+    height: 32px;
+    background: #1e3a8a;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__logo-text {
+    font-family: 'Manrope', 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: #1e3a8a;
+    white-space: nowrap;
+
+    .body--dark & { color: #93c5fd; }
+  }
+
+  &__logo-lite {
+    font-weight: 500;
+    opacity: 0.5;
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    padding: 4px;
+    border-radius: 20px;
+    border: 1px solid #f1f5f9;
+    gap: 2px;
+    flex-shrink: 0;
+
+    .body--dark & {
+      background: #1e293b;
+      border-color: #334155;
+    }
+  }
+
+  &__tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 16px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
+
+    .body--dark & { color: #64748b; }
+
+    &:hover {
+      color: #1e3a8a;
+      .body--dark & { color: #93c5fd; }
+    }
+
+    &--active {
+      background: white;
+      color: #1e3a8a;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(30, 58, 138, 0.12);
+
+      .body--dark & {
+        background: #0f172a;
+        color: #93c5fd;
+      }
+    }
+
+    &:active { transform: scale(0.97); }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  &__btn-nuevo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    background: #1e3a8a;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
+    transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    white-space: nowrap;
+
+    &:hover { background: #1d3278; }
+    &:active { transform: scale(0.97); }
+  }
+
+  &__icon-btn {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 160ms ease;
+
+    &:hover {
+      background: #f1f5f9;
+      color: #475569;
+
+      .body--dark & {
+        background: #1e293b;
+        color: #cbd5e1;
+      }
+    }
+  }
+
+  &__avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
+    overflow: hidden;
+    cursor: pointer;
+    background: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 160ms ease;
+    padding: 0;
+
+    .body--dark & { border-color: #334155; }
+
+    &:hover { border-color: #0ea5e9; }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__avatar-initials {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e3a8a;
+
+    .body--dark & { color: #93c5fd; }
+  }
+}
 </style>
