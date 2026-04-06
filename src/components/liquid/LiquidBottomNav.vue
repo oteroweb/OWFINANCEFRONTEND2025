@@ -51,13 +51,13 @@ const router = useRouter();
 defineEmits(['fabClick']);
 
 const leftItems = [
-  { id: 'home', label: 'Home', icon: 'solar:home-2-linear', iconActive: 'solar:home-2-bold-duotone', to: '/app/home' },
-  { id: 'history', label: 'Transf.', icon: 'solar:history-linear', iconActive: 'solar:history-bold-duotone', to: '/app/transactions' }
+  { id: 'home', label: 'Home', icon: 'solar:home-2-linear', iconActive: 'solar:home-2-bold-duotone', to: '/user/home' },
+  { id: 'history', label: 'Transf.', icon: 'solar:history-linear', iconActive: 'solar:history-bold-duotone', to: '/user/transactions' }
 ];
 
 const rightItems = [
-  { id: 'cards', label: 'Jars', icon: 'solar:card-line-duotone', iconActive: 'solar:card-bold-duotone', to: '/app/accounts' },
-  { id: 'profile', label: 'Perfil', icon: 'solar:user-linear', iconActive: 'solar:user-bold-duotone', to: '/app/config' }
+  { id: 'cards', label: 'Jars', icon: 'solar:card-line-duotone', iconActive: 'solar:card-bold-duotone', to: '/user/accounts' },
+  { id: 'profile', label: 'Perfil', icon: 'solar:user-linear', iconActive: 'solar:user-bold-duotone', to: '/user/config' }
 ];
 
 const isActive = (path: string) => {

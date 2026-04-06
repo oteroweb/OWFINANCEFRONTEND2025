@@ -149,11 +149,11 @@ watch(() => route.path, () => {
 function syncActiveTabWithRoute(): void {
   const path = route.path;
 
-  if (path.includes('/app/transactions')) {
+  if (path.includes('/user/transactions')) {
     activeTab.value = 'transactions';
-  } else if (path.includes('/app/jars')) {
+  } else if (path.includes('/user/jars')) {
     activeTab.value = 'jars';
-  } else if (path.includes('/app/config') || path.includes('/app/settings')) {
+  } else if (path.includes('/user/config') || path.includes('/user/settings')) {
     activeTab.value = 'settings';
   } else {
     activeTab.value = 'home';

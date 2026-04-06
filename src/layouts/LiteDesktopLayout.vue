@@ -58,15 +58,17 @@ const currentTab = computed(() => {
 });
 
 const onAvatarClick = () => {
-  void router.push('/app/profile');
+  void router.push('/user/config');
 };
 
 const onAiClick = () => {
-  void router.push('/app/ai-coach');
+  // TODO: Crear ruta /user/ai-coach en routes.ts
+  void router.push('/user/home');
 };
 
 const onMenuClick = () => {
-  void router.push('/app/notifications');
+  // TODO: Crear ruta /user/notifications en routes.ts
+  void router.push('/user/home');
 };
 
 const onThemeToggle = () => {

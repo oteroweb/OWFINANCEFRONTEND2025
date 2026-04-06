@@ -127,10 +127,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   user: () => ({ name: 'User', email: 'user@example.com', avatar: '' }),
   mainNav: () => [
-    { id: 'home', label: 'Home', icon: 'dashboard', route: '/app/home' },
-    { id: 'transactions', label: 'Transactions', icon: 'receipt_long', route: '/app/transactions' },
-    { id: 'jars', label: 'Jars', icon: 'savings', route: '/app/jars' },
-    { id: 'settings', label: 'Settings', icon: 'settings', route: '/app/config' },
+    { id: 'home', label: 'Home', icon: 'dashboard', route: '/user/home' },
+    { id: 'transactions', label: 'Transactions', icon: 'receipt_long', route: '/user/transactions' },
+    { id: 'jars', label: 'Jars', icon: 'savings', route: '/user/jars' },
+    { id: 'settings', label: 'Settings', icon: 'settings', route: '/user/config' },
   ],
   customSections: () => [],
   collapsed: false,

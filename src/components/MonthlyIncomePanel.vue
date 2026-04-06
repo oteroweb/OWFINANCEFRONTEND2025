@@ -61,7 +61,7 @@
             </template>
           </div>
           <div class="text-caption" v-if="expectedIncome === 0 && !editingExpectedIncome">
-            <router-link to="/app/config" class="text-white text-bold">
+            <router-link to="/user/config" class="text-white text-bold">
               Configura aquí
             </router-link>
           </div>
