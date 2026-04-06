@@ -50,9 +50,9 @@ import { computed } from 'vue';
 import { useQuasar } from 'quasar';
 
 interface User {
-  name?: string;
-  avatar?: string;
-  initials?: string;
+  name?: string | undefined;
+  avatar?: string | null | undefined;
+  initials?: string | undefined;
 }
 
 interface Props {
