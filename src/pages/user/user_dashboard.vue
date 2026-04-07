@@ -50,6 +50,8 @@ defineOptions({ name: 'LiteHomePage' });
 const router = useRouter();
 void router; // used in child components via inject
 
+type Period = 'monthly' | 'weekly' | 'yearly';
+
 // ─── Balance ──────────────────────────────────────────────────────────────────
 const balanceSummary = ref({ total_all: 0, total_global_balance: 0 });
 const balanceLoading = ref(false);
@@ -61,11 +63,16 @@ const monthlyExpense = ref(0);
 
 // ─── Period / visibility UI state ────────────────────────────────────────────
 const isHidden = ref(false);
-const activePeriod = ref<'monthly' | 'weekly' | 'yearly'>('monthly');
+const activePeriod = ref<Period>('monthly');
 
 function onPeriodChange(p: string) {
-  activePeriod.value = p as 'monthly' | 'weekly' | 'yearly';
-  void loadMonthSummary(activePeriod.value);
+  if (p !== 'monthly' && p !== 'weekly' && p !== 'yearly') return;
+  activePeriod.value = p;
+  txCurrentPage.value = 1;
+  void Promise.all([
+    loadMonthSummary(activePeriod.value),
+    loadRecentTransactions(1, activePeriod.value),
+  ]);
 }
 
 // ─── Jars ─────────────────────────────────────────────────────────────────────
@@ -93,6 +100,27 @@ const formattedTransactions = computed(() =>
   }))
 );
 
+function parseTxType(tx: Record<string, unknown>): { name: string; slug: string; id: number } {
+  const rawType = tx.transaction_type as Record<string, unknown> | undefined;
+  const name = typeof rawType?.name === 'string' ? rawType.name.toLowerCase() : '';
+  const slug = typeof rawType?.slug === 'string' ? rawType.slug.toLowerCase() : '';
+  const id = Number(tx.transaction_type_id ?? rawType?.id ?? 0);
+  return { name, slug, id };
+}
+
+function classifyTx(tx: Record<string, unknown>, amount: number): 'income' | 'expense' | 'transfer' {
+  const { name, slug, id } = parseTxType(tx);
+  const typeText = `${name} ${slug}`;
+
+  if (id === 4 || typeText.includes('transfer') || typeText.includes('traspaso') || typeText.includes('transferencia')) {
+    return 'transfer';
+  }
+  if (typeText.includes('income') || typeText.includes('ingreso')) return 'income';
+  if (typeText.includes('expense') || typeText.includes('gasto')) return 'expense';
+
+  return amount >= 0 ? 'income' : 'expense';
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -102,6 +130,27 @@ function formatDate(dateStr: string): string {
   if (diff === 1) return 'Ayer';
   if (diff < 7) return `Hace ${diff} días`;
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
+function buildPeriodParams(period: Period): Record<string, string> {
+  const now = new Date();
+
+  if (period === 'monthly') {
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return { month };
+  }
+
+  if (period === 'weekly') {
+    const day = now.getDay(); // 0=Sun
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((day + 6) % 7));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { from: fmt(monday), to: fmt(sunday) };
+  }
+
+  return { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31` };
 }
 
 // ─── Data loading ─────────────────────────────────────────────────────────────
@@ -121,38 +170,32 @@ async function loadBalanceSummary() {
   }
 }
 
-async function loadMonthSummary(period: 'monthly' | 'weekly' | 'yearly' = 'monthly') {
-  const now = new Date();
-  let params: Record<string, string> = {};
-
-  if (period === 'monthly') {
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    params = { month, per_page: '500' };
-  } else if (period === 'weekly') {
-    const day = now.getDay(); // 0=Sun
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((day + 6) % 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    params = { from: fmt(monday), to: fmt(sunday), per_page: '500' };
-  } else {
-    // yearly
-    params = { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31`, per_page: '500' };
-  }
+async function loadMonthSummary(period: Period = activePeriod.value) {
+  const params: Record<string, string> = {
+    ...buildPeriodParams(period),
+    per_page: '500',
+  };
 
   try {
     const res = await api.get('/transactions', { params });
     const data = res.data?.data;
     const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[]) : [];
-    monthlyIncome.value = list.reduce((s, tx) => {
-      const a = Number(tx.amount ?? 0);
-      return s + (a > 0 ? a : 0);
-    }, 0);
-    monthlyExpense.value = list.reduce((s, tx) => {
-      const a = Number(tx.amount ?? 0);
-      return s + (a < 0 ? Math.abs(a) : 0);
-    }, 0);
+
+    let income = 0;
+    let expense = 0;
+
+    for (const tx of list) {
+      const amount = Number(tx.amount ?? 0);
+      const absAmount = Math.abs(amount);
+      const txClass = classifyTx(tx, amount);
+
+      if (txClass === 'transfer') continue;
+      if (txClass === 'income') income += absAmount;
+      if (txClass === 'expense') expense += absAmount;
+    }
+
+    monthlyIncome.value = income;
+    monthlyExpense.value = expense;
   } catch (err) {
     console.warn('[LiteHome] Month summary error:', err);
   }
@@ -187,10 +230,17 @@ async function loadJars() {
   }
 }
 
-async function loadRecentTransactions(page = 1) {
+async function loadRecentTransactions(page = 1, period: Period = activePeriod.value) {
   transactionsLoading.value = true;
   try {
-    const res = await api.get('/transactions', { params: { per_page: TX_PER_PAGE, page, sort_by: 'date', sort_order: 'desc' } });
+    const params: Record<string, string | number> = {
+      ...buildPeriodParams(period),
+      per_page: TX_PER_PAGE,
+      page,
+      sort_by: 'date',
+      sort_order: 'desc',
+    };
+    const res = await api.get('/transactions', { params });
     const data = res.data?.data;
     const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[]) : [];
     // Read pagination meta (Laravel paginator)
@@ -216,11 +266,17 @@ async function loadRecentTransactions(page = 1) {
 }
 
 function onTxPageChange(page: number) {
-  void loadRecentTransactions(page);
+  if (page < 1 || page > txTotalPages.value || page === txCurrentPage.value) return;
+  void loadRecentTransactions(page, activePeriod.value);
 }
 
 onMounted(() => {
-  void Promise.all([loadBalanceSummary(), loadMonthSummary(), loadJars(), loadRecentTransactions()]);
+  void Promise.all([
+    loadBalanceSummary(),
+    loadMonthSummary(activePeriod.value),
+    loadJars(),
+    loadRecentTransactions(1, activePeriod.value),
+  ]);
 });
 </script>
 

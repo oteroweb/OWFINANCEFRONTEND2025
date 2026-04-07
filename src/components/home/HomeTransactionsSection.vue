@@ -30,6 +30,7 @@
           :class="{ 'txn-row--last': idx === (transactions?.length ?? 1) - 1 && (totalPages ?? 1) <= 1 }"
           role="button"
           tabindex="0"
+          @click="router.push('/user/transactions')"
           @keydown.enter="router.push(`/user/transactions`)"
         >
           <div class="txn-row__left">
