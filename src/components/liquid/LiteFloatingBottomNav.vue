@@ -11,10 +11,8 @@
         :aria-label="tab.label"
         @click="onTabClick(tab)"
       >
-        <q-icon
-          :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon"
-          size="24px"
-        />
+        <q-icon :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon" size="22px" />
+        <span>{{ tab.shortLabel }}</span>
       </button>
 
       <!-- Center: FAB -->
@@ -32,10 +30,8 @@
         :aria-label="tab.label"
         @click="onTabClick(tab)"
       >
-        <q-icon
-          :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon"
-          size="24px"
-        />
+        <q-icon :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon" size="22px" />
+        <span>{{ tab.shortLabel }}</span>
       </button>
     </div>
   </div>
@@ -51,10 +47,10 @@ const router = useRouter();
 const route = useRoute();
 
 const allTabs = [
-  { id: 'home',         label: 'Inicio',      icon: 'home',         route: '/user/home' },
-  { id: 'transactions', label: 'Movimientos', icon: 'receipt_long', route: '/user/transactions' },
-  { id: 'jars',         label: 'Cántaros',    icon: 'savings',      route: '/user/jars' },
-  { id: 'settings',     label: 'Ajustes',     icon: 'settings',     route: '/user/config' },
+  { id: 'home',         label: 'Inicio',      shortLabel: 'HOME',     icon: 'home',         route: '/user/home' },
+  { id: 'transactions', label: 'Movimientos', shortLabel: 'TRANS',    icon: 'receipt_long', route: '/user/transactions' },
+  { id: 'jars',         label: 'Cántaros',    shortLabel: 'JARS',     icon: 'savings',      route: '/user/jars' },
+  { id: 'settings',     label: 'Ajustes',     shortLabel: 'SETTINGS', icon: 'settings',     route: '/user/config' },
 ];
 
 const leftTabs  = allTabs.slice(0, 2);
@@ -97,8 +93,8 @@ function onTabClick(tab: { route: string }) {
   pointer-events: all;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 8px 10px;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -118,19 +114,30 @@ function onTabClick(tab: { route: string }) {
 }
 
 .fnav__tab {
-  width: 48px;
-  height: 48px;
+  min-width: 64px;
+  height: 56px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   border: none;
   background: transparent;
-  border-radius: 50%;
+  border-radius: 9999px;
   cursor: pointer;
   color: #94a3b8;
   transition: all 180ms cubic-bezier(0.23, 1, 0.32, 1);
+  padding: 6px 10px;
 
   .body--dark & { color: #475569; }
+
+  span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
 
   &:hover {
     background: rgba(14, 165, 233, 0.1);
@@ -147,7 +154,7 @@ function onTabClick(tab: { route: string }) {
     }
   }
 
-  &:active { transform: scale(0.88); }
+  &:active { transform: scale(0.94); }
 }
 
 .fnav__fab {

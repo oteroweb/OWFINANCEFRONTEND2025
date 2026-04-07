@@ -1,62 +1,74 @@
 <template>
-  <!-- Scrim -->
-  <transition name="qs-fade">
-    <div v-if="modelValue" class="qs-scrim" @click="onClose" />
-  </transition>
+  <div class="qs-root">
+    <!-- Scrim -->
+    <transition name="qs-fade">
+      <div v-if="modelValue" class="qs-scrim" @click="onClose" />
+    </transition>
 
-  <!-- Bottom Sheet -->
-  <transition name="qs-slide">
-    <div v-if="modelValue" class="qs-sheet">
-      <div class="qs-sheet__handle" />
+    <!-- Bottom Sheet -->
+    <transition name="qs-slide">
+      <div v-if="modelValue" class="qs-sheet">
+        <div class="qs-sheet__handle" />
 
-      <!-- 2x3 Actions Grid -->
-      <div class="qs-sheet__grid">
-        <button
-          v-for="action in actions"
-          :key="action.id"
-          class="qs-action"
-          @click="onActionSelect(action.id)"
-        >
-          <div class="qs-action__icon" :style="{ background: action.bg }">
-            <q-icon :name="action.icon" size="22px" :style="{ color: action.color }" />
-          </div>
-          <span>{{ action.label }}</span>
+        <!-- 2x3 Actions Grid -->
+        <div class="qs-sheet__grid">
+          <button
+            v-for="action in actions"
+            :key="action.id"
+            class="qs-action"
+            @click="onActionSelect(action.id)"
+          >
+            <div class="qs-action__icon" :style="{ background: action.bg }">
+              <q-icon :name="action.icon" size="22px" :style="{ color: action.color }" />
+            </div>
+            <span>{{ action.label }}</span>
+          </button>
+        </div>
+
+        <!-- AI Coach Button -->
+        <button class="qs-ai-btn" @click="onClose">
+          <q-icon name="psychology" size="22px" color="white" />
+          <span>Hablar con Asesor IA</span>
         </button>
       </div>
+    </transition>
 
-      <!-- AI Coach Button -->
-      <button class="qs-ai-btn" @click="onClose">
-        <q-icon name="psychology" size="22px" color="white" />
-        <span>Hablar con Asesor IA</span>
-      </button>
-    </div>
-  </transition>
-
-  <!-- Nav Overlay with X -->
-  <transition name="qs-slide">
-    <div v-if="modelValue" class="qs-nav-overlay">
-      <div class="qs-nav-overlay__tab">
-        <q-icon name="home" size="22px" /><span>HOME</span>
+    <!-- Nav Overlay with X -->
+    <transition name="qs-slide">
+      <div v-if="modelValue" class="qs-nav-overlay">
+        <button
+          v-for="tab in navTabs.slice(0, 2)"
+          :key="tab.id"
+          class="qs-nav-overlay__tab"
+          :class="{ 'qs-nav-overlay__tab--active': currentTab === tab.id }"
+          :aria-label="tab.label"
+          @click="onNavTabClick(tab.route)"
+        >
+          <q-icon :name="tab.icon" size="22px" /><span>{{ tab.label }}</span>
+        </button>
+        <button class="qs-nav-overlay__close" @click="onClose" aria-label="Cerrar">
+          <q-icon name="close" size="28px" color="primary" />
+        </button>
+        <button
+          v-for="tab in navTabs.slice(2)"
+          :key="tab.id"
+          class="qs-nav-overlay__tab"
+          :class="{ 'qs-nav-overlay__tab--active': currentTab === tab.id }"
+          :aria-label="tab.label"
+          @click="onNavTabClick(tab.route)"
+        >
+          <q-icon :name="tab.icon" size="22px" /><span>{{ tab.label }}</span>
+        </button>
       </div>
-      <div class="qs-nav-overlay__tab">
-        <q-icon name="receipt_long" size="22px" /><span>TRANS</span>
-      </div>
-      <button class="qs-nav-overlay__close" @click="onClose" aria-label="Cerrar">
-        <q-icon name="close" size="28px" color="primary" />
-      </button>
-      <div class="qs-nav-overlay__tab">
-        <q-icon name="savings" size="22px" /><span>JARS</span>
-      </div>
-      <div class="qs-nav-overlay__tab">
-        <q-icon name="settings" size="22px" /><span>SETTINGS</span>
-      </div>
-    </div>
-  </transition>
-
-  <!-- /new template -->
+    </transition>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useUiStore } from 'stores/ui';
+
 type ActionId = 'expense' | 'income' | 'transfer' | 'voice' | 'scan' | 'ai';
 
 interface Action {
@@ -78,6 +90,10 @@ const emit = defineEmits<{
   'action-selected': [{ type: ActionId }];
 }>();
 
+const router = useRouter();
+const route = useRoute();
+const ui = useUiStore();
+
 const actions: Action[] = [
   { id: 'expense',  label: 'Gasto',      icon: 'outbound',          bg: 'rgba(239,68,68,0.12)',   color: '#EF4444' },
   { id: 'income',   label: 'Ingreso',    icon: 'transit_enterexit', bg: 'rgba(16,185,129,0.12)',  color: '#10B981' },
@@ -87,8 +103,48 @@ const actions: Action[] = [
   { id: 'ai',       label: 'Auto IA',    icon: 'auto_awesome',      bg: 'rgba(14,165,233,0.12)',  color: '#0EA5E9' },
 ];
 
-function onActionSelect(id: ActionId) {
+const navTabs = [
+  { id: 'home', label: 'HOME', icon: 'home', route: '/user/home' },
+  { id: 'transactions', label: 'TRANS', icon: 'receipt_long', route: '/user/transactions' },
+  { id: 'jars', label: 'JARS', icon: 'savings', route: '/user/jars' },
+  { id: 'settings', label: 'SETTINGS', icon: 'settings', route: '/user/config' },
+];
+
+const currentTab = computed(() => {
+  const path = route.path;
+  if (path.includes('/transactions')) return 'transactions';
+  if (path.includes('/jars')) return 'jars';
+  if (path.includes('/config') || path.includes('/settings')) return 'settings';
+  return 'home';
+});
+
+async function goToTransactionsAndOpen(typeSlug?: 'income' | 'expense' | 'transfer'): Promise<void> {
+  await router.push('/user/transactions');
+  ui.openNewTransactionDialog(typeSlug);
+}
+
+async function handleAction(id: ActionId): Promise<void> {
+  if (id === 'income' || id === 'expense' || id === 'transfer') {
+    await goToTransactionsAndOpen(id);
+    return;
+  }
+
+  if (id === 'voice' || id === 'scan') {
+    await goToTransactionsAndOpen();
+    return;
+  }
+
+  await router.push('/user/home');
+}
+
+async function onActionSelect(id: ActionId) {
+  await handleAction(id);
   emit('action-selected', { type: id });
+  emit('update:modelValue', false);
+}
+
+function onNavTabClick(targetRoute: string): void {
+  void router.push(targetRoute);
   emit('update:modelValue', false);
 }
 
@@ -204,6 +260,8 @@ function onClose() {
   &__tab {
     flex: 1;
     display: flex;
+    border: none;
+    background: transparent;
     flex-direction: column;
     align-items: center;
     gap: 4px;
@@ -213,6 +271,14 @@ function onClose() {
     font-family: 'Outfit', sans-serif;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    cursor: pointer;
+    transition: color 160ms ease;
+
+    &--active {
+      color: #93c5fd;
+    }
+
+    &:active { transform: scale(0.96); }
   }
 
   &__close {
