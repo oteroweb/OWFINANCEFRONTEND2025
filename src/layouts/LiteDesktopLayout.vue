@@ -20,7 +20,7 @@
     <div class="dte-status-pill">
       <div class="dte-status-pill__status">
         <span class="dte-status-pill__dot" />
-        <span class="dte-status-pill__label">Estado: Óptimo</span>
+        <span class="dte-status-pill__label">Cántaros: {{ statusText }}</span>
       </div>
       <div class="dte-status-pill__actions">
         <button class="dte-status-pill__btn" aria-label="Estado óptimo" @click="showEstadoOptimo = true">
@@ -32,7 +32,14 @@
       </div>
     </div>
 
-    <DesktopEstadoOptimoPanel v-model="showEstadoOptimo" @details="onEstadoDetails" />
+    <DesktopEstadoOptimoPanel
+      v-model="showEstadoOptimo"
+      :total-available="ui.jarStatus.totalAvailable"
+      :availability-percent="ui.jarStatus.availabilityPercent"
+      :used-percent="ui.jarStatus.usedPercent"
+      :is-hidden="ui.hideValues"
+      @details="onEstadoDetails"
+    />
 
     <!-- Quick Action Sheet -->
     <QuickActionSheet
@@ -58,6 +65,13 @@ const ui = useUiStore();
 
 const showQuickActions = ref(false);
 const showEstadoOptimo = ref(false);
+
+const statusText = computed(() => {
+  const availability = Number(ui.jarStatus.availabilityPercent || 0);
+  if (availability >= 70) return 'Saludable';
+  if (availability >= 40) return 'En control';
+  return 'Atención';
+});
 
 const user = computed(() => {
   const u = auth.user;

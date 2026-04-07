@@ -4,37 +4,41 @@
   </transition>
 
   <transition name="optimo-pop">
-    <div v-if="modelValue" class="optimo-card" role="dialog" aria-label="Estado Óptimo">
+    <div v-if="modelValue" class="optimo-card" role="dialog" aria-label="Estado de Cántaros">
       <div class="optimo-card__header">
-        <h4>Estado Óptimo</h4>
+        <h4>Estado de Cántaros</h4>
         <button aria-label="Cerrar" @click="emit('update:modelValue', false)">
           <q-icon name="close" size="18px" />
         </button>
       </div>
 
+      <p class="optimo-card__subtitle">
+        Vista rápida de cómo va tu disponibilidad y el uso de tus cántaros.
+      </p>
+
       <div class="optimo-card__list">
         <div class="optimo-item">
           <div class="optimo-item__left">
-            <q-icon name="dark_mode" size="20px" />
-            <span>Sueño</span>
+            <q-icon name="account_balance_wallet" size="20px" />
+            <span>Disponibilidad</span>
           </div>
-          <strong>95%</strong>
+          <strong>{{ hiddenValue }}</strong>
         </div>
 
         <div class="optimo-item">
           <div class="optimo-item__left">
-            <q-icon name="favorite" size="20px" />
-            <span>Recuperación</span>
+            <q-icon name="pie_chart" size="20px" />
+            <span>% Disponible</span>
           </div>
-          <strong>92%</strong>
+          <strong>{{ fmtPercent(props.availabilityPercent) }}</strong>
         </div>
 
         <div class="optimo-item">
           <div class="optimo-item__left">
-            <q-icon name="directions_run" size="20px" />
-            <span>Actividad</span>
+            <q-icon name="insights" size="20px" />
+            <span>% Utilizado</span>
           </div>
-          <strong>98%</strong>
+          <strong>{{ fmtPercent(props.usedPercent) }}</strong>
         </div>
       </div>
 
@@ -44,18 +48,41 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+
 interface Props {
   modelValue?: boolean;
+  totalAvailable?: number;
+  availabilityPercent?: number;
+  usedPercent?: number;
+  currency?: string;
+  isHidden?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   modelValue: false,
+  totalAvailable: 0,
+  availabilityPercent: 0,
+  usedPercent: 0,
+  currency: '$',
+  isHidden: false,
 });
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
   details: [];
 }>();
+
+function fmtPercent(value: number) {
+  const safe = Math.max(0, Math.min(100, Number(value || 0)));
+  return `${safe.toFixed(0)}%`;
+}
+
+const hiddenValue = computed(() => {
+  if (props.isHidden) return `${props.currency}••••`;
+  const amount = Number(props.totalAvailable || 0);
+  return `${props.currency}${amount.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+});
 </script>
 
 <style scoped lang="scss">
@@ -112,6 +139,13 @@ const emit = defineEmits<{
     flex-direction: column;
     gap: 10px;
     margin-bottom: 14px;
+  }
+
+  &__subtitle {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: rgba(248, 250, 252, 0.84);
+    line-height: 1.4;
   }
 
   &__details {

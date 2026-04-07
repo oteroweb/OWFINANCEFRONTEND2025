@@ -23,6 +23,8 @@
           :is-loading="jarsLoading"
           :currency="currencySymbol"
           :is-hidden="isHidden"
+          :total-available="jarStatus.totalAvailable"
+          :availability-percent="jarStatus.availabilityPercent"
         />
         <HomeTransactionsSection
           :transactions="formattedTransactions"
@@ -80,9 +82,24 @@ function onPeriodChange(p: string) {
 }
 
 // ─── Jars ─────────────────────────────────────────────────────────────────────
-type JarItem = { id: number; name: string; balance: number; progress: number; color?: string };
+type JarItem = { id: number; name: string; balance: number; allocated: number; progress: number; color?: string };
 const activeJars = ref<JarItem[]>([]);
 const jarsLoading = ref(false);
+
+const jarStatus = computed(() => {
+  const totalAllocated = activeJars.value.reduce((acc, jar) => acc + Math.max(0, Number(jar.allocated || 0)), 0);
+  const totalAvailable = activeJars.value.reduce((acc, jar) => acc + Math.max(0, Number(jar.balance || 0)), 0);
+  const availabilityPercent = totalAllocated > 0 ? (totalAvailable / totalAllocated) * 100 : 0;
+  const usedPercent = totalAllocated > 0 ? 100 - availabilityPercent : 0;
+
+  return {
+    totalAllocated,
+    totalAvailable,
+    availabilityPercent: Math.max(0, Math.min(100, availabilityPercent)),
+    usedPercent: Math.max(0, Math.min(100, usedPercent)),
+    jarCount: activeJars.value.length,
+  };
+});
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
 type TxRaw = { id: number; name: string; amount: number; date: string; category: string; type: 'income' | 'expense'; accountName?: string };
@@ -231,13 +248,28 @@ async function loadJars() {
           const assigned = Number(bal.allocated_amount || 0);
           const balance = Number(bal.available_balance || 0);
           const progress = assigned > 0 ? Math.min(100, Math.round((assigned - balance) / assigned * 100)) : 0;
-          return { id: jarId, name: typeof jar.name === 'string' ? jar.name : 'Cántaro', balance, progress, color: (jar.color as string) || '#0ea5e9' };
+          return {
+            id: jarId,
+            name: typeof jar.name === 'string' ? jar.name : 'Cántaro',
+            balance,
+            allocated: assigned,
+            progress,
+            color: (jar.color as string) || '#0ea5e9',
+          };
         } catch { return null; }
       })
     );
     activeJars.value = results.filter((j): j is JarItem => j !== null && j !== undefined);
+    ui.setJarStatus(jarStatus.value);
   } catch (err) {
     console.warn('[LiteHome] Jars error:', err);
+    ui.setJarStatus({
+      totalAllocated: 0,
+      totalAvailable: 0,
+      availabilityPercent: 0,
+      usedPercent: 0,
+      jarCount: 0,
+    });
   } finally {
     jarsLoading.value = false;
   }

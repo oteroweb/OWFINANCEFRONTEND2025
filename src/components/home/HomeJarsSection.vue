@@ -1,7 +1,14 @@
 <template>
   <div class="jars-section">
     <div class="jars-section__header">
-      <h3 class="jars-section__title">Mis Cántaros</h3>
+      <div class="jars-section__head-main">
+        <h3 class="jars-section__title">Mis Cántaros</h3>
+        <p class="jars-section__summary">
+          Disponibilidad:
+          <strong>{{ props.isHidden ? `${props.currency}••••` : `${props.currency}${fmtAmount(props.totalAvailable)}` }}</strong>
+          · {{ fmtPercent(props.availabilityPercent) }} disponible
+        </p>
+      </div>
       <button class="jars-section__link" @click="router.push('/user/jars')">Ver detalles</button>
     </div>
 
@@ -79,6 +86,8 @@ interface Props {
   isLoading?: boolean;
   currency?: string;
   isHidden?: boolean;
+  totalAvailable?: number;
+  availabilityPercent?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -86,6 +95,8 @@ const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
   currency: '$',
   isHidden: false,
+  totalAvailable: 0,
+  availabilityPercent: 0,
 });
 
 const router = useRouter();
@@ -108,6 +119,10 @@ function ringStyle(progress: number, color?: string) {
 function fmtAmount(n: number) {
   return n.toLocaleString('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
+
+function fmtPercent(n: number) {
+  return `${Math.max(0, Math.min(100, Number(n || 0))).toFixed(0)}%`;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -116,7 +131,14 @@ function fmtAmount(n: number) {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
     margin-bottom: 20px;
+  }
+
+  &__head-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   &__title {
@@ -140,6 +162,27 @@ function fmtAmount(n: number) {
     transition: opacity 160ms;
 
     &:hover { opacity: 0.7; text-decoration: underline; }
+  }
+
+  &__summary {
+    margin: 0;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+
+    strong {
+      color: #0f172a;
+      font-weight: 800;
+      font-family: 'Manrope', 'DM Sans', sans-serif;
+    }
+
+    .body--dark & {
+      color: #94a3b8;
+
+      strong {
+        color: #f1f5f9;
+      }
+    }
   }
 
   &__grid {
