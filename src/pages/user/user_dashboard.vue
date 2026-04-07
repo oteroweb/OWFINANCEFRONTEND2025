@@ -16,6 +16,24 @@
         @period-change="onPeriodChange"
       />
 
+      <HomePeriodSelectorTabs
+        v-model="activeInterval"
+        :month-label="anchorLabel"
+        @shift="onShiftInterval"
+      />
+
+      <div class="dash-components-entry">
+        <q-btn
+          no-caps
+          unelevated
+          color="primary"
+          icon="widgets"
+          label="Ver Componentes de Intervalos"
+          class="dash-components-entry__btn"
+          @click="router.push('/user/home-components')"
+        />
+      </div>
+
       <!-- Two-column grid: Jars (5) | Transactions (7) -->
       <div class="dash-grid">
         <HomeJarsSection
@@ -42,19 +60,20 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import HomeHeroCard from 'src/components/home/HomeHeroCard.vue';
 import HomeJarsSection from 'src/components/home/HomeJarsSection.vue';
 import HomeTransactionsSection from 'src/components/home/HomeTransactionsSection.vue';
+import HomePeriodSelectorTabs from 'src/components/home/periods/HomePeriodSelectorTabs.vue';
+import type { HomeIntervalKey } from 'src/components/home/periods/HomePeriodSelectorTabs.vue';
 
 defineOptions({ name: 'LiteHomePage' });
 
 const router = useRouter();
 const ui = useUiStore();
-void router; // used in child components via inject
 
 type Period = 'monthly' | 'weekly' | 'yearly';
 
@@ -70,6 +89,60 @@ const monthlyExpense = ref(0);
 // ─── Period / visibility UI state ────────────────────────────────────────────
 const isHidden = computed(() => ui.hideValues);
 const activePeriod = ref<Period>('monthly');
+const activeInterval = ref<HomeIntervalKey>('month');
+const periodAnchor = ref(new Date());
+
+const anchorLabel = computed(() =>
+  periodAnchor.value.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  })
+);
+
+function intervalToPeriod(interval: HomeIntervalKey): Period {
+  if (interval === 'year') return 'yearly';
+  if (interval === 'week' || interval === 'day' || interval === 'fortnight') return 'weekly';
+  return 'monthly';
+}
+
+function shiftAnchorByInterval(direction: -1 | 1, interval: HomeIntervalKey) {
+  const next = new Date(periodAnchor.value);
+
+  if (interval === 'year') {
+    next.setFullYear(next.getFullYear() + direction);
+  } else if (interval === 'week') {
+    next.setDate(next.getDate() + (7 * direction));
+  } else if (interval === 'day') {
+    next.setDate(next.getDate() + direction);
+  } else if (interval === 'fortnight') {
+    next.setDate(next.getDate() + (14 * direction));
+  } else {
+    next.setMonth(next.getMonth() + direction);
+  }
+
+  periodAnchor.value = next;
+}
+
+function onShiftInterval(direction: -1 | 1) {
+  shiftAnchorByInterval(direction, activeInterval.value);
+  txCurrentPage.value = 1;
+  const mapped = intervalToPeriod(activeInterval.value);
+  activePeriod.value = mapped;
+  void Promise.all([
+    loadMonthSummary(mapped),
+    loadRecentTransactions(1, mapped),
+  ]);
+}
+
+watch(activeInterval, (interval) => {
+  const mapped = intervalToPeriod(interval);
+  activePeriod.value = mapped;
+  txCurrentPage.value = 1;
+  void Promise.all([
+    loadMonthSummary(mapped),
+    loadRecentTransactions(1, mapped),
+  ]);
+});
 
 function onPeriodChange(p: string) {
   if (p !== 'monthly' && p !== 'weekly' && p !== 'yearly') return;
@@ -154,7 +227,7 @@ function formatDate(dateStr: string): string {
 }
 
 function buildPeriodParams(period: Period): Record<string, string> {
-  const now = new Date();
+  const now = periodAnchor.value;
 
   if (period === 'monthly') {
     return {
@@ -352,6 +425,21 @@ onMounted(() => {
   margin-bottom: 40px;
 
   @media (max-width: 599px) { margin-bottom: 28px; }
+}
+
+.dash-components-entry {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 18px;
+
+  &__btn {
+    border-radius: 9999px;
+  }
+
+  @media (max-width: 899px) {
+    justify-content: flex-start;
+    margin: 0 0 14px;
+  }
 }
 
 .dash-grid {
