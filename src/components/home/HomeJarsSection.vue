@@ -44,7 +44,7 @@
         </div>
 
         <p class="jar-card__name">{{ jar.name }}</p>
-        <p class="jar-card__amount">{{ currency }}{{ fmtAmount(jar.balance) }}</p>
+        <p class="jar-card__amount">{{ isHidden ? `${currency}••••` : `${currency}${fmtAmount(jar.balance)}` }}</p>
       </div>
 
       <!-- Add card -->
@@ -78,12 +78,14 @@ interface Props {
   jars?: Jar[];
   isLoading?: boolean;
   currency?: string;
+  isHidden?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   jars: () => [],
   isLoading: false,
   currency: '$',
+  isHidden: false,
 });
 
 const router = useRouter();

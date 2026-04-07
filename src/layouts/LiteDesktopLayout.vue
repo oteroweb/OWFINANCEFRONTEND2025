@@ -23,7 +23,7 @@
         <span class="dte-status-pill__label">Estado: Óptimo</span>
       </div>
       <div class="dte-status-pill__actions">
-        <button class="dte-status-pill__btn" aria-label="Acciones" @click="showQuickActions = true">
+        <button class="dte-status-pill__btn" aria-label="Estado óptimo" @click="showEstadoOptimo = true">
           <q-icon name="menu" size="20px" />
         </button>
         <button class="dte-status-pill__btn" aria-label="Mostrar u ocultar montos" @click="ui.toggleHideValues()">
@@ -31,6 +31,8 @@
         </button>
       </div>
     </div>
+
+    <DesktopEstadoOptimoPanel v-model="showEstadoOptimo" @details="onEstadoDetails" />
 
     <!-- Quick Action Sheet -->
     <QuickActionSheet
@@ -48,12 +50,14 @@ import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
 import LiteHeaderDesktop from 'components/liquid/LiteHeaderDesktop.vue';
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
+import DesktopEstadoOptimoPanel from 'components/liquid/DesktopEstadoOptimoPanel.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
 const ui = useUiStore();
 
 const showQuickActions = ref(false);
+const showEstadoOptimo = ref(false);
 
 const user = computed(() => {
   const u = auth.user;
@@ -70,6 +74,11 @@ const onMenuClick  = () => { void router.push('/user/home'); };
 
 const onActionSelected = () => {
   // Action handling is centralized inside QuickActionSheet.
+};
+
+const onEstadoDetails = () => {
+  showEstadoOptimo.value = false;
+  void router.push('/user/expense-analysis');
 };
 </script>
 

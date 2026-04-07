@@ -45,7 +45,7 @@
 
           <div class="txn-row__right">
             <p class="txn-row__amount" :class="tx.isIncome ? 'txn-row__amount--income' : 'txn-row__amount--expense'">
-              {{ tx.isIncome ? '+' : '-' }}{{ currency }}{{ tx.amount }}
+              {{ isHidden ? `${currency}••••` : `${tx.isIncome ? '+' : '-'}${currency}${tx.amount}` }}
             </p>
             <p v-if="tx.account" class="txn-row__account">{{ tx.account }}</p>
           </div>
@@ -88,6 +88,7 @@ interface Props {
   currency?: string;
   currentPage?: number;
   totalPages?: number;
+  isHidden?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
@@ -96,6 +97,7 @@ withDefaults(defineProps<Props>(), {
   currency: '$',
   currentPage: 1,
   totalPages: 1,
+  isHidden: false,
 });
 
 const emit = defineEmits<{ 'page-change': [page: number] }>();

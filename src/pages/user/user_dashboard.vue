@@ -12,7 +12,7 @@
         :is-hidden="isHidden"
         :active-period="activePeriod"
         class="dash-hero"
-        @toggle-hidden="isHidden = !isHidden"
+        @toggle-hidden="ui.toggleHideValues()"
         @period-change="onPeriodChange"
       />
 
@@ -22,6 +22,7 @@
           :jars="activeJars"
           :is-loading="jarsLoading"
           :currency="currencySymbol"
+          :is-hidden="isHidden"
         />
         <HomeTransactionsSection
           :transactions="formattedTransactions"
@@ -29,6 +30,7 @@
           :currency="currencySymbol"
           :current-page="txCurrentPage"
           :total-pages="txTotalPages"
+          :is-hidden="isHidden"
           @page-change="onTxPageChange"
         />
       </div>
@@ -41,6 +43,7 @@
 import { onMounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
+import { useUiStore } from 'stores/ui';
 import HomeHeroCard from 'src/components/home/HomeHeroCard.vue';
 import HomeJarsSection from 'src/components/home/HomeJarsSection.vue';
 import HomeTransactionsSection from 'src/components/home/HomeTransactionsSection.vue';
@@ -48,6 +51,7 @@ import HomeTransactionsSection from 'src/components/home/HomeTransactionsSection
 defineOptions({ name: 'LiteHomePage' });
 
 const router = useRouter();
+const ui = useUiStore();
 void router; // used in child components via inject
 
 type Period = 'monthly' | 'weekly' | 'yearly';
@@ -62,7 +66,7 @@ const monthlyIncome = ref(0);
 const monthlyExpense = ref(0);
 
 // ─── Period / visibility UI state ────────────────────────────────────────────
-const isHidden = ref(false);
+const isHidden = computed(() => ui.hideValues);
 const activePeriod = ref<Period>('monthly');
 
 function onPeriodChange(p: string) {
@@ -136,21 +140,30 @@ function buildPeriodParams(period: Period): Record<string, string> {
   const now = new Date();
 
   if (period === 'monthly') {
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    return { month };
+    return {
+      period: 'month',
+      year: String(now.getFullYear()),
+      month: String(now.getMonth() + 1),
+    };
   }
 
   if (period === 'weekly') {
-    const day = now.getDay(); // 0=Sun
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((day + 6) % 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    return { from: fmt(monday), to: fmt(sunday) };
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return {
+      period: 'week',
+      year: String(d.getUTCFullYear()),
+      week: String(week),
+    };
   }
 
-  return { from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31` };
+  return {
+    period: 'year',
+    year: String(now.getFullYear()),
+  };
 }
 
 // ─── Data loading ─────────────────────────────────────────────────────────────
@@ -238,16 +251,21 @@ async function loadRecentTransactions(page = 1, period: Period = activePeriod.va
       per_page: TX_PER_PAGE,
       page,
       sort_by: 'date',
-      sort_order: 'desc',
+      descending: 'true',
     };
     const res = await api.get('/transactions', { params });
     const data = res.data?.data;
     const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[]) : [];
-    // Read pagination meta (Laravel paginator)
+    const sortedList = [...list].sort((a, b) => {
+      const da = typeof a.date === 'string' ? a.date : '';
+      const db = typeof b.date === 'string' ? b.date : '';
+      return db.localeCompare(da);
+    });
+
     const meta = (res.data?.meta || data?.meta || {}) as Record<string, unknown>;
     txCurrentPage.value = Number(meta.current_page ?? page);
     txTotalPages.value = Number(meta.last_page ?? 1);
-    recentTransactions.value = list.map((tx) => ({
+    recentTransactions.value = sortedList.map((tx) => ({
       id: Number(tx.id),
       name: typeof tx.name === 'string' ? tx.name : (typeof tx.description === 'string' ? tx.description : 'Transacción'),
       amount: Math.abs(Number(tx.amount ?? 0)),
