@@ -9,7 +9,8 @@
         <span class="dte-header__logo-text">OW Finance <span class="dte-header__logo-lite">Lite</span></span>
       </div>
 
-      <!-- Center: Nav Pill (Stitch-like) -->
+      <!-- Center: Nav + Compact Interval -->
+      <div class="dte-header__center">
       <nav class="dte-header__nav" role="navigation">
         <button
           v-for="tab in navTabs"
@@ -24,16 +25,29 @@
           <span>{{ tab.label }}</span>
         </button>
       </nav>
+      <div v-if="showIntervalMenu" class="dte-header__interval">
+        <q-btn dense flat round icon="chevron_left" @click="$emit('interval-shift', -1)" />
+        <q-select
+          :model-value="intervalValue"
+          :options="intervalOptions"
+          emit-value
+          map-options
+          dense
+          outlined
+          class="dte-header__interval-select"
+          @update:model-value="(val) => $emit('interval-change', val)"
+        />
+        <q-btn dense flat round icon="chevron_right" @click="$emit('interval-shift', 1)" />
+      </div>
+      </div>
 
       <!-- Right: Actions -->
       <div class="dte-header__actions">
-        <button class="dte-header__btn-nuevo" @click="$emit('nuevo-click')" aria-label="Nuevo">
+        <button class="dte-header__btn-plus" @click="$emit('nuevo-click')" aria-label="Nuevo">
           <q-icon name="add" size="18px" />
-          <span>Nuevo</span>
         </button>
         <button class="dte-header__btn-assistant" @click="$emit('assistant-click')" aria-label="Asistente virtual">
-          <span class="material-symbols-outlined text-accent">psychology</span>
-          <span>Asistente</span>
+          <q-icon name="psychology" size="20px" />
         </button>
         <button class="dte-header__icon-btn" @click="$emit('notifications-click')" aria-label="Notificaciones">
           <q-icon name="notifications" size="20px" />
@@ -57,13 +71,24 @@ interface User {
   initials?: string;
 }
 
-defineProps<{ user?: User }>();
+type HeaderInterval = 'month' | 'week' | 'year';
+
+withDefaults(defineProps<{
+  user?: User;
+  intervalValue?: HeaderInterval;
+  showIntervalMenu?: boolean;
+}>(), {
+  intervalValue: 'month',
+  showIntervalMenu: false,
+});
 
 defineEmits<{
   'nuevo-click': [];
   'assistant-click': [];
   'avatar-click': [];
   'notifications-click': [];
+  'interval-change': [value: HeaderInterval];
+  'interval-shift': [direction: -1 | 1];
 }>();
 
 const router = useRouter();
@@ -74,6 +99,12 @@ const navTabs = [
   { id: 'transactions', label: 'Movimientos', icon: 'receipt_long', route: '/user/transactions' },
   { id: 'jars', label: 'Cántaros', icon: 'savings', route: '/user/jars' },
   { id: 'settings', label: 'Ajustes', icon: 'settings', route: '/user/config' },
+];
+
+const intervalOptions: Array<{ label: string; value: HeaderInterval }> = [
+  { label: 'Mensual', value: 'month' },
+  { label: 'Semanal', value: 'week' },
+  { label: 'Anual', value: 'year' },
 ];
 
 const currentTab = computed(() => {
@@ -162,6 +193,31 @@ function onTabClick(tab: { route: string }) {
     }
   }
 
+  &__center {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__interval {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 3px 4px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+
+    .body--dark & {
+      background: #1a1a2e;
+    }
+  }
+
+  &__interval-select {
+    min-width: 126px;
+  }
+
   &__tab {
     display: flex;
     align-items: center;
@@ -214,21 +270,19 @@ function onTabClick(tab: { route: string }) {
     flex-shrink: 0;
   }
 
-  &__btn-nuevo {
+  &__btn-plus {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
     background: #1e3a8a;
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 700;
+    border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
     transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
-    white-space: nowrap;
 
     &:hover { background: #1d3278; }
     &:active { transform: scale(0.97); }
@@ -237,29 +291,18 @@ function onTabClick(tab: { route: string }) {
   &__btn-assistant {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 9px 14px;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
     background: rgba(139, 92, 246, 0.12);
     color: #7c3aed;
     border: none;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 700;
+    border-radius: 50%;
     cursor: pointer;
     transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
-    white-space: nowrap;
-
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 1;
-      transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
-    }
 
     &:hover {
       background: rgba(139, 92, 246, 0.2);
-
-      .material-symbols-outlined {
-        transform: rotate(12deg);
-      }
     }
 
     &:active { transform: scale(0.97); }

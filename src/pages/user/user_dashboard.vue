@@ -16,33 +16,6 @@
         @period-change="onPeriodChange"
       />
 
-      <div class="dash-period-row">
-        <HomePeriodSelectorCompact v-model="activeInterval" @shift="onShiftInterval" />
-        <q-btn
-          no-caps
-          unelevated
-          color="primary"
-          label="Personalizado"
-          icon="tune"
-          class="dash-period-row__custom-btn"
-          @click="showCustomPeriodModal = true"
-        />
-      </div>
-
-      <q-dialog v-model="showCustomPeriodModal">
-        <q-card class="dash-period-modal">
-          <q-card-section>
-            <div class="dash-period-modal__title">Personalizado</div>
-            <p class="dash-period-modal__text">
-              Configuración personalizada disponible pronto.
-            </p>
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Cerrar" color="primary" @click="showCustomPeriodModal = false" />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
-
       <div class="dash-components-entry">
         <q-btn
           no-caps
@@ -82,18 +55,18 @@
 
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import HomeHeroCard from 'src/components/home/HomeHeroCard.vue';
 import HomeJarsSection from 'src/components/home/HomeJarsSection.vue';
 import HomeTransactionsSection from 'src/components/home/HomeTransactionsSection.vue';
-import HomePeriodSelectorCompact from 'src/components/home/periods/HomePeriodSelectorCompact.vue';
 import type { HomeIntervalKey } from 'src/components/home/periods/HomePeriodSelectorCompact.vue';
 
 defineOptions({ name: 'LiteHomePage' });
 
 const router = useRouter();
+const route = useRoute();
 const ui = useUiStore();
 
 type Period = 'monthly' | 'weekly' | 'yearly';
@@ -112,7 +85,6 @@ const isHidden = computed(() => ui.hideValues);
 const activePeriod = ref<Period>('monthly');
 const activeInterval = ref<HomeIntervalKey>('month');
 const periodAnchor = ref(new Date());
-const showCustomPeriodModal = ref(false);
 
 function intervalToPeriod(interval: HomeIntervalKey): Period {
   if (interval === 'year') return 'yearly';
@@ -154,6 +126,28 @@ watch(activeInterval, (interval) => {
     loadRecentTransactions(1, mapped),
   ]);
 });
+
+watch(
+  () => route.query.interval,
+  (interval) => {
+    const raw = Array.isArray(interval) ? interval[0] : interval;
+    const next = raw === 'week' || raw === 'year' ? raw : 'month';
+    if (next !== activeInterval.value) {
+      activeInterval.value = next;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => `${Array.isArray(route.query.shiftAt) ? route.query.shiftAt[0] : (route.query.shiftAt ?? '')}:${Array.isArray(route.query.shiftDir) ? route.query.shiftDir[0] : (route.query.shiftDir ?? '')}`,
+  (token) => {
+    const [, dirRaw] = token.split(':');
+    if (dirRaw === '1' || dirRaw === '-1') {
+      onShiftInterval(Number(dirRaw) as -1 | 1);
+    }
+  }
+);
 
 function onPeriodChange(p: string) {
   if (p !== 'monthly' && p !== 'weekly' && p !== 'yearly') return;
@@ -451,42 +445,6 @@ onMounted(() => {
     justify-content: flex-start;
     margin: 0 0 14px;
   }
-}
-
-.dash-period-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-
-  &__custom-btn {
-    border-radius: 9999px;
-    height: 38px;
-    box-shadow: 0 4px 18px rgba(14, 165, 233, 0.24);
-  }
-
-  @media (max-width: 899px) {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-}
-
-.dash-period-modal {
-  border-radius: 20px;
-  min-width: 320px;
-}
-
-.dash-period-modal__title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-  font-family: 'Manrope', 'DM Sans', sans-serif;
-}
-
-.dash-period-modal__text {
-  margin: 8px 0 0;
-  color: #64748b;
 }
 
 .dash-grid {

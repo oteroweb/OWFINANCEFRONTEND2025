@@ -5,8 +5,12 @@
     <q-header flat bordered class="dte-layout-header">
       <LiteHeaderDesktop
         :user="user"
+        :show-interval-menu="showHeaderIntervalMenu"
+        :interval-value="headerInterval"
         @nuevo-click="showQuickActions = true"
         @assistant-click="showAssistant = true"
+        @interval-change="onHeaderIntervalChange"
+        @interval-shift="onHeaderIntervalShift"
         @avatar-click="onAvatarClick"
         @notifications-click="onMenuClick"
       />
@@ -67,7 +71,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
 import LiteHeaderDesktop from 'components/liquid/LiteHeaderDesktop.vue';
@@ -75,12 +79,42 @@ import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
 import DesktopEstadoOptimoPanel from 'components/liquid/DesktopEstadoOptimoPanel.vue';
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 const ui = useUiStore();
 
 const showQuickActions = ref(false);
 const showEstadoOptimo = ref(false);
 const showAssistant = ref(false);
+
+const showHeaderIntervalMenu = computed(() => route.path === '/user/home');
+const headerInterval = computed<'month' | 'week' | 'year'>(() => {
+  const queryValue = route.query.interval;
+  const value = Array.isArray(queryValue) ? queryValue[0] : queryValue;
+  return value === 'week' || value === 'year' ? value : 'month';
+});
+
+function onHeaderIntervalChange(value: 'month' | 'week' | 'year') {
+  void router.replace({
+    path: route.path,
+    query: {
+      ...route.query,
+      interval: value,
+    },
+  });
+}
+
+function onHeaderIntervalShift(direction: -1 | 1) {
+  void router.replace({
+    path: route.path,
+    query: {
+      ...route.query,
+      interval: headerInterval.value,
+      shiftAt: String(Date.now()),
+      shiftDir: String(direction),
+    },
+  });
+}
 
 const statusText = computed(() => {
   const availability = Number(ui.jarStatus.availabilityPercent || 0);

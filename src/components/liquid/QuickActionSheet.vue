@@ -61,15 +61,27 @@
         </button>
       </div>
     </transition>
+
+    <q-dialog v-model="showCustomModal">
+      <q-card class="qs-custom-modal">
+        <q-card-section>
+          <div class="qs-custom-modal__title">Personalizado</div>
+          <p class="qs-custom-modal__text">Esta opción personalizada estará disponible muy pronto.</p>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cerrar" color="primary" @click="showCustomModal = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUiStore } from 'stores/ui';
 
-type ActionId = 'expense' | 'income' | 'transfer' | 'voice' | 'scan' | 'ai';
+type ActionId = 'expense' | 'income' | 'transfer' | 'voice' | 'scan' | 'ai' | 'custom';
 
 interface Action {
   id: ActionId;
@@ -93,6 +105,7 @@ const emit = defineEmits<{
 const router = useRouter();
 const route = useRoute();
 const ui = useUiStore();
+const showCustomModal = ref(false);
 
 const actions: Action[] = [
   { id: 'expense',  label: 'Gasto',      icon: 'outbound',          bg: 'rgba(239,68,68,0.12)',   color: '#EF4444' },
@@ -101,6 +114,7 @@ const actions: Action[] = [
   { id: 'voice',    label: 'Voz',        icon: 'mic',               bg: 'rgba(14,165,233,0.12)',  color: '#0EA5E9' },
   { id: 'scan',     label: 'Escanear',   icon: 'qr_code_scanner',   bg: 'rgba(251,191,36,0.12)',  color: '#FBBF24' },
   { id: 'ai',       label: 'Auto IA',    icon: 'auto_awesome',      bg: 'rgba(14,165,233,0.12)',  color: '#0EA5E9' },
+  { id: 'custom',   label: 'Personalizado', icon: 'tune',           bg: 'rgba(14,165,233,0.12)',  color: '#0EA5E9' },
 ];
 
 const navTabs = [
@@ -124,6 +138,11 @@ async function goToTransactionsAndOpen(typeSlug?: 'income' | 'expense' | 'transf
 }
 
 async function handleAction(id: ActionId): Promise<void> {
+  if (id === 'custom') {
+    showCustomModal.value = true;
+    return;
+  }
+
   if (id === 'income' || id === 'expense' || id === 'transfer') {
     await goToTransactionsAndOpen(id);
     return;
@@ -140,7 +159,9 @@ async function handleAction(id: ActionId): Promise<void> {
 async function onActionSelect(id: ActionId) {
   await handleAction(id);
   emit('action-selected', { type: id });
-  emit('update:modelValue', false);
+  if (id !== 'custom') {
+    emit('update:modelValue', false);
+  }
 }
 
 function onNavTabClick(targetRoute: string): void {
@@ -240,6 +261,23 @@ function onClose() {
   transition: transform 160ms ease-out;
 
   &:active { transform: scale(0.97); }
+}
+
+.qs-custom-modal {
+  border-radius: 18px;
+  min-width: 320px;
+}
+
+.qs-custom-modal__title {
+  font-family: 'Manrope', 'DM Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.qs-custom-modal__text {
+  margin: 8px 0 0;
+  color: #64748b;
 }
 
 .qs-nav-overlay {
