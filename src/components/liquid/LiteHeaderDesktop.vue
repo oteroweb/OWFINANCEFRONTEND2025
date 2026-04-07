@@ -9,7 +9,7 @@
         <span class="dte-header__logo-text">OW Finance <span class="dte-header__logo-lite">Lite</span></span>
       </div>
 
-      <!-- Center: Nav Pill (icon-only) -->
+      <!-- Center: Nav Pill (Stitch-like) -->
       <nav class="dte-header__nav" role="navigation">
         <button
           v-for="tab in navTabs"
@@ -20,7 +20,8 @@
           :aria-label="tab.label"
           @click="onTabClick(tab)"
         >
-          <q-icon :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon" size="22px" />
+          <q-icon :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon" size="20px" />
+          <span>{{ tab.label }}</span>
         </button>
       </nav>
 
@@ -145,9 +146,9 @@ function onTabClick(tab: { route: string }) {
     align-items: center;
     background: #f8fafc;
     padding: 4px;
-    border-radius: 20px;
+    border-radius: 16px;
     border: 1px solid #f1f5f9;
-    gap: 2px;
+    gap: 4px;
     flex-shrink: 0;
 
     .body--dark & {
@@ -159,10 +160,11 @@ function onTabClick(tab: { route: string }) {
   &__tab {
     display: flex;
     align-items: center;
+    gap: 8px;
     justify-content: center;
-    width: 44px;
     height: 38px;
-    border-radius: 14px;
+    padding: 0 14px;
+    border-radius: 12px;
     border: none;
     background: transparent;
     color: #94a3b8;
@@ -170,6 +172,13 @@ function onTabClick(tab: { route: string }) {
     transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
 
     .body--dark & { color: #64748b; }
+
+    span {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+    }
 
     &:hover {
       color: #1e3a8a;
@@ -181,6 +190,8 @@ function onTabClick(tab: { route: string }) {
       color: #1e3a8a;
       font-weight: 700;
       box-shadow: 0 2px 8px rgba(30, 58, 138, 0.12);
+
+      span { font-weight: 700; }
 
       .body--dark & {
         background: #0f172a;

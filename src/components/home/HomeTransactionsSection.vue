@@ -52,29 +52,18 @@
         </div>
       </template>
 
-      <!-- Pagination bar -->
-      <div v-if="!isLoading && (totalPages ?? 1) > 1" class="txns-pager">
+      <!-- Pagination bar (Stitch-like) -->
+      <div v-if="!isLoading && (transactions?.length ?? 0) > 0" class="txns-pager">
         <button
-          class="txns-pager__btn"
-          :disabled="(currentPage ?? 1) <= 1"
-          aria-label="Página anterior"
-          @click="emit('page-change', (currentPage ?? 1) - 1)"
-        >
-          <q-icon name="chevron_left" size="18px" />
-        </button>
-
-        <span class="txns-pager__info">
-          {{ currentPage ?? 1 }} / {{ totalPages ?? 1 }}
-        </span>
-
-        <button
-          class="txns-pager__btn"
+          class="txns-pager__load-more"
           :disabled="(currentPage ?? 1) >= (totalPages ?? 1)"
-          aria-label="Página siguiente"
+          aria-label="Cargar más movimientos"
           @click="emit('page-change', (currentPage ?? 1) + 1)"
         >
-          <q-icon name="chevron_right" size="18px" />
+          Cargar más
         </button>
+
+        <span class="txns-pager__info">{{ currentPage ?? 1 }} / {{ totalPages ?? 1 }}</span>
       </div>
     </div>
   </div>
@@ -289,31 +278,36 @@ const router = useRouter();
 
 .txns-pager {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 14px 24px;
+  gap: 8px;
+  padding: 14px 24px 18px;
   border-top: 1px solid #f1f5f9;
 
   .body--dark & { border-top-color: #1e293b; }
 
-  &__btn {
-    width: 32px;
-    height: 32px;
+  &__load-more {
+    min-width: 180px;
+    height: 34px;
+    padding: 0 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #e2e8f0;
-    background: white;
-    border-radius: 8px;
+    border: none;
+    background: #f8fafc;
+    border-radius: 10px;
     cursor: pointer;
-    color: #1e3a8a;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 11px;
+    font-weight: 800;
     transition: all 150ms ease;
 
     .body--dark & {
       background: #1e293b;
-      border-color: #334155;
-      color: #93c5fd;
+      color: #94a3b8;
     }
 
     &:disabled {
@@ -322,9 +316,13 @@ const router = useRouter();
     }
 
     &:not(:disabled):hover {
-      background: #1e3a8a;
-      color: white;
-      border-color: #1e3a8a;
+      background: #eef2ff;
+      color: #1e3a8a;
+
+      .body--dark & {
+        background: #334155;
+        color: #bfdbfe;
+      }
     }
   }
 
