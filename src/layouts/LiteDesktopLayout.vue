@@ -6,6 +6,7 @@
       <LiteHeaderDesktop
         :user="user"
         @nuevo-click="showQuickActions = true"
+        @assistant-click="showAssistant = true"
         @avatar-click="onAvatarClick"
         @notifications-click="onMenuClick"
       />
@@ -47,6 +48,20 @@
       @action-selected="onActionSelected"
     />
 
+    <q-dialog v-model="showAssistant">
+      <q-card class="assistant-modal">
+        <q-card-section>
+          <div class="assistant-modal__title">Asistente Virtual</div>
+          <p class="assistant-modal__text">
+            Hola, estoy listo para ayudarte con tus finanzas. Muy pronto tendrás acciones guiadas aquí.
+          </p>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cerrar" color="primary" @click="showAssistant = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-layout>
 </template>
 
@@ -65,6 +80,7 @@ const ui = useUiStore();
 
 const showQuickActions = ref(false);
 const showEstadoOptimo = ref(false);
+const showAssistant = ref(false);
 
 const statusText = computed(() => {
   const availability = Number(ui.jarStatus.availabilityPercent || 0);
@@ -184,5 +200,22 @@ const onEstadoDetails = () => {
 
     &:active { transform: scale(0.96); }
   }
+}
+
+.assistant-modal {
+  border-radius: 20px;
+  min-width: 340px;
+}
+
+.assistant-modal__title {
+  font-family: 'Manrope', 'DM Sans', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.assistant-modal__text {
+  margin: 8px 0 0;
+  color: #64748b;
 }
 </style>

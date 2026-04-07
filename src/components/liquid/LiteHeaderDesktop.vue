@@ -31,6 +31,10 @@
           <q-icon name="add" size="18px" />
           <span>Nuevo</span>
         </button>
+        <button class="dte-header__btn-assistant" @click="$emit('assistant-click')" aria-label="Asistente virtual">
+          <span class="material-symbols-outlined text-accent">psychology</span>
+          <span>Asistente</span>
+        </button>
         <button class="dte-header__icon-btn" @click="$emit('notifications-click')" aria-label="Notificaciones">
           <q-icon name="notifications" size="20px" />
         </button>
@@ -57,6 +61,7 @@ defineProps<{ user?: User }>();
 
 defineEmits<{
   'nuevo-click': [];
+  'assistant-click': [];
   'avatar-click': [];
   'notifications-click': [];
 }>();
@@ -227,6 +232,42 @@ function onTabClick(tab: { route: string }) {
 
     &:hover { background: #1d3278; }
     &:active { transform: scale(0.97); }
+  }
+
+  &__btn-assistant {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 14px;
+    background: rgba(139, 92, 246, 0.12);
+    color: #7c3aed;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    white-space: nowrap;
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 1;
+      transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    &:hover {
+      background: rgba(139, 92, 246, 0.2);
+
+      .material-symbols-outlined {
+        transform: rotate(12deg);
+      }
+    }
+
+    &:active { transform: scale(0.97); }
+
+    .body--dark & {
+      background: rgba(139, 92, 246, 0.18);
+      color: #c4b5fd;
+    }
   }
 
   &__icon-btn {
