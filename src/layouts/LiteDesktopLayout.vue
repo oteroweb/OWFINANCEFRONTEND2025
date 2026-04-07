@@ -54,7 +54,7 @@ const user = computed(() => {
 const onAvatarClick = () => { void router.push('/user/config'); };
 const onMenuClick  = () => { void router.push('/user/home'); };
 
-const onActionSelected = (_action: { type: string }) => {
+const onActionSelected = () => {
   // Action handling is centralized inside QuickActionSheet.
 };
 </script>
