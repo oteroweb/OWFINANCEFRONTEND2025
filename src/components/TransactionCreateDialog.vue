@@ -2811,6 +2811,24 @@ watch(
       if (matchedType) form.value.transaction_type_id = matchedType.id;
       ui.prefillTypeSlug = null;
     }
+    // AI extraction prefill: amount, name, date from useAiExtraction result
+    if (ui.prefillAmount !== null && ui.prefillAmount !== undefined) {
+      form.value.amount = ui.prefillAmount;
+      ui.prefillAmount = null;
+    }
+    if (ui.prefillName) {
+      form.value.name = ui.prefillName;
+      ui.prefillName = null;
+    }
+    if (ui.prefillDate) {
+      // API returns ISO date string (YYYY-MM-DD); convert to datetime-local format
+      const d = new Date(ui.prefillDate);
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        form.value.datetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+      ui.prefillDate = null;
+    }
     if (ui.prefillTransactionId && Number.isFinite(ui.prefillTransactionId)) {
       // Opcional: precargar datos reales de la transacción
       await prefillFromId(Number(ui.prefillTransactionId));

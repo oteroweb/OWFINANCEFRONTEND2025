@@ -26,7 +26,7 @@
         </div>
 
         <!-- AI Coach Button -->
-        <button class="qs-ai-btn" @click="onClose">
+        <button class="qs-ai-btn" @click="onAsesorClick">
           <q-icon name="psychology" size="22px" color="white" />
           <span>Hablar con Asesor IA</span>
         </button>
@@ -73,6 +73,20 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- AI Dialogs -->
+    <VoiceTransactionDialog
+      v-model="showVoiceDialog"
+      @extracted="handleAiExtracted"
+    />
+    <OcrTransactionDialog
+      v-model="showOcrDialog"
+      @extracted="handleAiExtracted"
+    />
+    <AutoIaDialog
+      v-model="showAutoIaDialog"
+      @extracted="handleAiExtracted"
+    />
   </div>
 </template>
 
@@ -80,6 +94,10 @@
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUiStore } from 'stores/ui';
+import VoiceTransactionDialog from 'src/components/ai/VoiceTransactionDialog.vue';
+import OcrTransactionDialog from 'src/components/ai/OcrTransactionDialog.vue';
+import AutoIaDialog from 'src/components/ai/AutoIaDialog.vue';
+import type { ExtractionResult } from 'src/composables/useAiExtraction';
 
 type ActionId = 'expense' | 'income' | 'transfer' | 'voice' | 'scan' | 'ai' | 'custom';
 
@@ -106,6 +124,9 @@ const router = useRouter();
 const route = useRoute();
 const ui = useUiStore();
 const showCustomModal = ref(false);
+const showVoiceDialog = ref(false);
+const showOcrDialog = ref(false);
+const showAutoIaDialog = ref(false);
 
 const actions: Action[] = [
   { id: 'expense',  label: 'Gasto',      icon: 'outbound',          bg: 'rgba(239,68,68,0.12)',   color: '#EF4444' },
@@ -148,12 +169,39 @@ async function handleAction(id: ActionId): Promise<void> {
     return;
   }
 
-  if (id === 'voice' || id === 'scan') {
-    await goToTransactionsAndOpen();
+  if (id === 'voice') {
+    showVoiceDialog.value = true;
+    return;
+  }
+
+  if (id === 'scan') {
+    showOcrDialog.value = true;
+    return;
+  }
+
+  if (id === 'ai') {
+    showAutoIaDialog.value = true;
     return;
   }
 
   await router.push('/user/home');
+}
+
+async function handleAiExtracted(result: ExtractionResult) {
+  const typeMap: Record<string, 'income' | 'expense' | 'transfer'> = {
+    income: 'income',
+    expense: 'expense',
+    transfer: 'transfer',
+  };
+  const typeSlug = result.data.type ? (typeMap[result.data.type] ?? undefined) : undefined;
+
+  await router.push('/user/transactions');
+  ui.openNewTransactionDialogWithAi({
+    typeSlug: typeSlug ?? null,
+    amount: result.data.amount ?? null,
+    name: result.data.description ?? null,
+    date: result.data.date ?? null,
+  });
 }
 
 async function onActionSelect(id: ActionId) {
@@ -171,6 +219,11 @@ function onNavTabClick(targetRoute: string): void {
 
 function onClose() {
   emit('update:modelValue', false);
+}
+
+async function onAsesorClick() {
+  emit('update:modelValue', false);
+  await router.push('/user/asesor');
 }
 </script>
 
