@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Brand" name="Guía de integración" subtitle="Paso a paso + prompt para llevar el nuevo layout y look & feel al sistema" viewport="1080x2400" -->
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OW Finance · Guía de integración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="colors_and_type.css">
+  <link rel="stylesheet" href="guide.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+  <div id="bar">
+    <span class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M5 14c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="2" fill="#fff"/></svg></span>
+      OW Finance · <span style="color:var(--fg-3);font-weight:600">Guía de integración</span>
+    </span>
+    <span class="spacer"></span>
+    <a class="toplink" href="OW Finance - Selector de Periodo.html"><span class="material-icons">date_range</span>Selector de período</a>
+    <a class="toplink" href="OW Finance Desktop.html"><span class="material-icons">dashboard</span>Lite Desktop</a>
+    <button class="icon-toggle" id="theme-btn" aria-label="Tema"><span class="material-icons">dark_mode</span></button>
+  </div>
+
+  <div class="wrap">
+    <!-- TOC -->
+    <nav class="toc" id="toc">
+      <div class="toc-h">El proceso</div>
+      <a href="#look">Look &amp; feel</a>
+      <a href="#fases">Fases de migración</a>
+      <a href="#p1">1 · Tokens</a>
+      <a href="#scheme">· Esquema de color</a>
+      <a href="#p2">2 · Fuentes</a>
+      <a href="#p3">3 · Iconos</a>
+      <a href="#p4">4 · Layout: Lite vs Pro</a>
+      <a href="#p5">5 · Componentes núcleo</a>
+      <a href="#tx">· Transacciones + filtro</a>
+      <a href="#p6">6 · Selector de período</a>
+      <a href="#p7">7 · Tema claro / oscuro</a>
+      <a href="#p8">8 · Voz y dinero</a>
+      <a href="#p9">9 · QA de adherencia</a>
+      <a href="#prompt">Prompt para agente</a>
+      <a href="#files">Mapa de archivos</a>
+    </nav>
+
+    <main>
+      <!-- HERO -->
+      <header class="hero">
+        <span class="kicker"><span class="material-icons" style="font-size:15px">auto_awesome</span>Instructivo de migración · v2026</span>
+        <h1 class="h1">Cómo llevar el nuevo layout y look &amp; feel al sistema</h1>
+        <p class="sub">Este documento es el puente entre el design system y el código. Te lleva, en orden, de los tokens a las pantallas: qué importar, en qué orden, qué reemplazar en el frontend Quasar/Vue actual, y cómo verificar que quedó fiel. Al final hay un <b>prompt listo para pegar</b> a un agente de código.</p>
+        <div class="meta">
+          <span class="pill"><span class="material-icons">schedule</span>Lectura · 9 min</span>
+          <span class="pill"><span class="material-icons">layers</span>9 pasos · 4 fases</span>
+          <span class="pill"><span class="material-icons">palette</span>Esquema de 5 variables · Satoshi</span>
+          <span class="pill"><span class="material-icons">devices</span>Lite + Pro · claro/oscuro</span>
+        </div>
+      </header>
+
+      <!-- LOOK & FEEL -->
+      <section class="step" id="look">
+        <div class="step-head">
+          <div class="step-num soft"><span class="material-icons" style="font-size:21px">visibility</span></div>
+          <div><h2>El look &amp; feel, en una pantalla</h2><div class="st-sub">Lo que cambia respecto al frontend actual. Internalízalo antes de tocar código.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">Un solo producto, una sola marca, un solo sistema. <b>Lite y Pro no difieren en color, tipografía ni voz</b> — solo en densidad y postura de layout. El frontend hoy estira la vista móvil sobre desktop; el nuevo sistema le da a desktop su propia postura calmada.</p>
+          <ul class="dash">
+            <li><b>Sin sidebar persistente en Lite.</b> Navegación por <i>nav pill</i> flotante inferior, nunca chrome de administrador.</li>
+            <li><b>Dinero primero.</b> El saldo, lo disponible, los cántaros y los movimientos dominan la jerarquía. Los titulares son montos, no adjetivos.</li>
+            <li><b>Una acción primaria a la vez.</b> Quick Add es el CTA. Calma y espacio en blanco.</li>
+            <li><b>Sin bordes duros de 1px</b> como marco dominante: separación por elevación suave y contraste de superficie. Esquinas generosas (tarjeta 20px, hero 28px, pills 999px).</li>
+            <li><b>Navy es la marca.</b> El cyan es acento de información, nunca el CTA primario en Lite.</li>
+            <li><b>Movimiento de reloj suizo:</b> 150–220ms, deliberado. Sin springs, sin parallax, sin emoji como iconografía.</li>
+          </ul>
+          <div class="callout info">
+            <div class="ic"><span class="material-icons">info</span></div>
+            <div class="tx"><b>Regla de oro.</b> Importa o referencia los valores de <code>colors_and_type.css</code>; nunca escribas un hex a mano. Si un token tiene que diferir entre Lite y Pro, eso se marca y se discute — no se inventa.</div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- FASES DE MIGRACIÓN -->
+      <section class="step" id="fases">
+        <div class="step-head">
+          <div class="step-num soft"><span class="material-icons" style="font-size:21px">flag</span></div>
+          <div><h2>Fases de migración — asentar las bases primero</h2><div class="st-sub">El orden importa: nada de pantallas hasta que los cimientos estén puestos.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">No migres pantalla por pantalla. Migra por <b>capas</b>, de abajo hacia arriba. Cada fase es un PR independiente y verificable; la siguiente no arranca hasta que la anterior pasa QA. Así el sistema queda consistente desde el primer commit.</p>
+          <div class="phases">
+            <div class="phase">
+              <div class="ph-tag"><span class="ph-n">Fase 0</span><span class="ph-name">Cimientos</span></div>
+              <div class="ph-desc">Los tokens y el contrato de tema entran al repo y nada los pisa.</div>
+              <ul class="dash tight">
+                <li>Copiar <code>colors_and_type.css</code> + <code>brand-scheme.css</code> y cargarlos globalmente (en ese orden).</li>
+                <li>Auto-hospedar Satoshi (woff2) como <code>@font-face</code> local.</li>
+                <li>Mapear los tokens a la paleta de <code>quasar.config</code>.</li>
+                <li><b>Salida:</b> el tema viejo sigue visible pero ya alimentado por tokens. Cero hex sueltos nuevos.</li>
+              </ul>
+            </div>
+            <div class="phase">
+              <div class="ph-tag"><span class="ph-n">Fase 1</span><span class="ph-name">Cáscara</span></div>
+              <div class="ph-desc">La estructura de Lite Desktop y el vocabulario base.</div>
+              <ul class="dash tight">
+                <li><code>LiteDesktopLayout.vue</code> + nav pill flotante + header no-sticky.</li>
+                <li>Componentes núcleo: tarjeta, botón/chip, hero balance, fila de transacción.</li>
+                <li><b>Salida:</b> una ruta (<code>/user/home</code>) ya respira con el nuevo layout.</li>
+              </ul>
+            </div>
+            <div class="phase">
+              <div class="ph-tag"><span class="ph-n">Fase 2</span><span class="ph-name">Pantallas</span></div>
+              <div class="ph-desc">Las 4 rutas, con sus piezas reales conectadas a datos.</div>
+              <ul class="dash tight">
+                <li>Cántaros, Transacciones (<b>fila con cántaro + categoría</b>), Config.</li>
+                <li><b>Filtro inteligente</b> de transacciones y <b>Selector de período</b> (8 granos).</li>
+                <li><b>Salida:</b> Lite Desktop navegable de punta a punta.</li>
+              </ul>
+            </div>
+            <div class="phase">
+              <div class="ph-tag"><span class="ph-n">Fase 3</span><span class="ph-name">Pulido</span></div>
+              <div class="ph-desc">Lo que hace que se sienta de confianza.</div>
+              <ul class="dash tight">
+                <li>Claro/oscuro con persistencia, foco visible, animaciones 150–220ms.</li>
+                <li>Voz, formato de dinero, vista Pro (densidad).</li>
+                <li><b>Salida:</b> QA de adherencia (paso 9) en verde en cada pantalla.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout info">
+            <div class="ic"><span class="material-icons">account_tree</span></div>
+            <div class="tx"><b>Regla de dependencia.</b> Una fase nunca depende de algo de una fase posterior. Si una pantalla necesita un token o componente que aún no existe, primero se agrega a su capa — no se improvisa en la pantalla.</div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- STEP 1 -->
+      <section class="step" id="p1">
+        <div class="step-head">
+          <div class="step-num">1</div>
+          <div><h2>Tokens — la fuente de verdad</h2><div class="st-sub">Todo lo demás cuelga de aquí.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">Copia <code>colors_and_type.css</code> al proyecto y cárgalo antes que cualquier estilo propio. Define color, tipo, espaciado (grid de 8px), radios, sombras y los dos temas. <b>Light es la base canónica; <code>[data-theme="dark"]</code> la refleja</b>, nunca invierte la jerarquía.</p>
+          <div class="swatches">
+            <div class="sw"><div class="chip" style="background:#1E3A8A"></div><div class="lbl"><div class="nm">brand-primary</div><div class="hex">#1E3A8A · navy</div></div></div>
+            <div class="sw"><div class="chip" style="background:#0EA5E9"></div><div class="lbl"><div class="nm">info</div><div class="hex">#0EA5E9 · cyan</div></div></div>
+            <div class="sw"><div class="chip" style="background:#10B981"></div><div class="lbl"><div class="nm">success</div><div class="hex">#10B981 · ingreso</div></div></div>
+            <div class="sw"><div class="chip" style="background:#EF4444"></div><div class="lbl"><div class="nm">danger</div><div class="hex">#EF4444 · gasto</div></div></div>
+            <div class="sw"><div class="chip" style="background:#F59E0B"></div><div class="lbl"><div class="nm">warning</div><div class="hex">#F59E0B · atención</div></div></div>
+          </div>
+          <p class="lead muted">En Quasar mapea estos tokens a variables CSS globales (o a la paleta de <code>quasar.config</code>). No los dupliques como literales en componentes: referencia <code>var(--brand-primary)</code>, <code>var(--surface-1)</code>, <code>var(--radius-lg)</code>, etc.</p>
+        </div>
+      </section>
+
+      <!-- ESQUEMA DE COLOR -->
+      <section class="step" id="scheme">
+        <div class="step-head">
+          <div class="step-num soft"><span class="material-icons" style="font-size:21px">tune</span></div>
+          <div><h2>Esquema de color — 5 variables de entorno</h2><div class="st-sub">El color de marca aún no es definitivo: parametrízalo, no lo claves.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">Toda la marca cabe en <b>cinco roles</b> (regla 60-30-10 + dos tintas de texto). Se fijan una vez como variables de entorno del frontend y <b>todo lo demás deriva con <code>color-mix()</code></b> — hover, press, fondos suaves, anillos, hairlines. Cambias los 5 y el producto entero se recolorea, coherente, sin tocar componentes. Vive en <code>brand-scheme.css</code>, que se carga <b>después</b> de <code>colors_and_type.css</code>.</p>
+          <div class="swatches">
+            <div class="sw"><div class="chip" style="background:#1E3A8A"></div><div class="lbl"><div class="nm">--c-brand</div><div class="hex">Marca · 30%</div></div></div>
+            <div class="sw"><div class="chip" style="background:#1E3A8A"></div><div class="lbl"><div class="nm">--c-action</div><div class="hex">CTA · 10%</div></div></div>
+            <div class="sw"><div class="chip" style="background:#0F172A"></div><div class="lbl"><div class="nm">--c-heading</div><div class="hex">Títulos · tinta</div></div></div>
+            <div class="sw"><div class="chip" style="background:#64748B"></div><div class="lbl"><div class="nm">--c-body</div><div class="hex">Cuerpo · tinta−</div></div></div>
+            <div class="sw"><div class="chip" style="background:#F8FAFC;box-shadow:inset 0 0 0 1px rgba(15,23,42,.12)"></div><div class="lbl"><div class="nm">--c-surface</div><div class="hex">Fondo · 60%</div></div></div>
+          </div>
+          <div class="code-block">
+            <button class="copy" data-copy="scheme"><span class="material-icons">content_copy</span>Copiar</button>
+            <pre id="scheme"><span class="cm">/* brand-scheme.css — lo único que se setea a mano */</span>
+<span class="tk">--c-brand</span>:   <span class="st">#1E3A8A</span>;  <span class="cm">/* identidad, estado activo, logo */</span>
+<span class="tk">--c-action</span>:  <span class="st">#1E3A8A</span>;  <span class="cm">/* el CTA que convierte */</span>
+<span class="tk">--c-heading</span>: <span class="st">#0F172A</span>;  <span class="cm">/* títulos, montos */</span>
+<span class="tk">--c-body</span>:    <span class="st">#64748B</span>;  <span class="cm">/* subtítulos, cuerpo */</span>
+<span class="tk">--c-surface</span>: <span class="st">#F8FAFC</span>;  <span class="cm">/* fondo base */</span>
+<span class="cm">/* hover, soft, ring, hairline… derivan solos con color-mix() */</span></pre>
+          </div>
+          <div class="callout info">
+            <div class="ic"><span class="material-icons">science</span></div>
+            <div class="tx"><b>Provisional a propósito.</b> Los valores arriba son el navy actual, pero el color definitivo se decide después — se cambian solo esas 5 líneas. Los colores semánticos (ingreso/gasto/atención) van aparte: comunican estado, no marca. Personalizador en vivo + export (CSS/.env/theme): <b><a href="OW Finance - Esquema de Color.html" style="color:var(--info-fg);font-weight:700">abrir Esquema de color →</a></b></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="step" id="p2">
+        <div class="step-head">
+          <div class="step-num">2</div>
+          <div><h2>Fuentes</h2><div class="st-sub">Satoshi para display y dinero; DM Sans para cuerpo.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead"><b>Satoshi (Variable)</b> para montos, encabezados y números hero — tracking apretado en tamaños grandes. <b>DM Sans</b> 400/500/600 para todo ≤ 18px. El dinero es su propio rol: siempre Satoshi 600/700 con <code>font-variant-numeric: tabular-nums</code>. Manrope e Inter se cargan como fallback de legado para que las vistas Quasar viejas no salten.</p>
+          <div class="code-block">
+            <button class="copy" data-copy="font"><span class="material-icons">content_copy</span>Copiar</button>
+            <pre id="font"><span class="cm">/* Satoshi auto-hospedado (woff2) · DM Sans vía Google Fonts */</span>
+<span class="tk">@font-face</span> { <span class="tk">font-family</span>:<span class="st">"Satoshi"</span>; <span class="tk">src</span>:<span class="st">url("assets/fonts/Satoshi-Variable.woff2")</span> format(<span class="st">"woff2"</span>); <span class="tk">font-weight</span>:300 900; }
+<span class="tk">--font-display</span>: <span class="st">"Satoshi"</span>, "DM Sans", system-ui, sans-serif;
+<span class="tk">--font-body</span>:    <span class="st">"DM Sans"</span>, system-ui, sans-serif;
+<span class="tk">--font-money</span>:   <span class="st">"Satoshi"</span>, "DM Sans", monospace;</pre>
+          </div>
+          <div class="callout ok">
+            <div class="ic"><span class="material-icons">check_circle</span></div>
+            <div class="tx"><b>Ya resuelto.</b> Satoshi está auto-hospedado en <code>assets/fonts/</code> (variable 300–900 + Regular). Sin dependencia de CDN ni parpadeo. Al portarlo, copia esos <code>.woff2</code> a los assets del frontend y conserva el bloque <code>@font-face</code>.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="step" id="p3">
+        <div class="step-head">
+          <div class="step-num">3</div>
+          <div><h2>Iconos</h2><div class="st-sub">Material Icons (filled), set seguro de Quasar.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">Una sola fuente de iconos: <b>Material Icons filled</b>, vía <code>&lt;q-icon name="…"/&gt;</code>. Usa solo el set seguro; evita nombres con prefijo <code>o_*</code> (outlined) y glifos exclusivos de Material Symbols, que dependen de un set que Quasar no tiene configurado.</p>
+          <ul class="dash">
+            <li><b>Tamaños:</b> 24px por defecto, 20px en filas densas, 32px en afordancias hero.</li>
+            <li><b>Nunca</b> emoji nativo como iconografía. Los símbolos de moneda (<code>$</code>, <code>€</code>) son tipografía tabular, no decoración.</li>
+            <li>Revisa <code>ICONOGRAPHY.md</code> para la lista blanca completa.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="step" id="p4">
+        <div class="step-head">
+          <div class="step-num">4</div>
+          <div><h2>Layout: Lite Desktop vs Pro</h2><div class="st-sub">Aquí está el cambio estructural más grande.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">Hoy <code>DynamicRoleLayout</code> manda a todo usuario Lite — incluso en desktop — a <code>LiteMobileLayout.vue</code>, que renderiza la cáscara móvil estirada. El nuevo sistema introduce <b><code>LiteDesktopLayout.vue</code></b> con su propia postura.</p>
+          <ul class="ck">
+            <li><b>Lite Desktop:</b> contenido máx. <code>1200px</code>, header no-sticky, <b>nav pill flotante</b> fija abajo al centro. Cuatro destinos, no más: <code>/user/home</code>, <code>/user/transactions</code>, <code>/user/jars</code>, <code>/user/config</code>.</li>
+            <li><b>Pro:</b> multi-panel, denso, varios controles simultáneos. Toolbar visible, rieles de filtros, estilo "command surface".</li>
+            <li><b>Bisagra de densidad:</b> por debajo de 1024px Lite cae al shell móvil existente. Lite Desktop es desktop-only.</li>
+          </ul>
+          <div class="callout info">
+            <div class="ic"><span class="material-icons">dashboard</span></div>
+            <div class="tx">Referencia viva: <code>OW Finance Desktop.html</code> (las 4 rutas, claro/oscuro) y <code>ui_kits/lite-desktop/</code>. Son prototipos estructurales — densidad, espaciado y jerarquía son exactos; no son código de producción.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 5 -->
+      <section class="step" id="p5">
+        <div class="step-head">
+          <div class="step-num">5</div>
+          <div><h2>Componentes núcleo</h2><div class="st-sub">El vocabulario que se repite en todas las pantallas.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">Construye o mapea estos, en este orden. Cada uno ya existe como referencia en el UI kit (<code>.jsx</code>) y en las cards de <code>preview/</code>.</p>
+          <ul class="dash">
+            <li><b>Header + nav pill + menú expandido</b> — la cáscara. <code>LiteHeader</code>, <code>LiteNavPill</code>, <code>ExpandedMenu</code>.</li>
+            <li><b>Hero balance</b> — saldo grande, disponible, visibilidad on/off (dígitos → <code>••••••</code>).</li>
+            <li><b>Cántaros</b> (jars) — sobres de presupuesto con anillo de progreso.</li>
+            <li><b>Filas de transacción</b> — ledger con hairline barely-there permitido solo aquí.</li>
+            <li><b>Botones &amp; chips</b> — pill primario navy, secundario superficie; <code>CurrencyChip</code>, <code>StatusChip</code>.</li>
+            <li><b>Tarjetas</b> — <code>surface-1</code>, radio 20px (hero 28px), sombra suave, sin borde.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- TRANSACCIONES + FILTRO -->
+      <section class="step" id="tx">
+        <div class="step-head">
+          <div class="step-num soft"><span class="material-icons" style="font-size:21px">receipt_long</span></div>
+          <div><h2>Transacciones: fila + filtro inteligente</h2><div class="st-sub">La pantalla con más densidad de información de todo Lite.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">Dos cambios concretos respecto al frontend actual, ambos ya prototipados en <code>ui_kits/lite-desktop/</code>.</p>
+          <ul class="dash">
+            <li><b>Cántaro + categoría en la misma fila.</b> Cada movimiento muestra, junto a su monto, un chip de <b>cántaro con punto de color</b> (el color del cántaro) y un chip de <b>categoría</b>. Los ingresos muestran "Sin cántaro". El dato <code>jar</code>/<code>jarColor</code> viaja en el payload del listado.</li>
+            <li><b>Filtro inteligente</b> — un solo panel que filtra por <b>todos los campos a la vez</b>: tipo, cántaro, categoría, día, rango de monto y búsqueda de texto. Chips activos removibles, contador de resultados + neto en vivo, y "Limpiar". Una sola función de filtrado componible.</li>
+          </ul>
+          <div class="callout info">
+            <div class="ic"><span class="material-icons">filter_alt</span></div>
+            <div class="tx"><b>Cómo portarlo a Quasar.</b> El filtrado es un <code>computed</code> sobre la lista que combina los seis criterios; el panel es un <code>q-menu</code> con <code>q-input</code> (búsqueda y montos) y los selectores de cántaro/categoría/día como listas con conteo. Referencia: <code>TransactionsRoute.jsx</code> + <code>TxDropdown</code> y la fila <code>TxRow</code> (variante <code>dense</code>) en <code>RecentTransactions.jsx</code>.</div>
+          </div>
+          <div class="callout info">
+            <div class="ic"><span class="material-icons">link</span></div>
+            <div class="tx"><b>Conectar con el período.</b> El criterio "Día" del filtro puede alimentarse del Selector de período (paso 6): cuando hay un período activo, el filtro de transacciones respeta ese rango y el campo "Día" se vuelve el grano activo.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 6 -->
+      <section class="step" id="p6">
+        <div class="step-head">
+          <div class="step-num">6</div>
+          <div><h2>El nuevo selector de período</h2><div class="st-sub">Reemplaza el filtro de mes/trimestre/año.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">El filtro de análisis ya no es solo mes · trimestre · año. Ahora recorre <b>ocho granularidades</b> — día, semana, quincena, mes, bimestre, trimestre, semestre, año — más <b>todo el histórico</b> y un <b>rango personalizado</b>. Para no convertirlo en una fila interminable de botones, se colapsa en <b>un selector de grano + un paso adelante/atrás</b> con etiqueta que se reescribe sola.</p>
+          <ul class="ck">
+            <li><b>Lite:</b> segmento con los 3 granos más usados + "Más…"; el grano avanzado pasa a chip activo.</li>
+            <li><b>Pro:</b> navegador completo en la toolbar, sin colapsar.</li>
+            <li><b>Mismo motor</b> de fechas y mismo formato de etiqueta en ambas posturas; un solo período activo por sesión.</li>
+          </ul>
+          <div class="callout info">
+            <div class="ic"><span class="material-icons">date_range</span></div>
+            <div class="tx">Especificación interactiva completa, con el motor de rangos y los formatos de etiqueta por grano: <b><a href="OW Finance - Selector de Periodo.html" style="color:var(--info-fg);font-weight:700">abrir Selector de período →</a></b></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 7 -->
+      <section class="step" id="p7">
+        <div class="step-head">
+          <div class="step-num">7</div>
+          <div><h2>Tema claro / oscuro</h2><div class="st-sub">Misma estructura, nunca inversión.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead">Conmuta con <code>data-theme</code> en <code>&lt;html&gt;</code>. Light: tarjetas blancas sobre <code>#F8FAFC</code>. Dark: <code>#131B2E</code> sobre <code>#0F172A</code>. En oscuro las sombras casi no se ven — la separación viene del stack de superficies S1/S2/S3 más un inner-ring sutil. <b>Sin glassmorphism</b> en el chrome de Lite Desktop.</p>
+          <div class="code-block">
+            <button class="copy" data-copy="theme"><span class="material-icons">content_copy</span>Copiar</button>
+            <pre id="theme"><span class="cm">// persistir preferencia + respetar el SO</span>
+<span class="tk">const</span> saved = localStorage.getItem(<span class="st">'ow-theme'</span>);
+<span class="tk">const</span> theme = saved ?? (matchMedia(<span class="st">'(prefers-color-scheme: dark)'</span>).matches ? <span class="st">'dark'</span> : <span class="st">'light'</span>);
+document.documentElement.setAttribute(<span class="st">'data-theme'</span>, theme);</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 8 -->
+      <section class="step" id="p8">
+        <div class="step-head">
+          <div class="step-num">8</div>
+          <div><h2>Voz y formato de dinero</h2><div class="st-sub">El detalle que hace que se sienta de confianza.</div></div>
+        </div>
+        <div class="step-body">
+          <ul class="dash">
+            <li><b>Voz calmada y de hechos.</b> Segunda persona. Frases cortas. Sin hype, sin alarma. "Vas al 51% de lo asignado", no "¡Cuidado!".</li>
+            <li><b>Sentence case</b> en todo el chrome. <b>Mayúsculas solo</b> en meta-labels diminutos (<code>DISPONIBLE</code>, <code>USD</code>) con tracking +60.</li>
+            <li><b>Dinero:</b> miles con separador y dos decimales — <code>$ 12,480.50</code>. Negativos con menos real (−), color de gasto, nunca paréntesis. Oculto → <code>••••••</code> del mismo ancho.</li>
+            <li>Código de moneda como chip corto en mayúsculas junto a montos grandes.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- STEP 9 -->
+      <section class="step" id="p9">
+        <div class="step-head">
+          <div class="step-num">9</div>
+          <div><h2>QA de adherencia</h2><div class="st-sub">Antes de dar por cerrada una pantalla.</div></div>
+        </div>
+        <div class="step-body">
+          <ul class="ck">
+            <li>Cero hex hardcodeados — todo sale de tokens.</li>
+            <li>Sin sidebar persistente en ninguna vista Lite.</li>
+            <li>Sin bordes duros de 1px como marco; sin emoji; solo iconos del set seguro.</li>
+            <li>Cyan no aparece como CTA primario en contextos Lite.</li>
+            <li>Funciona en claro y oscuro; foco visible 2px navy con 2px de offset.</li>
+            <li>Montos en Satoshi tabular; sentence case en chrome.</li>
+            <li>Hit targets ≥ 44px en móvil; el stepper de período no se parte.</li>
+          </ul>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- PROMPT -->
+      <section class="step" id="prompt">
+        <div class="step-head">
+          <div class="step-num soft"><span class="material-icons" style="font-size:21px">smart_toy</span></div>
+          <div><h2>Prompt para un agente de código</h2><div class="st-sub">Pégalo en Claude Code / Cursor junto con el design system adjunto.</div></div>
+        </div>
+        <div class="step-body">
+          <p class="lead muted">Adjunta esta carpeta (tokens, UI kit, selector) y pega el prompt. Está escrito para que el agente respete el sistema y no improvise.</p>
+          <div class="prompt-card">
+            <div class="prompt-head">
+              <div class="ph-ic"><span class="material-icons">smart_toy</span></div>
+              <div class="ph-tx"><div class="ph-nm">Prompt de migración — OW Finance 2026</div><div class="ph-sub">Listo para pegar</div></div>
+              <button class="copy-big" id="copyPrompt"><span class="material-icons">content_copy</span>Copiar prompt</button>
+            </div>
+            <div class="prompt-body">
+<pre id="promptText"><span class="ph-label">CONTEXTO</span>
+Eres un ingeniero frontend trabajando en OW Finance, un producto de finanzas
+personales en Quasar/Vue 3. Adjunto el design system 2026: tokens
+(colors_and_type.css), reglas de marca (README.md, ICONOGRAPHY.md), el UI kit
+Lite Desktop (ui_kits/lite-desktop/) y el componente Selector de período.
+
+<span class="ph-label">OBJETIVO</span>
+Migrar el frontend al nuevo layout y look & feel sin inventar valores. Un solo
+producto, una sola marca: Lite y Pro difieren solo en densidad y postura de
+layout, nunca en color, tipografía ni voz.
+
+<span class="ph-label">REGLAS NO NEGOCIABLES</span>
+1. Cero hex hardcodeados. Todo color/espaciado/radio/sombra sale de los tokens
+   de colors_and_type.css como variables CSS (var(--brand-primary), etc.).
+2. El color de marca se parametriza vía brand-scheme.css: 5 variables de
+   entorno (--c-brand, --c-action, --c-heading, --c-body, --c-surface) de las
+   que TODO deriva con color-mix(). Default navy #1E3A8A; el cyan #0EA5E9 es
+   acento de info, NUNCA el CTA primario en Lite. NO claves el color: lo lees
+   de esas 5 variables.
+3. Tipografia: Satoshi auto-hospedado (woff2, @font-face local) para
+   display/dinero, DM Sans para cuerpo. Dinero siempre tabular-nums.
+   Manrope/Inter solo como fallback de legado.
+4. Iconos: Material Icons filled, set seguro (ver ICONOGRAPHY.md). Sin o_*,
+   sin Material Symbols, sin emoji como iconografia.
+5. Sin sidebar persistente en Lite: nav pill flotante inferior. Sin bordes
+   duros de 1px como marco. Esquinas generosas (card 20px, hero 28px, pill 999).
+6. Light es la base; [data-theme="dark"] refleja, no invierte la jerarquia.
+
+<span class="ph-label">ORDEN DE MIGRACION (por fases, no por pantalla)</span>
+Fase 0 Cimientos: colors_and_type.css + brand-scheme.css globales, Satoshi
+   self-hosted, tokens mapeados a quasar.config.
+Fase 1 Cascara: LiteDesktopLayout.vue + nav pill + componentes nucleo.
+Fase 2 Pantallas: las 4 rutas con datos; fila de transaccion con cantaro +
+   categoria; filtro inteligente; selector de periodo.
+Fase 3 Pulido: claro/oscuro persistente, voz, dinero, vista Pro, QA.
+Una fase nunca depende de algo de una fase posterior.
+
+<span class="ph-label">TRABAJO</span>
+A. Cargar colors_and_type.css globalmente y mapear los tokens a la paleta de
+   Quasar / variables CSS.
+B. Crear LiteDesktopLayout.vue (hoy DynamicRoleLayout estira LiteMobileLayout
+   sobre desktop). Contenido máx 1200px, header no-sticky, nav pill flotante,
+   4 rutas: /user/home, /user/transactions, /user/jars, /user/config. Bajo
+   1024px, caer al shell móvil existente.
+C. Construir los componentes núcleo siguiendo el UI kit: header, nav pill,
+   menú expandido, hero balance (con visibilidad on/off → ••••••), cántaros,
+   filas de transacción, botones/chips, tarjetas.
+C2. Transacciones: la fila muestra cántaro (chip con punto de color) +
+   categoría junto al monto; ingresos = "Sin cántaro". Añadir filtro
+   inteligente (un panel que filtra por tipo, cántaro, categoría, día, rango
+   de monto y texto a la vez, con chips activos removibles). Referencia:
+   TransactionsRoute.jsx + TxRow (variante dense).
+D. Implementar el Selector de período (8 granularidades: día, semana,
+   quincena, mes, bimestre, trimestre, semestre, año + todo + personalizado).
+   En Lite: segmento de 3 + "Más…". En Pro: navegador completo en toolbar.
+   Mismo motor de fechas y formato de etiqueta en ambos. Reusar la lógica de
+   period-selector.js como referencia del motor de rangos.
+E. Voz calmada, sentence case en chrome, dinero $ 12,480.50 con menos real (−)
+   para negativos. Animaciones 150–220ms, sin springs ni parallax.
+
+<span class="ph-label">ENTREGABLES</span>
+- Componentes Vue/Quasar que pasen el QA de adherencia (ver guía, paso 9).
+- Soporte claro/oscuro vía data-theme con persistencia en localStorage.
+- Si algo del brief es ambiguo o exige un token nuevo, PREGUNTA antes de
+  inventarlo; no agregues colores ni tipos fuera del sistema.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- FILE MAP -->
+      <section class="step" id="files">
+        <div class="step-head">
+          <div class="step-num soft"><span class="material-icons" style="font-size:21px">folder_open</span></div>
+          <div><h2>Mapa de archivos</h2><div class="st-sub">Qué importar y qué representa.</div></div>
+        </div>
+        <div class="step-body">
+          <div class="filemap">
+            <div class="fm-row"><span class="material-icons">style</span><span class="fm-name">colors_and_type.css</span><span class="fm-desc">Tokens · light + dark · roles de tipo</span></div>
+            <div class="fm-row"><span class="material-icons">tune</span><span class="fm-name">brand-scheme.css</span><span class="fm-desc">Esquema de 5 variables · derivados color-mix()</span></div>
+            <div class="fm-row"><span class="material-icons">font_download</span><span class="fm-name">assets/fonts/Satoshi-*.woff2</span><span class="fm-desc">Satoshi auto-hospedado · variable + regular</span></div>
+            <div class="fm-row"><span class="material-icons">menu_book</span><span class="fm-name">README.md</span><span class="fm-desc">Contexto de producto · reglas de marca</span></div>
+            <div class="fm-row"><span class="material-icons">grid_view</span><span class="fm-name">ICONOGRAPHY.md</span><span class="fm-desc">Set seguro de iconos</span></div>
+            <div class="fm-row"><span class="material-icons">palette</span><span class="fm-name">OW Finance - Esquema de Color.html</span><span class="fm-desc">Personalizador en vivo · export CSS/.env/theme</span></div>
+            <div class="fm-row"><span class="material-icons">dashboard</span><span class="fm-name">OW Finance Desktop.html</span><span class="fm-desc">Shell Lite Desktop · 4 rutas</span></div>
+            <div class="fm-row"><span class="material-icons">date_range</span><span class="fm-name">OW Finance - Selector de Periodo.html</span><span class="fm-desc">Selector de período · 8 granos</span></div>
+            <div class="fm-row"><span class="material-icons">receipt_long</span><span class="fm-name">ui_kits/lite-desktop/…/TransactionsRoute.jsx</span><span class="fm-desc">Fila cántaro+categoría · filtro inteligente</span></div>
+            <div class="fm-row"><span class="material-icons">analytics</span><span class="fm-name">Analisis Lite.html · Analisis Pro.html</span><span class="fm-desc">Pantalla de análisis · ambas posturas</span></div>
+            <div class="fm-row"><span class="material-icons">widgets</span><span class="fm-name">ui_kits/lite-desktop/</span><span class="fm-desc">Componentes JSX de referencia</span></div>
+            <div class="fm-row"><span class="material-icons">collections</span><span class="fm-name">preview/</span><span class="fm-desc">Cards del Design System</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="foot">
+        <div class="f-card">
+          <h3>Listo para construir</h3>
+          <p>Empieza por los tokens, sigue el orden, y verifica contra el paso 9 en cada pantalla. Cuando el codebase real esté adjunto, este sistema se vuelve pixel-true a los componentes de producción.</p>
+          <div class="f-links">
+            <a class="primary" href="OW Finance - Selector de Periodo.html"><span class="material-icons">date_range</span>Selector de período</a>
+            <a class="ghost" href="OW Finance Desktop.html"><span class="material-icons">dashboard</span>Lite Desktop</a>
+            <a class="ghost" href="OW Finance - Landing.html"><span class="material-icons">public</span>Landing</a>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // theme toggle
+    const tbtn = document.getElementById('theme-btn');
+    tbtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const dark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', dark ? 'light' : 'dark');
+      tbtn.querySelector('.material-icons').textContent = dark ? 'dark_mode' : 'light_mode';
+    });
+
+    // copy buttons
+    function flash(btn, label) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span class="material-icons">check</span>' + (label || 'Copiado');
+      setTimeout(() => btn.innerHTML = orig, 1600);
+    }
+    document.querySelectorAll('.code-block .copy').forEach(b => {
+      b.addEventListener('click', () => {
+        const el = document.getElementById(b.dataset.copy);
+        navigator.clipboard.writeText(el.innerText).then(() => flash(b, 'Copiado'));
+      });
+    });
+    document.getElementById('copyPrompt').addEventListener('click', e => {
+      const t = document.getElementById('promptText').innerText;
+      navigator.clipboard.writeText(t).then(() => flash(e.currentTarget, 'Copiado'));
+    });
+
+    // scrollspy
+    const links = [...document.querySelectorAll('.toc a')];
+    const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+    const spy = () => {
+      const y = window.scrollY + 120;
+      let idx = 0;
+      sections.forEach((s, i) => { if (s && s.offsetTop <= y) idx = i; });
+      links.forEach((a, i) => a.classList.toggle('active', i === idx));
+    };
+    window.addEventListener('scroll', spy, { passive: true });
+    spy();
+  </script>
+</body>
+</html>

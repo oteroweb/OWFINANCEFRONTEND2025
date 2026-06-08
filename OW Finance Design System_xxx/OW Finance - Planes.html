@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OW Finance — Planes</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="stylesheet" href="marketing.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; }
+  @media (max-width: 920px) { .price-grid { grid-template-columns: 1fr; max-width: 440px; margin: 0 auto; } }
+  .plan { background: var(--surface-1); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); padding: 32px 28px; display: flex; flex-direction: column; position: relative; }
+  .plan.featured { box-shadow: var(--shadow-float); outline: 2px solid var(--brand-primary); }
+  .plan-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--brand-primary); color: #fff; font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: var(--radius-pill); white-space: nowrap; }
+  .plan-name { font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+  .plan-desc { font-size: 13.5px; color: var(--fg-2); margin: 8px 0 20px; line-height: 1.5; min-height: 40px; }
+  .plan-price { display: flex; align-items: baseline; gap: 4px; }
+  .plan-price .amt { font-family: var(--font-money); font-weight: 700; font-size: 44px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .plan-price .per { font-size: 14px; color: var(--fg-3); }
+  .plan-note { font-size: 12.5px; color: var(--fg-3); margin-top: 6px; min-height: 18px; }
+  .plan .btn { margin: 22px 0; }
+  .plan-feats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .plan-feats li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; color: var(--fg-1); }
+  .plan-feats .material-icons { font-size: 19px; color: var(--income-fg); flex-shrink: 0; margin-top: 1px; }
+  .plan-feats li.muted { color: var(--fg-3); }
+  .plan-feats li.muted .material-icons { color: var(--fg-3); }
+  .feats-head { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); font-weight: 600; margin: 0 0 4px; }
+
+  .bill-toggle { display: inline-flex; align-items: center; gap: 10px; background: var(--surface-2); border-radius: var(--radius-pill); padding: 4px; }
+  .bill-toggle button { border: none; background: transparent; cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 14px; color: var(--fg-2); padding: 9px 18px; border-radius: var(--radius-pill); transition: all var(--dur-base) var(--ease-out); }
+  .bill-toggle button.active { background: var(--surface-1); color: var(--fg-1); box-shadow: var(--shadow-card); }
+  .save-tag { font-size: 11.5px; font-weight: 600; color: var(--income-fg); background: var(--income-soft); padding: 3px 9px; border-radius: var(--radius-pill); margin-left: 2px; }
+
+  .modes-note { display: flex; gap: 16px; align-items: center; background: var(--brand-primary-soft); border-radius: var(--radius-lg); padding: 22px 26px; }
+  .modes-note .material-icons { font-size: 28px; color: var(--brand-primary-fg-soft); flex-shrink: 0; }
+  .modes-note p { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--fg-1); }
+  .modes-note b { color: var(--brand-primary-fg-soft); }
+
+  .faq { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; }
+  @media (max-width: 760px) { .faq { grid-template-columns: 1fr; } }
+  .faq details { border-bottom: 1px solid var(--border-hairline); padding: 18px 0; }
+  .faq summary { font-family: var(--font-display); font-weight: 600; font-size: 16px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary .material-icons { color: var(--fg-3); transition: transform var(--dur-base) var(--ease-out); }
+  .faq details[open] summary .material-icons { transform: rotate(45deg); }
+  .faq p { margin: 12px 0 0; font-size: 14px; line-height: 1.6; color: var(--fg-2); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="OW Finance - Landing.html" aria-label="OW Finance">
+      <svg viewBox="0 0 200 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="56" height="56" rx="14" fill="#1E3A8A"></rect>
+        <text x="28" y="36" font-family="'Satoshi','DM Sans',system-ui,sans-serif" font-weight="800" font-size="22" fill="white" text-anchor="middle" letter-spacing="-0.04em">OW</text>
+        <text x="70" y="38" font-family="'Satoshi','DM Sans',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="-0.01em" style="fill:var(--fg-1)">Finance</text>
+      </svg>
+    </a>
+    <nav class="nav-links">
+      <a href="OW Finance - Landing.html#como-funciona">Cómo funciona</a>
+      <a href="OW Finance - Funciones.html">Funciones</a>
+      <a href="OW Finance - Landing.html#modos">Lite &amp; Pro</a>
+      <a href="OW Finance - Planes.html" aria-current="page">Planes</a>
+    </nav>
+    <div class="nav-right">
+      <button class="icon-btn" data-theme-toggle aria-label="Cambiar tema"><span class="material-icons">dark_mode</span></button>
+      <a class="btn btn-quiet nav-cta-secondary" href="OW Finance - Login.html">Iniciar sesión</a>
+      <a class="btn btn-primary" href="OW Finance - Login.html#registro">Crear cuenta</a>
+      <button class="icon-btn nav-burger" data-nav-burger aria-label="Menú"><span class="material-icons">menu</span></button>
+    </div>
+  </div>
+  <div class="wrap" data-mobile-menu hidden style="padding-bottom:16px;">
+    <nav style="display:flex;flex-direction:column;gap:4px;">
+      <a class="btn btn-quiet" style="justify-content:flex-start" href="OW Finance - Landing.html#como-funciona">Cómo funciona</a>
+      <a class="btn btn-quiet" style="justify-content:flex-start" href="OW Finance - Funciones.html">Funciones</a>
+      <a class="btn btn-quiet" style="justify-content:flex-start" href="OW Finance - Landing.html#modos">Lite &amp; Pro</a>
+      <a class="btn btn-quiet" style="justify-content:flex-start" href="OW Finance - Planes.html">Planes</a>
+      <a class="btn btn-ghost" style="margin-top:8px" href="OW Finance - Login.html">Iniciar sesión</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="section" style="padding-bottom:40px;text-align:center;">
+  <div class="wrap reveal">
+    <p class="eyebrow">Planes</p>
+    <h1 class="display-sm" style="margin-top:16px;">Un precio simple para<br>cada etapa de tu dinero.</h1>
+    <p class="lede" style="margin:18px auto 0;max-width:560px;">Empieza gratis y crece cuando lo necesites.
+      Los precios son de referencia y los iremos ajustando — sin letra chica.</p>
+    <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:30px;">
+      <div class="bill-toggle">
+        <button id="bm" class="active" onclick="setBilling('m')">Mensual</button>
+        <button id="ba" onclick="setBilling('a')">Anual <span class="save-tag">−20%</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICE GRID -->
+<section style="padding-bottom:48px;">
+  <div class="wrap reveal">
+    <div class="price-grid">
+      <!-- GRATIS -->
+      <div class="plan">
+        <div class="plan-name">Gratis</div>
+        <div class="plan-desc">Lo esencial para ordenar tu dinero y tomar el hábito.</div>
+        <div class="plan-price"><span class="amt">$ 0</span></div>
+        <div class="plan-note">Para siempre. Sin tarjeta.</div>
+        <a class="btn btn-ghost btn-block" href="OW Finance - Login.html#registro">Empezar gratis</a>
+        <ul class="plan-feats">
+          <li><span class="material-icons">check_circle</span>Cántaros y sueños ilimitados</li>
+          <li><span class="material-icons">check_circle</span>Registro por texto, voz y foto</li>
+          <li><span class="material-icons">check_circle</span>Home y análisis simple</li>
+          <li><span class="material-icons">check_circle</span>1 moneda · modo Lite</li>
+        </ul>
+      </div>
+
+      <!-- PLUS (featured) -->
+      <div class="plan featured">
+        <div class="plan-badge">Más popular</div>
+        <div class="plan-name">Plus</div>
+        <div class="plan-desc">Para quien quiere ver más a fondo y automatizar.</div>
+        <div class="plan-price"><span class="amt" data-price-m="$ 6" data-price-a="$ 5">$ 6</span><span class="per">/mes</span></div>
+        <div class="plan-note" data-note-m="Facturado mensual" data-note-a="Facturado anual · $ 57 / año">Facturado mensual</div>
+        <a class="btn btn-primary btn-block" href="OW Finance - Login.html#registro">Probar Plus<span class="material-icons">arrow_forward</span></a>
+        <p class="feats-head">Todo lo de Gratis, más</p>
+        <ul class="plan-feats">
+          <li><span class="material-icons">check_circle</span>Modo Pro: multi-cuenta y multimoneda</li>
+          <li><span class="material-icons">check_circle</span>Análisis con drill-down y presupuesto vs. real</li>
+          <li><span class="material-icons">check_circle</span>Registro automático y carga masiva</li>
+          <li><span class="material-icons">check_circle</span>Impuestos (IGTF) y transferencias cross-currency</li>
+          <li><span class="material-icons">check_circle</span>USD · EUR · VES con tasa al vuelo</li>
+        </ul>
+      </div>
+
+      <!-- FAMILIAR -->
+      <div class="plan">
+        <div class="plan-name">Familiar</div>
+        <div class="plan-desc">Finanzas compartidas, para una casa o un equipo pequeño.</div>
+        <div class="plan-price"><span class="amt" data-price-m="$ 12" data-price-a="$ 10">$ 12</span><span class="per">/mes</span></div>
+        <div class="plan-note" data-note-m="Hasta 5 personas" data-note-a="Hasta 5 personas · $ 115 / año">Hasta 5 personas</div>
+        <a class="btn btn-ghost btn-block" href="OW Finance - Login.html#registro">Elegir Familiar</a>
+        <p class="feats-head">Todo lo de Plus, más</p>
+        <ul class="plan-feats">
+          <li><span class="material-icons">check_circle</span>Cuentas compartidas y carpetas</li>
+          <li><span class="material-icons">check_circle</span>Hasta 5 miembros con permisos</li>
+          <li><span class="material-icons">check_circle</span>Apalancamiento entre cántaros</li>
+          <li><span class="material-icons">check_circle</span>Histórico mensual por ciclos</li>
+          <li><span class="material-icons">check_circle</span>Soporte prioritario</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- MODES NOTE -->
+    <div class="modes-note reveal" style="margin-top:34px;">
+      <span class="material-icons">tune</span>
+      <p><b>Lite y Pro son modos, no planes.</b> Son dos posturas de la misma app — calma o control total —
+        y puedes cambiar entre ellas cuando quieras. El plan solo define cuántas capas avanzadas tienes disponibles.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE STRIP -->
+<section class="section-sm">
+  <div class="wrap reveal" style="text-align:center;">
+    <p class="lede" style="margin:0 auto;max-width:560px;">¿Quieres ver capacidad por capacidad qué incluye cada modo?</p>
+    <a class="btn btn-ghost" style="margin-top:18px;" href="OW Finance - Funciones.html#comparativa">Ver comparativa Lite vs Pro<span class="material-icons">arrow_forward</span></a>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section surface-alt">
+  <div class="wrap">
+    <div class="section-head reveal" style="margin-bottom:36px;">
+      <p class="eyebrow">Preguntas frecuentes</p>
+      <h2 class="display-sm" style="margin-top:16px;">Antes de empezar.</h2>
+    </div>
+    <div class="faq reveal">
+      <details open>
+        <summary>¿Cuál es la diferencia entre Lite y Pro?<span class="material-icons">add</span></summary>
+        <p>Son modos de uso, no planes. Lite es calmado y mobile-first; Pro es denso, con multi-cuenta y multimoneda. Cambias entre ellos cuando quieras y tus datos viajan contigo.</p>
+      </details>
+      <details>
+        <summary>¿Los precios son definitivos?<span class="material-icons">add</span></summary>
+        <p>No. Son cifras de referencia mientras afinamos el producto; las iremos evaluando. Si cambian, te avisamos antes de cualquier cobro.</p>
+      </details>
+      <details>
+        <summary>¿Necesito tarjeta para empezar?<span class="material-icons">add</span></summary>
+        <p>No. El plan Gratis no pide tarjeta y es para siempre. Solo agregas un método de pago si decides pasar a Plus o Familiar.</p>
+      </details>
+      <details>
+        <summary>¿Puedo cambiar o cancelar mi plan?<span class="material-icons">add</span></summary>
+        <p>Cuando quieras, desde tus ajustes. Al bajar de plan conservas tus datos; solo se ocultan las capas avanzadas hasta que vuelvas a subir.</p>
+      </details>
+      <details>
+        <summary>¿Funciona con varias monedas?<span class="material-icons">add</span></summary>
+        <p>Sí, en modo Pro: USD, EUR y VES en simultáneo, con tasa al vuelo. Pensado para LatAm, incluyendo impuestos como el IGTF.</p>
+      </details>
+      <details>
+        <summary>¿Mis datos están seguros?<span class="material-icons">add</span></summary>
+        <p>Tu información es tuya. El histórico se mantiene íntegro entre Lite y Pro y entre planes, sin perder nada al cambiar.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="wrap">
+    <div class="band-navy reveal" style="text-align:center;">
+      <h2 class="display-sm" style="max-width:600px;margin:0 auto;">Empieza gratis hoy. Sube cuando lo necesites.</h2>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:28px;flex-wrap:wrap;">
+        <a class="btn btn-on-navy btn-lg" href="OW Finance - Login.html#registro">Crear cuenta gratis<span class="material-icons">arrow_forward</span></a>
+        <a class="btn btn-on-navy-ghost btn-lg" href="OW Finance - Landing.html">Volver al inicio</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="nav-logo" href="OW Finance - Landing.html" aria-label="OW Finance">
+          <svg viewBox="0 0 200 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:30px">
+            <rect width="56" height="56" rx="14" fill="#1E3A8A"></rect>
+            <text x="28" y="36" font-family="'Satoshi','DM Sans',system-ui,sans-serif" font-weight="800" font-size="22" fill="white" text-anchor="middle" letter-spacing="-0.04em">OW</text>
+            <text x="70" y="38" font-family="'Satoshi','DM Sans',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="-0.01em" style="fill:var(--fg-1)">Finance</text>
+          </svg>
+        </a>
+        <p>Finanzas personales calmadas. Reparte, ahorra y entiende tu dinero — en Lite o en Pro.</p>
+      </div>
+      <div>
+        <h4>Producto</h4>
+        <ul>
+          <li><a href="OW Finance - Funciones.html#cantaros">Cántaros</a></li>
+          <li><a href="OW Finance - Funciones.html#suenos">Sueños</a></li>
+          <li><a href="OW Finance - Funciones.html#analisis">Análisis</a></li>
+          <li><a href="OW Finance - Landing.html#modos">Lite &amp; Pro</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Empezar</h4>
+        <ul>
+          <li><a href="OW Finance - Login.html#registro">Crear cuenta</a></li>
+          <li><a href="OW Finance - Login.html">Iniciar sesión</a></li>
+          <li><a href="OW Finance - Planes.html">Planes</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Recursos</h4>
+        <ul>
+          <li><a href="OW Finance - Funciones.html">Funciones</a></li>
+          <li><a href="MATRIZ_LITE_PRO.html">Matriz Lite vs Pro</a></li>
+          <li><a href="ui_kits/lite-desktop/index.html">UI Kit (demo)</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 OW Finance. Todos los derechos reservados.</span>
+      <span style="display:flex;gap:18px;"><a href="#">Privacidad</a><a href="#">Términos</a><a href="#">Contacto</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="marketing.js"></script>
+<script>
+  function setBilling(p) {
+    document.getElementById('bm').classList.toggle('active', p === 'm');
+    document.getElementById('ba').classList.toggle('active', p === 'a');
+    document.querySelectorAll('[data-price-m]').forEach(function(el){ el.textContent = el.getAttribute(p === 'a' ? 'data-price-a' : 'data-price-m'); });
+    document.querySelectorAll('[data-note-m]').forEach(function(el){ el.textContent = el.getAttribute(p === 'a' ? 'data-note-a' : 'data-note-m'); });
+  }
+</script>
+</body>
+</html>

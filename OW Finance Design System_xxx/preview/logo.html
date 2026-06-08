@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Brand" name="Logo / wordmark" subtitle="Placeholder — please supply real mark" viewport="700x220" -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; background: var(--bg-canvas); }
+  body { padding: 24px; display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
+  .mark {
+    display: inline-flex; align-items: center; gap: 12px;
+    font-family: var(--font-display); font-weight: 700; font-size: 22px;
+    color: var(--fg-1);
+    letter-spacing: -0.01em;
+  }
+  .glyph {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--brand-primary);
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 800; font-size: 16px;
+    letter-spacing: -0.04em;
+  }
+  .row { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+  .compact .glyph { width: 28px; height: 28px; font-size: 13px; border-radius: 8px; }
+  .compact { font-size: 16px; }
+  .reverse { background: var(--brand-primary); color: #fff; padding: 14px 18px; border-radius: var(--radius-md); }
+  .reverse .glyph { background: #fff; color: var(--brand-primary); }
+  .note { font-family: var(--font-body); font-size: 11px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
+</style>
+</head>
+<body>
+  <div class="note">Placeholder wordmark — flag for real brand asset</div>
+  <div class="row">
+    <span class="mark"><span class="glyph">OW</span>Finance</span>
+    <span class="mark compact"><span class="glyph">OW</span>Finance</span>
+    <span class="mark reverse"><span class="glyph">OW</span>Finance</span>
+  </div>
+</body>
+</html>

@@ -17,7 +17,7 @@ export default defineConfig((ctx) => {
     boot: ['i18n', 'axios'],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
-    css: ['app.scss'],
+    css: ['design-system.css', 'app.scss'],
 
     // https://github.com/quasarframework/quasar/tree/dev/extras
     extras: [
@@ -91,6 +91,10 @@ export default defineConfig((ctx) => {
           'vite-plugin-checker',
           {
             vueTsc: true,
+            // Overlay desactivado en dev: los errores siguen reportándose en terminal y en build/CI.
+            // Evita que el overlay de typecheck (p.ej. conflictos de casing User/user heredados de git)
+            // tape la UI mientras se prueba. La normalización de casing es una tarea aparte del plan.
+            overlay: false,
             eslint: {
               lintCommand: 'eslint -c ./eslint.config.js "./src*/**/*.{ts,js,mjs,cjs,vue}"',
               useFlatConfig: true,

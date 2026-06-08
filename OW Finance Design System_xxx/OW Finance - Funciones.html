@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OW Finance — Funciones</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="stylesheet" href="marketing.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  .anchor-nav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 28px; }
+  .anchor-nav a { font-size: 13.5px; font-weight: 500; color: var(--fg-2); padding: 8px 16px; border-radius: var(--radius-pill); background: var(--surface-1); box-shadow: var(--shadow-card); }
+  .anchor-nav a:hover { color: var(--fg-1); background: var(--surface-2); }
+
+  /* comparison table */
+  .cmp { background: var(--surface-1); border-radius: var(--radius-xl); box-shadow: var(--shadow-card); overflow: hidden; }
+  .cmp table { width: 100%; border-collapse: collapse; }
+  .cmp thead th { text-align: left; padding: 20px 24px; font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--fg-1); background: var(--surface-2); }
+  .cmp thead th.mode { text-align: center; width: 130px; }
+  .cmp thead th .m-tag { display: inline-flex; align-items: center; gap: 6px; }
+  .cmp .grp td { padding: 14px 24px 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); font-weight: 600; background: var(--bg-canvas); }
+  .cmp tbody td { padding: 13px 24px; font-size: 14px; color: var(--fg-1); border-top: 1px solid var(--border-hairline); }
+  .cmp tbody td.cap { color: var(--fg-1); }
+  .cmp td.mark { text-align: center; }
+  .cmp td.mark .material-icons { font-size: 20px; }
+  .yes { color: var(--income-fg); }
+  .part { color: var(--warning-fg); }
+  .no { color: var(--fg-3); }
+  .cmp-legend { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 22px; font-size: 13px; color: var(--fg-2); }
+  .cmp-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .cmp-legend .material-icons { font-size: 17px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-logo" href="OW Finance - Landing.html" aria-label="OW Finance">
+      <svg viewBox="0 0 200 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="56" height="56" rx="14" fill="#1E3A8A"></rect>
+        <text x="28" y="36" font-family="'Satoshi','DM Sans',system-ui,sans-serif" font-weight="800" font-size="22" fill="white" text-anchor="middle" letter-spacing="-0.04em">OW</text>
+        <text x="70" y="38" font-family="'Satoshi','DM Sans',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="-0.01em" style="fill:var(--fg-1)">Finance</text>
+      </svg>
+    </a>
+    <nav class="nav-links">
+      <a href="OW Finance - Landing.html#como-funciona">Cómo funciona</a>
+      <a href="OW Finance - Funciones.html" aria-current="page">Funciones</a>
+      <a href="OW Finance - Landing.html#modos">Lite &amp; Pro</a>
+      <a href="OW Finance - Planes.html">Planes</a>
+    </nav>
+    <div class="nav-right">
+      <button class="icon-btn" data-theme-toggle aria-label="Cambiar tema"><span class="material-icons">dark_mode</span></button>
+      <a class="btn btn-quiet nav-cta-secondary" href="OW Finance - Login.html">Iniciar sesión</a>
+      <a class="btn btn-primary" href="OW Finance - Login.html#registro">Crear cuenta</a>
+      <button class="icon-btn nav-burger" data-nav-burger aria-label="Menú"><span class="material-icons">menu</span></button>
+    </div>
+  </div>
+  <div class="wrap" data-mobile-menu hidden style="padding-bottom:16px;">
+    <nav style="display:flex;flex-direction:column;gap:4px;">
+      <a class="btn btn-quiet" style="justify-content:flex-start" href="OW Finance - Landing.html#como-funciona">Cómo funciona</a>
+      <a class="btn btn-quiet" style="justify-content:flex-start" href="OW Finance - Funciones.html">Funciones</a>
+      <a class="btn btn-quiet" style="justify-content:flex-start" href="OW Finance - Landing.html#modos">Lite &amp; Pro</a>
+      <a class="btn btn-quiet" style="justify-content:flex-start" href="OW Finance - Planes.html">Planes</a>
+      <a class="btn btn-ghost" style="margin-top:8px" href="OW Finance - Login.html">Iniciar sesión</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="section" style="padding-bottom:48px;text-align:center;">
+  <div class="wrap reveal">
+    <p class="eyebrow">Funciones</p>
+    <h1 class="display-sm" style="margin-top:16px;">Todo lo que OW Finance<br>hace por tu dinero.</h1>
+    <p class="lede" style="margin:18px auto 0;max-width:560px;">Cántaros, sueños, registro inteligente y análisis claro.
+      Lo esencial en Lite; el control total en Pro.</p>
+    <div class="anchor-nav">
+      <a href="#cantaros">Cántaros</a>
+      <a href="#suenos">Sueños</a>
+      <a href="#transacciones">Transacciones</a>
+      <a href="#analisis">Análisis</a>
+      <a href="#cuentas">Cuentas &amp; monedas</a>
+      <a href="#comparativa">Lite vs Pro</a>
+    </div>
+  </div>
+</section>
+
+<!-- CÁNTAROS -->
+<section class="section surface-alt" id="cantaros" style="scroll-margin-top:84px;">
+  <div class="wrap">
+    <div class="split reveal">
+      <div class="split-copy">
+        <span class="feat-ico"><span class="material-icons">savings</span></span>
+        <h2 class="display-sm" style="margin-top:18px;">Cántaros</h2>
+        <p class="lede" style="margin-top:16px;">Tu dinero vive en cántaros con propósito en vez de una cuenta única.
+          Cada ingreso se reparte automáticamente; cada gasto baja el cántaro que le toca.</p>
+        <ul class="bullets">
+          <li><span class="material-icons">check_circle</span>Reparto por porcentaje o monto fijo</li>
+          <li><span class="material-icons">check_circle</span>Plantilla rápida 55 / 10 / 10 / 10 / 10</li>
+          <li><span class="material-icons">check_circle</span>Meta de ahorro por cántaro con avance visible</li>
+          <li><span class="material-icons">check_circle</span>Transferencias entre cántaros cuando cambian los planes</li>
+          <li><span class="material-icons">check_circle</span>En Pro: ajustes manuales, apalancamiento e histórico por ciclos</li>
+        </ul>
+      </div>
+      <div class="split-media">
+        <div class="card card-pad-lg" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="jar">
+            <div class="jar-top"><span class="jar-ico" style="background:var(--brand-primary-soft);color:var(--brand-primary-fg-soft)"><span class="material-icons">shield</span></span><div style="flex:1"><div class="jar-name">Necesidades básicas</div><div class="jar-sub">55% del ingreso</div></div><div class="jar-amt" style="font-size:18px;">$ 1,815</div></div>
+            <div class="bar"><i style="width:68%;background:var(--brand-primary)"></i></div>
+          </div>
+          <div class="jar">
+            <div class="jar-top"><span class="jar-ico" style="background:var(--warning-soft);color:var(--warning-fg)"><span class="material-icons">celebration</span></span><div style="flex:1"><div class="jar-name">Diversión</div><div class="jar-sub">10% del ingreso</div></div><div class="jar-amt" style="font-size:18px;">$ 132</div></div>
+            <div class="bar"><i style="width:73%;background:var(--warning)"></i></div>
+          </div>
+          <div class="jar">
+            <div class="jar-top"><span class="jar-ico" style="background:var(--income-soft);color:var(--income-fg)"><span class="material-icons">savings</span></span><div style="flex:1"><div class="jar-name">Ahorro</div><div class="jar-sub">Meta $ 5,000</div></div><div class="jar-amt" style="font-size:18px;">$ 2,940</div></div>
+            <div class="bar"><i style="width:59%;background:var(--income)"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SUEÑOS -->
+<section class="section" id="suenos" style="scroll-margin-top:84px;">
+  <div class="wrap">
+    <div class="split reverse reveal">
+      <div class="split-copy">
+        <span class="feat-ico violet"><span class="material-icons">flag</span></span>
+        <h2 class="display-sm" style="margin-top:18px;">Sueños</h2>
+        <p class="lede" style="margin-top:16px;">Metas concretas que tu cántaro de ahorro alimenta. Ves el avance real,
+          por sueño y combinado, sin promesas vagas.</p>
+        <ul class="bullets">
+          <li><span class="material-icons">check_circle</span>Monto objetivo y progreso por sueño</li>
+          <li><span class="material-icons">check_circle</span>Progreso global de todos tus sueños en un número</li>
+          <li><span class="material-icons">check_circle</span>Marca prioridades y enfoca el ahorro</li>
+        </ul>
+      </div>
+      <div class="split-media">
+        <div class="card card-pad-lg">
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;"><span style="font-weight:600;">Casa propia</span><span class="tabular" style="font-family:var(--font-money);font-weight:600;">$ 12,400 <span style="color:var(--fg-3);font-weight:400;">/ 60,000</span></span></div>
+              <div class="bar"><i style="width:21%;background:var(--brand-primary)"></i></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;"><span style="font-weight:600;">Maestría en Europa</span><span class="tabular" style="font-family:var(--font-money);font-weight:600;">$ 18,500 <span style="color:var(--fg-3);font-weight:400;">/ 27,000</span></span></div>
+              <div class="bar"><i style="width:68%;background:#8B5CF6"></i></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border-hairline);">
+              <div><div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3)">Total ahorrado</div><div style="font-family:var(--font-money);font-weight:700;font-size:24px;">$ 30,900</div></div>
+              <div style="text-align:right;"><div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3)">Progreso global</div><div style="font-family:var(--font-money);font-weight:700;font-size:24px;color:#8B5CF6;">36%</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSACCIONES -->
+<section class="section surface-alt" id="transacciones" style="scroll-margin-top:84px;">
+  <div class="wrap">
+    <div class="section-head reveal" style="margin-bottom:44px;">
+      <span class="feat-ico cyan"><span class="material-icons">bolt</span></span>
+      <h2 class="display-sm" style="margin-top:18px;">Transacciones inteligentes</h2>
+      <p class="lede">Registrar es el 80% del hábito. Por eso hay cinco caminos para anotar un movimiento —
+        elige el más rápido del momento.</p>
+    </div>
+    <div class="feature-grid reveal">
+      <div class="feature"><span class="feat-ico"><span class="material-icons">edit</span></span><h3>Escribe</h3><p>Lenguaje natural: "café 4.50 y taxi 12". Lo interpretamos y lo imputamos al cántaro.</p></div>
+      <div class="feature"><span class="feat-ico cyan"><span class="material-icons">mic</span></span><h3>Voz</h3><p>Dicta sobre la marcha. Ideal para no perder el gasto del momento.</p></div>
+      <div class="feature"><span class="feat-ico amber"><span class="material-icons">photo_camera</span></span><h3>Foto</h3><p>Del recibo extraemos comercio, monto, fecha e ítems por línea (Pro).</p></div>
+      <div class="feature"><span class="feat-ico green"><span class="material-icons">bolt</span></span><h3>Automático</h3><p>Recurrentes y reglas registran lo predecible por ti.</p></div>
+      <div class="feature"><span class="feat-ico violet"><span class="material-icons">upload_file</span></span><h3>Carga masiva</h3><p>Importa un extracto con vista previa (dry-run) antes de confirmar.</p></div>
+      <div class="feature"><span class="feat-ico"><span class="material-icons">receipt_long</span></span><h3>Ítems &amp; impuestos</h3><p>En Pro: divide por ítem, aplica IGTF 3% y reparte cada línea a su cántaro.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ANÁLISIS -->
+<section class="section" id="analisis" style="scroll-margin-top:84px;">
+  <div class="wrap">
+    <div class="split reveal">
+      <div class="split-copy">
+        <span class="feat-ico amber"><span class="material-icons">donut_small</span></span>
+        <h2 class="display-sm" style="margin-top:18px;">Análisis de gastos</h2>
+        <p class="lede" style="margin-top:16px;">El navegador financiero: reparte tu periodo por cántaro,
+          compara lo gastado contra el presupuesto y lo explica en lenguaje claro.</p>
+        <ul class="bullets">
+          <li><span class="material-icons">check_circle</span>Donut de distribución + leyenda por cántaro</li>
+          <li><span class="material-icons">check_circle</span>Navega por mes, trimestre o año</li>
+          <li><span class="material-icons">check_circle</span>En Pro: presupuesto vs. real y drill-down por categoría</li>
+          <li><span class="material-icons">check_circle</span>Insight en lenguaje natural sobre tu gasto</li>
+        </ul>
+      </div>
+      <div class="split-media">
+        <div class="card card-pad-lg">
+          <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+            <div class="donut" style="background:conic-gradient(var(--brand-primary) 0 38%, var(--warning) 38% 58%, #8B5CF6 58% 74%, var(--income) 74% 88%, var(--info) 88% 100%);">
+              <div class="donut-center"><span class="d-amt">$ 2,360</span><span class="d-lbl">Gastado</span></div>
+            </div>
+            <div class="legend" style="flex:1;min-width:170px;">
+              <div class="legend-row"><span class="dot" style="background:var(--brand-primary)"></span><span class="l-name">Necesidades</span><span class="l-val">$ 897</span></div>
+              <div class="legend-row"><span class="dot" style="background:var(--warning)"></span><span class="l-name">Diversión</span><span class="l-val">$ 472</span></div>
+              <div class="legend-row"><span class="dot" style="background:#8B5CF6"></span><span class="l-name">Transporte</span><span class="l-val">$ 378</span></div>
+              <div class="legend-row"><span class="dot" style="background:var(--income)"></span><span class="l-name">Salud</span><span class="l-val">$ 330</span></div>
+              <div class="legend-row"><span class="dot" style="background:var(--info)"></span><span class="l-name">Otros</span><span class="l-val">$ 283</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CUENTAS & MONEDAS -->
+<section class="section surface-alt" id="cuentas" style="scroll-margin-top:84px;">
+  <div class="wrap">
+    <div class="section-head reveal" style="margin-bottom:44px;">
+      <span class="feat-ico cyan"><span class="material-icons">account_balance</span></span>
+      <h2 class="display-sm" style="margin-top:18px;">Cuentas y monedas <span class="chip cyan" style="vertical-align:middle;font-size:12px;">Pro</span></h2>
+      <p class="lede">Cuando necesitas trazabilidad total, Pro suma una capa de cuentas reales y multimoneda
+        — sin perder la simplicidad de los cántaros.</p>
+    </div>
+    <div class="feature-grid reveal">
+      <div class="feature"><span class="feat-ico cyan"><span class="material-icons">account_balance_wallet</span></span><h3>Multi-cuenta</h3><p>Banco, tarjeta, efectivo y más, organizadas en carpetas.</p></div>
+      <div class="feature"><span class="feat-ico"><span class="material-icons">currency_exchange</span></span><h3>Multimoneda</h3><p>USD, EUR y VES en simultáneo, con tasa al vuelo al registrar.</p></div>
+      <div class="feature"><span class="feat-ico amber"><span class="material-icons">swap_horiz</span></span><h3>Transferencias</h3><p>Entre cuentas, incluso cross-currency, con su tasa registrada.</p></div>
+      <div class="feature"><span class="feat-ico green"><span class="material-icons">groups</span></span><h3>Cuentas compartidas</h3><p>Para una casa o equipo, con saldo inicial e impuestos por cuenta.</p></div>
+      <div class="feature"><span class="feat-ico violet"><span class="material-icons">percent</span></span><h3>Impuestos</h3><p>IGTF 3%, Pago Móvil y reglas fiscales por cuenta.</p></div>
+      <div class="feature"><span class="feat-ico"><span class="material-icons">call_split</span></span><h3>Pago múltiple</h3><p>Divide un pago en varias cuentas en una sola transacción.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARATIVA -->
+<section class="section" id="comparativa" style="scroll-margin-top:84px;">
+  <div class="wrap">
+    <div class="section-head reveal" style="margin-bottom:36px;max-width:760px;">
+      <p class="eyebrow">Lite vs Pro</p>
+      <h2 class="display-sm" style="margin-top:16px;">Mismo producto, mismos datos.<br>Dos niveles de control.</h2>
+      <p class="lede"><b style="color:var(--fg-1)">Pro = Lite + capas</b> de cuentas, transacciones avanzadas y analítica.
+        Lite es un subconjunto, no un producto distinto.</p>
+    </div>
+    <div class="cmp reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Capacidad</th>
+            <th class="mode"><span class="m-tag" style="color:var(--brand-primary-fg-soft)"><span class="material-icons" style="font-size:18px;">view_agenda</span>Lite</span></th>
+            <th class="mode"><span class="m-tag" style="color:var(--info-fg)"><span class="material-icons" style="font-size:18px;">dashboard</span>Pro</span></th>
+          </tr>
+        </thead>
+        <tbody id="cmp-body"></tbody>
+      </table>
+    </div>
+    <div class="cmp-legend reveal">
+      <span class="yes"><span class="material-icons">check_circle</span>Incluido</span>
+      <span class="part"><span class="material-icons">remove_circle</span>Parcial</span>
+      <span class="no"><span class="material-icons">remove</span>No disponible</span>
+    </div>
+    <p style="text-align:center;margin-top:24px;"><a class="link-cyan" href="MATRIZ_LITE_PRO.html">Ver la matriz técnica completa<span class="material-icons">arrow_forward</span></a></p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section surface-alt">
+  <div class="wrap">
+    <div class="band-navy reveal" style="text-align:center;">
+      <h2 class="display-sm" style="max-width:600px;margin:0 auto;">Pruébalo. Empieza en Lite, crece a Pro.</h2>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:28px;flex-wrap:wrap;">
+        <a class="btn btn-on-navy btn-lg" href="OW Finance - Login.html#registro">Crear cuenta gratis<span class="material-icons">arrow_forward</span></a>
+        <a class="btn btn-on-navy-ghost btn-lg" href="OW Finance - Planes.html">Ver planes</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="nav-logo" href="OW Finance - Landing.html" aria-label="OW Finance">
+          <svg viewBox="0 0 200 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:30px">
+            <rect width="56" height="56" rx="14" fill="#1E3A8A"></rect>
+            <text x="28" y="36" font-family="'Satoshi','DM Sans',system-ui,sans-serif" font-weight="800" font-size="22" fill="white" text-anchor="middle" letter-spacing="-0.04em">OW</text>
+            <text x="70" y="38" font-family="'Satoshi','DM Sans',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="-0.01em" style="fill:var(--fg-1)">Finance</text>
+          </svg>
+        </a>
+        <p>Finanzas personales calmadas. Reparte, ahorra y entiende tu dinero — en Lite o en Pro.</p>
+      </div>
+      <div>
+        <h4>Producto</h4>
+        <ul>
+          <li><a href="#cantaros">Cántaros</a></li>
+          <li><a href="#suenos">Sueños</a></li>
+          <li><a href="#analisis">Análisis</a></li>
+          <li><a href="OW Finance - Landing.html#modos">Lite &amp; Pro</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Empezar</h4>
+        <ul>
+          <li><a href="OW Finance - Login.html#registro">Crear cuenta</a></li>
+          <li><a href="OW Finance - Login.html">Iniciar sesión</a></li>
+          <li><a href="OW Finance - Planes.html">Planes</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Recursos</h4>
+        <ul>
+          <li><a href="OW Finance - Landing.html">Inicio</a></li>
+          <li><a href="MATRIZ_LITE_PRO.html">Matriz Lite vs Pro</a></li>
+          <li><a href="ui_kits/lite-desktop/index.html">UI Kit (demo)</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 OW Finance. Todos los derechos reservados.</span>
+      <span style="display:flex;gap:18px;"><a href="#">Privacidad</a><a href="#">Términos</a><a href="#">Contacto</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="marketing.js"></script>
+<script>
+  var CMP = [
+    { grp: 'Cántaros', rows: [
+      ['Ver cántaros con saldo', 'yes', 'yes'],
+      ['Crear / editar (% o fijo)', 'yes', 'yes'],
+      ['Plantilla 55 / 10 / 10 / 10 / 10', 'yes', 'yes'],
+      ['Meta de ahorro', 'yes', 'yes'],
+      ['Transferir entre cántaros', 'part', 'yes'],
+      ['Apalancamiento entre cántaros', 'no', 'yes'],
+    ]},
+    { grp: 'Cuentas', rows: [
+      ['Trackeo de cuentas', 'no', 'yes'],
+      ['Multimoneda (USD / EUR / VES)', 'no', 'yes'],
+      ['Cuentas compartidas', 'no', 'yes'],
+      ['Impuestos por cuenta (IGTF)', 'no', 'yes'],
+    ]},
+    { grp: 'Transacciones', rows: [
+      ['Registrar ingreso y gasto', 'yes', 'yes'],
+      ['Texto · voz · foto · auto · masiva', 'yes', 'yes'],
+      ['Transferencia cross-currency', 'no', 'yes'],
+      ['Ítems por línea + cantidad', 'no', 'yes'],
+      ['Pago múltiple (split)', 'no', 'yes'],
+    ]},
+    { grp: 'Analítica', rows: [
+      ['Home resumido', 'yes', 'yes'],
+      ['Análisis de gastos', 'part', 'yes'],
+      ['Drill-down + presupuesto vs. real', 'no', 'yes'],
+      ['Selector multimoneda + tasa', 'no', 'yes'],
+    ]},
+  ];
+  var MARK = {
+    yes: '<span class="material-icons yes">check_circle</span>',
+    part: '<span class="material-icons part">remove_circle</span>',
+    no: '<span class="material-icons no">remove</span>',
+  };
+  document.getElementById('cmp-body').innerHTML = CMP.map(function(s){
+    return '<tr class="grp"><td colspan="3">' + s.grp + '</td></tr>' +
+      s.rows.map(function(r){
+        return '<tr><td class="cap">' + r[0] + '</td><td class="mark">' + MARK[r[1]] + '</td><td class="mark">' + MARK[r[2]] + '</td></tr>';
+      }).join('');
+  }).join('');
+</script>
+</body>
+</html>

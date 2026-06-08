@@ -1,42 +1,32 @@
 <template>
-  <q-layout view="lHh lpr lFf" class="lite-desktop-layout">
-
-    <!-- Desktop Header (Quasar-managed, auto-offsets q-page) -->
-    <q-header flat bordered class="dte-layout-header">
-      <LiteHeaderDesktop
+  <q-layout view="hHh lpR fFf" class="lite-desktop-layout">
+    <!-- Header no-sticky -->
+    <div class="lite-desktop-layout__header-wrap">
+      <LiteHeader
         :user="user"
-        :show-interval-menu="showHeaderIntervalMenu"
-        :interval-value="headerInterval"
-        @nuevo-click="showQuickActions = true"
-        @assistant-click="showAssistant = true"
-        @interval-change="onHeaderIntervalChange"
-        @interval-shift="onHeaderIntervalShift"
-        @avatar-click="onAvatarClick"
-        @notifications-click="onMenuClick"
+        currency="USD"
+        :notification-count="2"
+        @avatar-click="menuOpen = !menuOpen"
+        @notifications-click="onNotificationsClick"
+        @menu-click="menuOpen = !menuOpen"
       />
-    </q-header>
+      <ExpandedMenu
+        v-model="menuOpen"
+        :user="user"
+        @navigate="onMenuNavigate"
+        @logout="onLogout"
+      />
+    </div>
 
-    <!-- Main Content Area -->
-    <q-page-container>
+    <!-- Main Content Area (max 1200px) -->
+    <q-page-container class="lite-desktop-layout__container">
       <router-view />
     </q-page-container>
 
-    <!-- Desktop Status Pill -->
-    <div class="dte-status-pill">
-      <div class="dte-status-pill__status">
-        <span class="dte-status-pill__dot" />
-        <span class="dte-status-pill__label">Cántaros: {{ statusText }}</span>
-      </div>
-      <div class="dte-status-pill__actions">
-        <button class="dte-status-pill__btn" aria-label="Estado óptimo" @click="showEstadoOptimo = true">
-          <q-icon name="menu" size="20px" />
-        </button>
-        <button class="dte-status-pill__btn" aria-label="Mostrar u ocultar montos" @click="ui.toggleHideValues()">
-          <q-icon :name="ui.hideValues ? 'visibility_off' : 'visibility'" size="20px" />
-        </button>
-      </div>
-    </div>
+    <!-- Floating Nav Pill -->
+    <LiteNavPill @quick-add="showQuickActions = true" />
 
+    <!-- Estado Optimo Panel (overlay from bottom) -->
     <DesktopEstadoOptimoPanel
       v-model="showEstadoOptimo"
       :total-available="ui.jarStatus.totalAvailable"
@@ -52,6 +42,7 @@
       @action-selected="onActionSelected"
     />
 
+    <!-- Assistant Modal -->
     <q-dialog v-model="showAssistant">
       <q-card class="assistant-modal">
         <q-card-section>
@@ -65,191 +56,108 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-
   </q-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
-import LiteHeaderDesktop from 'components/liquid/LiteHeaderDesktop.vue';
+import LiteHeader from 'components/lite/LiteHeader.vue';
+import LiteNavPill from 'components/lite/LiteNavPill.vue';
+import ExpandedMenu from 'components/lite/ExpandedMenu.vue';
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
 import DesktopEstadoOptimoPanel from 'components/liquid/DesktopEstadoOptimoPanel.vue';
 
 const router = useRouter();
-const route = useRoute();
 const auth = useAuthStore();
 const ui = useUiStore();
 
 const showQuickActions = ref(false);
 const showEstadoOptimo = ref(false);
 const showAssistant = ref(false);
-
-const showHeaderIntervalMenu = computed(() => route.path === '/user/home');
-const headerInterval = computed<'month' | 'week' | 'year'>(() => {
-  const queryValue = route.query.interval;
-  const value = Array.isArray(queryValue) ? queryValue[0] : queryValue;
-  return value === 'week' || value === 'year' ? value : 'month';
-});
-
-function onHeaderIntervalChange(value: 'month' | 'week' | 'year') {
-  void router.replace({
-    path: route.path,
-    query: {
-      ...route.query,
-      interval: value,
-    },
-  });
-}
-
-function onHeaderIntervalShift(direction: -1 | 1) {
-  void router.replace({
-    path: route.path,
-    query: {
-      ...route.query,
-      interval: headerInterval.value,
-      shiftAt: String(Date.now()),
-      shiftDir: String(direction),
-    },
-  });
-}
-
-const statusText = computed(() => {
-  const availability = Number(ui.jarStatus.availabilityPercent || 0);
-  if (availability >= 70) return 'Saludable';
-  if (availability >= 40) return 'En control';
-  return 'Atención';
-});
+const menuOpen = ref(false);
 
 const user = computed(() => {
   const u = auth.user;
-  const result: { name?: string; avatar?: string | null; initials?: string } = {};
-  if (u?.name) result.name = u.name;
-  if (u?.avatar !== undefined) result.avatar = u.avatar;
-  const initials = u?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-  if (initials) result.initials = initials;
-  return result;
+  return {
+    name: u?.name || 'Usuario',
+    email: u?.email || '',
+    avatar: u?.avatar || null,
+  };
 });
 
-const onAvatarClick = () => { void router.push('/user/config'); };
-const onMenuClick  = () => { void router.push('/user/home'); };
+function onNotificationsClick() {
+  // TODO: abrir panel de notificaciones
+  void router.push('/user/home');
+}
 
-const onActionSelected = () => {
+function onMenuNavigate(to: string) {
+  void router.push(to);
+}
+
+function onLogout() {
+  auth.logout();
+  void router.push('/login');
+}
+
+function onActionSelected() {
   // Action handling is centralized inside QuickActionSheet.
-};
+}
 
-const onEstadoDetails = () => {
+function onEstadoDetails() {
   showEstadoOptimo.value = false;
   void router.push('/user/expense-analysis');
-};
+}
 </script>
 
 <style scoped lang="scss">
 .lite-desktop-layout {
-  background: #f8fafc;
+  background: var(--bg-canvas);
+  color: var(--fg-1);
+  min-height: 100vh;
+  position: relative;
+  padding-bottom: 140px; /* space for floating nav pill */
 
-  .body--dark & { background: #0f172a; }
-}
-
-.dte-layout-header {
-  background: transparent;
-  height: 72px;
-}
-
-.dte-status-pill {
-  position: fixed;
-  left: 50%;
-  bottom: 40px;
-  transform: translateX(-50%);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 16px 26px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.12);
-
-  .body--dark & {
-    background: rgba(15, 23, 42, 0.85);
-    border-color: #334155;
+  &__header-wrap {
+    position: relative;
+    z-index: var(--z-popover);
   }
 
-  &__status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-right: 22px;
-    border-right: 1px solid #e2e8f0;
-
-    .body--dark & { border-right-color: #334155; }
-  }
-
-  &__dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.12);
-  }
-
-  &__label {
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: #64748b;
-
-    .body--dark & { color: #94a3b8; }
-  }
-
-  &__actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  &__btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: transparent;
-    border-radius: 10px;
-    color: #94a3b8;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 160ms ease;
-
-    &:hover {
-      color: #1e3a8a;
-      background: rgba(30, 58, 138, 0.08);
-    }
-
-    &:active { transform: scale(0.96); }
+  &__container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    width: 100%;
+    padding: 12px 32px 32px;
+    box-sizing: border-box;
   }
 }
 
 .assistant-modal {
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   min-width: 340px;
+  background: var(--surface-1);
+
+  &__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--fg-1);
+  }
+
+  &__text {
+    margin: 8px 0 0;
+    color: var(--fg-2);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.5;
+  }
 }
 
-.assistant-modal__title {
-  font-family: 'Manrope', 'DM Sans', sans-serif;
-  font-weight: 800;
-  font-size: 18px;
-  color: #0f172a;
-}
-
-.assistant-modal__text {
-  margin: 8px 0 0;
-  color: #64748b;
+@media (max-width: 640px) {
+  .lite-desktop-layout__container {
+    padding: 12px 16px 24px;
+  }
 }
 </style>

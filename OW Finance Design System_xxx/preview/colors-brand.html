@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Colors" name="Colors — Brand" subtitle="Navy 700 primary + states" viewport="700x220" -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; background: var(--bg-canvas); }
+  body { padding: 24px; }
+  .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .sw {
+    border-radius: var(--radius-md);
+    padding: 16px;
+    height: 96px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: var(--shadow-card);
+  }
+  .sw .name { font-family: var(--font-body); font-weight: 600; font-size: 13px; }
+  .sw .hex  { font-family: var(--font-body); font-size: 12px; opacity: 0.8; font-variant-numeric: tabular-nums; }
+  .dark-on { color: var(--slate-900); }
+  .light-on { color: #fff; }
+</style>
+</head>
+<body>
+  <div class="swatches">
+    <div class="sw light-on" style="background: var(--navy-700);">
+      <div class="name">brand-primary</div>
+      <div class="hex">#1E3A8A · navy 700</div>
+    </div>
+    <div class="sw light-on" style="background: var(--navy-800);">
+      <div class="name">brand-primary-hover</div>
+      <div class="hex">#16297A · navy 800</div>
+    </div>
+    <div class="sw light-on" style="background: var(--navy-900);">
+      <div class="name">brand-primary-press</div>
+      <div class="hex">#0F1E4D · navy 900</div>
+    </div>
+    <div class="sw dark-on" style="background: var(--navy-50);">
+      <div class="name">brand-primary-soft</div>
+      <div class="hex">#F1F4FB · navy 50</div>
+    </div>
+    <div class="sw dark-on" style="background: var(--navy-100);">
+      <div class="name">navy-100</div>
+      <div class="hex">#E5EBF7</div>
+    </div>
+    <div class="sw light-on" style="background: var(--navy-500);">
+      <div class="name">navy-500 (dark brand)</div>
+      <div class="hex">#4E6FC4</div>
+    </div>
+  </div>
+</body>
+</html>

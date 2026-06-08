@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120" role="img" aria-label="Empty state placeholder">
+  <!-- Calm, flat empty-state illustration per README (no stock photo, no gradient) -->
+  <rect x="20" y="28" width="120" height="72" rx="20" fill="#F1F5F9"/>
+  <rect x="40" y="48" width="80" height="10" rx="5" fill="#CBD5E1"/>
+  <rect x="40" y="68" width="52" height="10" rx="5" fill="#E2E8F0"/>
+  <circle cx="116" cy="34" r="14" fill="#E0F2FE"/>
+  <circle cx="116" cy="34" r="5" fill="#0EA5E9"/>
+</svg>

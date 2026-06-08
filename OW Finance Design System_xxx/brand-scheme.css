@@ -1,0 +1,84 @@
+/* ============================================================
+   OW Finance — Esquema de color (contrato de tema)
+   ------------------------------------------------------------
+   5 VARIABLES DE ENTORNO. Se fijan una vez (aquí, en el theme
+   config de Quasar, o vía build env) y TODO lo demás deriva de
+   ellas con color-mix(). Cambia estos 5 y el producto entero se
+   recolorea, coherente, sin tocar componentes.
+
+   Teoría: 60-30-10 + tinta.
+     60% → Fondo/Superficie (neutro dominante)
+     30% → Marca
+     10% → Acción (CTA, el acento que convierte)
+     tinta alta  → Títulos
+     tinta media → Subtítulos / cuerpo
+
+   Los valores aquí son DEFAULTS provisionales (el navy actual).
+   Se deciden en firme más adelante — cambiar solo estas 5 líneas.
+   ============================================================ */
+:root {
+  /* ── Los 5 (lo único que se setea a mano) ───────────────── */
+  --c-brand:    #1E3A8A;   /* 1 · Marca — identidad, estado activo, logo */
+  --c-action:   #1E3A8A;   /* 2 · Acción — el CTA que convierte */
+  --c-heading:  #0F172A;   /* 3 · Títulos — texto de alto contraste */
+  --c-body:     #64748B;   /* 4 · Subtítulos / cuerpo — texto secundario */
+  --c-surface:  #F8FAFC;   /* 5 · Fondo — superficie base neutra */
+
+  /* ── Derivados de Marca ─────────────────────────────────── */
+  --c-brand-hover:  color-mix(in srgb, var(--c-brand) 88%, #000);   /* hover -12% */
+  --c-brand-press:  color-mix(in srgb, var(--c-brand) 80%, #000);   /* active -20% */
+  --c-brand-soft:   color-mix(in srgb, var(--c-brand) 12%, var(--c-surface)); /* fondo suave */
+  --c-brand-ring:   color-mix(in srgb, var(--c-brand) 38%, transparent);      /* borde/anillo */
+  --c-on-brand:     #ffffff;  /* texto sobre Marca */
+
+  /* ── Derivados de Acción ────────────────────────────────── */
+  --c-action-hover: color-mix(in srgb, var(--c-action) 88%, #000);
+  --c-action-press: color-mix(in srgb, var(--c-action) 80%, #000);
+  --c-action-soft:  color-mix(in srgb, var(--c-action) 12%, var(--c-surface));
+  --c-on-action:    #ffffff;
+
+  /* ── Derivados de texto ─────────────────────────────────── */
+  --c-body-strong:  color-mix(in srgb, var(--c-body) 70%, var(--c-heading)); /* cuerpo+ */
+  --c-muted:        color-mix(in srgb, var(--c-body) 60%, var(--c-surface));  /* placeholder / meta */
+
+  /* ── Derivados de superficie ────────────────────────────── */
+  --c-card:         #ffffff;                                                  /* tarjeta */
+  --c-surface-2:    color-mix(in srgb, var(--c-surface) 88%, var(--c-heading) 4%); /* superficie hundida */
+  --c-hairline:     color-mix(in srgb, var(--c-heading) 10%, transparent);    /* hairline barely-there */
+
+  /* ── Feedback semántico (FUNCIONAL — fuera de los 5 de marca) ──
+     No son parte del esquema personalizable: comunican estado,
+     no identidad. Income/gasto/atención son fijos por convención. */
+  --c-success: #10B981;
+  --c-danger:  #EF4444;
+  --c-warning: #F59E0B;
+}
+
+/* ── Modo oscuro: los 3 neutros se reescriben; Marca y Acción se conservan ──
+   La identidad no cambia entre temas; solo el sustrato. */
+[data-theme="dark"] {
+  --c-heading:  #F1F5F9;
+  --c-body:     #94A3B8;
+  --c-surface:  #0F172A;
+  --c-card:     #131B2E;
+  --c-surface-2: color-mix(in srgb, var(--c-card) 90%, #fff 6%);
+  --c-hairline: color-mix(in srgb, #fff 8%, transparent);
+  --c-on-brand: #ffffff;
+  --c-on-action: #ffffff;
+}
+
+/* ============================================================
+   Puente con el design system existente (colors_and_type.css)
+   ------------------------------------------------------------
+   Mapea los 5 roles a los tokens canónicos. Importar DESPUÉS de
+   colors_and_type.css para que el esquema personalizable mande.
+   Comentar este bloque si se prefiere mantener los tokens fijos.
+   ============================================================ */
+:root {
+  --brand-primary: var(--c-brand);
+  --info:          var(--c-action);
+  --fg-1:          var(--c-heading);
+  --fg-2:          var(--c-body);
+  --bg-canvas:     var(--c-surface);
+  --surface-1:     var(--c-card);
+}

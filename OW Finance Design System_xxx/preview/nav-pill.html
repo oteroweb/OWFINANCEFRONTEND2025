@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="Floating nav pill" subtitle="4 routes + quick-add CTA" viewport="700x140" -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--bg-canvas); }
+  body { padding: 32px 24px; display: flex; justify-content: center; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--surface-1);
+    border-radius: var(--radius-pill);
+    padding: 6px;
+    box-shadow: var(--shadow-float);
+  }
+  .item {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: var(--radius-pill);
+    font-family: var(--font-body); font-size: 13px; font-weight: 500;
+    color: var(--fg-2);
+    cursor: pointer;
+    transition: background var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out);
+  }
+  .item .material-icons { font-size: 20px; }
+  .item:hover { background: var(--surface-2); color: var(--fg-1); }
+  .item.active {
+    background: var(--brand-primary); color: var(--fg-on-brand); font-weight: 600;
+  }
+  .cta {
+    margin-left: 4px; width: 48px; height: 48px;
+    background: var(--brand-primary); color: var(--fg-on-brand);
+    border-radius: var(--radius-pill);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(30, 58, 138, 0.30);
+  }
+  .cta .material-icons { font-size: 26px; }
+</style>
+</head>
+<body>
+  <div class="pill">
+    <div class="item active"><span class="material-icons">home</span>Home</div>
+    <div class="item"><span class="material-icons">receipt_long</span>Transactions</div>
+    <div class="item"><span class="material-icons">savings</span>Jars</div>
+    <div class="item"><span class="material-icons">settings</span>Settings</div>
+    <div class="cta" aria-label="quick add"><span class="material-icons">add</span></div>
+  </div>
+</body>
+</html>

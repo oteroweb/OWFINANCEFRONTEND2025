@@ -1,16 +1,37 @@
 import { ref, onUnmounted } from 'vue'
 
+// Web Speech API no está en los lib types estándar de TS; declaramos lo mínimo que usamos.
+interface SpeechRecognitionResultEvent {
+  results: { [index: number]: { [index: number]: { transcript: string } } }
+}
+interface SpeechRecognitionErrorEventLike {
+  error: string
+}
+interface SpeechRecognitionLike {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onstart: (() => void) | null
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+type SpeechRecognitionCtorType = new () => SpeechRecognitionLike
+
 export function useVoiceInput() {
   const transcript = ref('')
   const isRecording = ref(false)
   const error = ref<string | null>(null)
-  let recognition: SpeechRecognition | null = null
+  let recognition: SpeechRecognitionLike | null = null
 
   function start() {
-    const SpeechRecognitionCtor =
-      window.SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition: typeof SpeechRecognition })
-        .webkitSpeechRecognition
+    const w = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtorType
+      webkitSpeechRecognition?: SpeechRecognitionCtorType
+    }
+    const SpeechRecognitionCtor = w.SpeechRecognition || w.webkitSpeechRecognition
     if (!SpeechRecognitionCtor) {
       error.value = 'Tu dispositivo no soporta reconocimiento de voz'
       return
@@ -23,10 +44,10 @@ export function useVoiceInput() {
     recognition.onstart = () => {
       isRecording.value = true
     }
-    recognition.onresult = (event) => {
-      transcript.value = event.results[0][0].transcript
+    recognition.onresult = (event: SpeechRecognitionResultEvent) => {
+      transcript.value = event.results[0]![0]!.transcript
     }
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
       error.value = `Error de voz: ${event.error}`
       isRecording.value = false
     }
