@@ -1,10 +1,10 @@
-import { defineConfig, devices } from '@playwright/test';
+const { defineConfig, devices } = require('@playwright/test');
 
 /**
  * OW Finance 2026 — Playwright Configuration
  * Tests both the static Redesign HTML demos and the live Vue app
  */
-export default defineConfig({
+module.exports = defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
