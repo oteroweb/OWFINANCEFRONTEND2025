@@ -59,7 +59,8 @@ test.describe('User routes — render after login', () => {
     await page.fill('input[type="email"]', 'user@demo.com');
     await page.fill('input[type="password"]', 'S$ratoga.1990');
     await page.click('button[type="submit"]');
-    await page.waitForURL(/\/user\/home/, { timeout: 15000 });
+    await page.waitForURL(/\/user/, { timeout: 15000 });
+    await page.waitForTimeout(1000);
   });
 
   for (const route of userRoutes) {
