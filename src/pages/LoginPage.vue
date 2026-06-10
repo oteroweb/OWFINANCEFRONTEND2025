@@ -3,7 +3,10 @@
     <!-- LEFT BRAND -->
     <aside class="auth-brand">
       <router-link class="logo-row" to="/" aria-label="OW Finance">
-        <img src="/assets/redesign/ow-finance-wordmark.svg" alt="OW Finance" height="34" style="filter: brightness(0) invert(1)" />
+        <svg viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg" height="30" style="filter: brightness(0) invert(1)">
+          <text x="0" y="22" font-family="var(--font-display), system-ui, sans-serif" font-weight="700" font-size="20" fill="currentColor">OW</text>
+          <text x="44" y="22" font-family="var(--font-display), system-ui, sans-serif" font-weight="400" font-size="20" fill="currentColor" opacity="0.6">Finance</text>
+        </svg>
       </router-link>
       <div class="brand-mid">
         <h2>Tu dinero, repartido<br />con propósito.</h2>

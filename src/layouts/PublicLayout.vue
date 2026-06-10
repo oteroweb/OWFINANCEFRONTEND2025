@@ -4,7 +4,10 @@
     <header class="nav">
       <div class="wrap nav-inner">
         <router-link class="nav-logo" to="/" aria-label="OW Finance — inicio">
-          <img src="/assets/redesign/ow-finance-wordmark.svg" alt="OW Finance" height="30" />
+          <svg viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg" height="26">
+            <text x="0" y="22" font-family="var(--font-display), system-ui, sans-serif" font-weight="700" font-size="20" fill="currentColor">OW</text>
+            <text x="44" y="22" font-family="var(--font-display), system-ui, sans-serif" font-weight="400" font-size="20" fill="currentColor" opacity="0.6">Finance</text>
+          </svg>
         </router-link>
 
         <nav class="nav-links">
@@ -56,7 +59,10 @@
         <div class="footer-grid">
           <div class="footer-brand">
             <router-link class="nav-logo" to="/" aria-label="OW Finance">
-              <img src="/assets/redesign/ow-finance-wordmark.svg" alt="OW Finance" height="30" />
+              <svg viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg" height="26">
+                <text x="0" y="22" font-family="var(--font-display), system-ui, sans-serif" font-weight="700" font-size="20" fill="currentColor">OW</text>
+                <text x="44" y="22" font-family="var(--font-display), system-ui, sans-serif" font-weight="400" font-size="20" fill="currentColor" opacity="0.6">Finance</text>
+              </svg>
             </router-link>
             <p>Finanzas personales calmadas. Reparte, ahorra y entiende tu dinero — en Lite o en Pro.</p>
             <div class="app-downloads">

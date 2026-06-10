@@ -3,18 +3,12 @@
     <div class="lite-header__inner">
       <!-- Left: Avatar + Greeting -->
       <div class="lite-header__left">
-        <button
-          class="lite-header__avatar"
-          @click="$emit('avatar-click')"
-          aria-label="Abrir menú de perfil"
-        >
-          <img v-if="user?.avatar" :src="user.avatar" :alt="user?.name || 'U'" />
-          <span v-else class="lite-header__initial">{{ initials }}</span>
-        </button>
-        <div class="lite-header__greeting">
-          <span class="lite-header__greeting-label">{{ greeting }}</span>
-          <span class="lite-header__greeting-name">{{ user?.name || 'Usuario' }}</span>
-        </div>
+        <router-link class="lite-header__logo" to="/user/home" aria-label="OW Finance — inicio">
+          <svg viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg" height="26">
+            <text x="0" y="22" font-family="var(--font-display), system-ui, sans-serif" font-weight="700" font-size="20" fill="currentColor">OW</text>
+            <text x="44" y="22" font-family="var(--font-display), system-ui, sans-serif" font-weight="400" font-size="20" fill="currentColor" opacity="0.6">Finance</text>
+          </svg>
+        </router-link>
       </div>
 
       <!-- Right: Currency + Visibility + Theme + Notifications + Menu -->
@@ -71,7 +65,7 @@ interface User {
   avatar?: string | null;
 }
 
-const props = defineProps<{
+defineProps<{
   user?: User;
   currency?: string;
   notificationCount?: number;
@@ -85,23 +79,6 @@ defineEmits<{
 
 const $q = useQuasar();
 const ui = useUiStore();
-
-const initials = computed(() => {
-  const name = props.user?.name || '';
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-});
-
-const greeting = computed(() => {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Buenos días,';
-  if (hour < 19) return 'Buenas tardes,';
-  return 'Buenas noches,';
-});
 
 const hideValues = computed(() => ui.hideValues);
 const isDark = computed(() => $q.dark.isActive);
@@ -134,6 +111,19 @@ function toggleDark() {
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+  }
+
+  &__logo {
+    display: inline-flex;
+    align-items: center;
+    color: var(--fg-1);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: opacity 160ms ease;
+
+    &:hover {
+      opacity: 0.75;
+    }
   }
 
   &__left {
