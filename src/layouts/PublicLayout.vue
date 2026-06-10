@@ -106,8 +106,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { usePublicTheme } from 'src/composables/usePublicTheme'
 
+const router = useRouter()
+const route = useRoute()
 const { isDark, toggleTheme } = usePublicTheme()
 const mobileMenuOpen = ref(false)
 
@@ -115,14 +118,17 @@ function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
-function scrollTo(id: string) {
+async function scrollTo(id: string) {
   mobileMenuOpen.value = false
-  void nextTick().then(() => {
-    const el = document.getElementById(id)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' })
-    }
-  })
+  if (route.path !== '/') {
+    await router.push({ path: '/' })
+  }
+  await new Promise(r => setTimeout(r, 300))
+  await nextTick()
+  const el = document.getElementById(id)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth' })
+  }
 }
 
 // Scroll reveal with IntersectionObserver
