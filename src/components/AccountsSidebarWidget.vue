@@ -193,6 +193,7 @@ import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
+import { useI18n } from 'vue-i18n';
 
 type Node = {
   id: string | number;
@@ -225,7 +226,7 @@ const hasAccounts = computed(() => allAccountIds.value.length > 0);
 const allCount = computed(() => allAccountIds.value.length);
 const txStore = useTransactionsStore();
 const $q = useQuasar();
-// Estado colapsado del widget (podría persistirse en localStorage si se desea)
+const { t } = useI18n();
 const collapsed = ref(false);
 
 type AccountItem = {
@@ -705,7 +706,7 @@ async function submitAdjust(): Promise<void> {
   if (!id) return;
   const val = Number(adjustNewBalance.value);
   if (!Number.isFinite(val)) {
-    $q.notify({ type: 'warning', message: 'Ingresa un saldo válido' });
+    $q.notify({ type: 'warning', message: t('notify.validBalance') });
     return;
   }
   try {
@@ -717,14 +718,14 @@ async function submitAdjust(): Promise<void> {
     });
     // Recalcular saldo tras ajustar
     await api.post(`/accounts/${id}/recalculate-account`, { user_id: auth.user?.id });
-    $q.notify({ type: 'positive', message: 'Saldo ajustado' });
+    $q.notify({ type: 'positive', message: t('notify.balanceAdjusted') });
     showAdjust.value = false;
     await loadTree();
     window.dispatchEvent(
       new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'adjust' } })
     );
   } catch {
-    $q.notify({ type: 'negative', message: 'Error ajustando saldo' });
+    $q.notify({ type: 'negative', message: t('notify.balanceAdjustError') });
   } finally {
     adjusting.value = false;
   }
@@ -734,13 +735,13 @@ async function recalcBalance(id: string | number): Promise<void> {
   try {
     $q.loading.show({ message: 'Recalculando saldo...' });
     await api.post(`/accounts/${id}/recalculate-account`, { user_id: auth.user?.id });
-    $q.notify({ type: 'positive', message: 'Saldo recalculado' });
+    $q.notify({ type: 'positive', message: t('notify.balanceRecalculated') });
     await loadTree();
     window.dispatchEvent(
       new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'recalc' } })
     );
   } catch {
-    $q.notify({ type: 'negative', message: 'Error recalculando saldo' });
+    $q.notify({ type: 'negative', message: t('notify.balanceRecalcError') });
   } finally {
     $q.loading.hide();
   }

@@ -742,6 +742,7 @@ import { useTransactionTypesStore, type TransactionType } from 'stores/transacti
 import { usePeriodStore } from 'stores/period';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import { useI18n } from 'vue-i18n';
 import CategoriesTree from './CategoriesTree.vue';
 import { useTransactionForm } from 'src/composables/useTransactionForm';
 defineOptions({ name: 'TransactionCreateDialog' });
@@ -755,6 +756,7 @@ const tsStore = useTransactionsStore();
 const ttypes = useTransactionTypesStore();
 const periodStore = usePeriodStore();
 const $q = useQuasar();
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -1203,7 +1205,7 @@ async function fetchAvailableTaxes() {
     // Optional: small debug note
     // console.debug('Impuestos cargados:', availableTaxes.value);
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando impuestos' });
+    $q.notify({ type: 'negative', message: t('notify.taxLoadError') });
     availableTaxes.value = [];
   }
 }
@@ -1232,7 +1234,7 @@ async function addProvider() {
   if (!addrTrim) providerErrors.value.address = ['La dirección es requerida'];
   else if (addrTrim.length < 3) providerErrors.value.address = ['Mínimo 3 caracteres'];
   if (Object.keys(providerErrors.value).length) {
-    $q.notify({ type: 'warning', message: 'Completa los campos requeridos' });
+    $q.notify({ type: 'warning', message: t('notify.fieldsRequired') });
     return;
   }
   providerSaving.value = true;
@@ -1246,7 +1248,7 @@ async function addProvider() {
     form.value.provider_id = p.id;
     reloadProviders();
     await ensureProvidersLoaded();
-    $q.notify({ type: 'positive', message: 'Proveedor creado' });
+    $q.notify({ type: 'positive', message: t('notify.providerCreated') });
     resetProviderDialog();
     showAddProviderDialog.value = false;
   } catch (err) {
@@ -1321,7 +1323,7 @@ const allCurrencies = ref<CurrencyOption[]>([]);
 async function addAccountInline() {
   try {
     if (!newAccountCurrency.value || !newAccountType.value) {
-      $q.notify({ type: 'warning', message: 'Selecciona moneda y tipo' });
+      $q.notify({ type: 'warning', message: t('notify.selectCurrencyAndType') });
       return;
     }
     const resp = await api.post('/accounts', {
@@ -1335,9 +1337,9 @@ async function addAccountInline() {
     form.value.account_id = acc.id;
     reloadAccounts();
     await ensureAccountsLoaded();
-    $q.notify({ type: 'positive', message: 'Cuenta creada' });
+    $q.notify({ type: 'positive', message: t('notify.accountCreated') });
   } catch {
-    $q.notify({ type: 'negative', message: 'Error al crear cuenta' });
+    $q.notify({ type: 'negative', message: t('notify.accountCreateError') });
   } finally {
     showAddAccountDialog.value = false;
     newAccountName.value = '';
@@ -1382,7 +1384,7 @@ async function ensureAccountTypesLoaded() {
     accountTypeOptions.value = data;
     accountTypesLoaded = true;
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando tipos de cuenta' });
+    $q.notify({ type: 'negative', message: t('notify.accountTypeError') });
     accountTypesLoaded = false;
   }
 }
@@ -1407,7 +1409,7 @@ async function ensureCurrenciesLoaded() {
     currencyOptions.value = mapped;
     currenciesLoaded = true;
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando monedas' });
+    $q.notify({ type: 'negative', message: t('notify.currencyLoadError') });
     currenciesLoaded = false;
   }
 }
@@ -2410,7 +2412,7 @@ async function ensureItemCategoriesLoaded() {
     itemCategoryOptions.value = data || [];
     itemCategoriesLoaded = true;
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando categorías de ítems' });
+    $q.notify({ type: 'negative', message: t('notify.categoryLoadError') });
     itemCategoriesLoaded = false;
   }
 }
@@ -2493,7 +2495,7 @@ async function ensureTxnCategoriesLoaded() {
     allTxnCategoriesTree.value = rootChildren;
     flattenTxnCategories();
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando categorías de transacción' });
+    $q.notify({ type: 'negative', message: t('notify.txCategoryLoadError') });
     allTxnCategoriesTree.value = [];
     allTxnCategoriesFlat.value = [];
     txnCategoryOptions.value = [];
@@ -2912,26 +2914,26 @@ function saveTransaction() {
   // Concepto (name) requerido por backend
   const nameTrim = (form.value.name || '').trim();
   if (!nameTrim) {
-    $q.notify({ type: 'warning', message: 'Concepto es requerido' });
+    $q.notify({ type: 'warning', message: t('notify.conceptRequired') });
     return;
   }
   if (slug === 'transfer') {
     if (!form.value.account_from_id || !form.value.account_to_id) {
-      $q.notify({ type: 'warning', message: 'Selecciona cuenta origen y destino' });
+      $q.notify({ type: 'warning', message: t('notify.selectOriginDest') });
       return;
     }
     if (!form.value.amount || form.value.amount <= 0) {
-      $q.notify({ type: 'warning', message: 'El importe debe ser positivo' });
+      $q.notify({ type: 'warning', message: t('notify.positiveAmount') });
       return;
     }
     if (isCrossCurrency.value && (!form.value.rate || Number(form.value.rate) <= 0)) {
-      $q.notify({ type: 'warning', message: 'Ingresa la tasa Origen→Destino' });
+      $q.notify({ type: 'warning', message: t('notify.enterRateOriginDest') });
       return;
     }
   } else if ((slug === 'income' || slug === 'expense') && !form.value.account_id) {
     // Si estamos en pagos avanzados, no se requiere cuenta simple (se valida en payments)
     if (!isAdvancedPayment.value) {
-      $q.notify({ type: 'warning', message: 'Selecciona una cuenta' });
+      $q.notify({ type: 'warning', message: t('notify.selectAccount') });
       return;
     }
   }
@@ -2942,7 +2944,7 @@ function saveTransaction() {
       (p) => typeof p?.account_id === 'number' && Number(p?.amount || 0) > 0
     );
     if (validPayments.length === 0) {
-      $q.notify({ type: 'warning', message: 'Agrega al menos un pago válido.' });
+      $q.notify({ type: 'warning', message: t('notify.addValidPayment') });
       return;
     }
     // disallow duplicate accounts
@@ -2950,7 +2952,7 @@ function saveTransaction() {
     for (const p of payments.value) {
       if (typeof p?.account_id === 'number') {
         if (seen.has(p.account_id)) {
-          $q.notify({ type: 'warning', message: 'Cada pago debe usar una cuenta diferente.' });
+          $q.notify({ type: 'warning', message: t('notify.differentPaymentAccounts') });
           return;
         }
         seen.add(p.account_id);
@@ -2959,11 +2961,11 @@ function saveTransaction() {
     for (let i = 0; i < payments.value.length; i++) {
       const p = payments.value[i];
       if (!p) {
-        $q.notify({ type: 'warning', message: `Pago #${i + 1}: fila inválida.` });
+        $q.notify({ type: 'warning', message: t('notify.invalidPaymentRow', { n: i + 1 }) });
         return;
       }
       if (!p.account_id || !p.amount || !(Number(p.amount) > 0)) {
-        $q.notify({ type: 'warning', message: `Pago #${i + 1}: cuenta y monto son requeridos.` });
+        $q.notify({ type: 'warning', message: t('notify.paymentAccountAmountRequired', { n: i + 1 }) });
         return;
       }
       if (rowNeedsRate(p as PaymentRow) && !(Number(p.rate || 0) > 0)) {
@@ -2975,13 +2977,13 @@ function saveTransaction() {
       }
     }
     if (paymentsMismatch.value) {
-      $q.notify({ type: 'warning', message: 'La suma de pagos no coincide con el monto.' });
+      $q.notify({ type: 'warning', message: t('notify.paymentSumMismatch') });
       return;
     }
   }
   // Si se detecta cruce (no transferencia) exigir tasa
   if (showRateInput.value && !(Number(form.value.rate || 0) > 0)) {
-    $q.notify({ type: 'warning', message: 'Ingresa la tasa de cambio' });
+    $q.notify({ type: 'warning', message: t('notify.enterRate') });
     return;
   }
   // In advanced mode, enforce that amount equals subtotal (absolute)
@@ -2989,7 +2991,7 @@ function saveTransaction() {
     const amtAbs = Math.abs(Number(form.value.amount || 0));
     const sub = Number(invoiceSubtotal.value) || 0;
     if (Number(amtAbs.toFixed(2)) !== Number(sub.toFixed(2))) {
-      $q.notify({ type: 'warning', message: 'El subtotal no coincide con el monto.' });
+      $q.notify({ type: 'warning', message: t('notify.subtotalMismatch') });
       return;
     }
   }
@@ -3050,7 +3052,7 @@ function saveTransaction() {
         }))
         .filter((r) => r.qty > 0 && r.price >= 0);
       if (!valid.length) {
-        $q.notify({ type: 'warning', message: 'Agrega al menos una línea válida' });
+        $q.notify({ type: 'warning', message: t('notify.addValidLine') });
         return;
       }
       const currentType = ttypes.types.find(
@@ -3472,7 +3474,7 @@ function onUserCurrencyChanged() {
   // Forzar recomputes que dependen de moneda de usuario y limpiar tasa si ya no se necesita
   // Si el diálogo está abierto, avisar del cambio de moneda
   if (ui.showDialogNewTransaction) {
-    $q.notify({ type: 'info', message: 'Moneda por defecto actualizada' });
+    $q.notify({ type: 'info', message: t('notify.defaultCurrencyUpdated') });
   }
   // Si ya no se requiere tasa (misma moneda), limpiarla
   if (!isTransfer.value && !isAdvancedPayment.value && !showRateInput.value) {

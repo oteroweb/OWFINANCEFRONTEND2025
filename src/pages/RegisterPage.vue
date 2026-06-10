@@ -78,8 +78,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from 'stores/auth';
 import { api } from 'boot/axios';
+
+const $q = useQuasar();
+const { t } = useI18n();
 
 const name = ref('');
 const email = ref('');
@@ -122,7 +127,7 @@ async function submit() {
         void router.push('/user');
       }
     } else {
-      alert((body['message'] as string) || 'No se pudo completar el registro.');
+      $q.notify({ type: 'negative', message: (body['message'] as string) || t('notify.registerFailed') });
     }
   } catch (error: unknown) {
     const axiosError = error as { response?: { data?: { errors?: Record<string, string[]>; message?: string }; status?: number } };
@@ -135,7 +140,7 @@ async function submit() {
       errors.value = flat;
     } else {
       const msg = axiosError?.response?.data?.message;
-      alert(msg || 'Error al crear la cuenta. Verifica tu conexión.');
+      $q.notify({ type: 'negative', message: msg || t('notify.registerError') });
     }
   } finally {
     loading.value = false;

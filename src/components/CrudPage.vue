@@ -131,6 +131,7 @@ import { api } from 'boot/axios';
 import type { QSelectProps, QInputProps } from 'quasar';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
+import { useI18n } from 'vue-i18n';
 
 // Definición de tipos para el diccionario CRUD
 interface CrudField {
@@ -197,6 +198,7 @@ interface CrudDictionary {
 const props = defineProps<{ dictionary: CrudDictionary }>();
 const dictionary = props.dictionary;
 const $q = useQuasar();
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
@@ -531,11 +533,11 @@ async function remove(row: unknown): Promise<void> {
   try {
     const id = getNumberProp(row, 'id');
     if (!id) {
-      $q.notify({ type: 'warning', message: 'ID no válido' });
+      $q.notify({ type: 'warning', message: t('notify.invalidId') });
       return;
     }
     await api.delete(`/${dictionary.url_apis}/${id}`);
-    $q.notify({ type: 'negative', message: 'Registro eliminado' });
+    $q.notify({ type: 'negative', message: t('notify.recordDeleted') });
     // Notificar a otros contextos que las transacciones cambiaron
     if (IS_TRANSACTIONS) {
       window.dispatchEvent(
@@ -544,7 +546,7 @@ async function remove(row: unknown): Promise<void> {
     }
     await onRequest({ pagination: pagination.value });
   } catch (err) {
-    $q.notify({ type: 'negative', message: 'Error al eliminar' });
+    $q.notify({ type: 'negative', message: t('notify.deleteError') });
   }
 }
 
@@ -562,7 +564,7 @@ async function save(): Promise<void> {
     if (vmKeys.includes('date') && !form['date']) required.push('Fecha');
     if (vmKeys.includes('time') && !form['time']) required.push('Hora');
     if (required.length) {
-      $q.notify({ type: 'warning', message: `Faltan: ${required.join(', ')}` });
+      $q.notify({ type: 'warning', message: t('notify.missingFields', { fields: required.join(', ') }) });
       return;
     }
     const payload = buildPayload();
@@ -576,7 +578,7 @@ async function save(): Promise<void> {
     let res;
     if (editing.value && currentRowId.value) {
       res = await api.put(`/${dictionary.url_apis}/${currentRowId.value}`, payload);
-      $q.notify({ type: 'positive', message: 'Actualizado correctamente' });
+      $q.notify({ type: 'positive', message: t('notify.updatedOk') });
       if (IS_TRANSACTIONS) {
         window.dispatchEvent(
           new CustomEvent('ow:transactions:changed', {
@@ -586,7 +588,7 @@ async function save(): Promise<void> {
       }
     } else {
       res = await api.post(`/${dictionary.url_apis}`, payload);
-      $q.notify({ type: 'positive', message: 'Creado correctamente' });
+      $q.notify({ type: 'positive', message: t('notify.createdOk') });
       if (IS_TRANSACTIONS) {
         const newId = (res?.data && typeof res.data === 'object' ? res.data.id : undefined) as
           | number
@@ -717,7 +719,7 @@ async function fetchData(params?: Record<string, unknown>): Promise<void> {
     }
     pagination.value.rowsNumber = Number(total) || 0;
   } catch (err) {
-    $q.notify({ type: 'negative', message: 'Error cargando datos' });
+    $q.notify({ type: 'negative', message: t('notify.errorLoadingData') });
   } finally {
     loading.value = false;
   }

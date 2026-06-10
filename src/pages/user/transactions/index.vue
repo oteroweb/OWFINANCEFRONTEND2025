@@ -621,6 +621,7 @@ import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRoute } from 'vue-router';
 import { useQuasar, QInput, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from 'stores/auth';
 import { dictionary as dictionaryDef } from './dictionary';
 import { AccountsSidebarWidget, TransactionFormDialog } from 'components';
@@ -638,6 +639,7 @@ import {
 defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
+const { t } = useI18n();
 const route = useRoute();
 const authStore = useAuthStore();
 const defaultCurrencyCode = computed(() => authStore.defaultCurrencyCode);
@@ -1744,7 +1746,7 @@ async function submitAdjustTop(): Promise<void> {
   if (!id) return;
   const n = Number(adjustBalanceTop.value);
   if (!Number.isFinite(n)) {
-    $q.notify({ type: 'warning', message: 'Ingresa un saldo válido' });
+    $q.notify({ type: 'warning', message: t('notify.validBalance') });
     return;
   }
   try {
@@ -1754,7 +1756,7 @@ async function submitAdjustTop(): Promise<void> {
       include_in_balance: includeInBalanceTop.value,
     });
     await api.post(`/accounts/${id}/recalculate-account`);
-    $q.notify({ type: 'positive', message: 'Saldo ajustado' });
+    $q.notify({ type: 'positive', message: t('notify.balanceAdjusted') });
     showAdjustTop.value = false;
     await runFetch(true);
     await fetchSingleAccountBalance();
@@ -1762,7 +1764,7 @@ async function submitAdjustTop(): Promise<void> {
       new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'adjust' } })
     );
   } catch {
-    $q.notify({ type: 'negative', message: 'Error ajustando saldo' });
+    $q.notify({ type: 'negative', message: t('notify.balanceAdjustError') });
   } finally {
     adjustingTop.value = false;
   }
@@ -1773,14 +1775,14 @@ async function recalcSingleAccountTop(): Promise<void> {
   try {
     $q.loading.show({ message: 'Recalculando saldo...' });
     await api.post(`/accounts/${id}/recalculate-account`);
-    $q.notify({ type: 'positive', message: 'Saldo recalculado' });
+    $q.notify({ type: 'positive', message: t('notify.balanceRecalculated') });
     await runFetch(true);
     await fetchSingleAccountBalance();
     window.dispatchEvent(
       new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'recalc' } })
     );
   } catch {
-    $q.notify({ type: 'negative', message: 'Error recalculando saldo' });
+    $q.notify({ type: 'negative', message: t('notify.balanceRecalcError') });
   } finally {
     $q.loading.hide();
   }
@@ -1884,7 +1886,7 @@ async function fetchData(params?: Record<string, unknown>): Promise<void> {
   } catch (err) {
     const e = err as { name?: string } | undefined;
     if ((e && e.name === 'CanceledError') || controller.signal.aborted) return;
-    $q.notify({ type: 'negative', message: 'Error cargando datos' });
+    $q.notify({ type: 'negative', message: t('notify.errorLoadingData') });
   } finally {
     loading.value = false;
   }
@@ -2791,11 +2793,11 @@ function remove(row: Record<string, unknown>) {
     void (async () => {
       try {
         await txStore.deleteTransaction(id);
-        $q.notify({ type: 'positive', message: 'Transacción eliminada' });
+        $q.notify({ type: 'positive', message: t('notify.txDeleted') });
         void runFetch(true);
         if (singleAccountSelected.value) void fetchSingleAccountBalance();
       } catch {
-        $q.notify({ type: 'negative', message: 'Error eliminando transacción' });
+        $q.notify({ type: 'negative', message: t('notify.txDeleteError') });
       }
     })();
   });
@@ -2807,7 +2809,7 @@ function removeSelectedRows() {
     .filter((id) => Number.isFinite(id));
 
   if (!ids.length) {
-    $q.notify({ type: 'warning', message: 'No hay transacciones seleccionadas' });
+    $q.notify({ type: 'warning', message: t('notify.txNoneSelected') });
     return;
   }
 
@@ -2833,14 +2835,14 @@ function removeSelectedRows() {
       if (singleAccountSelected.value) void fetchSingleAccountBalance();
 
       if (deleted === ids.length) {
-        $q.notify({ type: 'positive', message: `${deleted} transacciones eliminadas` });
+        $q.notify({ type: 'positive', message: t('notify.txDeleteBulk', { count: deleted }) });
       } else if (deleted > 0) {
         $q.notify({
           type: 'warning',
           message: `Se eliminaron ${deleted} de ${ids.length} transacciones`,
         });
       } else {
-        $q.notify({ type: 'negative', message: 'No se pudo eliminar ninguna transacción' });
+        $q.notify({ type: 'negative', message: t('notify.txDeleteBulkPartial') });
       }
     })();
   });

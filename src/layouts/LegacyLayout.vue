@@ -258,6 +258,7 @@ import { useUiStore } from 'stores/ui';
 import { useQuasar } from 'quasar';
 import { useUserRates } from 'src/composables/useUserRates';
 import { api } from 'boot/axios';
+import { useI18n } from 'vue-i18n';
 import { layoutModeOptions, normalizeLayoutMode, type UserLayoutMode } from 'src/utils/layoutMode';
 
 const auth = useAuthStore();
@@ -266,6 +267,7 @@ const { defaultCurrencyCode, currentRates } = useUserRates();
 const menuLinks = userMenuLinks;
 const ui = useUiStore();
 const $q = useQuasar();
+const { t } = useI18n();
 const router = useRouter();
 const drawerOpen = ref(false);
 const jarsBarRef = ref<InstanceType<typeof JarsBalanceBar>>();
@@ -379,9 +381,9 @@ function openRateEdit(r: RateChip) {
           });
         }
         await auth.refreshUserCurrencies();
-        $q.notify({ type: 'positive', message: `Tasa ${r.code} actualizada a ${newRate}` });
+        $q.notify({ type: 'positive', message: t('notify.rateUpdated', { code: r.code, rate: newRate }) });
       } catch {
-        $q.notify({ type: 'negative', message: 'Error actualizando tasa' });
+        $q.notify({ type: 'negative', message: t('notify.rateUpdateError') });
       }
     })();
   });
@@ -419,7 +421,7 @@ async function handleLogout() {
     await router.replace('/login');
   } catch {
     try {
-      $q.notify({ type: 'negative', message: 'No se pudo redirigir al login' });
+      $q.notify({ type: 'negative', message: t('notify.logoutError') });
     } catch {
       /* ignore notify errors */
     }

@@ -1229,6 +1229,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { usePeriodStore } from 'stores/period';
 import { useQuasar } from 'quasar';
+import { useI18n } from 'vue-i18n';
 import { api } from 'boot/axios';
 import { useJarsStore } from 'stores/jars';
 import CategoriesTree from 'components/CategoriesTree.vue';
@@ -1315,6 +1316,7 @@ type CatNodeInput = {
 };
 
 const $q = useQuasar();
+const { t } = useI18n();
 const auth = useAuthStore();
 const periodStore = usePeriodStore();
 const route = useRoute();
@@ -2106,7 +2108,7 @@ function deleteJar(idx: number) {
       removeCategoryFromJar(idx, c.id);
     }
     jarElements.value.splice(idx, 1);
-    $q.notify({ type: 'positive', message: 'Cántaro eliminado' });
+    $q.notify({ type: 'positive', message: t('notify.jarDeleted') });
   };
   if (!hasCats) return proceed();
   $q.dialog({
@@ -2160,7 +2162,7 @@ async function loadTemplates() {
     console.log('[Jars][Templates] loaded', templates.value.length);
   } catch (e) {
     templates.value = [];
-    $q.notify({ type: 'warning', message: 'No se pudieron cargar plantillas' });
+    $q.notify({ type: 'warning', message: t('notify.templateLoadError') });
     console.warn('loadTemplates error', e);
   } finally {
     loadingTemplates.value = false;
@@ -2191,7 +2193,7 @@ function applyTemplate(tpl: JarTemplate) {
   });
 
   if (incoming.length === 0) {
-    $q.notify({ type: 'warning', message: 'La plantilla seleccionada no define jarras' });
+    $q.notify({ type: 'warning', message: t('notify.templateNoJars') });
     return;
   }
 
@@ -2209,7 +2211,7 @@ function applyTemplate(tpl: JarTemplate) {
   // Reemplazar con los jars de la plantilla
   jarElements.value = incoming;
   showTemplates.value = false;
-  $q.notify({ type: 'positive', message: `Plantilla "${tpl.name}" aplicada` });
+  $q.notify({ type: 'positive', message: t('notify.templateApplied', { name: tpl.name }) });
 }
 
 // jarFillGradient removed (unused)
@@ -2468,7 +2470,7 @@ async function loadCategoriesTree() {
       });
     setCategories(raw.length ? mapNodes(raw) : []);
   } catch (e) {
-    $q.notify({ type: 'warning', message: 'No se pudieron cargar tus categorías' });
+    $q.notify({ type: 'warning', message: t('notify.categoryLoadErrorUser') });
     setCategories([]);
     console.warn('loadCategoriesTree error', e);
   }
@@ -2656,7 +2658,7 @@ async function openAdjustmentModal(jarId: number) {
     console.error(`Error cargando balance para modal ajuste (jar ${jarId}):`, err);
     $q.notify({
       type: 'negative',
-      message: err instanceof Error ? err.message : 'Error cargando balance',
+      message: err instanceof Error ? err.message : t('notify.errorUnknown'),
     });
   }
 
@@ -2717,7 +2719,7 @@ async function applyLeverageNow(jarId: number) {
         `#${applied.from_jar_id}`;
       $q.notify({
         type: 'positive',
-        message: `Apalancado desde ${appliedSource} (${formatCurrency(applied.amount)})`,
+        message: t('notify.leverageApplied'),
       });
       return;
     }
@@ -2725,7 +2727,7 @@ async function applyLeverageNow(jarId: number) {
     if (!sourceId) {
       $q.notify({
         type: 'warning',
-        message: 'Configura “Apalancamiento desde” para este cántaro.',
+        message: t('notify.leverageNotConfigured'),
       });
       return;
     }
@@ -2733,7 +2735,7 @@ async function applyLeverageNow(jarId: number) {
     if (sourceId === jarId) {
       $q.notify({
         type: 'warning',
-        message: 'El cántaro origen no puede ser el mismo. Elige otro.',
+        message: t('notify.leverageSameJar'),
       });
       return;
     }
@@ -2753,17 +2755,17 @@ async function applyLeverageNow(jarId: number) {
         `#${transfer.from_jar_id}`;
       $q.notify({
         type: 'positive',
-        message: `Apalancado desde ${appliedSource} (${formatCurrency(transfer.amount)})`,
+        message: t('notify.leverageApplied'),
       });
       return;
     }
 
     if (reason === 'no_source') {
-      $q.notify({ type: 'warning', message: 'Configura “Apalancamiento desde” para este cántaro.' });
+      $q.notify({ type: 'warning', message: t('notify.leverageNotConfigured') });
       return;
     }
     if (reason === 'same_source') {
-      $q.notify({ type: 'warning', message: 'El cántaro origen no puede ser el mismo.' });
+      $q.notify({ type: 'warning', message: t('notify.leverageSameJar') });
       return;
     }
     if (reason === 'not_exceeded') {
@@ -2775,7 +2777,7 @@ async function applyLeverageNow(jarId: number) {
       return;
     }
     if (reason === 'already_applied') {
-      $q.notify({ type: 'info', message: 'El apalancamiento ya fue aplicado en este periodo.' });
+      $q.notify({ type: 'info', message: t('notify.leverageAlreadyApplied') });
       return;
     }
     if (reason === 'insufficient_source') {
@@ -2787,11 +2789,11 @@ async function applyLeverageNow(jarId: number) {
       return;
     }
 
-    $q.notify({ type: 'info', message: 'No se pudo apalancar (sin cambios).' });
+    $q.notify({ type: 'info', message: t('notify.leverageNoChange') });
   } catch (err) {
     $q.notify({
       type: 'negative',
-      message: err instanceof Error ? err.message : 'Error al apalancar',
+      message: err instanceof Error ? err.message : t('notify.leverageError'),
     });
   }
 }
@@ -2820,13 +2822,13 @@ async function handleSaveAdjustment(data: { valorObjetivo: number; descripcion?:
 
     $q.notify({
       type: 'positive',
-      message: 'Ajuste guardado exitosamente',
+      message: t('notify.savedOk'),
     });
     showAdjustmentModal.value = false;
   } catch (err) {
     $q.notify({
       type: 'negative',
-      message: err instanceof Error ? err.message : 'Error al guardar ajuste',
+      message: err instanceof Error ? err.message : t('notify.errorUnknown'),
     });
   }
 }
@@ -2864,12 +2866,12 @@ async function handleClearAdjustments() {
 
     $q.notify({
       type: 'positive',
-      message: 'Ajustes del mes eliminados',
+      message: t('notify.savedOk'),
     });
   } catch (err) {
     $q.notify({
       type: 'negative',
-      message: err instanceof Error ? err.message : 'Error al borrar ajustes',
+      message: err instanceof Error ? err.message : t('notify.errorUnknown'),
     });
   }
 }
@@ -2880,7 +2882,7 @@ async function handleSaveWithdrawal() {
 
   const amount = Number(withdrawalForm.value.amount || 0);
   if (!amount || Number.isNaN(amount) || amount <= 0) {
-    $q.notify({ type: 'warning', message: 'Ingresa un monto válido' });
+    $q.notify({ type: 'warning', message: t('notify.validAmount') });
     return;
   }
 
@@ -2897,12 +2899,12 @@ async function handleSaveWithdrawal() {
       await balanceComposable.cargarBalance(balanceDate);
     }
 
-    $q.notify({ type: 'positive', message: 'Uso registrado exitosamente' });
+    $q.notify({ type: 'positive', message: t('notify.usageRegistered') });
     showWithdrawalModal.value = false;
   } catch (err) {
     $q.notify({
       type: 'negative',
-      message: err instanceof Error ? err.message : 'Error al registrar uso',
+      message: err instanceof Error ? err.message : t('notify.usageError'),
     });
   }
 }
@@ -2927,19 +2929,19 @@ function handleResetAdjustment(jarId: number) {
         .then(() => {
           $q.notify({
             type: 'positive',
-            message: 'Ajuste reseteado',
+            message: t('notify.savedOk'),
           });
         })
         .catch((err) => {
           $q.notify({
             type: 'negative',
-            message: err instanceof Error ? err.message : 'Error al resetear',
+            message: err instanceof Error ? err.message : t('notify.errorUnknown'),
           });
         });
     } catch (err) {
       $q.notify({
         type: 'negative',
-        message: err instanceof Error ? err.message : 'Error al resetear',
+        message: err instanceof Error ? err.message : t('notify.errorUnknown'),
       });
     }
   });
@@ -3023,13 +3025,13 @@ function onJarDrop(idx: number, ev: DragEvent) {
     if (byLabel) id = byLabel.id;
   }
   if (!id) {
-    $q.notify({ type: 'warning', message: 'Elemento no válido' });
+    $q.notify({ type: 'warning', message: t('notify.invalidElement') });
     log('Drop invalid item id', text || '(empty)', payload);
     return;
   }
   const info = categoriesMap.value[id] || categoriesMasterMap.value[id];
   if (!info) {
-    $q.notify({ type: 'warning', message: 'Elemento no válido' });
+    $q.notify({ type: 'warning', message: t('notify.invalidElement') });
     log('Drop id not found in categories maps', { id, payload, text });
     return;
   }
@@ -3227,12 +3229,12 @@ function onChipDragStart(cat: { id: string; label: string }, ev: DragEvent) {
 async function saveChanges() {
   console.log('saveChanges called');
   if (!hasFixedJar.value && totalPercentage.value !== 100 && !isExactlyOnePercent100()) {
-    $q.notify({ type: 'warning', message: 'El total debe sumar 100% antes de guardar' });
+    $q.notify({ type: 'warning', message: t('notify.totalMustBe100') });
     return;
   }
   const userId = auth.user?.id;
   if (!userId) {
-    $q.notify({ type: 'negative', message: 'Usuario no autenticado' });
+    $q.notify({ type: 'negative', message: t('notify.userNotAuth') });
     return;
   }
   saving.value = true;
@@ -3299,7 +3301,7 @@ async function saveChanges() {
 
     // Refrescar datos desde backend para sincronizar estado completo
     await loadJarData();
-    $q.notify({ type: 'positive', message: 'Cántaros guardados correctamente' });
+    $q.notify({ type: 'positive', message: t('notify.jarSaved') });
   } catch (e) {
     console.error('saveChanges error', e);
     const errorMsg =

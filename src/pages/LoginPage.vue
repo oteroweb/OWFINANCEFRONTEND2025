@@ -120,8 +120,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from 'stores/auth';
 import { useBiometric } from 'src/composables/useBiometric';
+
+const $q = useQuasar();
+const { t } = useI18n();
 import { usePublicTheme } from 'src/composables/usePublicTheme';
 
 const email = ref('');
@@ -152,7 +157,7 @@ function navigateByRole(role: string) {
     void router.push('/user');
   } else {
     console.error('[Login] Unrecognized role:', role, '| auth.user:', auth.user);
-    alert('Rol desconocido: ' + role + '. Revisa la consola para detalles.');
+    $q.notify({ type: 'warning', message: t('notify.unknownRole') });
     void router.push('/login');
   }
 }
@@ -172,9 +177,9 @@ async function submit() {
   } catch (error: unknown) {
     console.error('Error completo de login:', error);
     if (error instanceof Error) {
-      alert(error.message || 'Error al iniciar sesión. Verifica tu conexión y credenciales.');
+      $q.notify({ type: 'negative', message: error.message || t('notify.loginError') });
     } else {
-      alert('Error al iniciar sesión. Verifica tu conexión y credenciales.');
+      $q.notify({ type: 'negative', message: t('notify.loginError') });
     }
   } finally {
     loginLoading.value = false;
