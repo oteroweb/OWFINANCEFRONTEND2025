@@ -107,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePublicTheme } from 'src/composables/usePublicTheme'
 
@@ -157,6 +157,15 @@ onMounted(() => {
   )
   void nextTick().then(observeReveals)
 })
+
+// Re-observe reveals when navigating between public child routes
+watch(
+  () => route.path,
+  () => {
+    // Remove .in from old page elements that are leaving, then observe new ones
+    void nextTick().then(observeReveals)
+  }
+)
 
 onUnmounted(() => {
   io?.disconnect()

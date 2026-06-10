@@ -17,6 +17,10 @@
 import { computed } from 'vue';
 import { useAuthStore } from 'stores/auth';
 import { useQuasar } from 'quasar';
+import LiteDesktopLayout from 'layouts/LiteDesktopLayout.vue';
+import LiteMobileLayout from 'layouts/LiteMobileLayout.vue';
+import ProLayout from 'layouts/ProLayout.vue';
+import LegacyLayout from 'layouts/LegacyLayout.vue';
 
 const auth = useAuthStore();
 const $q = useQuasar();
