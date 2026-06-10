@@ -127,7 +127,7 @@
 
     <q-page-container class="user-shell__page-container">
       <div class="user-shell__content q-pa-md q-pb-xl" :class="pageContainerClasses">
-        <slot name="page-content">
+        <slot>
           <router-view v-slot="{ Component }">
             <transition name="slide-fade" mode="out-in">
               <component :is="Component" />

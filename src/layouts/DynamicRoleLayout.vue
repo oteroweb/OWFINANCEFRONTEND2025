@@ -1,32 +1,26 @@
 <template>
-  <component :is="activeLayout">
-    <template #page-content>
-      <router-view />
-    </template>
-  </component>
+  <LiteDesktopLayout v-if="mode === 'lite' && !isMobile">
+    <router-view />
+  </LiteDesktopLayout>
+  <LiteMobileLayout v-else-if="mode === 'lite' && isMobile">
+    <router-view />
+  </LiteMobileLayout>
+  <ProLayout v-else-if="mode === 'pro'">
+    <router-view />
+  </ProLayout>
+  <LegacyLayout v-else>
+    <router-view />
+  </LegacyLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, type Component } from 'vue';
+import { computed } from 'vue';
 import { useAuthStore } from 'stores/auth';
 import { useQuasar } from 'quasar';
-
-const LiteDesktopLayout = defineAsyncComponent(() => import('./LiteDesktopLayout.vue'));
-const LiteMobileLayout = defineAsyncComponent(() => import('./LiteMobileLayout.vue'));
-const ProLayout = defineAsyncComponent(() => import('./ProLayout.vue'));
-const LegacyLayout = defineAsyncComponent(() => import('./LegacyLayout.vue'));
 
 const auth = useAuthStore();
 const $q = useQuasar();
 
-const activeLayout = computed<Component>(() => {
-  const mode = auth.settings?.layout_mode || auth.user?.layout_mode || 'lite';
-
-  if (mode === 'lite') {
-    return ($q.platform.is.desktop || $q.screen.gt.sm) ? LiteDesktopLayout : LiteMobileLayout;
-  }
-
-  if (mode === 'pro') return ProLayout;
-  return LegacyLayout;
-});
+const mode = computed(() => auth.settings?.layout_mode || auth.user?.layout_mode || 'lite');
+const isMobile = computed(() => $q.platform.is.mobile || $q.screen.lt.md);
 </script>

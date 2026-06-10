@@ -48,13 +48,13 @@ export default defineConfig((ctx) => {
       },
 
       vueRouterMode: isMobile ? 'hash' : 'history',
-      vueRouterBase: isMobile ? '/' : '/app/',
+      vueRouterBase: '/',
       // vueDevtools,
       // vueOptionsAPI: false,
 
-      // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
+      // rebuildCache: true, // rebuilds Vite/linter/etc cache
 
-      publicPath: isMobile ? '/' : '/app/',
+      publicPath: isMobile ? '/' : '/',
       // analyze: true,
       env: {
         VITE_API_BASE_URL: process.env.VITE_API_BASE_URL,

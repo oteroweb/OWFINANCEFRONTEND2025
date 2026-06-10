@@ -15,7 +15,7 @@
 
     <!-- Page Container: padded to avoid overlap with fixed header (64px) -->
     <q-page-container style="padding-top: 64px; min-height: 100vh">
-      <slot name="page-content">
+      <slot>
         <router-view v-slot="{ Component }">
           <transition name="lite-page" mode="out-in">
             <component :is="Component" />
