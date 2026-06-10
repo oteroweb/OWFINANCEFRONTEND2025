@@ -38,16 +38,61 @@ const SETTINGS_GROUPS = [
   },
 ];
 
-function SettingsScreen({ onBack }) {
+function SettingsScreen({ onBack, mode = 'lite', onModeChange, theme = 'dark', onThemeChange }) {
   const initToggles = {};
   SETTINGS_GROUPS.forEach(g => g.items.forEach(it => { if (it.toggle) initToggles[it.toggle] = it.value; }));
   const [toggles, setToggles] = useCfgMobileState(initToggles);
+
+  /* Segmented control reused for Modo + Tema */
+  const Seg = ({ value, onChange, options, accent }) => (
+    <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 'var(--radius-pill)', padding: 4 }}>
+      {options.map(o => {
+        const on = value === o.value;
+        return (
+          <button key={o.value} onClick={() => onChange && onChange(o.value)} style={{
+            flex: 1, border: 0, cursor: 'pointer', padding: '9px 6px', borderRadius: 'var(--radius-pill)',
+            background: on ? (accent || 'var(--brand-primary)') : 'transparent', color: on ? '#fff' : 'var(--fg-2)',
+            fontFamily: 'var(--font-body)', fontWeight: on ? 700 : 500, fontSize: 13,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'background 160ms, color 160ms',
+          }}>
+            {o.icon && <span className="material-icons" style={{ fontSize: 16 }}>{o.icon}</span>}{o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const appearanceRow = (label, hint, control) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px' }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: 'var(--fg-1)' }}>{label}</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)' }}>{hint}</span>
+      </div>
+      <div style={{ width: 168, flexShrink: 0 }}>{control}</div>
+    </div>
+  );
+
+  const proAccent = mode === 'pro' ? 'var(--info)' : 'var(--brand-primary)';
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <MobileHeader title="Configuración" onBack={onBack} />
 
       <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', padding: '8px 0' }}>
+        {/* ── Apariencia — Mode + Theme live inside the app now ── */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ padding: '0 20px 8px', fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--fg-2)' }}>Apariencia</div>
+          <div style={{ background: 'var(--surface-1)', margin: '0 16px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+            {appearanceRow('Plan', mode === 'pro' ? 'Multimoneda · multicuenta' : 'Billetera única, calmada', (
+              <Seg value={mode} onChange={onModeChange} accent={proAccent} options={[{ value: 'lite', label: 'Lite' }, { value: 'pro', label: 'Pro' }]} />
+            ))}
+            <Divider />
+            {appearanceRow('Tema', theme === 'dark' ? 'Oscuro' : 'Claro', (
+              <Seg value={theme} onChange={onThemeChange} accent={proAccent} options={[{ value: 'light', label: 'Claro', icon: 'light_mode' }, { value: 'dark', label: 'Oscuro', icon: 'dark_mode' }]} />
+            ))}
+          </div>
+        </div>
+
         {SETTINGS_GROUPS.map((group, gi) => (
           <div key={gi} style={{ marginBottom: 20 }}>
             {group.label && (

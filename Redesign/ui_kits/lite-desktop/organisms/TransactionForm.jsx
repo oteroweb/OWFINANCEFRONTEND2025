@@ -39,6 +39,10 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   const [items, setItems] = useTfState([{ name: '', qty: 1, amount: '', taxId: null, jarId: null, categoryId: null }]);
   // ajuste
   const [targetBalance, setTargetBalance] = useTfState('');
+  // comisión (Venezuela: fija / pago móvil / porcentaje)
+  const [commOn,    setCommOn]    = useTfState(prefill?.commission ? true : false);
+  const [commKind,  setCommKind]  = useTfState(prefill?.commission?.type || 'pagomovil');
+  const [commValue, setCommValue] = useTfState(prefill?.commission?.value != null ? String(prefill.commission.value) : '');
 
   const accents = { expense: 'var(--expense)', income: 'var(--income)', transfer: '#8B5CF6', ajuste: 'var(--warning)' };
   const accent = accents[type];
@@ -72,11 +76,18 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   // ajuste diff
   const adjustDiff = (Number(targetBalance) || 0) - (selAccount?.balance || 0);
 
+  // comisión calculada (sobre el monto de la operación, en su moneda)
+  const commBase = type === 'transfer' ? (Number(amount) || 0) : effectiveAmount;
+  const commValForCalc = commKind === 'pagomovil' ? window.PAGOMOVIL_PCT : (Number(commValue) || 0);
+  const commAmount = commOn ? window.computeCommission(commKind, commValForCalc, commBase) : 0;
+  const commCurrency = type === 'transfer' ? (selAccount?.currency || 'USD') : currency;
+  const commObj = commOn ? { type: commKind, value: commValForCalc, amount: +commAmount.toFixed(2), currency: commCurrency } : null;
+
   const buildPayload = () => {
     const txType = window.TX_TYPES.find(t => t.slug === type);
     const base = { name: concept || (type === 'income' ? 'Ingreso' : 'Movimiento'), transaction_type_id: txType?.id, date: dateLabel === 'Hoy' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : dateLabel, include_in_balance: includeBal };
     if (isLite) return { ...base, amount: txType.sign * effectiveAmount, jar_id: jarId, category_id: categoryId };
-    if (type === 'transfer') return { ...base, amount: Number(amount) || 0, payments: [ { account_id: accountId, amount: -(Number(amount) || 0), rate: 1 }, { account_id: toAccountId, amount: xferArrives, rate: xferCross ? +xferRate.toFixed(4) : 1 } ] };
+    if (type === 'transfer') return { ...base, amount: Number(amount) || 0, commission: commObj, payments: [ { account_id: accountId, amount: -(Number(amount) || 0), rate: 1 }, { account_id: toAccountId, amount: xferArrives, rate: xferCross ? +xferRate.toFixed(4) : 1 } ] };
     if (type === 'ajuste') return { name: concept || 'Ajuste manual', transaction_type_id: txType?.id, account_id: accountId, target_balance: Number(targetBalance) || 0, include_in_balance: includeBal };
     // income / expense
     const sign = type === 'income' ? 1 : -1;
@@ -84,7 +95,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
       ? payments.map(p => ({ account_id: p.accountId, amount: sign * (Number(p.amount) || 0), rate: Number(p.rate) || 1 }))
       : [{ account_id: accountId, amount: sign * (currency === selAccount?.currency ? effectiveAmount : effectiveAmount), rate: currency === 'USD' ? 1 : rateForCur, rate_is_current: currency !== 'USD' }];
     const it = itemsOn ? items.map(i => ({ name: i.name, quantity: Number(i.qty) || 1, amount: Number(i.amount) || 0, tax_id: i.taxId, jar_id: i.jarId, category_id: i.categoryId })) : [{ name: concept || 'Movimiento', amount: effectiveAmount, category_id: categoryId, jar_id: jarId }];
-    return { ...base, amount: sign * effectiveAmount, provider_id: providerId, category_id: categoryId, payments: pay, items: it };
+    return { ...base, amount: sign * effectiveAmount, provider_id: providerId, category_id: categoryId, commission: commObj, payments: pay, items: it };
   };
   const payload = buildPayload();
 
@@ -201,6 +212,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
               </div>
             </div>
           )}
+          <TfCommission on={commOn} setOn={setCommOn} kind={commKind} setKind={setCommKind} value={commValue} setValue={setCommValue} amount={commAmount} base={commBase} currency={commCurrency} accent={accent} />
           <Field label={t("Concepto (opcional)")}>
             <TextInput value={concept} onChange={setConcept} placeholder={t("Ej: Traspaso a ahorros")} icon="notes" />
           </Field>
@@ -267,6 +279,8 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
             <Switch on={splitOn} onChange={setSplitOn} icon="call_split" label={t("Pago múltiple")} sub={t("Varias cuentas")} />
             <Switch on={itemsOn} onChange={setItemsOn} icon="receipt_long" label={t("Detalle / factura")} sub={t("Ítems + impuestos")} />
           </div>
+
+          <TfCommission on={commOn} setOn={setCommOn} kind={commKind} setKind={setCommKind} value={commValue} setValue={setCommValue} amount={commAmount} base={commBase} currency={commCurrency} accent={accent} />
           <Switch on={includeBal} onChange={setIncludeBal} icon="account_balance_wallet" label={t("Afecta el saldo")} sub={t("Desactiva para movimientos informativos")} />
         </>
       )}
@@ -285,6 +299,65 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
       </div>
 
       <TfFooter accent={accent} onClose={onClose} onSubmit={() => onSubmit && onSubmit(payload)} label={type === 'transfer' ? t('Registrar transferencia') : type === 'ajuste' ? t('Aplicar ajuste') : type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')} />
+    </div>
+  );
+}
+
+/* ---------- Commission (Venezuela: fija / pago móvil / porcentaje) ---------- */
+function TfCommission({ on, setOn, kind, setKind, value, setValue, amount, base, currency, accent }) {
+  const sym = (window.CURRENCIES?.[currency]?.symbol) || '$';
+  const types = window.COMMISSION_TYPES || [];
+  const sel = types.find(x => x.id === kind) || {};
+  const total = Math.abs(Number(base) || 0) + (Number(amount) || 0);
+  return (
+    <div>
+      <Switch on={on} onChange={setOn} icon="receipt_long" label={t('Cobrar comisión')} sub={t('Pago móvil, fija o porcentaje')} />
+      {on && (
+        <div style={{ marginTop: 10, padding: 14, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', border: '1px solid var(--border-hairline)', display: 'flex', flexDirection: 'column', gap: 12, animation: 'tfCommBar 220ms var(--ease-out)' }}>
+          <style>{`@keyframes tfCommBar{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+          {/* Tipo de comisión */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {types.map(ty => {
+              const active = kind === ty.id;
+              return (
+                <button key={ty.id} type="button" onClick={() => setKind(ty.id)}
+                  style={{ flex: 1, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 4, border: active ? `1px solid ${accent}` : '1px solid var(--border-hairline)', cursor: 'pointer', padding: '9px 6px', borderRadius: 'var(--radius-sm)', background: active ? `color-mix(in srgb, ${accent} 12%, var(--surface-1))` : 'var(--surface-1)', color: active ? accent : 'var(--fg-2)', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: active ? 700 : 500, transition: 'all 150ms' }}>
+                  <span className="material-icons" style={{ fontSize: 18 }}>{ty.icon}</span>{t(ty.label)}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Entrada según tipo */}
+          {kind === 'fija' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', background: 'var(--surface-1)', border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)' }}>
+              <span style={{ fontFamily: 'var(--font-money)', fontWeight: 700, fontSize: 16, color: 'var(--fg-3)' }}>{sym}</span>
+              <input type="number" inputMode="decimal" value={value} placeholder="0.00" onChange={e => setValue(e.target.value)} style={{ flex: 1, minWidth: 0, border: 0, outline: 'none', background: 'transparent', fontFamily: 'var(--font-money)', fontWeight: 700, fontSize: 16, color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums' }} />
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-3)' }}>{t('monto fijo')}</span>
+            </div>
+          )}
+          {kind === 'porcentaje' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', background: 'var(--surface-1)', border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)' }}>
+              <input type="number" inputMode="decimal" value={value} placeholder="1.50" onChange={e => setValue(e.target.value)} style={{ flex: 1, minWidth: 0, border: 0, outline: 'none', background: 'transparent', fontFamily: 'var(--font-money)', fontWeight: 700, fontSize: 16, color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums' }} />
+              <span style={{ fontFamily: 'var(--font-money)', fontWeight: 700, fontSize: 16, color: 'var(--fg-3)' }}>%</span>
+            </div>
+          )}
+          {kind === 'pagomovil' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 13px', background: 'var(--info-soft)', borderRadius: 'var(--radius-sm)' }}>
+              <span className="material-icons" style={{ fontSize: 18, color: 'var(--info-fg)' }}>smartphone</span>
+              <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--fg-1)' }}>{t('Tarifa P2P')} <strong>0,30%</strong> · {t('mín. Bs 2')}</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 10.5, color: 'var(--fg-3)' }}>BCV</span>
+            </div>
+          )}
+
+          {/* Resultado */}
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', borderTop: '1px solid var(--border-hairline)', paddingTop: 10 }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)' }}>{t('Comisión')} ≈ <strong style={{ color: 'var(--fg-1)', fontFamily: 'var(--font-money)' }}>{sym} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)' }}>{t('Total')} <strong style={{ color: 'var(--fg-1)', fontFamily: 'var(--font-money)' }}>{sym} {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

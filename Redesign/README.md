@@ -15,11 +15,18 @@ OW Finance has two layout modes:
 
 Today the frontend (`DynamicRoleLayout`) sends every Lite user — desktop or not — to `LiteMobileLayout.vue`, which renders the mobile shell on desktop. This system defines the **missing Lite Desktop shell** so that the frontend can implement `LiteDesktopLayout.vue` in Quasar with a clear reference.
 
-### Canonical routes (4 destinations, no more)
+### Canonical routes
+Four **primary** destinations (the bottom nav / nav pill — "no more" than these):
 - `/user/home`
 - `/user/transactions`
 - `/user/jars`
 - `/user/config`
+
+Two **secondary** destinations, reached from Home previews + Quick Add (not in the tab bar):
+- `/user/debts` — Deudas / planes de pago (Cashea, tarjetas, préstamos)
+- `/user/dreams` — Sueños / metas de largo plazo
+
+Both Lite Desktop and the Mobile app implement all six. The Asesor IA chat is a pushed full-screen view, not a route destination.
 
 ### Lite Desktop UX commandments
 - **No persistent Pro-style sidebar.** Lite uses a floating horizontal **nav pill** or a slim contextual rail. Never a dense admin chrome.
@@ -224,8 +231,18 @@ ui_kits/
       HomeRoute.jsx
       TransactionsRoute.jsx
       JarsRoute.jsx
+      DebtsRoute.jsx          ← Deudas / planes de pago (Cashea, tarjetas, préstamos)
+      DreamsRoute.jsx         ← Sueños / metas de largo plazo
       ConfigRoute.jsx
+  mobile/                      ← MOBILE APP kit — Lite + Pro, Dark + Light, 8 screens
+    README.md                 ← 📱 screen-by-screen guide + navigation map (start here)
+    index.html               ← interactive phone-frame demo (Modo + Tema toggles)
+    Shell.jsx · data.jsx · tokens.js
+    components/               ← Atoms, Navigation, BalanceCard, Jar/Debt/Dream/Tx, sheets, chat
+    screens/                 ← Home (Lite/Pro), Transacciones, Jars, Deudas, Sueños, Config, IA
 ```
+
+> 📱 **Mobile app:** the phone posture of the same product. It also ships **Lite and Pro** modes (a toggle in the demo header) and now includes the **Deudas** and **Sueños** screens at parity with Lite Desktop. See [`ui_kits/mobile/README.md`](./ui_kits/mobile/README.md) for the full per-screen guide and the navigation/interconnection map.
 
 ---
 

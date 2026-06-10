@@ -16,16 +16,16 @@ const SAMPLE_JARS = [
 /* Cada transacción se imputa a un cántaro (jar) además de su categoría.
  * jar:null = sin cántaro (ingresos). jarColor refleja SAMPLE_JARS. */
 const SAMPLE_TX = [
-  { label: 'Sueldo · ACME Corp',         meta: 'Hoy · 26 May · 9:02',  amount:  3200.00, day: 'Hoy · lun 26 May',  category: 'Ingresos',        jar: null,                  jarColor: null },
-  { label: 'Whole Foods Market',         meta: 'Hoy · 26 May · 14:42', amount:   -84.12, day: 'Hoy · lun 26 May',  category: 'Supermercado',    jar: 'Necesidades básicas', jarColor: '#1E3A8A' },
-  { label: 'Uber · al aeropuerto',       meta: 'Hoy · 26 May · 6:18',  amount:   -32.60, day: 'Hoy · lun 26 May',  category: 'Transporte',      jar: 'Necesidades básicas', jarColor: '#1E3A8A' },
-  { label: 'Netflix',                    meta: 'dom 25 May',           amount:   -16.99, day: 'dom 25 May',        category: 'Entretenimiento', jar: 'Diversión',           jarColor: '#F59E0B' },
-  { label: 'Cashea · Cuota 3/6 iPhone',  meta: 'dom 25 May',           amount:  -148.50, day: 'dom 25 May',        category: 'Deuda',           jar: 'Necesidades básicas', jarColor: '#1E3A8A' },
-  { label: 'Aporte → Sueño Casa propia', meta: 'dom 25 May',           amount:  -500.00, day: 'dom 25 May',        category: 'Sueño',           jar: 'Ahorro',              jarColor: '#10B981' },
-  { label: 'Aporte → Cántaro Ahorro',    meta: 'dom 25 May',           amount:  -200.00, day: 'dom 25 May',        category: 'Cántaro',         jar: 'Ahorro',              jarColor: '#10B981' },
-  { label: 'Freelance · factura 042',    meta: 'sáb 24 May',           amount:   720.00, day: 'sáb 24 May',        category: 'Ingresos',        jar: null,                  jarColor: null },
-  { label: 'Farmatodo · mensual',        meta: 'sáb 24 May',           amount:  -116.00, day: 'sáb 24 May',        category: 'Salud',           jar: 'Necesidades básicas', jarColor: '#1E3A8A' },
-  { label: 'Alquiler · mayo',            meta: 'vie 23 May',           amount: -1450.00, day: 'vie 23 May',        category: 'Vivienda',        jar: 'Necesidades básicas', jarColor: '#1E3A8A' },
+  { label: 'Sueldo · ACME Corp',         meta: 'Hoy · 26 May · 9:02',  amount:  3200.00, day: 'Hoy · lun 26 May',  category: 'Ingresos',        jar: null,                  jarColor: null,      acctId: 1 },
+  { label: 'Whole Foods Market',         meta: 'Hoy · 26 May · 14:42', amount:   -84.12, day: 'Hoy · lun 26 May',  category: 'Supermercado',    jar: 'Necesidades básicas', jarColor: '#1E3A8A', acctId: 5 },
+  { label: 'Uber · al aeropuerto',       meta: 'Hoy · 26 May · 6:18',  amount:   -32.60, day: 'Hoy · lun 26 May',  category: 'Transporte',      jar: 'Necesidades básicas', jarColor: '#1E3A8A', acctId: 3, commission: { type: 'pagomovil', value: 0.30, amount: 0.10, currency: 'USD' } },
+  { label: 'Netflix',                    meta: 'dom 25 May',           amount:   -16.99, day: 'dom 25 May',        category: 'Entretenimiento', jar: 'Diversión',           jarColor: '#F59E0B', acctId: 5 },
+  { label: 'Cashea · Cuota 3/6 iPhone',  meta: 'dom 25 May',           amount:  -148.50, day: 'dom 25 May',        category: 'Deuda',           jar: 'Necesidades básicas', jarColor: '#1E3A8A', acctId: 6 },
+  { label: 'Aporte → Sueño Casa propia', meta: 'dom 25 May',           amount:  -500.00, day: 'dom 25 May',        category: 'Sueño',           jar: 'Ahorro',              jarColor: '#10B981', acctId: 2 },
+  { label: 'Aporte → Cántaro Ahorro',    meta: 'dom 25 May',           amount:  -200.00, day: 'dom 25 May',        category: 'Cántaro',         jar: 'Ahorro',              jarColor: '#10B981', acctId: 2 },
+  { label: 'Freelance · factura 042',    meta: 'sáb 24 May',           amount:   720.00, day: 'sáb 24 May',        category: 'Ingresos',        jar: null,                  jarColor: null,      acctId: 1 },
+  { label: 'Farmatodo · mensual',        meta: 'sáb 24 May',           amount:  -116.00, day: 'sáb 24 May',        category: 'Salud',           jar: 'Necesidades básicas', jarColor: '#1E3A8A', acctId: 4, commission: { type: 'fija', value: 0.50, amount: 0.50, currency: 'USD' } },
+  { label: 'Alquiler · mayo',            meta: 'vie 23 May',           amount: -1450.00, day: 'vie 23 May',        category: 'Vivienda',        jar: 'Necesidades básicas', jarColor: '#1E3A8A', acctId: 1 },
 ];
 
 /* ─── Deudas / Planes de pago ─────────────────────────────────────────

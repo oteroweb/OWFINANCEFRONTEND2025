@@ -26,6 +26,13 @@ function ProShell() {
   const [smartTab,       setSmartTab]       = useProState('text');
   const [rates,          setRates]          = useProState({ ...DEFAULT_RATES });
   const [notifOpen,      setNotifOpen]      = useProState(false);
+  const [detailTx,       setDetailTx]       = useProState(null);
+  const [, setDataVer]                      = useProState(0);
+
+  React.useEffect(() => {
+    window.__owOpenTxDetailDesktop = (tx) => setDetailTx(tx);
+    return () => { if (window.__owOpenTxDetailDesktop) delete window.__owOpenTxDetailDesktop; };
+  }, []);
 
   const hidden = !balanceVisible;
   const isMobile = useViewportMobile();
@@ -116,6 +123,8 @@ function ProShell() {
               <AccountsPanel hidden={hidden} rates={rates} mobile={true} />
             </Card>
           )}
+          {/* App-wide month navigator — present on every route */}
+          <MonthNavigator accent="var(--info)" />
           {route === 'home'         && <ProHomeRoute hidden={hidden} onQuickAdd={openQuick} onGo={setRoute} onOpenAI={openAI} />}
           {route === 'transactions' && <TransactionsRoute hidden={hidden} />}
           {route === 'analisis'     && <ProAnalisisRoute hidden={hidden} />}
@@ -160,6 +169,7 @@ function ProShell() {
         mode="pro"
       />
       <SmartTransactionModal open={smartOpen} onClose={() => setSmartOpen(false)} initialType={smartType} initialTab={smartTab} mode="pro" rates={rates} />
+      <TransactionDetailModal open={!!detailTx} tx={detailTx} mode="pro" hidden={hidden} onClose={() => setDetailTx(null)} onChanged={() => setDataVer(v => v + 1)} />
       <AIAdvisorPanel open={aiOpen} onClose={() => setAIOpen(false)} />
       <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} accent="var(--info)" anchorRight={24} anchorTop={60} />
     </div>

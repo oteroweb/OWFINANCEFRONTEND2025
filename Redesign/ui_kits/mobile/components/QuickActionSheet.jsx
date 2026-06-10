@@ -26,9 +26,10 @@ const ACTIONS = [
  *   onClose(fn)      — dismisses the sheet
  *   onOpenAI(fn)     — opens the AI advisor chat
  *   onAction(fn)     — called with action id when a grid item is tapped
+ *   onNavigate(fn)   — called with a route id ('debts'|'dreams') for shortcuts
  *   mode             — 'lite' | 'pro' (pro shows all 6, lite shows 3+AI)
  */
-function QuickActionSheet({ open, onClose, onOpenAI, onSelectAction, mode = 'lite' }) {
+function QuickActionSheet({ open, onClose, onOpenAI, onSelectAction, onNavigate, mode = 'lite' }) {
   const actions = mode === 'lite'
     ? [ACTIONS[0], ACTIONS[1], ACTIONS[2]]   // Lite: Gasto · Ingreso · Transferir
     : ACTIONS;                               // Pro: full 6
@@ -87,6 +88,24 @@ function QuickActionSheet({ open, onClose, onOpenAI, onSelectAction, mode = 'lit
         </div>
 
         {/* Pro: second row if 6 actions (already in grid above, handled) */}
+
+        {/* Destinos: pago de deuda / aporte a sueño → navegan a su pantalla */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          {[
+            { id: 'debts',  label: 'Pago deuda',   icon: 'credit_card', accent: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+            { id: 'dreams', label: 'Aporte sueño', icon: 'auto_awesome', accent: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
+          ].map(d => (
+            <button key={d.id} onClick={() => { onClose(); onNavigate && onNavigate(d.id); }} style={{
+              flex: 1, border: 0, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+              borderRadius: 'var(--radius-md)', background: d.bg,
+              fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--fg-1)',
+            }}>
+              <span className="material-icons" style={{ fontSize: 20, color: d.accent }}>{d.icon}</span>
+              {d.label}
+            </button>
+          ))}
+        </div>
 
         {/* AI Advisor CTA — full width gradient button */}
         <button

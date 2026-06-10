@@ -12,10 +12,19 @@ function TransactionRow({ tx, hidden = false, dense = false }) {
   const isIncome = tx.amount > 0;
   const amt = Math.abs(tx.amount);
   const fmt = amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const open = () => { if (window.__owOpenTxDetail) window.__owOpenTxDetail(tx); };
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 12,
+    <div
+      onClick={open}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+      style={{
+      display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+      background: 'transparent', transition: 'background 140ms',
       padding: dense ? '10px 20px' : '13px 20px',
     }}>
       {/* Icon circle */}

@@ -2,11 +2,20 @@
 
 function TxRow({ tx, hidden, dense = false }) {
   const isIncome = tx.amount > 0;
+  const open = () => { if (window.__owOpenTxDetailDesktop) window.__owOpenTxDetailDesktop(tx); };
   return (
-    <div style={{
+    <div
+      onClick={open}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+      style={{
       display: 'grid',
       gridTemplateColumns: dense ? 'auto 1fr auto auto' : 'auto 1fr auto',
-      gap: 14, alignItems: 'center',
+      gap: 14, alignItems: 'center', cursor: 'pointer',
+      background: 'transparent', transition: 'background 140ms',
       padding: dense ? '10px 20px' : '14px 20px',
       borderTop: '1px solid var(--border-hairline)',
     }}>

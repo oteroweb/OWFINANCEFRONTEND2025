@@ -40,6 +40,18 @@ function HomeScreenLite({ hidden, onToggleVisible, onGoTo, onOpenAI }) {
 
       <div style={{ height: 24 }} />
 
+      {/* Deudas — resumen tappable → pantalla Deudas */}
+      <SectionTitle title="Deudas" action="Ver todo" onAction={() => onGoTo('debts')} />
+      <DebtSummaryCard debts={MOBILE_DEBTS} hidden={hidden} onPress={() => onGoTo('debts')} compact />
+
+      <div style={{ height: 24 }} />
+
+      {/* Sueños — resumen tappable → pantalla Sueños */}
+      <SectionTitle title="Sueños" action="Ver todo" onAction={() => onGoTo('dreams')} />
+      <DreamSummaryCard dreams={MOBILE_DREAMS} hidden={hidden} onPress={() => onGoTo('dreams')} compact />
+
+      <div style={{ height: 24 }} />
+
       {/* Recent transactions */}
       <SectionTitle
         title="Recientes"

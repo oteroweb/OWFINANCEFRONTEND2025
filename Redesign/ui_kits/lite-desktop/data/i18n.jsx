@@ -81,6 +81,21 @@ const I18N_EN = {
   'Mayo': 'May', 'Todas': 'All', 'Gastos': 'Expenses',
   'Buscar concepto, monto…': 'Search description, amount…',
 
+  /* ── Month navigator + account filter ── */
+  'Hoy': 'Today',
+  'Enero': 'January', 'Febrero': 'February', 'Marzo': 'March', 'Abril': 'April',
+  'Junio': 'June', 'Julio': 'July', 'Agosto': 'August', 'Septiembre': 'September',
+  'Octubre': 'October', 'Noviembre': 'November', 'Diciembre': 'December',
+  'Ene': 'Jan', 'Feb': 'Feb', 'Mar': 'Mar', 'Abr': 'Apr', 'May': 'May', 'Jun': 'Jun',
+  'Jul': 'Jul', 'Ago': 'Aug', 'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dic': 'Dec',
+  'Cuentas': 'Accounts', 'cuenta': 'account', 'cuentas': 'accounts',
+  'Todas las cuentas': 'All accounts', 'Filtrar por cuenta': 'Filter by account',
+  'Buscar cuenta…': 'Search account…', 'Solo USD': 'USD only', 'Solo VES': 'VES only',
+  'Con deuda': 'With debt', 'combinado': 'combined', 'Listo': 'Done',
+  'Ajustar saldo': 'Adjust balance', 'Recalcular saldo': 'Recalculate balance',
+  'Recalculando…': 'Recalculating…', 'ajustado': 'adjusted',
+  'Mis cuentas': 'My accounts', 'Venezolanas': 'Venezuelan', 'Tarjetas y deudas': 'Cards & debts',
+
   /* ── Config ── */
   'Preferencias': 'Preferences',
   'Cuenta': 'Account', 'Perfil': 'Profile', 'Cuentas vinculadas': 'Linked accounts',

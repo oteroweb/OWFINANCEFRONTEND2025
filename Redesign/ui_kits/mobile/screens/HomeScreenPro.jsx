@@ -73,6 +73,22 @@ function HomeScreenPro({ hidden, onToggleVisible, onGoTo }) {
       <JarsRow jars={MOBILE_JARS.slice(0, 4)} hidden={hidden} onViewAll={() => onGoTo('jars')} />
       <div style={{ height: 22 }} />
 
+      {/* Deudas — resumen + cuota más próxima (Pro = más detalle) */}
+      <SectionTitle title="Deudas" action="Ver todo" onAction={() => onGoTo('debts')} />
+      <DebtSummaryCard debts={MOBILE_DEBTS} hidden={hidden} onPress={() => onGoTo('debts')} compact />
+      <div style={{ padding: '12px 16px 0' }}>
+        <DebtCard debt={[...MOBILE_DEBTS].sort((a, b) => (a.status === 'late' ? -1 : 1) - (b.status === 'late' ? -1 : 1))[0]} hidden={hidden} />
+      </div>
+      <div style={{ height: 22 }} />
+
+      {/* Sueños — resumen + sueño destacado */}
+      <SectionTitle title="Sueños" action="Ver todo" onAction={() => onGoTo('dreams')} />
+      <DreamSummaryCard dreams={MOBILE_DREAMS} hidden={hidden} onPress={() => onGoTo('dreams')} compact />
+      <div style={{ padding: '12px 16px 0' }}>
+        <DreamCard dream={MOBILE_DREAMS[0]} hidden={hidden} />
+      </div>
+      <div style={{ height: 22 }} />
+
       {/* Transactions — denser in Pro */}
       <SectionTitle title="Movimientos" action="Ver todo" onAction={() => onGoTo('transactions')} />
       <TransactionList transactions={MOBILE_TX} hidden={hidden} dense limit={5} />

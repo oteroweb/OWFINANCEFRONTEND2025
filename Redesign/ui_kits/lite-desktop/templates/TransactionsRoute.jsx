@@ -74,9 +74,15 @@ function TransactionsRoute({ hidden }) {
   const [day, setDay]     = useTxState('all');
   const [min, setMin]     = useTxState('');
   const [max, setMax]     = useTxState('');
+  const [accts, setAccts] = useTxState([]);   // selected account ids
   const [query, setQuery] = useTxState('');
   const [panel, setPanel] = useTxState(false);
   const panelRef = useTxRef(null);
+  const month = useAppMonth();
+  const isPro = !!(window.getMode && window.getMode() === 'pro');
+  const accent = isPro ? 'var(--info)' : 'var(--brand-primary)';
+  const acctName = (id) => (SAMPLE_ACCOUNTS.find(a => a.id === id) || {}).name || '';
+  const acctColor = (id) => (SAMPLE_ACCOUNTS.find(a => a.id === id) || {}).color;
 
   useTxEffect(() => {
     if (!panel) return;
@@ -119,6 +125,7 @@ function TransactionsRoute({ hidden }) {
     if (jar !== 'all' && jar !== '__none' && t.jar !== jar) return false;
     if (cat !== 'all' && t.category !== cat) return false;
     if (day !== 'all' && t.day !== day) return false;
+    if (accts.length && !accts.includes(t.acctId)) return false;
     const abs = Math.abs(t.amount);
     if (min !== '' && abs < parseFloat(min)) return false;
     if (max !== '' && abs > parseFloat(max)) return false;
@@ -136,10 +143,11 @@ function TransactionsRoute({ hidden }) {
   if (cat !== 'all')  chips.push({ k: 'cat', icon: 'label', label: cat, clear: () => setCat('all') });
   if (day !== 'all')  chips.push({ k: 'day', icon: 'event', label: day, clear: () => setDay('all') });
   if (min !== '' || max !== '') chips.push({ k: 'amt', icon: 'payments', label: `${min !== '' ? '≥ $' + min : ''}${min !== '' && max !== '' ? ' · ' : ''}${max !== '' ? '≤ $' + max : ''}`, clear: () => { setMin(''); setMax(''); } });
+  accts.forEach(id => chips.push({ k: 'acct-' + id, dot: acctColor(id), label: acctName(id), clear: () => setAccts(accts.filter(x => x !== id)) }));
   if (query.trim()) chips.push({ k: 'q', icon: 'search', label: `"${query}"`, clear: () => setQuery('') });
 
   const activeCount = chips.length;
-  const clearAll = () => { setType('all'); setJar('all'); setCat('all'); setDay('all'); setMin(''); setMax(''); setQuery(''); };
+  const clearAll = () => { setType('all'); setJar('all'); setCat('all'); setDay('all'); setMin(''); setMax(''); setAccts([]); setQuery(''); };
   const total = filtered.reduce((s, t) => s + t.amount, 0);
 
   const panelField = (label, node) => (
@@ -153,12 +161,15 @@ function TransactionsRoute({ hidden }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <Eyebrow>{t("Transacciones")}</Eyebrow>
-        <h1 className="t-h1" style={{ margin: '6px 0 0' }}>{t('Mayo')}</h1>
+        <h1 className="t-h1" style={{ margin: '6px 0 0' }}>{window.monthLabel(month)}</h1>
       </div>
 
       {/* ── Filtro inteligente ─────────────────────────────────────── */}
       <Card padding={16} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Selector de cuentas — widget inteligente (solo Pro; Lite usa billetera única) */}
+          {isPro && <AccountFilter selected={accts} onChange={setAccts} accent={accent} hidden={hidden} />}
+
           {/* Búsqueda en todos los campos */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 220,

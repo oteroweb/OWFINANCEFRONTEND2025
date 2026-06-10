@@ -53,11 +53,6 @@ function AnPeriodNav({ accent = 'var(--brand-primary)', simple = false, onAdd })
           )}
         </div>
       )}
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <button style={stepBtn}><span className="material-icons">chevron_left</span></button>
-        <span style={{ minWidth: 116, textAlign: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16 }}>Junio 2026</span>
-        <button style={stepBtn}><span className="material-icons">chevron_right</span></button>
-      </div>
     </div>
   );
 }

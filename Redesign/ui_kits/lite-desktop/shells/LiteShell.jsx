@@ -17,6 +17,14 @@ function LiteShell() {
   const [smartOpen, setSmartOpen] = useShellState(false);
   const [smartType, setSmartType] = useShellState('expense');
   const [smartTab,  setSmartTab]  = useShellState('text');
+  const [detailTx,  setDetailTx]  = useShellState(null);
+  const [, setDataVer]            = useShellState(0);
+
+  // Register the global opener used by every transaction row.
+  React.useEffect(() => {
+    window.__owOpenTxDetailDesktop = (tx) => setDetailTx(tx);
+    return () => { if (window.__owOpenTxDetailDesktop) delete window.__owOpenTxDetailDesktop; };
+  }, []);
 
   const openAI    = () => { setQuickOpen(false); setSmartOpen(false); setAIOpen(true); };
   const openQuick = () => { setAIOpen(false);    setSmartOpen(false); setQuickOpen(true); };
@@ -40,6 +48,8 @@ function LiteShell() {
 
       {/* Page content */}
       <main style={{ maxWidth: 'var(--container-max)', margin: '0 auto', width: '100%', padding: '12px 32px 32px', boxSizing: 'border-box' }}>
+        {/* App-wide month navigator — present on every route */}
+        <MonthNavigator accent="var(--brand-primary)" />
         {route === 'home'         && <HomeRoute hidden={hidden} onQuickAdd={openQuick} onGo={setRoute} />}
         {route === 'transactions' && <TransactionsRoute hidden={hidden} />}
         {route === 'analisis'     && <AnalisisRoute hidden={hidden} />}
@@ -65,6 +75,8 @@ function LiteShell() {
       />
       {/* Smart Transaction Modal */}
       <SmartTransactionModal open={smartOpen} onClose={() => setSmartOpen(false)} initialType={smartType} initialTab={smartTab} mode="lite" />
+      {/* Transaction detail / edit modal — opened by clicking any row */}
+      <TransactionDetailModal open={!!detailTx} tx={detailTx} mode="lite" hidden={hidden} onClose={() => setDetailTx(null)} onChanged={() => setDataVer(v => v + 1)} />
       {/* AI Advisor slide-in panel */}
       <AIAdvisorPanel open={aiOpen} onClose={() => setAIOpen(false)} />
       {/* Notifications (popover desktop · sheet mobile) */}

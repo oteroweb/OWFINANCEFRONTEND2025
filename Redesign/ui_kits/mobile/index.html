@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- @dsCard group="UI Kit — Mobile" name="UI Kit · Mobile" subtitle="Phone frame · Lite/Pro · Dark/Light · 6 screens · AI chat" viewport="1100x960" -->
+<!-- @dsCard group="UI Kit — Mobile" name="UI Kit · Mobile" subtitle="Phone frame · Lite/Pro · Dark/Light · 8 screens · Debts · Dreams · Account filter · Exchange · AI chat" viewport="1100x960" -->
 <html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8">
@@ -27,39 +27,6 @@
       min-height: 100vh; padding: 28px 20px 48px; gap: 28px;
       font-family: var(--font-body);
     }
-
-    /* ── Demo header ───────────────────────────────────────────────────── */
-    .demo-header {
-      width: 100%; max-width: 900px;
-      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    }
-    .demo-brand {
-      font-family: var(--font-display); font-weight: 700; font-size: 15px;
-      color: rgba(255,255,255,0.85);
-      display: flex; align-items: center; gap: 10px;
-      flex: 1;
-    }
-    .demo-brand .mark {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: var(--brand-primary); color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 800; letter-spacing: -0.04em;
-    }
-    .pill-toggle {
-      display: inline-flex; background: rgba(255,255,255,0.07);
-      border-radius: 999px; padding: 3px; gap: 2px;
-    }
-    .pill-toggle button {
-      border: 0; cursor: pointer; padding: 7px 18px;
-      border-radius: 999px; font-family: var(--font-body);
-      font-size: 13px; font-weight: 500;
-      background: transparent; color: rgba(255,255,255,0.5);
-      transition: background 180ms, color 180ms;
-    }
-    .pill-toggle button.active {
-      background: #fff; color: #0F172A; font-weight: 700;
-    }
-    .theme-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
 
     /* ── Phone frame ───────────────────────────────────────────────────── */
     .phone-scene {
@@ -131,24 +98,6 @@
 </head>
 <body>
 
-  <!-- ── Controls ────────────────────────────────────────────────────── -->
-  <header class="demo-header">
-    <div class="demo-brand">
-      <span class="mark">OW</span>
-      OW Finance · Mobile UI Kit
-    </div>
-    <span class="theme-label">Modo</span>
-    <div class="pill-toggle" id="mode-toggle">
-      <button data-mode="lite" class="active">Lite</button>
-      <button data-mode="pro">Pro</button>
-    </div>
-    <span class="theme-label">Tema</span>
-    <div class="pill-toggle" id="theme-toggle">
-      <button data-t="dark" class="active">Dark</button>
-      <button data-t="light">Light</button>
-    </div>
-  </header>
-
   <!-- ── Phone ───────────────────────────────────────────────────────── -->
   <div class="phone-scene">
     <div class="phone-outer">
@@ -172,13 +121,19 @@
     <div class="comp-card"><div class="tag">Nav</div><div class="name">BottomNav · HomeHeader</div><div class="file">components/Navigation.jsx</div><div class="rn">custom tabBar · SafeAreaView</div></div>
     <div class="comp-card"><div class="tag">Financial</div><div class="name">BalanceCard (Lite + Pro)</div><div class="file">components/BalanceCard.jsx</div><div class="rn">View + Text · LayoutAnimation</div></div>
     <div class="comp-card"><div class="tag">Financial</div><div class="name">JarCard · JarsRow · JarGrid</div><div class="file">components/JarComponents.jsx</div><div class="rn">FlatList horizontal · numColumns=2</div></div>
+    <div class="comp-card"><div class="tag">Financial</div><div class="name">DebtCard · Summary · DebtsList</div><div class="file">components/DebtComponents.jsx</div><div class="rn">SectionList · Cashea / Otras</div></div>
+    <div class="comp-card"><div class="tag">Financial</div><div class="name">DreamCard · Summary · DreamsList</div><div class="file">components/DreamComponents.jsx</div><div class="rn">FlatList · gradient · progress</div></div>
     <div class="comp-card"><div class="tag">Financial</div><div class="name">TransactionRow · DayHeader</div><div class="file">components/TransactionComponents.jsx</div><div class="rn">SectionList · renderSectionHeader</div></div>
+    <div class="comp-card"><div class="tag">Filters</div><div class="name">MonthBar (date nav) · picker</div><div class="file">components/MonthNavigatorMobile.jsx</div><div class="rn">stepper + month grid sheet</div></div>
+    <div class="comp-card"><div class="tag">Filters</div><div class="name">AccountFilter · ExchangeRates · SmartFilter</div><div class="file">components/TransactionFilters.jsx</div><div class="rn">bottom sheets · Pro multi-currency</div></div>
+    <div class="comp-card"><div class="tag">Overlay</div><div class="name">MobileBottomSheet</div><div class="file">components/BottomSheet.jsx</div><div class="rn">@gorhom/bottom-sheet wrapper</div></div>
     <div class="comp-card"><div class="tag">Sheet</div><div class="name">QuickActionSheet · ActionTile</div><div class="file">components/QuickActionSheet.jsx</div><div class="rn">@gorhom/bottom-sheet · FlatList</div></div>
     <div class="comp-card"><div class="tag">Chat</div><div class="name">ChatBubble · RichText</div><div class="file">components/ChatComponents.jsx</div><div class="rn">FlatList inverted · nested Text</div></div>
     <div class="comp-card"><div class="tag">Chat</div><div class="name">ChatInput · QuickReplyChip</div><div class="file">components/ChatComponents.jsx</div><div class="rn">KeyboardAvoidingView · TextInput</div></div>
     <div class="comp-card"><div class="tag">Screen</div><div class="name">HomeScreenLite · Pro</div><div class="file">screens/HomeScreen*.jsx</div><div class="rn">ScrollView + SectionList</div></div>
     <div class="comp-card"><div class="tag">Screen</div><div class="name">AIAdvisorScreen (Claude)</div><div class="file">screens/AIAdvisorScreen.jsx</div><div class="rn">FlatList inverted + KeyboardAvoiding</div></div>
     <div class="comp-card"><div class="tag">Screen</div><div class="name">Transactions · Jars</div><div class="file">screens/Transactions+JarsScreen.jsx</div><div class="rn">SectionList · FlatList numColumns=2</div></div>
+    <div class="comp-card"><div class="tag">Screen</div><div class="name">Debts · Dreams</div><div class="file">screens/Debts+DreamsScreen.jsx</div><div class="rn">SectionList · FlatList</div></div>
     <div class="comp-card"><div class="tag">Screen</div><div class="name">SettingsScreen</div><div class="file">screens/SettingsScreen.jsx</div><div class="rn">SectionList + Switch</div></div>
     <div class="comp-card"><div class="tag">Tokens</div><div class="name">Colors · Radii · Type</div><div class="file">tokens.js</div><div class="rn">Copy to theme.ts / StyleSheet consts</div></div>
     <div class="comp-card"><div class="tag">Data</div><div class="name">Sample data + AI seed</div><div class="file">data.jsx</div><div class="rn">Replace with API calls / Zustand store</div></div>
@@ -198,17 +153,26 @@
   <!-- Atoms (no deps on other components) -->
   <script type="text/babel" src="components/Atoms.jsx"></script>
 
+  <!-- Reusable bottom sheet + transaction filter widgets -->
+  <script type="text/babel" src="components/BottomSheet.jsx"></script>
+  <script type="text/babel" src="components/MonthNavigatorMobile.jsx"></script>
+  <script type="text/babel" src="components/TransactionFilters.jsx"></script>
+
   <!-- Navigation (depends on Atoms) -->
   <script type="text/babel" src="components/Navigation.jsx"></script>
 
   <!-- Financial components (depend on Atoms) -->
   <script type="text/babel" src="components/BalanceCard.jsx"></script>
   <script type="text/babel" src="components/JarComponents.jsx"></script>
+  <script type="text/babel" src="components/DebtComponents.jsx"></script>
+  <script type="text/babel" src="components/DreamComponents.jsx"></script>
   <script type="text/babel" src="components/TransactionComponents.jsx"></script>
+  <script type="text/babel" src="components/TransactionDetailSheet.jsx"></script>
 
   <!-- Overlays (independent) -->
   <script type="text/babel" src="components/QuickActionSheet.jsx"></script>
   <script type="text/babel" src="components/SmartTransactionSheet.jsx"></script>
+  <script type="text/babel" src="components/TransactionFormSheet.jsx"></script>
 
   <!-- Chat (depends on Atoms + data) -->
   <script type="text/babel" src="components/ChatComponents.jsx"></script>
@@ -219,6 +183,8 @@
   <script type="text/babel" src="screens/AIAdvisorScreen.jsx"></script>
   <script type="text/babel" src="screens/TransactionsScreen.jsx"></script>
   <script type="text/babel" src="screens/JarsScreen.jsx"></script>
+  <script type="text/babel" src="screens/DebtsScreen.jsx"></script>
+  <script type="text/babel" src="screens/DreamsScreen.jsx"></script>
   <script type="text/babel" src="screens/SettingsScreen.jsx"></script>
 
   <!-- Shell -->
@@ -226,27 +192,9 @@
 
   <!-- Mount -->
   <script type="text/babel">
-    let currentMode = 'lite';
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    const render = () => root.render(<MobileShell mode={currentMode} />);
-    render();
-
-    // Mode toggle
-    document.getElementById('mode-toggle').addEventListener('click', e => {
-      const btn = e.target.closest('[data-mode]');
-      if (!btn) return;
-      currentMode = btn.getAttribute('data-mode');
-      document.querySelectorAll('#mode-toggle button').forEach(b => b.classList.toggle('active', b === btn));
-      render();
-    });
-
-    // Theme toggle
-    document.getElementById('theme-toggle').addEventListener('click', e => {
-      const btn = e.target.closest('[data-t]');
-      if (!btn) return;
-      document.documentElement.setAttribute('data-theme', btn.getAttribute('data-t'));
-      document.querySelectorAll('#theme-toggle button').forEach(b => b.classList.toggle('active', b === btn));
-    });
+    // Mode (Lite/Pro) and theme (Dark/Light) now live inside the app — Settings screen.
+    root.render(<MobileShell />);
   </script>
 </body>
 </html>
