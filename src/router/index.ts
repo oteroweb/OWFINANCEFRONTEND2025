@@ -9,7 +9,12 @@ export default route(function () {
       process.env.VUE_ROUTER_MODE === 'history'
         ? createWebHistory(process.env.VUE_ROUTER_BASE)
         : createWebHashHistory(process.env.VUE_ROUTER_BASE),
-    routes
+    routes,
+    scrollBehavior(to, _from, savedPosition) {
+      if (savedPosition) return savedPosition
+      if (to.hash) return { el: to.hash, behavior: 'smooth' }
+      return { top: 0, behavior: 'instant' }
+    },
   })
 
   router.beforeEach((to, from, next) => {
