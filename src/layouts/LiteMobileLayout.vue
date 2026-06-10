@@ -15,11 +15,13 @@
 
     <!-- Page Container: padded to avoid overlap with fixed header (64px) -->
     <q-page-container style="padding-top: 64px; min-height: 100vh">
-      <router-view v-slot="{ Component }">
-        <transition name="lite-page" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+      <slot name="page-content">
+        <router-view v-slot="{ Component }">
+          <transition name="lite-page" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </slot>
     </q-page-container>
 
     <!-- Floating Bottom Nav -->

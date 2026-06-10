@@ -20,7 +20,7 @@
 
     <!-- Main Content Area (max 1200px) -->
     <q-page-container class="lite-desktop-layout__container">
-      <router-view />
+      <slot name="page-content" />
     </q-page-container>
 
     <!-- Floating Nav Pill -->

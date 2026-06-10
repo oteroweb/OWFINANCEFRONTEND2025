@@ -80,7 +80,7 @@
 
       <!-- Page content -->
       <q-page-container class="pro-layout__content">
-        <router-view />
+        <slot name="page-content" />
       </q-page-container>
     </div>
 

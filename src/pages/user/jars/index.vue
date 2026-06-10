@@ -2715,8 +2715,6 @@ async function applyLeverageNow(jarId: number) {
 
     if (applied?.from_jar_id) {
       await refreshBalance(applied.from_jar_id);
-      const appliedSource = jarElements.value.find((j) => j.id === applied.from_jar_id)?.name ||
-        `#${applied.from_jar_id}`;
       $q.notify({
         type: 'positive',
         message: t('notify.leverageApplied'),
@@ -2751,8 +2749,6 @@ async function applyLeverageNow(jarId: number) {
     }
 
     if (transfer?.from_jar_id) {
-      const appliedSource = jarElements.value.find((j) => j.id === transfer.from_jar_id)?.name ||
-        `#${transfer.from_jar_id}`;
       $q.notify({
         type: 'positive',
         message: t('notify.leverageApplied'),
