@@ -1,6 +1,22 @@
 <template>
   <q-page class="lite-home">
     <div class="lite-home__container">
+
+      <!-- Setup banner — sin cuentas -->
+      <div v-if="hasNoAccounts && !balanceLoading" class="lite-home__setup-banner">
+        <q-icon name="account_balance_wallet" size="32px" style="opacity:.6" />
+        <div class="lite-home__setup-text">
+          <span class="t-h2">Configura tu billetera</span>
+          <span class="t-body-sm">Crea tu primera cuenta para empezar a registrar transacciones.</span>
+        </div>
+        <q-btn
+          unelevated
+          color="primary"
+          label="Crear cuenta"
+          @click="router.push('/user/accounts')"
+        />
+      </div>
+
       <!-- Hero Balance -->
       <section class="lite-home__hero">
         <div v-if="balanceLoading" class="lite-home__skeleton">
@@ -172,8 +188,10 @@ const currencySymbol = ref('$');
 const monthlyIncome = ref(0);
 const monthlyExpense = ref(0);
 const monthlyDelta = ref<number | null>(null);
+const accountsCount = ref<number | null>(null);
 
 const isHidden = computed(() => ui.hideValues);
+const hasNoAccounts = computed(() => accountsCount.value === 0);
 
 // ─── Jars ───────────────────────────────────────────────────────────
 interface JarItem {
@@ -236,12 +254,17 @@ function classifyTx(tx: Record<string, unknown>, amount: number): 'income' | 'ex
 async function loadBalanceSummary() {
   balanceLoading.value = true;
   try {
-    const res = await api.get('/accounts/summary/global-balance');
-    const data = res.data?.data || {};
+    const [balRes, accRes] = await Promise.all([
+      api.get('/accounts/summary/global-balance'),
+      api.get('/accounts'),
+    ]);
+    const data = balRes.data?.data || {};
     balanceSummary.value = {
       total_all: Number(data.total_all ?? 0),
       total_global_balance: Number(data.total_global_balance ?? 0),
     };
+    const accounts = accRes.data?.data ?? accRes.data ?? [];
+    accountsCount.value = Array.isArray(accounts) ? accounts.length : 0;
   } catch (err) {
     console.warn('[LiteHome] Balance error:', err);
   } finally {
@@ -591,6 +614,25 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     min-width: 0;
+  }
+
+  &__setup-banner {
+    background: var(--surface-1);
+    border-radius: var(--radius-lg);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 0;
+  }
+
+  &__setup-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
   &__empty {
