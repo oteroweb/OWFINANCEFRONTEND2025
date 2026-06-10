@@ -54,7 +54,7 @@
           </div>
 
           <div v-if="!isTransfer" class="row q-col-gutter-sm">
-            <div v-if="!isAdvancedPayment" class="col-12 col-md-7">
+            <div v-if="!isAdvancedPayment && !isLiteMode" class="col-12 col-md-7">
               <q-select
                 v-model="form.account_id"
                 :options="accountOptions"
@@ -824,6 +824,7 @@ const {
   onAccountFilter,
   ensureAccountsLoaded,
   reloadAccounts,
+  isLiteMode,
 } = useTransactionForm();
 void loadTransactionTypes();
 
@@ -2838,10 +2839,16 @@ watch(
     }
     try {
       await ensureAccountsLoaded();
+      // Lite: billetera implícita — auto-asigna la primera cuenta sin exponer selectores
+      if (isLiteMode.value && allAccounts.value.length > 0) {
+        const firstId = allAccounts.value[0]!.id;
+        if (!form.value.account_id) form.value.account_id = firstId;
+        if (!form.value.account_from_id) form.value.account_from_id = firstId;
+      }
       const ids = Array.isArray(tsStore.selectedAccountIds)
         ? tsStore.selectedAccountIds.filter((v) => v !== null && v !== undefined)
         : [];
-      if (ids.length === 1) {
+      if (!isLiteMode.value && ids.length === 1) {
         const accIdNum = Number(ids[0]);
         if (Number.isFinite(accIdNum)) {
           const ty = ttypes.types.find((t) => t.id === form.value.transaction_type_id);

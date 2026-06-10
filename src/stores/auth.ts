@@ -87,43 +87,80 @@ export const useAuthStore = defineStore('auth', {
     defaultCurrency: (state): Currency | null => state.user?.currency || null,
   },
   actions: {
-    async login(email: string, password: string) {
+    async login(email: string, password: string): Promise<{ token: string; user: User; role: string }> {
       try {
-        console.log('🔐 Intentando login:', { 
-          email, 
+        console.log('🔐 Intentando login:', {
+          email,
           apiBaseURL: import.meta.env.VITE_API_BASE_URL,
           endpoint: '/auth/login'
         });
-        
+
         const response = await api.post('/auth/login', {
           email,
           password,
           device_name: 'quasar-spa'
         });
-        
+
         console.log('✅ Respuesta del servidor:', response.status, response.data);
-        // Nueva estructura de respuesta (según ejemplo): token + data (user info & related arrays)
-        const body = response.data as Record<string, unknown>
-        this.token = (body['token'] as string) || null
+        let body: Record<string, unknown>
+        if (typeof response.data === 'string') {
+          const jsonMatch = response.data.match(/\{[\s\S]*\}/)
+          if (!jsonMatch) {
+            throw new Error('Respuesta del servidor no contiene JSON válido')
+          }
+          try {
+            body = JSON.parse(jsonMatch[0])
+          } catch {
+            throw new Error('Error parseando JSON de la respuesta del servidor')
+          }
+        } else {
+          body = response.data as Record<string, unknown>
+        }
+        const token = (body['token'] as string) || ''
         const userRaw = body['data'] as Record<string, unknown> | undefined
         // Map direct to User (mantener shape original del backend sin transformar demasiado)
+        let user: User | null = null
         if (userRaw) {
-          this.user = userRaw as unknown as User
+          user = userRaw as unknown as User
         } else {
           // fallback (legacy) to response.data.user
           const legacy = body['user'] as Record<string, unknown> | undefined
-          this.user = legacy as unknown as User || null
+          user = legacy as unknown as User || null
         }
 
+        if (!token || !user) {
+          throw new Error('Respuesta de login inválida: falta token o user')
+        }
+
+        // Extraer role desde múltiples fuentes posibles del backend
+        let role = ''
+        const topRole = body['role'] as string | undefined
+        if (topRole) {
+          role = topRole
+        } else if (user.role && typeof (user.role as unknown as Record<string, unknown>).slug === 'string') {
+          role = (user.role as unknown as Record<string, unknown>).slug as string
+        } else if (typeof (user as unknown as Record<string, unknown>).role_slug === 'string') {
+          role = (user as unknown as Record<string, unknown>).role_slug as string
+        } else if (typeof (user as unknown as Record<string, unknown>).role_name === 'string') {
+          role = (user as unknown as Record<string, unknown>).role_name as string
+        }
+
+        // Persistir en store
+        this.token = token
+        this.user = user
+
         // Guarda en localStorage para recordar sesión
-        localStorage.setItem('token', this.token || '')
-        localStorage.setItem('user', JSON.stringify(this.user))
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
+        localStorage.setItem('role', role)
 
         // Establece el token en axios para futuras peticiones
-        api.defaults.headers.common.Authorization = `Bearer ${this.token}`
+        api.defaults.headers.common.Authorization = `Bearer ${token}`
 
         // Carga configuraciones de usuario
         await this.fetchSettings();
+
+        return { token, user, role }
       } catch (error: unknown) {
         interface AxiosError {
           response?: {

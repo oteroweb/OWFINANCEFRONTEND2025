@@ -1,7 +1,104 @@
-// This is just an example,
-// so you can safely delete all default props below
-
 export default {
   failed: 'Action failed',
   success: 'Action was successful',
+
+  auth: {
+    login: 'Sign in',
+    logout: 'Sign out',
+    email: 'Email',
+    password: 'Password',
+    loginBtn: 'Sign in',
+  },
+
+  nav: {
+    home: 'Home',
+    transactions: 'Txns.',
+    jars: 'Jars',
+    config: 'Settings',
+    add: 'Add',
+    advisor: 'Advisor',
+    analysis: 'Analysis',
+  },
+
+  home: {
+    title: 'Home',
+    balance: 'Balance',
+    income: 'Income',
+    expenses: 'Expenses',
+    recentTransactions: 'Recent transactions',
+    noTransactions: 'No transactions this month yet.',
+    addFirst: 'Add your first transaction',
+    jars: 'Jars',
+    noJars: 'No active jars.',
+  },
+
+  transactions: {
+    title: 'Transactions',
+    search: 'Search by concept, jar, category, amount…',
+    filters: 'Filters',
+    clearAll: 'Clear all',
+    type: 'Type',
+    jar: 'Jar',
+    category: 'Category',
+    amount: 'Amount',
+    allJars: 'All jars',
+    allCategories: 'All categories',
+    noResults: 'No transactions for this period.',
+    loadMore: 'Load more',
+    income: 'Income',
+    expense: 'Expense',
+    transfer: 'Transfer',
+    all: 'All',
+  },
+
+  jars: {
+    title: 'Jars',
+    newJar: 'New jar',
+    noJars: 'No active jars.',
+    budget: 'Budget',
+    spent: 'Spent',
+    remaining: 'Remaining',
+  },
+
+  pro: {
+    home: {
+      title: 'Pro Dashboard',
+      kpiIncome: 'Income',
+      kpiExpenses: 'Expenses',
+      kpiBalance: 'Net balance',
+      kpiSavings: 'Savings',
+      spendingByCategory: 'Spending by category',
+      viewAnalysis: 'View analysis',
+      jarsTitle: 'Jars',
+      viewAll: 'View all',
+      recentTransactions: 'Recent transactions',
+      aiAdvisor: 'AI Advisor',
+      aiCta: 'Ask advisor',
+    },
+  },
+
+  config: {
+    title: 'Settings',
+    layout: 'Visual experience',
+    layoutDescription: 'Switch between Lite (mobile, simple) and Pro (analytical, desktop) mode.',
+    layoutLite: 'Lite',
+    layoutPro: 'Pro',
+    save: 'Save changes',
+    cancel: 'Cancel',
+    saved: 'Profile updated',
+    reloadNotice: 'The app will restart to apply the new mode.',
+  },
+
+  form: {
+    account: 'Account',
+    accountOrigin: 'Source account',
+    accountDestination: 'Destination account',
+    category: 'Category',
+    concept: 'Concept',
+    amount: 'Amount',
+    date: 'Date',
+    provider: 'Provider',
+    save: 'Save',
+    cancel: 'Cancel',
+  },
 };
