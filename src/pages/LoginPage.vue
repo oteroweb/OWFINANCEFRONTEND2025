@@ -1,131 +1,159 @@
 <template>
-  <q-page class="q-pa-md flex flex-center">
-    <q-card style="min-width: 300px">
-      <q-card-section>
-        <div class="text-h6">Login</div>
-      </q-card-section>
-
-      <form @submit.prevent="submit" autocomplete="on">
-        <q-card-section>
-          <q-input
-            v-model="email"
-            label="Email"
-            type="email"
-            name="email"
-            autocomplete="username"
-            autocapitalize="none"
-            autocorrect="off"
-            spellcheck="false"
-            inputmode="email"
-            autofocus
-            :disable="loginLoading"
-          />
-          <q-input
-            v-model="password"
-            label="Password"
-            type="password"
-            class="q-mt-sm"
-            name="password"
-            autocomplete="current-password"
-            :disable="loginLoading"
-          />
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn
-            label="Login"
-            color="primary"
-            type="submit"
-            :loading="loginLoading"
-            :disable="loginLoading"
-          />
-        </q-card-actions>
-      </form>
-
-      <!-- Biometric login -->
-      <q-card-section v-if="showBiometric && !loginLoading" class="q-pt-none text-center">
-        <q-separator class="q-mb-md" />
-        <q-btn
-          round
-          size="lg"
-          color="teal"
-          icon="fingerprint"
-          @click="loginWithBiometric"
-          :loading="biometricLoading"
-          :disable="biometricLoading"
-        />
-        <div class="text-caption text-grey q-mt-sm">Acceder con huella</div>
-      </q-card-section>
-    </q-card>
-
-    <!-- Register link -->
-    <div class="q-mt-md text-center">
-      <span class="text-caption text-grey-6">¿No tienes cuenta? </span>
-      <router-link to="/register" class="text-caption text-primary">Regístrate</router-link>
-    </div>
-
-    <!-- Download App Section -->
-    <div class="q-mt-lg text-center">
-      <q-separator class="q-mb-md" style="max-width: 320px; margin: 0 auto 12px auto;" />
-      <div class="text-caption text-grey-6 q-mb-sm">📱 Descarga la app para Android</div>
-      <div class="row justify-center q-gutter-sm">
-        <q-btn
-          unelevated
-          size="sm"
-          color="positive"
-          icon="android"
-          label="DEV (Beta)"
-          href="https://appfinanzasdev.blockshift.website/downloads/owfinance-dev.apk"
-          type="a"
-          no-caps
-        />
-        <q-btn
-          unelevated
-          size="sm"
-          color="primary"
-          icon="android"
-          label="Stage"
-          href="https://appfinanzas.blockshift.website/downloads/owfinance-stage.apk"
-          type="a"
-          no-caps
-        />
+  <div class="auth-split">
+    <!-- LEFT BRAND -->
+    <aside class="auth-brand">
+      <router-link class="logo-row" to="/" aria-label="OW Finance">
+        <img src="/assets/redesign/ow-finance-wordmark.svg" alt="OW Finance" height="34" style="filter: brightness(0) invert(1)" />
+      </router-link>
+      <div class="brand-mid">
+        <h2>Tu dinero, repartido<br />con propósito.</h2>
+        <p>Entra para ver tus cántaros, alimentar tus sueños y registrar lo del día en segundos.</p>
+        <div class="brand-mock">
+          <div class="bm-lbl">Disponible · USD</div>
+          <div class="bm-amt">$ 12,480.50</div>
+          <div class="bm-row">
+            <div class="bm-pill"><div class="p-l">Necesidades</div><div class="p-v">$ 1,815</div></div>
+            <div class="bm-pill"><div class="p-l">Ahorro</div><div class="p-v">$ 2,940</div></div>
+            <div class="bm-pill"><div class="p-l">Diversión</div><div class="p-v">$ 132</div></div>
+          </div>
+        </div>
       </div>
-      <div class="text-caption text-grey-5 q-mt-xs">Los enlaces siempre apuntan a la versión más reciente</div>
-    </div>
-  </q-page>
+      <div class="brand-foot">Lite o Pro · USD · EUR · VES · Claro y oscuro</div>
+    </aside>
+
+    <!-- RIGHT FORM -->
+    <main class="auth-form-wrap">
+      <div class="auth-form-top">
+        <router-link class="auth-back" to="/"><span class="material-icons">arrow_back</span>Volver al inicio</router-link>
+        <button
+          class="icon-btn"
+          :aria-label="isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'"
+          @click="toggleTheme"
+        >
+          <span class="material-icons">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
+        </button>
+      </div>
+
+      <div class="auth-form-center">
+        <div class="auth-card">
+          <div class="auth-logo-mobile">
+            <img src="/assets/redesign/ow-finance-wordmark.svg" alt="OW Finance" height="32" />
+          </div>
+
+          <div class="seg" role="tablist">
+            <button
+              id="tab-login"
+              :class="{ active: mode === 'login' }"
+              role="tab"
+              @click="mode = 'login'"
+            >Iniciar sesión</button>
+            <button
+              id="tab-register"
+              :class="{ active: mode === 'register' }"
+              role="tab"
+              @click="goToRegister"
+            >Crear cuenta</button>
+          </div>
+
+          <h1 id="auth-title">{{ mode === 'register' ? 'Crea tu cuenta' : 'Hola de nuevo' }}</h1>
+          <p class="sub" id="auth-sub">{{ mode === 'register' ? 'Empieza gratis. Sin tarjeta.' : 'Entra para seguir con tus finanzas.' }}</p>
+
+          <form @submit.prevent="submit" autocomplete="on">
+            <div class="field" :class="{ hide: mode !== 'register' }">
+              <label for="i-name">Nombre</label>
+              <div class="input-shell">
+                <span class="material-icons">person</span>
+                <input id="i-name" v-model="name" type="text" placeholder="José Andrés" autocomplete="name" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="i-email">Correo</label>
+              <div class="input-shell">
+                <span class="material-icons">mail</span>
+                <input id="i-email" v-model="email" type="email" placeholder="tu@correo.com" autocomplete="username" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="i-pass">Contraseña</label>
+              <div class="input-shell">
+                <span class="material-icons">lock</span>
+                <input id="i-pass" v-model="password" :type="showPassword ? 'text' : 'password'" :placeholder="showPassword ? 'password' : '••••••••'" :autocomplete="mode === 'register' ? 'new-password' : 'current-password'" />
+                <span class="material-icons eye" @click="showPassword = !showPassword">{{ showPassword ? 'visibility' : 'visibility_off' }}</span>
+              </div>
+            </div>
+
+            <div v-if="mode === 'login'" class="row-between">
+              <label class="check"><input v-model="rememberMe" type="checkbox" checked />Recuérdame</label>
+              <a class="link-cyan" style="font-size: 13.5px" href="#">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button class="btn btn-primary btn-lg btn-block" type="submit" :disabled="loginLoading">
+              {{ loginLoading ? 'Entrando...' : (mode === 'register' ? 'Crear cuenta' : 'Entrar') }}<span v-if="!loginLoading" class="material-icons">arrow_forward</span>
+            </button>
+          </form>
+
+          <div class="divider">o continúa con</div>
+          <div class="social">
+            <a class="btn" href="#" @click.prevent><span class="g-mark" aria-hidden="true">G</span>Google</a>
+            <a class="btn" href="#" @click.prevent><span class="a-mark" aria-hidden="true"></span>Apple</a>
+          </div>
+
+          <p v-if="mode === 'login'" class="legal">¿Aún no tienes cuenta? <router-link to="/register">Créala gratis</router-link>.</p>
+          <p v-else class="legal">Al crear una cuenta aceptas los <a href="#">Términos</a> y la <a href="#">Política de privacidad</a>.</p>
+
+          <!-- App Download -->
+          <div class="divider">Descarga la app</div>
+          <div class="app-downloads" style="display: flex; gap: 10px; margin-top: 12px">
+            <a class="btn" style="flex: 1; font-size: 13px" href="https://appfinanzasdev.blockshift.website/downloads/owfinance-dev.apk" target="_blank" rel="noopener">
+              <span class="material-icons" style="font-size: 18px; color: var(--info)">android</span>DEV (Beta)
+            </a>
+            <a class="btn" style="flex: 1; font-size: 13px" href="https://appfinanzas.blockshift.website/downloads/owfinance-stage.apk" target="_blank" rel="noopener">
+              <span class="material-icons" style="font-size: 18px; color: var(--brand-primary)">android</span>Stage
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { useBiometric } from 'src/composables/useBiometric';
+import { usePublicTheme } from 'src/composables/usePublicTheme';
 
 const email = ref('');
 const password = ref('');
+const name = ref('');
+const mode = ref<'login' | 'register'>('login');
+const showPassword = ref(false);
+const rememberMe = ref(true);
 const router = useRouter();
 const auth = useAuthStore();
+const { isDark, toggleTheme } = usePublicTheme();
 
-const { checkAvailability, checkStoredCredentials, saveCredentials, authenticate, isAvailable } = useBiometric();
-const showBiometric = ref(false);
-const biometricLoading = ref(false);
+const { saveCredentials, isAvailable } = useBiometric();
 const loginLoading = ref(false);
 
-onMounted(async () => {
-  const available = await checkAvailability();
-  if (available) {
-    const hasCreds = await checkStoredCredentials();
-    showBiometric.value = hasCreds;
-  }
-});
+function goToRegister() {
+  void router.push('/register');
+}
 
-function navigateByRole() {
-  if (auth.role === 'admin') {
+function navigateByRole(role: string) {
+  console.log('[Login] navigateByRole — role:', role);
+
+  if (role === 'admin') {
+    localStorage.setItem('role', 'admin');
     void router.push('/admin');
-  } else if (auth.role === 'user') {
+  } else if (role === 'user') {
+    localStorage.setItem('role', 'user');
     void router.push('/user');
   } else {
-    alert('Rol desconocido');
+    console.error('[Login] Unrecognized role:', role, '| auth.user:', auth.user);
+    alert('Rol desconocido: ' + role + '. Revisa la consola para detalles.');
+    void router.push('/login');
   }
 }
 
@@ -133,14 +161,14 @@ async function submit() {
   if (loginLoading.value) return;
   loginLoading.value = true;
   try {
-    await auth.login(email.value, password.value);
+    const result = await auth.login(email.value, password.value);
+    console.log('[Login] login result:', result);
 
-    // Guardar credenciales para biometría si el dispositivo lo soporta
     if (isAvailable.value) {
       await saveCredentials(email.value, password.value);
     }
 
-    navigateByRole();
+    navigateByRole(result.role);
   } catch (error: unknown) {
     console.error('Error completo de login:', error);
     if (error instanceof Error) {
@@ -153,23 +181,5 @@ async function submit() {
   }
 }
 
-async function loginWithBiometric() {
-  biometricLoading.value = true;
-  try {
-    const creds = await authenticate();
-    if (!creds) return;
-
-    await auth.login(creds.email, creds.password);
-    navigateByRole();
-  } catch (error: unknown) {
-    console.error('Error biométrico:', error);
-    if (error instanceof Error) {
-      alert(error.message || 'Error al autenticar con huella.');
-    } else {
-      alert('Error al autenticar con huella.');
-    }
-  } finally {
-    biometricLoading.value = false;
-  }
-}
+// Biometric login logic preserved in useBiometric composable
 </script>

@@ -18,6 +18,7 @@ export default route(function () {
     if (!auth.token) {
       auth.loadFromStorage()
     }
+
     // If trying to access login while already authenticated, redirect to home
     if (to.path === '/login' && auth.isLoggedIn) {
       if (auth.role === 'admin') {
@@ -27,12 +28,25 @@ export default route(function () {
       }
       return next('/')
     }
+
+    // If root path and logged in, redirect to appropriate dashboard
+    if (to.path === '/' && auth.isLoggedIn) {
+      if (auth.role === 'admin') {
+        return next('/admin')
+      } else if (auth.role === 'user') {
+        return next('/user/home')
+      }
+      return next('/login')
+    }
+
     if (to.meta.requiresAuth && !auth.isLoggedIn) {
       return next('/login')
     }
+
     if (to.meta.role && auth.role !== to.meta.role) {
       return next('/login')
     }
+
     next()
   })
 

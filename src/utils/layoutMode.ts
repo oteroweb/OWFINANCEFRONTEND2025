@@ -24,7 +24,7 @@ export const layoutModeOptions: LayoutModeOption[] = [
   },
 ]
 
-export function normalizeLayoutMode(value: unknown, fallback: UserLayoutMode = 'pro'): UserLayoutMode {
+export function normalizeLayoutMode(value: unknown, fallback: UserLayoutMode = 'lite'): UserLayoutMode {
   if (typeof value !== 'string') return fallback
 
   const normalized = value.trim().toLowerCase()

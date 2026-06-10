@@ -17,7 +17,7 @@ export default defineConfig((ctx) => {
     boot: ['i18n', 'axios'],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
-    css: ['design-system.css', 'app.scss'],
+    css: ['design-system.css', 'app.scss', 'marketing.scss'],
 
     // https://github.com/quasarframework/quasar/tree/dev/extras
     extras: [
@@ -66,7 +66,17 @@ export default defineConfig((ctx) => {
       // polyfillModulePreload: true,
       // distDir
 
-      // extendViteConf (viteConf) {},
+      extendViteConf(viteConf) {
+        // Allow HMR from any LAN IP (not just localhost)
+        if (viteConf.server) {
+          viteConf.server.hmr = {
+            protocol: 'ws',
+            host: '0.0.0.0',
+            port: 9000,
+            clientPort: 9000,
+          };
+        }
+      },
       // viteVuePluginOptions: {},
 
       vitePlugins: [
@@ -109,6 +119,8 @@ export default defineConfig((ctx) => {
     devServer: {
       // https: true,
       open: true, // opens browser window automatically
+      host: '0.0.0.0',
+      port: 9000,
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
