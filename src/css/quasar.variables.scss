@@ -12,14 +12,21 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
-$primary: #1976d2;
-$secondary: #26a69a;
-$accent: #9c27b0;
+// Alineado al OW Finance Design System (ver src/css/design-system.css).
+// CAPA DE TEMA: el primary/secondary/accent y las CSS vars --brand-*/--ow-*/--font-*
+// se derivan de UN solo switch en src/css/theme.scss ($brand-preset / $font-preset).
+// Cambia la marca/fuente de TODA la app ahí, no aquí.
+//
+// `@forward` re-exporta $primary/$secondary/$accent a Quasar, que importa
+// este archivo vía @import (legacy) y necesita ver esas variables.
+// Los CSS vars runtime (--brand-*/--ow-*/--font-*) los emite app.scss UNA
+// vez vía theme.emit-theme(), para no duplicarlos por componente.
+@forward 'theme';
 
-$dark: #1d1d1d;
-$dark-page: #121212;
+$dark: #131b2e;      // ink-s1 (card dark)
+$dark-page: #0f172a; // ink-base
 
-$positive: #21ba45;
-$negative: #c10015;
-$info: #31ccec;
-$warning: #f2c037;
+$positive: #10b981;  // emerald-500
+$negative: #ef4444;  // red-500
+$info: #0ea5e9;      // cyan-500
+$warning: #f59e0b;   // amber-500

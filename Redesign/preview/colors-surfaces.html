@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Colors" name="Colors — Surfaces" subtitle="Light and dark surface ramps" viewport="700x240" -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; background: var(--bg-canvas); }
+  body { padding: 24px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .col h4 {
+    font-family: var(--font-body); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 10px;
+    color: var(--fg-2);
+  }
+  .stack { display: flex; flex-direction: column; gap: 6px; }
+  .stack > div {
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-family: var(--font-body); font-size: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .name { font-weight: 600; }
+  .hex { font-variant-numeric: tabular-nums; opacity: 0.7; }
+  .dark .stack > div { color: #E2E8F0; }
+</style>
+</head>
+<body>
+  <div class="pair">
+    <div class="col">
+      <h4>Light surfaces</h4>
+      <div class="stack">
+        <div style="background: #F8FAFC; color: #0F172A; box-shadow: var(--shadow-card);">
+          <span class="name">--bg-canvas</span><span class="hex">#F8FAFC</span>
+        </div>
+        <div style="background: #FFFFFF; color: #0F172A; box-shadow: var(--shadow-card);">
+          <span class="name">--surface-1</span><span class="hex">#FFFFFF</span>
+        </div>
+        <div style="background: #F1F5F9; color: #0F172A;">
+          <span class="name">--surface-2</span><span class="hex">#F1F5F9</span>
+        </div>
+        <div style="background: #E8EDF3; color: #0F172A;">
+          <span class="name">--surface-3</span><span class="hex">#E8EDF3</span>
+        </div>
+      </div>
+    </div>
+    <div class="col dark">
+      <h4 style="color:#94A3B8">Dark surfaces</h4>
+      <div class="stack">
+        <div style="background: #0F172A;">
+          <span class="name">--bg-canvas</span><span class="hex">#0F172A</span>
+        </div>
+        <div style="background: #131B2E;">
+          <span class="name">--surface-1</span><span class="hex">#131B2E</span>
+        </div>
+        <div style="background: #1A2238;">
+          <span class="name">--surface-2</span><span class="hex">#1A2238</span>
+        </div>
+        <div style="background: #222A3D;">
+          <span class="name">--surface-3</span><span class="hex">#222A3D</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

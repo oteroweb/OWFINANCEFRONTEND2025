@@ -1,0 +1,205 @@
+npm warn Unknown project config "shamefully-hoist". This will stop working in the next major version of npm.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm.
+npm warn Unknown project config "resolution-mode". This will stop working in the next major version of npm.
+
+ .d88888b.
+d88P" "Y88b
+888     888
+888     888 888  888  8888b.  .d8888b   8888b.  888d888
+888     888 888  888     "88b 88K          "88b 888P"
+888 Y8b 888 888  888 .d888888 "Y8888b. .d888888 888
+Y88b.Y8b88P Y88b 888 888  888      X88 888  888 888
+ "Y888888"   "Y88888 "Y888888  88888P' "Y888888 888
+       Y8b
+
+
+ Build mode............. spa
+ Pkg quasar............. v2.18.2
+ Pkg @quasar/app-vite... v2.3.0
+ Pkg vite............... v6.3.5
+ Debugging.............. no
+ Publishing............. no
+
+ App • Using quasar.config.ts in "ts" format
+ App • Using .env files: .env
+ App •  WAIT  • Compiling of SPA UI with Vite in progress...
+(node:83428) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+✗ Build failed in 22.50s
+[vite:css] [sass] Error: expected "{".
+  ╷
+4 │   margin: 0 auto;
+  │                 ^
+  ╵
+  ../../../../src/components/liquid/LiquidBottomNav.vue 4:17  root stylesheet
+file: /Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/components/liquid/LiquidBottomNav.vue?vue&type=style&index=0&scoped=88d10e48&lang.scss
+
+[sass] Error: expected "{".
+  ╷
+4 │   margin: 0 auto;
+  │                 ^
+  ╵
+  ../../../../src/components/liquid/LiquidBottomNav.vue 4:17  root stylesheet
+
+    at handleCompileResponse (/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/sass-embedded/dist/lib/src/compiler/utils.js:155:15)
+    at AsyncCompiler.compileRequestAsync (/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/sass-embedded/dist/lib/src/compiler/async.js:100:54)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Object.run (file:///Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:44528:22)
+    at async process (file:///Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:44587:24)
+    at async compileCSSPreprocessors (file:///Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:43590:28)
+    at async compileCSS (file:///Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:43634:32)
+    at async Object.handler (file:///Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:42965:11)
+    at async transform (file:///Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/rollup/dist/es/shared/node-entry.js:21020:16)
+    at async ModuleLoader.addModuleSource (file:///Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/rollup/dist/es/shared/node-entry.js:21233:36) {
+  sassMessage: 'expected "{".',
+  sassStack: '../../../../src/components/liquid/LiquidBottomNav.vue 4:17  root stylesheet\n',
+  span: {
+    text: '',
+    start: {
+      '$typeName': 'sass.embedded_protocol.SourceSpan.SourceLocation',
+      offset: 99,
+      line: 3,
+      column: 16
+    },
+    end: {
+      '$typeName': 'sass.embedded_protocol.SourceSpan.SourceLocation',
+      offset: 99,
+      line: 3,
+      column: 16
+    },
+    url: URL {
+      href: 'file:///Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/components/liquid/LiquidBottomNav.vue',
+      origin: 'null',
+      protocol: 'file:',
+      username: '',
+      password: '',
+      host: '',
+      hostname: '',
+      port: '',
+      pathname: '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/components/liquid/LiquidBottomNav.vue',
+      search: '',
+      searchParams: URLSearchParams {},
+      hash: ''
+    },
+    context: '  margin: 0 auto;\n'
+  },
+  id: '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/components/liquid/LiquidBottomNav.vue?vue&type=style&index=0&scoped=88d10e48&lang.scss',
+  frame: '[sass] Error: expected "{".\n' +
+    '  ╷\n' +
+    '4 │   margin: 0 auto;\n' +
+    '  │                 ^\n' +
+    '  ╵\n' +
+    '  ../../../../src/components/liquid/LiquidBottomNav.vue 4:17  root stylesheet',
+  line: 4,
+  column: 17,
+  code: 'PLUGIN_ERROR',
+  plugin: 'vite:css',
+  hook: 'transform',
+  watchFiles: [
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/index.html',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/.quasar/prod-spa/client-entry.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/package.json',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/.quasar/prod-spa/app.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/.quasar/prod-spa/quasar-user-options.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/@quasar/extras/material-icons/material-icons.css',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/css/app.scss',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/boot/i18n.ts',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/boot/axios.ts',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vue/dist/vue.runtime.esm-bundler.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/dist/quasar.sass',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/stores/index.ts',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/App.vue',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/router/index.ts',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/vue-plugin.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/dialog/Dialog.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/loading/Loading.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/notify/Notify.js',
+    'node_modules/@quasar/extras/material-icons/web-font/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-bundler.js',
+    'node_modules/@quasar/extras/material-icons/web-font/flUhRq6tzZclQEJ-Vdg-IuiaDsNa.woff',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/dialog/component/DialogPluginComponent.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/install-quasar.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/lang/Lang.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.dialog/create-dialog.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/icon-set/IconSet.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/scroll/prevent-scroll.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.config/nodes.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/spinner/QSpinner.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.create/create.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/is/is.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/event/event.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/avatar/QAvatar.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/btn/QBtn.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/icon/QIcon.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/@vue/shared/dist/shared.esm-bundler.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/card/QCard.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/card/QCardSection.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/dialog/QDialog.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/card/QCardActions.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-dark/use-dark.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/option-group/QOptionGroup.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/separator/QSeparator.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/input/QInput.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.keyboard/key-composition.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/scroll/scroll.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/spinner/use-spinner.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/platform/Platform.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-size/use-size.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/btn/use-btn.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.render/render.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/directives/ripple/Ripple.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/dark/Dark.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/private.body/Body.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/screen/Screen.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/plugins/private.history/History.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.symbols/symbols.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.config/instance-config.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.inject-obj-prop/inject-obj-prop.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/@quasar/app-vite/exports/wrappers/wrappers.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/icon-set/material-icons.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/i18n/index.ts',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/lang/en-US.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vue-i18n/dist/vue-i18n.runtime.esm-bundler.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/router/routes.ts',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/stores/auth.ts',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/wrappers/index.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/axios/index.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/pinia/dist/pinia.mjs',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vue-router/dist/vue-router.mjs',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/use-tick/use-tick.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/use-timeout/use-timeout.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-history/use-history.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-align/use-align.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-transition/use-transition.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/dom/dom.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-prevent-scroll/use-prevent-scroll.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-model-toggle/use-model-toggle.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-portal/use-portal.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/src/css/quasar.variables.scss',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/css/variables.sass',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.focus/focusout.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.focus/focus-manager.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.keyboard/escape-key.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/toggle/QToggle.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/checkbox/QCheckbox.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/radio/QRadio.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/axios/lib/axios.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-router-link/use-router-link.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/vue-i18n/dist/vue-i18n.runtime.mjs',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.vm/vm.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/components/checkbox/use-checkbox.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/private.use-refocus-target/use-refocus-target.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/composables/use-form/private.use-form.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/debounce/debounce.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.option-sizes/option-sizes.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/css-var/set-css-var.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/throttle/throttle.js',
+    '/Users/joseluisoterolopez/Desktop/dev/OWFINANCE2026/OWFinanceFrontend2025/node_modules/quasar/src/utils/private.noop-ssr-directive-transform/noop-ssr-directive-transform.js',
+    ... 278 more items
+  ]
+}
+
+ App • ⚠️   FAIL  App build failed (check the log above)
+

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Brand" name="Análisis (Lite)" subtitle="Enfocado: ¿en qué se me fue?" -->
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OW Finance · Análisis (Lite)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="colors_and_type.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-canvas); color: var(--fg-1); }
+
+    :root {
+      --c-needs:  #1E3A8A; --c-fun: #F59E0B; --c-give: #8B5CF6; --c-home: #10B981;
+      --c-social: #0EA5E9; --c-health: #EF4444; --c-car: #64748B; --c-none: #CBD5E1;
+      --accent: var(--brand-primary);   /* Lite accent = navy */
+    }
+    [data-theme="dark"] { --c-none: #334155; }
+    .material-icons { font-family: 'Material Icons'; font-weight: normal; font-style: normal; line-height: 1; display: inline-block; }
+
+    /* Demo bar */
+    #demo-bar { position: sticky; top: 0; z-index: 200; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 24px; background: var(--surface-1); border-bottom: 1px solid var(--border-hairline); box-shadow: var(--shadow-card); }
+    #demo-bar .brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 13px; }
+    #demo-bar .brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+    #demo-bar .spacer { flex: 1; }
+    .xlink { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-size: 12.5px; font-weight: 600; color: var(--accent); padding: 7px 12px; border-radius: var(--radius-pill); }
+    .xlink:hover { background: var(--surface-2); }
+    .icon-toggle { width: 38px; height: 38px; border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); background: var(--surface-1); cursor: pointer; display: inline-grid; place-items: center; color: var(--fg-1); }
+    .icon-toggle:hover { background: var(--surface-2); }
+
+    /* Lite shell — calm, single column */
+    #app { max-width: 780px; margin: 0 auto; padding: 22px 22px 80px; }
+
+    .top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .ccy-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius-pill); background: var(--accent); color: #fff; font-family: var(--font-money); font-size: 12.5px; font-weight: 600; }
+    .stepper { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+    .stepper button { width: 36px; height: 36px; border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); background: var(--surface-1); cursor: pointer; display: grid; place-items: center; color: var(--fg-1); }
+    .stepper button:hover { background: var(--surface-2); }
+    .stepper .period { min-width: 116px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+    .presets { display: inline-flex; background: var(--surface-2); border-radius: var(--radius-pill); padding: 3px; gap: 2px; }
+    .presets button { border: 0; cursor: pointer; padding: 7px 13px; border-radius: var(--radius-pill); background: transparent; color: var(--fg-2); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; }
+    .presets button.on { background: var(--accent); color: #fff; }
+
+    .eyebrow { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+
+    .hero { background: var(--surface-1); border-radius: var(--radius-xl); box-shadow: var(--shadow-float); padding: 28px; margin-bottom: 18px; }
+    .hero .lead { font-size: 15px; color: var(--fg-2); }
+    .hero .lead b { color: var(--fg-1); }
+    .hero .big { font-family: var(--font-money); font-weight: 700; font-size: 60px; letter-spacing: -.02em; line-height: 1.05; margin: 8px 0 14px; font-variant-numeric: tabular-nums; color: var(--expense-fg); }
+    .hero .big .unit { color: var(--fg-3); font-size: 30px; }
+    .hero .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .delta { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .delta.down { background: var(--income-soft); color: var(--income-fg); }
+    .delta.up { background: var(--expense-soft); color: var(--expense-fg); }
+    .muted { font-size: 13px; color: var(--fg-2); }
+
+    .card { background: var(--surface-1); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 22px; margin-bottom: 18px; }
+    .card .t-h3 { margin: 0; }
+    .card .desc { color: var(--fg-2); font-size: 12.5px; margin: 3px 0 18px; }
+
+    .donut-wrap { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
+    .donut { position: relative; width: 200px; height: 200px; flex: 0 0 auto; border-radius: 50%; }
+    .donut .hole { position: absolute; inset: 28px; background: var(--surface-1); border-radius: 50%; display: grid; place-content: center; text-align: center; }
+    .donut .hole .h-lbl { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-2); }
+    .donut .hole .h-amt { font-family: var(--font-money); font-weight: 700; font-size: 22px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .donut .hole .h-sub { font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+    .toplist { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 4px; }
+    .trow { display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: var(--radius-sm); cursor: pointer; }
+    .trow:hover, .trow.active { background: var(--surface-2); }
+    .trow .dot { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+    .trow .nm { font-size: 13px; font-weight: 500; min-width: 116px; }
+    .trow .bar { flex: 1; height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+    .trow .bar > i { display: block; height: 100%; border-radius: 999px; }
+    .trow .amt { font-family: var(--font-money); font-weight: 700; font-size: 13px; min-width: 60px; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .budget-line { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--surface-2); }
+    .budget-line .ring { width: 44px; height: 44px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; font-family: var(--font-money); font-weight: 700; font-size: 12px; color: var(--accent); }
+    .budget-line .tx { font-size: 13.5px; }
+    .budget-line .tx b { font-weight: 700; }
+
+    .insight { display: flex; gap: 12px; padding: 16px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--violet-500) 10%, var(--surface-1)); border: 1px solid color-mix(in srgb, var(--violet-500) 22%, transparent); margin-bottom: 18px; }
+    .insight .ic { width: 34px; height: 34px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--violet-500) 18%, transparent); color: var(--violet-500); display: grid; place-items: center; flex: 0 0 auto; }
+    .insight .tx { font-size: 13px; line-height: 1.5; }
+    .insight .tx b { font-weight: 700; }
+
+    .unassigned { display: flex; align-items: center; gap: 13px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--warning-soft); border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent); margin-bottom: 18px; }
+    .unassigned .ic { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--surface-1); display: grid; place-items: center; color: var(--warning-fg); flex: 0 0 auto; }
+    .unassigned .grow { flex: 1; min-width: 0; }
+    .unassigned .ttl { font-size: 13px; font-weight: 700; }
+    .unassigned .sub { font-size: 12px; color: var(--fg-2); margin-top: 1px; }
+    .unassigned button { border: 0; cursor: pointer; background: var(--warning); color: #3a2a00; font-weight: 700; font-size: 12.5px; padding: 8px 14px; border-radius: var(--radius-pill); white-space: nowrap; }
+
+    .detail-link { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border: 1px solid var(--border-hairline); border-radius: var(--radius-md); background: var(--surface-1); cursor: pointer; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; color: var(--fg-1); }
+    .detail-link:hover { background: var(--surface-2); }
+    .detail-link .material-icons { font-size: 18px; color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div id="demo-bar">
+    <span class="brand"><span class="dot"></span>OW Finance · Análisis · <span style="color:var(--fg-3);font-weight:600">LITE</span></span>
+    <span class="spacer"></span>
+    <a class="xlink" href="Analisis Pro.html"><span class="material-icons" style="font-size:17px">dashboard</span>Ver versión Pro</a>
+    <button class="icon-toggle" id="theme-btn" aria-label="Tema"><span class="material-icons">dark_mode</span></button>
+  </div>
+
+  <div id="app">
+    <div class="top">
+      <span class="ccy-chip">USD</span>
+      <div class="presets" id="presets">
+        <button class="on">Mes</button>
+        <button>Trimestre</button>
+        <button>Año</button>
+      </div>
+      <div class="stepper">
+        <button aria-label="Anterior"><span class="material-icons">chevron_left</span></button>
+        <span class="period">Junio 2026</span>
+        <button aria-label="Siguiente"><span class="material-icons">chevron_right</span></button>
+      </div>
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:10px">En qué se fue</div>
+
+    <!-- Hero hook -->
+    <div class="hero">
+      <div class="lead">En <b>junio</b> hiciste <b>29 movimientos</b>. Gastaste</div>
+      <div class="big"><span class="unit">$</span>162.26</div>
+      <div class="row">
+        <span class="delta down"><span class="material-icons" style="font-size:17px">trending_down</span>18% menos que mayo</span>
+        <span class="muted">Ingresos del mes · <b style="color:var(--income-fg);font-family:var(--font-money)">$17.79M</b></span>
+      </div>
+    </div>
+
+    <!-- Sin asignar -->
+    <div class="unassigned">
+      <div class="ic"><span class="material-icons">savings</span></div>
+      <div class="grow">
+        <div class="ttl">Tienes $17,787,042.81 sin asignar a un cántaro</div>
+        <div class="sub">Un ingreso grande entró sin repartir. Asígnalo para que tu análisis cuadre.</div>
+      </div>
+      <button>Asignar</button>
+    </div>
+
+    <!-- Donut: where it went -->
+    <div class="card">
+      <div class="t-h3 t-h3">¿En qué se fue?</div>
+      <div class="desc">Tu gasto del mes, por cántaro.</div>
+      <div class="donut-wrap">
+        <div class="donut" id="donut"><div class="hole"><div class="h-lbl">Gastos</div><div class="h-amt">$162.26</div><div class="h-sub">7 cántaros</div></div></div>
+        <div class="toplist" id="toplist"></div>
+      </div>
+    </div>
+
+    <!-- One insight -->
+    <div class="insight">
+      <div class="ic"><span class="material-icons">bolt</span></div>
+      <div class="tx">El <b>57%</b> de tu gasto fue en <b>Necesidades básicas</b> y <b>Ocio / Diversión</b>. Si quieres mover la aguja este mes, ahí está el foco.</div>
+    </div>
+
+    <!-- Light budget pulse -->
+    <div class="card">
+      <div class="t-h3">Tu presupuesto</div>
+      <div class="desc">Cómo vas contra lo que asignaste este mes.</div>
+      <div class="budget-line">
+        <div class="ring" id="budgetRing">51%</div>
+        <div class="tx">Vas al <b>51%</b> de lo asignado ($162.26 de $267.00). <b style="color:var(--expense-fg)">Donaciones</b> ya se pasó del límite.</div>
+      </div>
+    </div>
+
+    <button class="detail-link" onclick="window.location.href='Analisis Pro.html#mezcla'">
+      <span class="material-icons">tune</span>Ver detalle completo en modo Pro
+    </button>
+  </div>
+
+  <script>
+    const JARS = [
+      { name:'Necesidades básicas', spent:45.40, color:'var(--c-needs)' },
+      { name:'Ocio / Diversión',    spent:37.48, color:'var(--c-fun)' },
+      { name:'Donaciones',          spent:26.17, color:'var(--c-give)' },
+      { name:'Hogar cómodo',        spent:24.26, color:'var(--c-home)' },
+      { name:'Sociales',            spent:11.32, color:'var(--c-social)' },
+      { name:'Salud',               spent:9.92,  color:'var(--c-health)' },
+      { name:'Coche / Auto',        spent:7.71,  color:'var(--c-car)' },
+    ];
+    const TOTAL = JARS.reduce((s,j)=>s+j.spent,0);
+    const fmt = n => '$' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+    // donut
+    let acc = 0; const stops = JARS.map(j => { const a=acc/TOTAL*360; acc+=j.spent; const b=acc/TOTAL*360; return `${j.color} ${a}deg ${b}deg`; });
+    document.getElementById('donut').style.background = `conic-gradient(${stops.join(',')})`;
+
+    // top list
+    const sorted = [...JARS].sort((a,b)=>b.spent-a.spent); const max = sorted[0].spent;
+    document.getElementById('toplist').innerHTML = sorted.map(j => `
+      <div class="trow">
+        <span class="dot" style="background:${j.color}"></span>
+        <span class="nm">${j.name}</span>
+        <span class="bar"><i style="width:${(j.spent/max*100).toFixed(0)}%;background:${j.color}"></i></span>
+        <span class="amt">${fmt(j.spent)}</span>
+      </div>`).join('');
+
+    // center reacts to hover
+    const donut = document.getElementById('donut');
+    const hl = donut.querySelector('.h-lbl'), ha = donut.querySelector('.h-amt'), hs = donut.querySelector('.h-sub');
+    document.querySelectorAll('#toplist .trow').forEach((row,i) => {
+      const j = sorted[i];
+      row.addEventListener('mouseenter', () => { hl.textContent=j.name; ha.textContent=fmt(j.spent); ha.style.color=j.color; hs.textContent=(j.spent/TOTAL*100).toFixed(0)+'% del gasto'; });
+      row.addEventListener('mouseleave', () => { hl.textContent='Gastos'; ha.textContent=fmt(TOTAL); ha.style.color='var(--fg-1)'; hs.textContent='7 cántaros'; });
+    });
+
+    // budget ring (conic)
+    const pct = 51; document.getElementById('budgetRing').style.background = `conic-gradient(var(--accent) ${pct*3.6}deg, var(--surface-3) 0)`;
+    document.getElementById('budgetRing').style.boxShadow = 'inset 0 0 0 4px var(--surface-2)';
+
+    // presets
+    document.getElementById('presets').addEventListener('click', e => {
+      const b = e.target.closest('button'); if(!b) return;
+      document.querySelectorAll('#presets button').forEach(x=>x.classList.toggle('on', x===b));
+    });
+    // theme
+    document.getElementById('theme-btn').addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      document.querySelector('#theme-btn .material-icons').textContent = next==='dark'?'light_mode':'dark_mode';
+    });
+  </script>
+</body>
+</html>

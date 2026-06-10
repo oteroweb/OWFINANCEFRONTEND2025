@@ -7,17 +7,66 @@ export const useUiStore = defineStore('ui', {
     editTransactionId: null as number | null,
     prefillTransactionId: null as number | null,
     prefillTypeSlug: null as string | null,
+    // AI extraction prefill fields
+    prefillAmount: null as number | null,
+    prefillName: null as string | null,
+    prefillDate: null as string | null,
     hideValues: localStorage.getItem('ow_hide_values') === 'true',
+    jarStatus: {
+      totalAvailable: 0,
+      totalAllocated: 0,
+      availabilityPercent: 0,
+      usedPercent: 0,
+      jarCount: 0,
+    } as {
+      totalAvailable: number;
+      totalAllocated: number;
+      availabilityPercent: number;
+      usedPercent: number;
+      jarCount: number;
+    },
   }),
   actions: {
     toggleHideValues() {
       this.hideValues = !this.hideValues;
       localStorage.setItem('ow_hide_values', String(this.hideValues));
     },
+    setJarStatus(payload: {
+      totalAvailable: number;
+      totalAllocated: number;
+      availabilityPercent: number;
+      usedPercent: number;
+      jarCount: number;
+    }) {
+      this.jarStatus = {
+        totalAvailable: Number(payload.totalAvailable || 0),
+        totalAllocated: Number(payload.totalAllocated || 0),
+        availabilityPercent: Number(payload.availabilityPercent || 0),
+        usedPercent: Number(payload.usedPercent || 0),
+        jarCount: Number(payload.jarCount || 0),
+      };
+    },
     openNewTransactionDialog(typeSlug?: string) {
       this.prefillTransactionId = null;
       this.editTransactionId = null;
       this.prefillTypeSlug = typeSlug ?? null;
+      this.prefillAmount = null;
+      this.prefillName = null;
+      this.prefillDate = null;
+      this.showDialogNewTransaction = true;
+    },
+    openNewTransactionDialogWithAi(payload: {
+      typeSlug?: string | null;
+      amount?: number | null;
+      name?: string | null;
+      date?: string | null;
+    }) {
+      this.prefillTransactionId = null;
+      this.editTransactionId = null;
+      this.prefillTypeSlug = payload.typeSlug ?? null;
+      this.prefillAmount = payload.amount ?? null;
+      this.prefillName = payload.name ?? null;
+      this.prefillDate = payload.date ?? null;
       this.showDialogNewTransaction = true;
     },
     closeNewTransactionDialog() {

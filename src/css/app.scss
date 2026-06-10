@@ -1,1 +1,127 @@
 // app global css in SCSS form
+// Alineado al OW Finance Design System. Los tokens base viven en
+// src/css/design-system.css (importado antes que este archivo).
+// Aquí solo: base del body + aliases que re-mapean las variables --ow-* /
+// --radius-* / glass-* legacy (usadas por componentes existentes) a tokens DS.
+// Reglas DS: fondo plano (sin gradientes), navy primary, Satoshi/DM Sans,
+// sin bordes 1px dominantes, sin glass en Lite desktop.
+
+// CAPA DE TEMA — punto único de configuración (src/css/theme.scss).
+// emit-theme() sobrescribe --brand-*/--ow-color-*/--font-* con el preset
+// elegido ($brand-preset / $font-preset). Se emite UNA vez aquí (app.scss
+// se carga una sola vez por quasar.config.ts), no por componente.
+@use 'theme' as theme;
+@include theme.emit-theme;
+
+body {
+  font-family: var(--font-body);
+  letter-spacing: -0.01em;
+  background: var(--bg-canvas);
+  color: var(--fg-1);
+}
+
+:root {
+  // Radii: alias legacy -> escala DS (--radius-xs/sm/md/lg/xl/pill viven en design-system.css)
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-round: var(--radius-pill);
+
+  // Re-mapeo de variables --ow-* legacy a tokens del Design System.
+  // Los componentes que ya consumen estas variables adoptan navy/superficies DS sin tocarlos.
+  --ow-color-primary: var(--brand-primary);
+  --ow-color-primary-strong: var(--brand-primary-hover);
+  --ow-color-secondary: var(--navy-600);
+  --ow-color-accent: var(--info);
+  --ow-text-primary: var(--fg-1);
+  --ow-text-muted: var(--fg-2);
+  --ow-surface-base: var(--surface-1);
+  --ow-surface-soft: var(--surface-2);
+  --ow-surface-strong: var(--brand-primary);
+  --ow-surface-border: transparent; // DS: sin bordes 1px dominantes
+  --ow-surface-border-strong: transparent;
+  --ow-shadow-soft: var(--shadow-card);
+  --ow-shadow-strong: var(--shadow-float);
+  // Header Lite: superficie navy plana (no gradiente cyan/teal)
+  --ow-shell-header-bg: var(--brand-primary);
+  --ow-shell-footer-bg: var(--surface-1);
+
+  // Glass (legacy): permitido SOLO en overlays/popover y hero modals mobile.
+  --glass-bg: var(--glass-bg, rgba(255, 255, 255, 0.92));
+  --glass-border: transparent;
+  --glass-shadow: var(--shadow-popover);
+}
+
+html,
+body,
+#q-app {
+  min-height: 100%;
+}
+
+// Panel "glass" legacy -> superficie plana DS por defecto (sin glass en chrome).
+// El blur real queda reservado a .glass-overlay (popover/menu) y hero modals mobile.
+.glass-panel {
+  background: var(--surface-1) !important;
+  border: none !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-card) !important;
+  transition:
+    box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
+}
+
+.glass-panel:hover {
+  box-shadow: var(--shadow-hover) !important;
+}
+
+// Overlay con blur permitido por el DS (menú expandido / popover).
+.glass-overlay {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-popover) !important;
+}
+
+.shell-surface {
+  border: none;
+  box-shadow: var(--shadow-card);
+}
+
+.shell-surface--header {
+  background: var(--ow-shell-header-bg);
+  color: var(--fg-on-brand);
+  box-shadow: var(--shadow-float);
+}
+
+.shell-surface--panel {
+  background: var(--surface-1);
+}
+
+.shell-surface--subtle {
+  background: var(--surface-2);
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all var(--dur-slow) var(--ease-out);
+}
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.q-btn {
+  border-radius: var(--radius-pill);
+  text-transform: none !important;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.q-btn--round {
+  border-radius: 50% !important;
+}

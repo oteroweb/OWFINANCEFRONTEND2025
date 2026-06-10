@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue';
 import { useTransactionsStore, type Transaction } from 'stores/transactions';
 import { useTransactionTypesStore, type TransactionType } from 'stores/transactionTypes';
+import { useAuthStore } from 'stores/auth';
 import { api } from 'boot/axios';
 
 export interface TransactionFormState {
@@ -24,6 +25,8 @@ export interface UseTransactionFormOptions {
 export function useTransactionForm() {
   const tsStore = useTransactionsStore();
   const ttypes = useTransactionTypesStore();
+  const authStore = useAuthStore();
+  const isLiteMode = computed(() => (authStore.settings?.layout_mode ?? authStore.user?.layout_mode) === 'lite');
 
   const form = ref<TransactionFormState>(initialForm());
   // Flag para excluir la transacción del balance agregado de cuentas
@@ -138,6 +141,11 @@ export function useTransactionForm() {
         allAccounts.value = mapped;
         accountOptions.value = mapped.slice();
       accountsLoaded = true;
+      // Lite: auto-assign first account as implicit wallet
+      if (isLiteMode.value && !form.value.account_id && mapped.length > 0) {
+        form.value.account_id = mapped[0]!.id;
+        form.value.account_from_id = mapped[0]!.id;
+      }
     } catch (e) {
       console.warn('Error cargando cuentas', e);
     }
@@ -245,12 +253,20 @@ export function useTransactionForm() {
     if (dateStr.includes('T')) dateStr = dateStr.replace('T', ' ');
     if (dateStr.length === 16) dateStr += ':00';
 
+    // Lite: si no hay cuenta asignada, intentar asignar la primera disponible
+    if (isLiteMode.value && !form.value.account_id && !isTransferType) {
+      await ensureAccountsLoaded();
+      if (allAccounts.value.length === 0) {
+        throw new Error('Crea una cuenta primero para registrar transacciones.');
+      }
+    }
+
     // Validaciones mínimas
     if (isTransferType) {
       if (!form.value.account_from_id || !form.value.account_to_id) throw new Error('Cuenta origen y destino requeridas');
       if (!form.value.amount || form.value.amount <= 0) throw new Error('El importe debe ser positivo');
     } else {
-      if (!form.value.account_id) throw new Error('Cuenta requerida');
+      if (!form.value.account_id) throw new Error('Selecciona una cuenta para continuar.');
       if (!form.value.amount || form.value.amount === 0) throw new Error('Monto requerido');
     }
 
@@ -324,6 +340,7 @@ export function useTransactionForm() {
     onAccountFilter,
     ensureAccountsLoaded,
     reloadAccounts,
+    isLiteMode,
     isTransfer,
     showRateInput,
     rateLabel,

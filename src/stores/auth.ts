@@ -57,20 +57,27 @@ interface User {
     updated_at?: string
   }
   currency?: Currency | null
+  avatar?: string | null
+  layout_mode?: 'lite' | 'pro' | 'legacy' | null
   // Extra collections added by login payload
   accounts?: Array<Record<string, unknown>>
   currency_rates?: UserCurrencyRate[]
   current_currency_rates?: UserCurrencyRate[]
   rates?: UserRateEntry[]
-  role_slug?: string
   role_name?: string
 }
 
+export interface UserSetting {
+  layout_mode: 'lite' | 'pro' | 'legacy' | null;
+  has_seen_onboarding: boolean;
+  preferences: Record<string, unknown> | null;
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: null as string | null,
-    user: null as User | null
+    user: null as User | null,
+    settings: null as UserSetting | null,
   }),
   getters: {
     isLoggedIn: (state) => !!state.token,
@@ -80,40 +87,80 @@ export const useAuthStore = defineStore('auth', {
     defaultCurrency: (state): Currency | null => state.user?.currency || null,
   },
   actions: {
-    async login(email: string, password: string) {
+    async login(email: string, password: string): Promise<{ token: string; user: User; role: string }> {
       try {
-        console.log('🔐 Intentando login:', { 
-          email, 
+        console.log('🔐 Intentando login:', {
+          email,
           apiBaseURL: import.meta.env.VITE_API_BASE_URL,
           endpoint: '/auth/login'
         });
-        
+
         const response = await api.post('/auth/login', {
           email,
           password,
           device_name: 'quasar-spa'
         });
-        
+
         console.log('✅ Respuesta del servidor:', response.status, response.data);
-        // Nueva estructura de respuesta (según ejemplo): token + data (user info & related arrays)
-        const body = response.data as Record<string, unknown>
-        this.token = (body['token'] as string) || null
+        let body: Record<string, unknown>
+        if (typeof response.data === 'string') {
+          const jsonMatch = response.data.match(/\{[\s\S]*\}/)
+          if (!jsonMatch) {
+            throw new Error('Respuesta del servidor no contiene JSON válido')
+          }
+          try {
+            body = JSON.parse(jsonMatch[0])
+          } catch {
+            throw new Error('Error parseando JSON de la respuesta del servidor')
+          }
+        } else {
+          body = response.data as Record<string, unknown>
+        }
+        const token = (body['token'] as string) || ''
         const userRaw = body['data'] as Record<string, unknown> | undefined
         // Map direct to User (mantener shape original del backend sin transformar demasiado)
+        let user: User | null = null
         if (userRaw) {
-          this.user = userRaw as unknown as User
+          user = userRaw as unknown as User
         } else {
           // fallback (legacy) to response.data.user
           const legacy = body['user'] as Record<string, unknown> | undefined
-          this.user = legacy as unknown as User || null
+          user = legacy as unknown as User || null
         }
 
+        if (!token || !user) {
+          throw new Error('Respuesta de login inválida: falta token o user')
+        }
+
+        // Extraer role desde múltiples fuentes posibles del backend
+        let role = ''
+        const topRole = body['role'] as string | undefined
+        if (topRole) {
+          role = topRole
+        } else if (user.role && typeof (user.role as unknown as Record<string, unknown>).slug === 'string') {
+          role = (user.role as unknown as Record<string, unknown>).slug as string
+        } else if (typeof (user as unknown as Record<string, unknown>).role_slug === 'string') {
+          role = (user as unknown as Record<string, unknown>).role_slug as string
+        } else if (typeof (user as unknown as Record<string, unknown>).role_name === 'string') {
+          role = (user as unknown as Record<string, unknown>).role_name as string
+        }
+
+        // Persistir en store
+        this.token = token
+        this.user = user
+
         // Guarda en localStorage para recordar sesión
-        localStorage.setItem('token', this.token || '')
-        localStorage.setItem('user', JSON.stringify(this.user))
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
+        localStorage.setItem('role', role)
 
         // Establece el token en axios para futuras peticiones
-        api.defaults.headers.common.Authorization = `Bearer ${this.token}`
+        api.defaults.headers.common.Authorization = `Bearer ${token}`
+
+        // Carga configuraciones de usuario
+        await this.fetchSettings();
+
+        return { token, user, role }
       } catch (error: unknown) {
         interface AxiosError {
           response?: {
@@ -148,6 +195,20 @@ export const useAuthStore = defineStore('auth', {
         // Silencioso: si falla, mantenemos el user actual
       }
     },
+    /** Carga configuraciones de usuario (layout, onboarding) */
+    async fetchSettings() {
+      if (!this.token) return
+      try {
+        const res = await api.get('/user/settings')
+        const data = res.data?.data as UserSetting
+        if (data) {
+          this.settings = data
+          localStorage.setItem('settings', JSON.stringify(this.settings))
+        }
+      } catch {
+        // Fallback u oculto
+      }
+    },
     /** Refresca únicamente las tasas de moneda del usuario desde /user_currencies */
     async refreshUserCurrencies() {
       if (!this.token || !this.user?.id) return
@@ -168,20 +229,27 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.token = null
       this.user = null
+      this.settings = null
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      localStorage.removeItem('settings')
       delete api.defaults.headers.common.Authorization
     },
 
     loadFromStorage() {
       const token = localStorage.getItem('token')
       const user = localStorage.getItem('user')
+      const settings = localStorage.getItem('settings')
       if (token && user) {
         this.token = token
         try {
           this.user = JSON.parse(user) as User
+          if (settings) {
+            this.settings = JSON.parse(settings) as UserSetting
+          }
         } catch {
           this.user = null
+          this.settings = null
         }
         api.defaults.headers.common.Authorization = `Bearer ${this.token}`
       }
@@ -198,6 +266,17 @@ export const useAuthStore = defineStore('auth', {
       const inAll = (this.user.currency_rates || []).find(r => r.currency?.code?.toLowerCase() === cc && r.is_current)
       if (inAll && typeof inAll.current_rate === 'number' && inAll.current_rate > 0) return inAll.current_rate
       return null
+    },
+    updateLayoutMode(mode: 'lite' | 'pro' | 'legacy') {
+      if (this.user) {
+        this.user = { ...this.user, layout_mode: mode }
+      }
+      if (this.settings) {
+        this.settings = { ...this.settings, layout_mode: mode }
+      }
+    },
+    setLayoutMode(mode: 'lite' | 'pro' | 'legacy') {
+      this.updateLayoutMode(mode)
     }
   }
 })

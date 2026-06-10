@@ -1,117 +1,60 @@
 <template>
   <q-dialog v-model="ui.showDialogNewTransaction" @hide="resetForm" @show="onDialogShow">
-    <q-card :style="cardStyle" class="q-pa-sm relative-position">
-      <q-card-section class="q-pt-none">
-        <div class="row items-center">
-          <div class="col">
-            <div class="text-h6"></div>
-            <div class="text-caption text-grey-7">Registra ingresos, egresos o transferencias</div>
-          </div>
-          <div class="col-auto">
-            <q-btn dense round flat icon="close" v-close-popup />
-          </div>
+    <q-card :style="cardStyle" class="quick-add-dialog relative-position">
+      <q-card-section class="quick-add-dialog__hero">
+        <div>
+          <div class="text-overline quick-add-dialog__eyebrow">Lite quick add</div>
+          <div class="text-h6 text-weight-bold">{{ dialogHeading }}</div>
+          <div class="text-body2 text-grey-7">{{ dialogSubheading }}</div>
+        </div>
+        <div class="row items-center q-gutter-sm">
+          <q-chip dense color="primary" text-color="white" icon="bolt">
+            {{ selectedTypeLabel }}
+          </q-chip>
+          <q-btn dense round flat icon="close" v-close-popup />
         </div>
       </q-card-section>
-      <q-separator class="q-my-xs" />
+
       <q-card-section class="q-pt-none">
-        <q-form @submit.prevent="saveTransaction">
-          <!-- Tipo -->
-          <q-option-group
+        <q-form @submit.prevent="saveTransaction" class="column q-gutter-md">
+          <q-btn-toggle
             v-model="form.transaction_type_id"
             :options="ttOptions"
-            type="radio"
-            inline
+            spread
+            unelevated
+            no-caps
+            toggle-color="primary"
+            color="white"
+            text-color="primary"
+            class="quick-add-dialog__type-toggle"
           />
 
-          <!-- Categoría de la transacción (simple). Visible también en modo factura como valor por defecto para líneas sin categoría -->
-          <div v-if="!isTransfer" class="row q-col-gutter-sm q-mt-sm">
-            <div class="col">
-              <q-select
-                v-model="simpleCategoryId"
-                :options="txnCategoryOptions"
-                :onFilter="onTxnCategoryFilter"
-                option-value="id"
-                option-label="name"
-                emit-value
-                map-options
+          <div class="row q-col-gutter-sm">
+            <div class="col-12 col-md-4">
+              <q-input
+                v-model.number="form.amount"
+                label="Monto"
+                type="number"
+                step="0.01"
                 filled
-                dense
-                use-input
-                clearable
-                input-debounce="300"
-                label="Categoría de la transacción"
-                @focus="ensureTxnCategoriesLoaded"
+                input-class="text-h5 text-weight-bold"
               />
             </div>
-            <div class="col-auto row items-center q-gutter-xs no-wrap">
-              <q-btn dense outline color="primary" label="Ver todas" @click="openTxnCatsDialog" />
-              <q-icon v-if="isAdvancedAmount" name="info_outline" size="16px" class="text-grey-6">
-                <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
-                  En modo factura esta categoría se usa solo como valor por defecto para las líneas
-                  que no tengan categoría asignada.
-                </q-tooltip>
-              </q-icon>
+            <div class="col-12 col-md-5">
+              <q-input v-model="form.name" label="Concepto" filled />
             </div>
-          </div>
-
-          <!-- Proveedor -->
-          <q-select
-            v-if="!isTransfer"
-            v-model="form.provider_id"
-            :options="providerOptions"
-            :onFilter="onProviderFilter"
-            option-value="id"
-            :option-label="providerLabel"
-            emit-value
-            map-options
-            label="Proveedor"
-            filled
-            dense
-            use-input
-            clearable
-            input-debounce="300"
-            class="q-mt-sm"
-            @focus="ensureProvidersLoaded"
-          >
-            <template #append>
-              <q-btn flat dense icon="add" @click.stop="showAddProviderDialog = true" />
-            </template>
-            <template #no-option="scope">
-              <q-item clickable @click="triggerAddProviderDialog(scope.inputValue)">
-                <q-item-section>Crear nuevo "{{ scope.inputValue }}"</q-item-section>
-              </q-item>
-            </template>
-          </q-select>
-
-          <!-- Concepto y fecha -->
-          <div class="row q-col-gutter-sm q-mt-sm">
-            <div class="col-12 col-sm-6">
-              <q-input v-model="form.name" label="Concepto" filled dense />
-            </div>
-            <div class="col-12 col-sm-6">
+            <div class="col-12 col-md-3">
               <q-input
                 v-model="form.datetime"
                 label="Fecha y hora"
                 type="datetime-local"
                 filled
-                dense
               />
             </div>
           </div>
 
-          <!-- Cuentas (no transfer) -->
-          <div v-if="!isTransfer" class="q-mt-sm">
-            <div class="row items-center">
-              <div class="col">
-                <q-toggle
-                  v-model="isAdvancedPayment"
-                  label="Pago avanzado (múltiples cuentas)"
-                  dense
-                  @update:model-value="onToggleAdvancedPayment"
-                />
-              </div>
-            </div>
-            <div v-if="!isAdvancedPayment">
+          <div v-if="!isTransfer" class="row q-col-gutter-sm">
+            <div v-if="!isAdvancedPayment && !isLiteMode" class="col-12 col-md-7">
               <q-select
                 v-model="form.account_id"
                 :options="accountOptions"
@@ -121,7 +64,6 @@
                 emit-value
                 map-options
                 filled
-                dense
                 use-input
                 clearable
                 input-debounce="300"
@@ -139,16 +81,14 @@
               </q-select>
               <div
                 v-if="form.account_id"
-                class="row items-center q-pt-xs q-pl-xs q-pr-xs text-caption"
+                class="row items-center q-col-gutter-sm q-pt-xs q-px-xs text-caption text-grey-7"
               >
-                <div class="col">
+                <div class="col-auto row items-center no-wrap">
                   <q-spinner v-if="loadingCurrent" size="14px" class="q-mr-xs" />
-                  Saldo actual: {{ currencySymbol }}{{ Number(currentBalance).toFixed(2) }}
+                  <span>Saldo actual: {{ currencySymbol }}{{ Number(currentBalance).toFixed(2) }}</span>
                 </div>
                 <div class="col text-right">
-                  <template v-if="needsRateForAccountBalance"
-                    >Saldo después: requiere tasa</template
-                  >
+                  <template v-if="needsRateForAccountBalance">Saldo después: requiere tasa</template>
                   <template v-else>
                     <span v-if="!isEdit"
                       >Saldo después: {{ currencySymbol }}{{ Number(newBalance).toFixed(2) }}</span
@@ -162,285 +102,117 @@
               </div>
             </div>
 
-            <!-- Advanced Payments -->
-            <div v-else class="q-mt-sm">
-              <q-markup-table dense flat bordered>
-                <thead>
-                  <tr class="text-caption">
-                    <th style="width: 26%">Cuenta</th>
-                    <th style="width: 16%">Monto</th>
-                    <th style="width: 18%">Tasa</th>
-                    <th style="width: 20%">Impuesto</th>
-                    <th style="width: 12%">Resultado</th>
-                    <th style="width: 8%"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(p, i) in payments" :key="i" class="text-caption">
-                    <td>
-                      <q-select
-                        :key="'pay-acc-' + i + '-' + paymentsAccountsKey"
-                        v-model="p.account_id"
-                        :options="paymentRowOptions[i] || paymentAccountOptions(i)"
-                        :onFilter="(val, done) => onPaymentAccountFilter(i, val, done)"
-                        option-value="id"
-                        :option-label="accountLabel"
-                        emit-value
-                        map-options
-                        dense
-                        filled
-                        use-input
-                        clearable
-                        input-debounce="300"
-                        label="Cuenta"
-                        @focus="ensureAccountsLoaded"
-                      />
-                    </td>
-                    <td>
-                      <q-input v-model.number="p.amount" type="number" step="0.01" dense filled />
-                    </td>
-                    <td>
-                      <div class="row items-center no-wrap">
-                        <div class="col">
-                          <q-input
-                            v-model.number="p.rate"
-                            type="number"
-                            step="0.0001"
-                            dense
-                            filled
-                            :label="rowRateLabel(p)"
-                            :disable="!rowNeedsRate(p)"
-                          />
-                        </div>
-                      </div>
-                      <div class="row items-center justify-between q-mt-xs" v-if="rowNeedsRate(p)">
-                        <div class="col-auto">
-                          <q-btn
-                            size="xs"
-                            flat
-                            dense
-                            color="secondary"
-                            icon="history"
-                            :loading="isRowRateLoading(i)"
-                            @click="useCurrentRateForRow(i)"
-                            label="Usar actual"
-                          />
-                        </div>
-                        <div class="col text-right text-caption text-grey-7">
-                          <span v-if="rowRateInfo(i)">
-                            {{ Number(rowRateInfo(i)?.rate || 0).toFixed(4) }} —
-                            {{ rowRateInfo(i)?.date }}
-                          </span>
-                        </div>
-                      </div>
-                      <div class="row items-center q-mt-xs" v-if="rowNeedsRate(p)">
-                        <div class="col-auto">
-                          <q-checkbox
-                            v-model="p.rateMarkCurrent"
-                            dense
-                            label="Marcar como actual"
-                          />
-                        </div>
-                        <div class="col-auto">
-                          <q-checkbox
-                            v-model="p.rateMarkOfficial"
-                            dense
-                            label="Marcar como oficial"
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div class="row items-center q-col-gutter-xs">
-                        <div class="col-auto">
-                          <q-checkbox v-model="p.applyTax" dense />
-                        </div>
-                        <div class="col">
-                          <q-select
-                            v-model="p.tax_id"
-                            :options="taxSelectOptions"
-                            option-value="id"
-                            option-label="name"
-                            emit-value
-                            map-options
-                            dense
-                            filled
-                            clearable
-                            :disable="!p.applyTax"
-                            label="Impuesto"
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td class="text-right">
-                      {{ Number(rowTotalBase(p)).toFixed(2) }}
-                    </td>
-                    <td>
-                      <q-btn
-                        flat
-                        dense
-                        round
-                        icon="close"
-                        color="negative"
-                        @click="removePayment(i)"
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </q-markup-table>
-              <div class="row items-center q-mt-xs">
-                <div class="col-auto">
-                  <q-btn dense flat icon="add" label="Agregar pago" @click="addPayment" />
-                </div>
-                <div class="col text-right text-caption">
-                  <div>
-                    Total pagos ({{ userCurrencyCode || 'Base' }}):
-                    {{ Number(paymentsTotalBase).toFixed(2) }}
-                  </div>
-                  <div v-if="paymentsMismatch" class="text-negative">
-                    Debe coincidir con el monto absoluto ({{
-                      Math.abs(Number(form.amount || 0)).toFixed(2)
-                    }})
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Cuentas (transfer) -->
-          <div v-else class="q-mt-sm">
-            <div class="row q-col-gutter-sm">
-              <div class="col-12 col-sm-6">
-                <q-select
-                  v-model="form.account_from_id"
-                  :options="accountOptions"
-                  :onFilter="onAccountFilter"
-                  option-value="id"
-                  :option-label="accountLabel"
-                  emit-value
-                  map-options
-                  filled
-                  dense
-                  use-input
-                  clearable
-                  input-debounce="300"
-                  label="Cuenta Origen"
-                  @focus="ensureAccountsLoaded"
-                />
-              </div>
-              <div class="col-12 col-sm-6">
-                <q-select
-                  v-model="form.account_to_id"
-                  :options="accountOptions"
-                  :onFilter="onAccountFilter"
-                  option-value="id"
-                  :option-label="accountLabel"
-                  emit-value
-                  map-options
-                  filled
-                  dense
-                  use-input
-                  clearable
-                  input-debounce="300"
-                  label="Cuenta Destino"
-                  @focus="ensureAccountsLoaded"
-                />
-              </div>
-            </div>
-            <div
-              v-if="form.account_from_id"
-              class="row items-center q-pt-xs q-pl-xs q-pr-xs text-caption"
-            >
-              <div class="col">
-                <q-spinner v-if="loadingCurrent" size="14px" class="q-mr-xs" />
-                Origen — Saldo actual: {{ originCurrencySymbol
-                }}{{ Number(currentBalance).toFixed(2) }}
-              </div>
-              <div class="col text-right">
-                <template v-if="needsRateForAccountBalance"
-                  >Origen — después: requiere tasa</template
-                >
-                <template v-else
-                  >Origen — después: {{ originCurrencySymbol
-                  }}{{ Number(newBalance).toFixed(2) }}</template
-                >
-              </div>
-            </div>
-            <div
-              v-if="form.account_to_id"
-              class="row items-center q-pt-xs q-pl-xs q-pr-xs text-caption"
-            >
-              <div class="col">
-                <q-spinner v-if="loadingDest" size="14px" class="q-mr-xs" />
-                Destino — Saldo actual: {{ destCurrencySymbol
-                }}{{ Number(destCurrentBalance).toFixed(2) }}
-              </div>
-              <div class="col text-right">
-                <template v-if="needsRateForDestBalance">Destino — después: requiere tasa</template>
-                <template v-else
-                  >Destino — después: {{ destCurrencySymbol
-                  }}{{ Number(destNewBalance).toFixed(2) }}</template
-                >
-              </div>
-            </div>
-            <div
-              v-if="form.account_from_id && form.account_to_id && form.amount != null"
-              class="q-mt-xs q-pr-xs text-right text-caption text-grey-7"
-            >
-              <div>Importe: {{ originCurrencySymbol }}{{ Number(form.amount).toFixed(2) }}</div>
-              <div>
-                De: {{ originAccount?.name || '—' }} ({{ originAccount?.currencyCode || '—' }}) → A:
-                {{ destAccount?.name || '—' }} ({{ destAccount?.currencyCode || '—' }})
-              </div>
-              <div>
-                <span v-if="!isCrossCurrency">Destino = actual + importe</span>
-                <span v-else>
-                  <span v-if="form.rate && Number(form.rate) > 0">
-                    Destino = actual + (importe {{ transferRateIsMultiply ? '&times;' : '&divide;' }} tasa)
-                  </span>
-                  <span v-else>(falta tasa para calcular)</span>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Monto / Tasa -->
-          <div class="row q-col-gutter-sm q-mt-sm">
-            <div class="col-12 col-sm-4">
-              <q-input
-                v-model.number="form.amount"
-                label="Monto"
-                type="number"
-                step="0.01"
+            <div :class="isAdvancedPayment ? 'col-12 col-md-8' : 'col-12 col-md-5'">
+              <q-select
+                v-model="simpleCategoryId"
+                :options="txnCategoryOptions"
+                :onFilter="onTxnCategoryFilter"
+                option-value="id"
+                option-label="name"
+                emit-value
+                map-options
                 filled
-                dense
+                use-input
+                clearable
+                input-debounce="300"
+                label="Categoría de la transacción"
+                @focus="ensureTxnCategoriesLoaded"
+              />
+              <div class="row items-center justify-between q-px-xs q-pt-xs">
+                <div class="text-caption text-grey-7">
+                  <span v-if="isAdvancedAmount"
+                    >Se usa como categoría por defecto para líneas sin categoría.</span
+                  >
+                  <span v-else>Ayuda a mantener el Home y los cántaros más limpios.</span>
+                </div>
+                <q-btn dense flat color="primary" label="Ver árbol" @click="openTxnCatsDialog" />
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="row q-col-gutter-sm">
+            <div class="col-12 col-md-6">
+              <q-select
+                v-model="form.account_from_id"
+                :options="accountOptions"
+                :onFilter="onAccountFilter"
+                option-value="id"
+                :option-label="accountLabel"
+                emit-value
+                map-options
+                filled
+                use-input
+                clearable
+                input-debounce="300"
+                label="Cuenta origen"
+                @focus="ensureAccountsLoaded"
               />
             </div>
-            <div v-if="showRateInput" class="col-12 col-sm-4">
+            <div class="col-12 col-md-6">
+              <q-select
+                v-model="form.account_to_id"
+                :options="accountOptions"
+                :onFilter="onAccountFilter"
+                option-value="id"
+                :option-label="accountLabel"
+                emit-value
+                map-options
+                filled
+                use-input
+                clearable
+                input-debounce="300"
+                label="Cuenta destino"
+                @focus="ensureAccountsLoaded"
+              />
+            </div>
+            <div
+              v-if="form.account_from_id || form.account_to_id"
+              class="col-12 quick-add-dialog__transfer-preview text-caption text-grey-7"
+            >
+              <div v-if="form.account_from_id" class="row items-center justify-between q-mb-xs">
+                <div class="row items-center no-wrap">
+                  <q-spinner v-if="loadingCurrent" size="14px" class="q-mr-xs" />
+                  <span
+                    >Origen: {{ originCurrencySymbol }}{{ Number(currentBalance).toFixed(2) }}</span
+                  >
+                </div>
+                <div>
+                  <template v-if="needsRateForAccountBalance">Después: requiere tasa</template>
+                  <template v-else
+                    >Después: {{ originCurrencySymbol }}{{ Number(newBalance).toFixed(2) }}</template
+                  >
+                </div>
+              </div>
+              <div v-if="form.account_to_id" class="row items-center justify-between">
+                <div class="row items-center no-wrap">
+                  <q-spinner v-if="loadingDest" size="14px" class="q-mr-xs" />
+                  <span
+                    >Destino: {{ destCurrencySymbol }}{{ Number(destCurrentBalance).toFixed(2) }}</span
+                  >
+                </div>
+                <div>
+                  <template v-if="needsRateForDestBalance">Después: requiere tasa</template>
+                  <template v-else
+                    >Después: {{ destCurrencySymbol }}{{ Number(destNewBalance).toFixed(2) }}</template
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row q-col-gutter-sm items-start">
+            <div v-if="showRateInput" class="col-12 col-md-6">
               <q-input
                 v-model.number="form.rate"
                 :label="rateLabel"
                 type="number"
                 step="0.0001"
                 filled
-                dense
               />
-              <div class="q-mt-xs text-right" v-if="Number(form.rate || 0) > 0">
-                <q-btn
-                  size="xs"
-                  flat
-                  dense
-                  color="primary"
-                  icon="swap_horiz"
-                  @click="invertMainRate"
-                  :label="'Invertir (' + Number(form.rate).toFixed(4) + ')'"
-                />
-              </div>
-              <!-- Rate helpers: use current + show date + mark as current (non-transfer simple) -->
-              <div class="row items-center justify-between q-mt-xs">
+              <div class="row items-center justify-between q-pt-xs">
                 <div class="col-auto">
                   <q-btn
-                    size="xs"
+                    size="sm"
                     flat
                     dense
                     color="secondary"
@@ -451,28 +223,39 @@
                   />
                 </div>
                 <div class="col text-right text-caption text-grey-7">
-                  <span v-if="simpleRateInfo">
-                    Actual: {{ Number(simpleRateInfo.rate).toFixed(4) }} — {{ simpleRateInfo.date }}
-                  </span>
+                  <span v-if="simpleRateInfo"
+                    >Actual: {{ Number(simpleRateInfo.rate).toFixed(4) }} —
+                    {{ simpleRateInfo.date }}</span
+                  >
                 </div>
               </div>
-              <div class="row items-center q-mt-xs">
-                <div class="col-auto">
-                  <q-checkbox v-model="form.rateMarkCurrent" dense label="Marcar como actual" />
-                </div>
-                <div class="col-auto">
-                  <q-checkbox v-model="form.rateMarkOfficial" dense label="Marcar como oficial" />
-                </div>
+              <div class="row items-center q-gutter-md q-pt-xs">
+                <q-checkbox v-model="form.rateMarkCurrent" dense label="Marcar como actual" />
+                <q-checkbox v-model="form.rateMarkOfficial" dense label="Marcar como oficial" />
+              </div>
+              <div class="q-mt-xs text-right" v-if="Number(form.rate || 0) > 0">
+                <q-btn
+                  size="sm"
+                  flat
+                  dense
+                  color="primary"
+                  icon="swap_horiz"
+                  @click="invertMainRate"
+                  :label="'Invertir (' + Number(form.rate).toFixed(4) + ')'"
+                />
               </div>
             </div>
-            <div class="col-12 col-sm-4 flex items-center text-caption">
-              <div>
-                <div class="row items-center no-wrap">
-                  <div class="text-bold q-mr-xs">{{ resultLabel }}</div>
+
+            <div :class="showRateInput ? 'col-12 col-md-6' : 'col-12'">
+              <div class="quick-add-dialog__result shell-surface shell-surface--subtle">
+                <div class="row items-center no-wrap q-gutter-xs">
+                  <div class="text-subtitle2 text-weight-medium">{{ resultLabel }}</div>
                   <q-icon name="info_outline" size="16px" class="text-grey-6">
                     <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
                       <template v-if="isTransfer && isCrossCurrency">
-                        <span v-if="transferRateIsMultiply">Conversión: monto origen &times; tasa = monto destino.</span>
+                        <span v-if="transferRateIsMultiply"
+                          >Conversión: monto origen &times; tasa = monto destino.</span
+                        >
                         <span v-else>Conversión: monto origen &divide; tasa = monto destino.</span>
                       </template>
                       <template v-else>
@@ -482,175 +265,337 @@
                     </q-tooltip>
                   </q-icon>
                 </div>
-                <div>
-                  {{ userCurrencySymbol || resultCurrencySymbol
-                  }}{{ Number(resultTotal).toFixed(2) }}
+                <div class="text-h6 text-weight-bold q-mt-xs">
+                  {{ userCurrencySymbol || resultCurrencySymbol }}{{ Number(resultTotal).toFixed(2) }}
                 </div>
-                <div v-if="applyRateToTotal" class="text-grey-7">
-                  Original: {{ selectedAccount?.currencySymbol || ''
-                  }}{{ Math.abs(Number(form.amount || 0)).toFixed(2) }}
+                <div v-if="applyRateToTotal" class="text-caption text-grey-7 q-mt-xs">
+                  <template v-if="!isAdvancedAmount">
+                    Original: {{ selectedAccount?.currencySymbol || originCurrencySymbol || '' }}{{
+                      Math.abs(Number(form.amount || 0)).toFixed(2)
+                    }}
+                  </template>
+                  <template v-else>
+                    Subtotal original: {{ selectedAccount?.currencySymbol || '' }}{{
+                      Number(invoiceSubtotal).toFixed(2)
+                    }}
+                  </template>
+                </div>
+                <div
+                  v-if="isTransfer && form.account_from_id && form.account_to_id && form.amount != null"
+                  class="text-caption text-grey-7 q-mt-xs"
+                >
+                  {{ originAccount?.name || '—' }} ({{ originAccount?.currencyCode || '—' }}) →
+                  {{ destAccount?.name || '—' }} ({{ destAccount?.currencyCode || '—' }})
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Incluir en balance -->
-          <div class="row q-mt-xs">
-            <div class="col">
-              <q-toggle v-model="includeInBalance" label="Incluir en balance de cuentas" dense />
-            </div>
-          </div>
-
-          <!-- Archivo URL -->
-          <div class="row q-col-gutter-sm q-mt-sm">
-            <div class="col-12">
-              <q-input v-model="form.url_file" label="Archivo (URL)" dense filled />
-            </div>
-          </div>
-
-          <!-- Avanzado (detalle factura) -->
-          <div v-if="!isTransfer" class="row items-center q-mt-sm">
-            <div class="col-auto">
-              <q-toggle v-model="isAdvancedAmount" label="Detalle (factura)" dense />
-            </div>
-            <div class="col text-caption text-grey-7" v-if="isAdvancedAmount">
-              El monto se calcula desde las líneas
-            </div>
-          </div>
-          <div v-if="!isTransfer && isAdvancedAmount" class="q-mt-xs">
-            <q-markup-table dense flat bordered class="invoice-table">
-              <thead>
-                <tr class="text-caption">
-                  <th style="width: 22%">Categoría</th>
-                  <th style="width: 28%">Producto</th>
-                  <th style="width: 10%">Cant</th>
-                  <th style="width: 15%">Monto</th>
-                  <th style="width: 10%">Exento</th>
-                  <th style="width: 10%">Total</th>
-                  <th style="width: 5%"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, i) in invoiceItems" :key="i" class="text-caption">
-                  <td>
-                    <q-select
-                      v-model="row.categoryId"
-                      :options="itemCategoryOptions"
-                      :onFilter="onItemCategoryFilter"
-                      option-value="id"
-                      option-label="name"
-                      emit-value
-                      map-options
-                      dense
-                      filled
-                      use-input
-                      clearable
-                      input-debounce="300"
-                      label="Categoría"
-                      @focus="ensureItemCategoriesLoaded"
-                    />
-                  </td>
-                  <td><q-input v-model="row.item" dense filled label="Producto" /></td>
-                  <td><q-input v-model.number="row.quantity" type="number" dense filled /></td>
-                  <td>
-                    <q-input
-                      v-model.number="row.unitPrice"
-                      type="number"
-                      step="0.01"
-                      dense
-                      filled
-                    />
-                  </td>
-                  <td class="text-center">
-                    <q-checkbox v-model="row.exempt" dense @update:model-value="onToggleExempt" />
-                  </td>
-                  <td class="text-right">{{ lineTotal(row).toFixed(2) }}</td>
-                  <td>
-                    <q-btn
-                      flat
-                      dense
-                      round
-                      icon="close"
-                      color="negative"
-                      @click="removeInvoiceRow(i)"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </q-markup-table>
-            <div class="row items-center q-mt-xs">
-              <div class="col-auto">
-                <q-btn dense flat icon="add" label="Agregar línea" @click="addInvoiceRow" />
-              </div>
-              <div class="col text-right text-caption">
-                <div>Subtotal (sin IVA): {{ Number(invoiceBaseSubtotal).toFixed(2) }}</div>
-                <div>
-                  Impuesto
-                  <span v-if="iva16">(IVA {{ Number(iva16.percent).toFixed(0) }}%)</span>:
-                  {{ Number(invoiceTaxTotal).toFixed(2) }}
+          <q-expansion-item
+            v-model="showAdvancedOptions"
+            switch-toggle-side
+            dense-toggle
+            expand-separator
+            icon="tune"
+            label="Más opciones y detalle"
+            header-class="quick-add-dialog__expansion-header"
+            class="quick-add-dialog__expansion"
+          >
+            <div class="column q-gutter-md q-pt-sm">
+              <div v-if="!isTransfer" class="row q-col-gutter-sm">
+                <div class="col-12 col-md-7">
+                  <q-select
+                    v-model="form.provider_id"
+                    :options="providerOptions"
+                    :onFilter="onProviderFilter"
+                    option-value="id"
+                    :option-label="providerLabel"
+                    emit-value
+                    map-options
+                    label="Proveedor"
+                    filled
+                    use-input
+                    clearable
+                    input-debounce="300"
+                    @focus="ensureProvidersLoaded"
+                  >
+                    <template #append>
+                      <q-btn flat dense icon="add" @click.stop="showAddProviderDialog = true" />
+                    </template>
+                    <template #no-option="scope">
+                      <q-item clickable @click="triggerAddProviderDialog(scope.inputValue)">
+                        <q-item-section>Crear nuevo "{{ scope.inputValue }}"</q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
                 </div>
-                <div>Subtotal con IVA: {{ Number(invoiceSubtotal).toFixed(2) }}</div>
-              </div>
-            </div>
-            <div class="row q-mt-xs">
-              <div class="col text-right text-negative text-caption" v-if="advancedMismatch">
-                El subtotal ({{ Number(invoiceSubtotal).toFixed(2) }}) no coincide con el monto ({{
-                  Math.abs(Number(form.amount || 0)).toFixed(2)
-                }}).
-              </div>
-            </div>
-            <div class="row items-center q-mt-xs text-caption">
-              <div class="col text-right">
-                <div class="row items-center justify-end no-wrap q-gutter-xs">
-                  <div class="text-bold">{{ resultLabel }}</div>
-                  <q-icon name="info_outline" size="16px" class="text-grey-6">
-                    <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
-                      <template v-if="isTransfer && isCrossCurrency">
-                        <span v-if="transferRateIsMultiply">Conversión: monto origen &times; tasa = monto destino.</span>
-                        <span v-else>Conversión: monto origen &divide; tasa = monto destino.</span>
-                      </template>
-                      <template v-else>
-                        Conversión: subtotal con IVA / tasa = monto en moneda base.
-                      </template>
-                      <div v-if="applyRateToTotal">Tasa aplicada al total.</div>
-                      <div v-else>No se aplica tasa (misma moneda).</div>
-                    </q-tooltip>
-                  </q-icon>
-                  <q-btn
-                    v-if="applyRateToTotal"
-                    size="xs"
-                    flat
-                    dense
-                    color="primary"
-                    icon="swap_horiz"
-                    @click="invertMainRate"
-                    :label="'1/' + Number(form.rate || 0).toFixed(4)"
+                <div class="col-12 col-md-5">
+                  <q-toggle
+                    v-model="isAdvancedPayment"
+                    label="Pago avanzado (múltiples cuentas)"
+                    @update:model-value="onToggleAdvancedPayment"
                   />
                 </div>
-                <div>
-                  {{ userCurrencySymbol || resultCurrencySymbol
-                  }}{{ Number(resultTotal).toFixed(2) }}
+              </div>
+
+              <div v-if="!isTransfer && isAdvancedPayment" class="q-mt-xs">
+                <q-markup-table dense flat bordered>
+                  <thead>
+                    <tr class="text-caption">
+                      <th style="width: 26%">Cuenta</th>
+                      <th style="width: 16%">Monto</th>
+                      <th style="width: 18%">Tasa</th>
+                      <th style="width: 20%">Impuesto</th>
+                      <th style="width: 12%">Resultado</th>
+                      <th style="width: 8%"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(p, i) in payments" :key="i" class="text-caption">
+                      <td>
+                        <q-select
+                          :key="'pay-acc-' + i + '-' + paymentsAccountsKey"
+                          v-model="p.account_id"
+                          :options="paymentRowOptions[i] || paymentAccountOptions(i)"
+                          :onFilter="(val, done) => onPaymentAccountFilter(i, val, done)"
+                          option-value="id"
+                          :option-label="accountLabel"
+                          emit-value
+                          map-options
+                          dense
+                          filled
+                          use-input
+                          clearable
+                          input-debounce="300"
+                          label="Cuenta"
+                          @focus="ensureAccountsLoaded"
+                        />
+                      </td>
+                      <td>
+                        <q-input v-model.number="p.amount" type="number" step="0.01" dense filled />
+                      </td>
+                      <td>
+                        <div class="row items-center no-wrap">
+                          <div class="col">
+                            <q-input
+                              v-model.number="p.rate"
+                              type="number"
+                              step="0.0001"
+                              dense
+                              filled
+                              :label="rowRateLabel(p)"
+                              :disable="!rowNeedsRate(p)"
+                            />
+                          </div>
+                        </div>
+                        <div class="row items-center justify-between q-mt-xs" v-if="rowNeedsRate(p)">
+                          <div class="col-auto">
+                            <q-btn
+                              size="xs"
+                              flat
+                              dense
+                              color="secondary"
+                              icon="history"
+                              :loading="isRowRateLoading(i)"
+                              @click="useCurrentRateForRow(i)"
+                              label="Usar actual"
+                            />
+                          </div>
+                          <div class="col text-right text-caption text-grey-7">
+                            <span v-if="rowRateInfo(i)">
+                              {{ Number(rowRateInfo(i)?.rate || 0).toFixed(4) }} —
+                              {{ rowRateInfo(i)?.date }}
+                            </span>
+                          </div>
+                        </div>
+                        <div class="row items-center q-mt-xs" v-if="rowNeedsRate(p)">
+                          <div class="col-auto">
+                            <q-checkbox
+                              v-model="p.rateMarkCurrent"
+                              dense
+                              label="Marcar como actual"
+                            />
+                          </div>
+                          <div class="col-auto">
+                            <q-checkbox
+                              v-model="p.rateMarkOfficial"
+                              dense
+                              label="Marcar como oficial"
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="row items-center q-col-gutter-xs">
+                          <div class="col-auto">
+                            <q-checkbox v-model="p.applyTax" dense />
+                          </div>
+                          <div class="col">
+                            <q-select
+                              v-model="p.tax_id"
+                              :options="taxSelectOptions"
+                              option-value="id"
+                              option-label="name"
+                              emit-value
+                              map-options
+                              dense
+                              filled
+                              clearable
+                              :disable="!p.applyTax"
+                              label="Impuesto"
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td class="text-right">
+                        {{ Number(rowTotalBase(p)).toFixed(2) }}
+                      </td>
+                      <td>
+                        <q-btn
+                          flat
+                          dense
+                          round
+                          icon="close"
+                          color="negative"
+                          @click="removePayment(i)"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </q-markup-table>
+                <div class="row items-center q-mt-xs">
+                  <div class="col-auto">
+                    <q-btn dense flat icon="add" label="Agregar pago" @click="addPayment" />
+                  </div>
+                  <div class="col text-right text-caption">
+                    <div>
+                      Total pagos ({{ userCurrencyCode || 'Base' }}):
+                      {{ Number(paymentsTotalBase).toFixed(2) }}
+                    </div>
+                    <div v-if="paymentsMismatch" class="text-negative">
+                      Debe coincidir con el monto absoluto ({{
+                        Math.abs(Number(form.amount || 0)).toFixed(2)
+                      }})
+                    </div>
+                  </div>
                 </div>
-                <div v-if="applyRateToTotal" class="text-grey-7">
-                  Subtotal original: {{ selectedAccount?.currencySymbol || ''
-                  }}{{ Number(invoiceSubtotal).toFixed(2) }}
+              </div>
+
+              <div v-if="!isTransfer" class="row items-center q-col-gutter-sm">
+                <div class="col-auto">
+                  <q-toggle v-model="isAdvancedAmount" label="Detalle (factura)" />
+                </div>
+                <div class="col text-caption text-grey-7" v-if="isAdvancedAmount">
+                  El monto se calcula desde las líneas y debe coincidir con el total.
+                </div>
+              </div>
+
+              <div v-if="!isTransfer && isAdvancedAmount" class="q-mt-xs">
+                <q-markup-table dense flat bordered class="invoice-table">
+                  <thead>
+                    <tr class="text-caption">
+                      <th style="width: 22%">Categoría</th>
+                      <th style="width: 28%">Producto</th>
+                      <th style="width: 10%">Cant</th>
+                      <th style="width: 15%">Monto</th>
+                      <th style="width: 10%">Exento</th>
+                      <th style="width: 10%">Total</th>
+                      <th style="width: 5%"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, i) in invoiceItems" :key="i" class="text-caption">
+                      <td>
+                        <q-select
+                          v-model="row.categoryId"
+                          :options="itemCategoryOptions"
+                          :onFilter="onItemCategoryFilter"
+                          option-value="id"
+                          option-label="name"
+                          emit-value
+                          map-options
+                          dense
+                          filled
+                          use-input
+                          clearable
+                          input-debounce="300"
+                          label="Categoría"
+                          @focus="ensureItemCategoriesLoaded"
+                        />
+                      </td>
+                      <td><q-input v-model="row.item" dense filled label="Producto" /></td>
+                      <td><q-input v-model.number="row.quantity" type="number" dense filled /></td>
+                      <td>
+                        <q-input
+                          v-model.number="row.unitPrice"
+                          type="number"
+                          step="0.01"
+                          dense
+                          filled
+                        />
+                      </td>
+                      <td class="text-center">
+                        <q-checkbox v-model="row.exempt" dense @update:model-value="onToggleExempt" />
+                      </td>
+                      <td class="text-right">{{ lineTotal(row).toFixed(2) }}</td>
+                      <td>
+                        <q-btn
+                          flat
+                          dense
+                          round
+                          icon="close"
+                          color="negative"
+                          @click="removeInvoiceRow(i)"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </q-markup-table>
+                <div class="row items-center q-mt-xs">
+                  <div class="col-auto">
+                    <q-btn dense flat icon="add" label="Agregar línea" @click="addInvoiceRow" />
+                  </div>
+                  <div class="col text-right text-caption">
+                    <div>Subtotal (sin IVA): {{ Number(invoiceBaseSubtotal).toFixed(2) }}</div>
+                    <div>
+                      Impuesto <span v-if="iva16">(IVA {{ Number(iva16.percent).toFixed(0) }}%)</span>:
+                      {{ Number(invoiceTaxTotal).toFixed(2) }}
+                    </div>
+                    <div>Subtotal con IVA: {{ Number(invoiceSubtotal).toFixed(2) }}</div>
+                  </div>
+                </div>
+                <div class="row q-mt-xs">
+                  <div class="col text-right text-negative text-caption" v-if="advancedMismatch">
+                    El subtotal ({{ Number(invoiceSubtotal).toFixed(2) }}) no coincide con el monto ({{
+                      Math.abs(Number(form.amount || 0)).toFixed(2)
+                    }}).
+                  </div>
+                </div>
+              </div>
+
+              <div class="row q-col-gutter-sm">
+                <div class="col-12 col-md-6">
+                  <q-toggle v-model="includeInBalance" label="Incluir en balance de cuentas" />
+                </div>
+                <div class="col-12 col-md-6">
+                  <q-input v-model="form.url_file" label="Archivo (URL)" dense filled />
                 </div>
               </div>
             </div>
-          </div>
+          </q-expansion-item>
 
-          <!-- Acciones -->
-          <div class="row justify-end q-gutter-sm q-mt-md">
+          <div class="row justify-end q-gutter-sm q-pt-sm">
             <q-btn flat label="Cancelar" v-close-popup />
             <q-btn
               color="primary"
-              label="Guardar"
+              :label="saveButtonLabel"
               type="submit"
               :disable="isSaveDisabled || (!isTransfer && isAdvancedPayment && paymentsMismatch)"
             />
           </div>
         </q-form>
       </q-card-section>
+
       <q-inner-loading :showing="dialogLoading">
         <q-spinner size="32px" />
       </q-inner-loading>
@@ -797,6 +742,7 @@ import { useTransactionTypesStore, type TransactionType } from 'stores/transacti
 import { usePeriodStore } from 'stores/period';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
+import { useI18n } from 'vue-i18n';
 import CategoriesTree from './CategoriesTree.vue';
 import { useTransactionForm } from 'src/composables/useTransactionForm';
 defineOptions({ name: 'TransactionCreateDialog' });
@@ -810,6 +756,7 @@ const tsStore = useTransactionsStore();
 const ttypes = useTransactionTypesStore();
 const periodStore = usePeriodStore();
 const $q = useQuasar();
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -879,6 +826,7 @@ const {
   onAccountFilter,
   ensureAccountsLoaded,
   reloadAccounts,
+  isLiteMode,
 } = useTransactionForm();
 void loadTransactionTypes();
 
@@ -1257,7 +1205,7 @@ async function fetchAvailableTaxes() {
     // Optional: small debug note
     // console.debug('Impuestos cargados:', availableTaxes.value);
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando impuestos' });
+    $q.notify({ type: 'negative', message: t('notify.taxLoadError') });
     availableTaxes.value = [];
   }
 }
@@ -1286,7 +1234,7 @@ async function addProvider() {
   if (!addrTrim) providerErrors.value.address = ['La dirección es requerida'];
   else if (addrTrim.length < 3) providerErrors.value.address = ['Mínimo 3 caracteres'];
   if (Object.keys(providerErrors.value).length) {
-    $q.notify({ type: 'warning', message: 'Completa los campos requeridos' });
+    $q.notify({ type: 'warning', message: t('notify.fieldsRequired') });
     return;
   }
   providerSaving.value = true;
@@ -1300,7 +1248,7 @@ async function addProvider() {
     form.value.provider_id = p.id;
     reloadProviders();
     await ensureProvidersLoaded();
-    $q.notify({ type: 'positive', message: 'Proveedor creado' });
+    $q.notify({ type: 'positive', message: t('notify.providerCreated') });
     resetProviderDialog();
     showAddProviderDialog.value = false;
   } catch (err) {
@@ -1375,7 +1323,7 @@ const allCurrencies = ref<CurrencyOption[]>([]);
 async function addAccountInline() {
   try {
     if (!newAccountCurrency.value || !newAccountType.value) {
-      $q.notify({ type: 'warning', message: 'Selecciona moneda y tipo' });
+      $q.notify({ type: 'warning', message: t('notify.selectCurrencyAndType') });
       return;
     }
     const resp = await api.post('/accounts', {
@@ -1389,9 +1337,9 @@ async function addAccountInline() {
     form.value.account_id = acc.id;
     reloadAccounts();
     await ensureAccountsLoaded();
-    $q.notify({ type: 'positive', message: 'Cuenta creada' });
+    $q.notify({ type: 'positive', message: t('notify.accountCreated') });
   } catch {
-    $q.notify({ type: 'negative', message: 'Error al crear cuenta' });
+    $q.notify({ type: 'negative', message: t('notify.accountCreateError') });
   } finally {
     showAddAccountDialog.value = false;
     newAccountName.value = '';
@@ -1436,7 +1384,7 @@ async function ensureAccountTypesLoaded() {
     accountTypeOptions.value = data;
     accountTypesLoaded = true;
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando tipos de cuenta' });
+    $q.notify({ type: 'negative', message: t('notify.accountTypeError') });
     accountTypesLoaded = false;
   }
 }
@@ -1461,7 +1409,7 @@ async function ensureCurrenciesLoaded() {
     currencyOptions.value = mapped;
     currenciesLoaded = true;
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando monedas' });
+    $q.notify({ type: 'negative', message: t('notify.currencyLoadError') });
     currenciesLoaded = false;
   }
 }
@@ -1599,11 +1547,35 @@ const isSaveDisabled = computed(() => {
   return false;
 });
 
+const showAdvancedOptions = ref(false);
+
+const selectedTypeLabel = computed(() => {
+  const active = ttOptions.value.find((option) => option.value === form.value.transaction_type_id);
+  return active?.label || 'Movimiento';
+});
+
+const dialogHeading = computed(() => {
+  if (isTransfer.value) return 'Mueve dinero entre tus cuentas';
+  return isEdit.value ? 'Actualiza un movimiento en segundos' : 'Agrega un movimiento en segundos';
+});
+
+const dialogSubheading = computed(() => {
+  if (isTransfer.value) {
+    return 'Empieza por el importe y las dos cuentas; el resto queda disponible como apoyo.';
+  }
+  if (isAdvancedPayment.value || isAdvancedAmount.value) {
+    return 'Mantienes el flujo rapido y puedes expandir al detalle cuando haga falta.';
+  }
+  return 'Monto, concepto, cuenta y categoria quedan al frente para un registro Lite.';
+});
+
+const saveButtonLabel = computed(() => (isEdit.value ? 'Guardar cambios' : 'Guardar movimiento'));
+
 // Dynamic card size: widen when advanced (placed after isAdvancedAmount is declared)
 const cardStyle = computed(() =>
-  isAdvancedAmount.value
+  isAdvancedAmount.value || isAdvancedPayment.value
     ? 'min-width: 640px; max-width: 1100px'
-    : 'min-width: 430px; max-width: 860px'
+    : 'min-width: 430px; max-width: 900px'
 );
 
 // ----- Transfer & currency logic -----
@@ -2440,7 +2412,7 @@ async function ensureItemCategoriesLoaded() {
     itemCategoryOptions.value = data || [];
     itemCategoriesLoaded = true;
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando categorías de ítems' });
+    $q.notify({ type: 'negative', message: t('notify.categoryLoadError') });
     itemCategoriesLoaded = false;
   }
 }
@@ -2523,7 +2495,7 @@ async function ensureTxnCategoriesLoaded() {
     allTxnCategoriesTree.value = rootChildren;
     flattenTxnCategories();
   } catch {
-    $q.notify({ type: 'negative', message: 'Error cargando categorías de transacción' });
+    $q.notify({ type: 'negative', message: t('notify.txCategoryLoadError') });
     allTxnCategoriesTree.value = [];
     allTxnCategoriesFlat.value = [];
     txnCategoryOptions.value = [];
@@ -2640,7 +2612,15 @@ watch(
   async (v) => {
     if (v) {
       await Promise.allSettled([ensureAccountsLoaded(), fetchAvailableTaxes()]);
+      showAdvancedOptions.value = true;
     }
+  }
+);
+
+watch(
+  () => isAdvancedAmount.value,
+  (v) => {
+    if (v) showAdvancedOptions.value = true;
   }
 );
 
@@ -2834,6 +2814,24 @@ watch(
       if (matchedType) form.value.transaction_type_id = matchedType.id;
       ui.prefillTypeSlug = null;
     }
+    // AI extraction prefill: amount, name, date from useAiExtraction result
+    if (ui.prefillAmount !== null && ui.prefillAmount !== undefined) {
+      form.value.amount = ui.prefillAmount;
+      ui.prefillAmount = null;
+    }
+    if (ui.prefillName) {
+      form.value.name = ui.prefillName;
+      ui.prefillName = null;
+    }
+    if (ui.prefillDate) {
+      // API returns ISO date string (YYYY-MM-DD); convert to datetime-local format
+      const d = new Date(ui.prefillDate);
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        form.value.datetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+      ui.prefillDate = null;
+    }
     if (ui.prefillTransactionId && Number.isFinite(ui.prefillTransactionId)) {
       // Opcional: precargar datos reales de la transacción
       await prefillFromId(Number(ui.prefillTransactionId));
@@ -2843,10 +2841,16 @@ watch(
     }
     try {
       await ensureAccountsLoaded();
+      // Lite: billetera implícita — auto-asigna la primera cuenta sin exponer selectores
+      if (isLiteMode.value && allAccounts.value.length > 0) {
+        const firstId = allAccounts.value[0]!.id;
+        if (!form.value.account_id) form.value.account_id = firstId;
+        if (!form.value.account_from_id) form.value.account_from_id = firstId;
+      }
       const ids = Array.isArray(tsStore.selectedAccountIds)
         ? tsStore.selectedAccountIds.filter((v) => v !== null && v !== undefined)
         : [];
-      if (ids.length === 1) {
+      if (!isLiteMode.value && ids.length === 1) {
         const accIdNum = Number(ids[0]);
         if (Number.isFinite(accIdNum)) {
           const ty = ttypes.types.find((t) => t.id === form.value.transaction_type_id);
@@ -2910,26 +2914,26 @@ function saveTransaction() {
   // Concepto (name) requerido por backend
   const nameTrim = (form.value.name || '').trim();
   if (!nameTrim) {
-    $q.notify({ type: 'warning', message: 'Concepto es requerido' });
+    $q.notify({ type: 'warning', message: t('notify.conceptRequired') });
     return;
   }
   if (slug === 'transfer') {
     if (!form.value.account_from_id || !form.value.account_to_id) {
-      $q.notify({ type: 'warning', message: 'Selecciona cuenta origen y destino' });
+      $q.notify({ type: 'warning', message: t('notify.selectOriginDest') });
       return;
     }
     if (!form.value.amount || form.value.amount <= 0) {
-      $q.notify({ type: 'warning', message: 'El importe debe ser positivo' });
+      $q.notify({ type: 'warning', message: t('notify.positiveAmount') });
       return;
     }
     if (isCrossCurrency.value && (!form.value.rate || Number(form.value.rate) <= 0)) {
-      $q.notify({ type: 'warning', message: 'Ingresa la tasa Origen→Destino' });
+      $q.notify({ type: 'warning', message: t('notify.enterRateOriginDest') });
       return;
     }
   } else if ((slug === 'income' || slug === 'expense') && !form.value.account_id) {
     // Si estamos en pagos avanzados, no se requiere cuenta simple (se valida en payments)
     if (!isAdvancedPayment.value) {
-      $q.notify({ type: 'warning', message: 'Selecciona una cuenta' });
+      $q.notify({ type: 'warning', message: t('notify.selectAccount') });
       return;
     }
   }
@@ -2940,7 +2944,7 @@ function saveTransaction() {
       (p) => typeof p?.account_id === 'number' && Number(p?.amount || 0) > 0
     );
     if (validPayments.length === 0) {
-      $q.notify({ type: 'warning', message: 'Agrega al menos un pago válido.' });
+      $q.notify({ type: 'warning', message: t('notify.addValidPayment') });
       return;
     }
     // disallow duplicate accounts
@@ -2948,7 +2952,7 @@ function saveTransaction() {
     for (const p of payments.value) {
       if (typeof p?.account_id === 'number') {
         if (seen.has(p.account_id)) {
-          $q.notify({ type: 'warning', message: 'Cada pago debe usar una cuenta diferente.' });
+          $q.notify({ type: 'warning', message: t('notify.differentPaymentAccounts') });
           return;
         }
         seen.add(p.account_id);
@@ -2957,11 +2961,11 @@ function saveTransaction() {
     for (let i = 0; i < payments.value.length; i++) {
       const p = payments.value[i];
       if (!p) {
-        $q.notify({ type: 'warning', message: `Pago #${i + 1}: fila inválida.` });
+        $q.notify({ type: 'warning', message: t('notify.invalidPaymentRow', { n: i + 1 }) });
         return;
       }
       if (!p.account_id || !p.amount || !(Number(p.amount) > 0)) {
-        $q.notify({ type: 'warning', message: `Pago #${i + 1}: cuenta y monto son requeridos.` });
+        $q.notify({ type: 'warning', message: t('notify.paymentAccountAmountRequired', { n: i + 1 }) });
         return;
       }
       if (rowNeedsRate(p as PaymentRow) && !(Number(p.rate || 0) > 0)) {
@@ -2973,13 +2977,13 @@ function saveTransaction() {
       }
     }
     if (paymentsMismatch.value) {
-      $q.notify({ type: 'warning', message: 'La suma de pagos no coincide con el monto.' });
+      $q.notify({ type: 'warning', message: t('notify.paymentSumMismatch') });
       return;
     }
   }
   // Si se detecta cruce (no transferencia) exigir tasa
   if (showRateInput.value && !(Number(form.value.rate || 0) > 0)) {
-    $q.notify({ type: 'warning', message: 'Ingresa la tasa de cambio' });
+    $q.notify({ type: 'warning', message: t('notify.enterRate') });
     return;
   }
   // In advanced mode, enforce that amount equals subtotal (absolute)
@@ -2987,7 +2991,7 @@ function saveTransaction() {
     const amtAbs = Math.abs(Number(form.value.amount || 0));
     const sub = Number(invoiceSubtotal.value) || 0;
     if (Number(amtAbs.toFixed(2)) !== Number(sub.toFixed(2))) {
-      $q.notify({ type: 'warning', message: 'El subtotal no coincide con el monto.' });
+      $q.notify({ type: 'warning', message: t('notify.subtotalMismatch') });
       return;
     }
   }
@@ -3048,7 +3052,7 @@ function saveTransaction() {
         }))
         .filter((r) => r.qty > 0 && r.price >= 0);
       if (!valid.length) {
-        $q.notify({ type: 'warning', message: 'Agrega al menos una línea válida' });
+        $q.notify({ type: 'warning', message: t('notify.addValidLine') });
         return;
       }
       const currentType = ttypes.types.find(
@@ -3441,6 +3445,7 @@ function resetForm() {
   isAdvancedAmount.value = false;
   invoiceItems.value = [{ item: '', quantity: 1, unitPrice: 0 }];
   isAdvancedPayment.value = false;
+  showAdvancedOptions.value = false;
   payments.value = [
     {
       account_id: form.value.account_id,
@@ -3469,7 +3474,7 @@ function onUserCurrencyChanged() {
   // Forzar recomputes que dependen de moneda de usuario y limpiar tasa si ya no se necesita
   // Si el diálogo está abierto, avisar del cambio de moneda
   if (ui.showDialogNewTransaction) {
-    $q.notify({ type: 'info', message: 'Moneda por defecto actualizada' });
+    $q.notify({ type: 'info', message: t('notify.defaultCurrencyUpdated') });
   }
   // Si ya no se requiere tasa (misma moneda), limpiarla
   if (!isTransfer.value && !isAdvancedPayment.value && !showRateInput.value) {
@@ -3544,7 +3549,75 @@ function translateTransactionErrors(
 </script>
 
 <style scoped>
+.quick-add-dialog {
+  width: min(900px, calc(100vw - 24px));
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: var(--ow-shadow-strong);
+}
+
+.body--dark .quick-add-dialog {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(8, 47, 73, 0.92));
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+.quick-add-dialog__hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.quick-add-dialog__eyebrow {
+  color: var(--ow-color-primary-strong);
+  letter-spacing: 0.06em;
+}
+
+.quick-add-dialog__type-toggle {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid rgba(14, 165, 233, 0.14);
+}
+
+.quick-add-dialog__result {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+}
+
+.quick-add-dialog__expansion {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.quick-add-dialog__expansion-header {
+  min-height: 56px;
+}
+
+.quick-add-dialog__transfer-preview {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.body--dark .quick-add-dialog__transfer-preview {
+  background: rgba(148, 163, 184, 0.08);
+}
+
 .invoice-table thead th {
   font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .quick-add-dialog {
+    width: min(100vw - 12px, 100%);
+    padding: 8px;
+  }
+
+  .quick-add-dialog__hero {
+    flex-direction: column;
+  }
 }
 </style>

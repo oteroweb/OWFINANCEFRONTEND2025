@@ -1,0 +1,127 @@
+// ============================================================
+//  OW Finance — CAPA DE TEMA (punto único de configuración)
+// ------------------------------------------------------------
+//  Cambia marca y/o fuente de TODA la app modificando UNA línea.
+//
+//    $brand-preset:  navy | cyan      (línea ~40)
+//    $font-preset:   ds   | outfit    (línea ~41)
+//
+//  De aquí derivan, sin duplicar hex ni tocar componentes:
+//    · $primary / $secondary / $accent  → alimentan a Quasar
+//      (todos los `color="primary"`, q-btn, etc.)
+//    · --brand-primary / --brand-primary-hover / --brand-primary-soft
+//    · --ow-color-primary / --ow-color-primary-strong / --brand-primary
+//    · --font-body / --font-display / --font-money
+//
+//  CÓMO SE CONECTA (sin duplicar CSS):
+//   · `quasar.variables.scss` hace `@forward 'theme'` → exporta
+//     $primary/$secondary/$accent a Quasar (todos los color="primary").
+//   · `app.scss` (cargado UNA vez por quasar.config.ts) hace
+//     `@use 'theme'` y emite el bloque `:root` con los tokens runtime
+//     (--brand-*/--ow-*/--font-*), sobrescribiendo a design-system.css.
+//   Así las CSS vars se emiten una sola vez (no por componente).
+//
+//  Fuente de verdad conceptual compartida con el Design System
+//  (OW Finance Design System/colors_and_type.css y brand-scheme.css):
+//  ambos derivan de estos mismos presets. Si cambias un preset aquí,
+//  refleja el mismo cambio en el DS para mantener sync.
+// ============================================================
+
+@use 'sass:map';
+
+// ── PRIMITIVAS DE MARCA (un solo lugar con los hex) ─────────
+// Espejo de los tokens --navy-* / --cyan-* del Design System.
+$brand-presets: (
+  navy: (
+    primary:   #1e3a8a,  // navy-700  (DS brand primary)
+    hover:     #16297a,  // navy-800
+    press:     #0f1e4d,  // navy-900
+    soft:      #f1f4fb,  // navy-50
+    secondary: #2d4da6,  // navy-600
+    accent:    #0ea5e9,  // cyan-500 (acento info)
+  ),
+  cyan: (
+    primary:   #0ea5e9,  // cyan-500
+    hover:     #0284c7,  // cyan-600
+    press:     #0369a1,  // cyan-700
+    soft:      #e0f2fe,  // cyan-100
+    secondary: #0284c7,  // cyan-600
+    accent:    #1e3a8a,  // navy como acento secundario
+  ),
+);
+
+// ── PRESETS DE FUENTE ───────────────────────────────────────
+// Ambas familias se cargan vía @font-face / @import (ver más abajo
+// y design-system.css). Aquí solo se elige cuál usa la app.
+// Nota: las familias con espacios se entrecomillan con \" para que el
+// CSS var resultante sea válido (--font-body: "DM Sans", ...).
+$font-presets: (
+  ds: (      // Design System: Satoshi display / DM Sans body
+    body:    '"DM Sans", "Inter", system-ui, -apple-system, sans-serif',
+    display: '"Satoshi", "DM Sans", "Manrope", system-ui, -apple-system, sans-serif',
+    money:   '"Satoshi", "DM Sans", system-ui, sans-serif',
+  ),
+  outfit: (  // Tema previo: Outfit en todo
+    body:    '"Outfit", "DM Sans", system-ui, -apple-system, sans-serif',
+    display: '"Outfit", "Satoshi", system-ui, -apple-system, sans-serif',
+    money:   '"Outfit", "Satoshi", system-ui, sans-serif',
+  ),
+);
+
+// ════════════════════════════════════════════════════════════
+//  ▼▼▼  LOS DOS SWITCHES — lo único que se edita a mano  ▼▼▼
+// ════════════════════════════════════════════════════════════
+$brand-preset: navy !default;   // navy (DS, default) | cyan
+$font-preset:  ds   !default;   // ds   (DS, default) | outfit
+// ════════════════════════════════════════════════════════════
+
+// ── Resolución de presets ───────────────────────────────────
+$brand: map.get($brand-presets, $brand-preset);
+$font:  map.get($font-presets,  $font-preset);
+
+$brand-primary:   map.get($brand, primary);
+$brand-hover:     map.get($brand, hover);
+$brand-press:     map.get($brand, press);
+$brand-soft:      map.get($brand, soft);
+$brand-secondary: map.get($brand, secondary);
+$brand-accent:    map.get($brand, accent);
+
+$font-body:    map.get($font, body);
+$font-display: map.get($font, display);
+$font-money:   map.get($font, money);
+
+// ── Quasar SCSS vars (compile-time) ─────────────────────────
+// Esto vuelve coherentes TODOS los `color="primary"` de Quasar.
+$primary:   $brand-primary;
+$secondary: $brand-secondary;
+$accent:    $brand-accent;
+
+// ── Mixin de emisión runtime ────────────────────────────────
+// Lo llama app.scss UNA sola vez (no por componente). Emite:
+//  · la carga de la familia Outfit (Satoshi + DM Sans/Manrope/Inter
+//    ya se cargan en design-system.css), para que el preset `outfit`
+//    tenga la fuente disponible sin romper render.
+//  · el bloque :root que sobrescribe los tokens runtime con el preset
+//    elegido, ganando sobre design-system.css por orden de carga.
+// La familia Outfit se carga en app.scss (top-level @import url, donde
+// CSS lo permite). Este mixin solo emite el bloque :root del preset.
+@mixin emit-theme {
+  :root {
+    // Marca → tokens DS canónicos
+    --brand-primary:       #{$brand-primary};
+    --brand-primary-hover: #{$brand-hover};
+    --brand-primary-press: #{$brand-press};
+    --brand-primary-soft:  #{$brand-soft};
+    --focus-ring:          #{$brand-primary};
+
+    // Marca → variables --ow-* legacy (consumidas por componentes viejos)
+    --ow-color-primary:        #{$brand-primary};
+    --ow-color-primary-strong: #{$brand-hover};
+    --ow-color-secondary:      #{$brand-secondary};
+
+    // Fuentes → tokens DS (--font-body/display/money los consume todo el DS)
+    --font-body:    #{$font-body};
+    --font-display: #{$font-display};
+    --font-money:   #{$font-money};
+  }
+}

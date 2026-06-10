@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Colors" name="Esquema de color personalizable" subtitle="5 roles estandarizados · variables de entorno · preview en vivo" viewport="1240x1900" -->
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OW Finance · Esquema de color</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="colors_and_type.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-canvas); color: var(--fg-1); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+    .material-icons { font-family: 'Material Icons'; line-height: 1; display: inline-block; }
+
+    /* doc chrome */
+    #bar { position: sticky; top: 0; z-index: 200; display: flex; align-items: center; gap: 14px; padding: 11px 26px; background: color-mix(in srgb, var(--surface-1) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-hairline); }
+    #bar .brand { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+    #bar .brand .logo { width: 26px; height: 26px; border-radius: 8px; background: var(--brand-primary); display: grid; place-items: center; }
+    #bar .brand .logo svg { width: 16px; height: 16px; }
+    #bar .spacer { flex: 1; }
+    #bar a.toplink { font-size: 13px; font-weight: 600; color: var(--fg-2); text-decoration: none; padding: 7px 12px; border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 6px; }
+    #bar a.toplink:hover { background: var(--surface-2); color: var(--fg-1); }
+    #bar a.toplink .material-icons { font-size: 17px; }
+    .icon-toggle { width: 36px; height: 36px; border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); background: var(--surface-1); cursor: pointer; display: inline-grid; place-items: center; color: var(--fg-1); }
+    .icon-toggle:hover { background: var(--surface-2); }
+
+    #app { max-width: 1200px; margin: 0 auto; padding: 40px 28px 100px; }
+    .page-head { margin-bottom: 30px; }
+    .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-primary); }
+    h1.title { font-family: var(--font-display); font-weight: 700; font-size: 38px; letter-spacing: -.02em; margin: 10px 0 12px; }
+    .lede { font-size: 16px; line-height: 1.6; color: var(--fg-2); max-width: 70ch; }
+    .lede b { color: var(--fg-1); }
+
+    /* layout: controls + preview */
+    .grid { display: grid; grid-template-columns: 420px 1fr; gap: 26px; align-items: start; }
+    @media (max-width: 1040px) { .grid { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--surface-1); border-radius: var(--radius-xl); box-shadow: var(--shadow-float); padding: 22px; position: sticky; top: 78px; }
+    @media (max-width: 1040px) { .panel { position: static; } }
+    .panel-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .panel-h .ph-t { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+    .seg { display: inline-flex; background: var(--surface-2); border-radius: var(--radius-pill); padding: 3px; gap: 2px; }
+    .seg button { border: 0; cursor: pointer; padding: 6px 13px; border-radius: var(--radius-pill); background: transparent; color: var(--fg-2); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+    .seg button.on { background: var(--brand-primary); color: #fff; }
+    .seg button .material-icons { font-size: 15px; }
+
+    /* role cards */
+    #roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    #roles .role-card:nth-child(5) { grid-column: 1 / -1; }
+    .role-card { background: var(--surface-2); border-radius: var(--radius-md); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .rc-top { display: flex; align-items: center; justify-content: space-between; }
+    .rc-num { width: 20px; height: 20px; border-radius: 6px; background: var(--brand-primary); color: #fff; font-family: var(--font-money); font-weight: 700; font-size: 11px; display: grid; place-items: center; }
+    .rc-theory { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--fg-3); }
+    .rc-chip-wrap { position: relative; display: block; height: 52px; border-radius: 12px; overflow: hidden; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(15,23,42,.08); }
+    .rc-chip { position: absolute; inset: 0; }
+    .rc-chip-wrap input[type=color] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    .rc-name { font-size: 13px; font-weight: 700; line-height: 1.2; }
+    .rc-desc { font-size: 11px; color: var(--fg-3); margin-top: 2px; line-height: 1.35; }
+    .rc-hex { font-family: var(--font-money); font-weight: 700; font-size: 12px; color: var(--fg-2); margin-top: 6px; letter-spacing: .02em; }
+
+    .panel-sub { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); margin: 18px 0 10px; }
+    #presets { display: flex; flex-direction: column; gap: 7px; }
+    .preset { display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 12px; border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); background: var(--surface-1); cursor: pointer; color: var(--fg-1); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+    .preset:hover { background: var(--surface-2); }
+    .preset.on { border-color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 7%, var(--surface-1)); }
+    .pr-dots { display: inline-flex; gap: 3px; }
+    .pr-dots span { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(15,23,42,.1); }
+    .pr-name { flex: 1; text-align: left; }
+    .panel-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .pa-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); background: var(--surface-1); cursor: pointer; color: var(--fg-1); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; }
+    .pa-btn:hover { background: var(--surface-2); }
+    .pa-btn .material-icons { font-size: 16px; color: var(--brand-primary); }
+
+    /* ───────────── PREVIEW (driven only by the 5 vars) ───────────── */
+    #previewRoot {
+      --c-brand: #1E3A8A; --c-action: #1E3A8A; --c-heading: #0F172A; --c-body: #64748B; --c-surface: #F8FAFC;
+      --c-card: #ffffff;
+      --c-brand-soft: color-mix(in srgb, var(--c-brand) 12%, var(--c-surface));
+      --c-action-hover: color-mix(in srgb, var(--c-action) 86%, #000);
+      --c-surface-2: color-mix(in srgb, var(--c-surface) 90%, var(--c-heading) 5%);
+      --c-hairline: color-mix(in srgb, var(--c-heading) 9%, transparent);
+      --c-muted: color-mix(in srgb, var(--c-body) 62%, var(--c-surface));
+      background: var(--c-surface); border-radius: var(--radius-xl); padding: 28px; box-shadow: var(--shadow-float); overflow: hidden;
+      transition: background .2s;
+    }
+    #previewRoot[data-theme="dark"] { --c-card: #131B2E; --c-surface-2: color-mix(in srgb, var(--c-card) 90%, #fff 6%); --c-hairline: color-mix(in srgb, #fff 8%, transparent); }
+    .pv-tag { position: absolute; top: 14px; right: 16px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--c-muted); }
+    .pv-wrap { position: relative; }
+
+    .pv-headrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .pv-brandmark { display: flex; align-items: center; gap: 9px; }
+    .pv-logo { width: 30px; height: 30px; border-radius: 9px; background: var(--c-brand); display: grid; place-items: center; }
+    .pv-logo svg { width: 18px; height: 18px; }
+    .pv-brandname { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--c-heading); }
+    .pv-nav { display: inline-flex; gap: 4px; background: var(--c-card); border-radius: var(--radius-pill); padding: 4px; box-shadow: 0 2px 10px rgba(15,23,42,.06); }
+    .pv-nav button { border: 0; background: transparent; cursor: pointer; padding: 7px 13px; border-radius: var(--radius-pill); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; color: var(--c-body); display: inline-flex; align-items: center; gap: 5px; }
+    .pv-nav button .material-icons { font-size: 16px; }
+    .pv-nav button.on { background: var(--c-brand); color: var(--c-card); }
+
+    .pv-title { font-family: var(--font-display); font-weight: 700; font-size: 23px; letter-spacing: -.015em; color: var(--c-heading); margin: 0 0 4px; }
+    .pv-sub { font-size: 13.5px; color: var(--c-body); margin: 0 0 20px; line-height: 1.5; }
+
+    .pv-hero { background: var(--c-card); border-radius: 22px; padding: 24px; box-shadow: 0 8px 32px rgba(15,23,42,.10); margin-bottom: 16px; }
+    .pv-hero .h-eye { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--c-muted); }
+    .pv-hero .h-amt { font-family: var(--font-money); font-weight: 700; font-size: 38px; letter-spacing: -.02em; color: var(--c-heading); margin-top: 6px; font-variant-numeric: tabular-nums; }
+    .pv-hero .h-amt .ccy { font-size: 14px; color: var(--c-body); margin-left: 8px; font-weight: 600; }
+    .pv-hero .h-row { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; gap: 12px; }
+    .pv-hero .h-avail { font-size: 12.5px; color: var(--c-body); }
+    .pv-hero .h-avail b { color: var(--c-heading); font-weight: 700; }
+    .pv-cta { display: inline-flex; align-items: center; gap: 7px; padding: 11px 18px; border: 0; border-radius: var(--radius-pill); background: var(--c-action); color: #fff; font-family: var(--font-body); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .pv-cta:hover { background: var(--c-action-hover); }
+    .pv-cta .material-icons { font-size: 18px; }
+
+    .pv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 560px) { .pv-cols { grid-template-columns: 1fr; } }
+    .pv-card { background: var(--c-card); border-radius: 18px; padding: 18px; box-shadow: 0 4px 24px rgba(15,23,42,.06); }
+    .pv-card-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .pv-card-h .ch-t { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--c-heading); }
+    .pv-card-h .ch-link { font-size: 12px; font-weight: 600; color: var(--c-action); cursor: pointer; }
+
+    .jar { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+    .jar + .jar { border-top: 1px solid var(--c-hairline); }
+    .ring { width: 38px; height: 38px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center; background:
+      conic-gradient(var(--c-brand) calc(var(--p) * 1%), var(--c-brand-soft) 0); }
+    .ring i { width: 28px; height: 28px; border-radius: 50%; background: var(--c-card); display: grid; place-items: center; }
+    .ring i .material-icons { font-size: 15px; color: var(--c-brand); }
+    .jar .j-tx { flex: 1; min-width: 0; }
+    .jar .j-nm { font-size: 13px; font-weight: 600; color: var(--c-heading); }
+    .jar .j-meta { font-size: 11px; color: var(--c-body); margin-top: 1px; font-variant-numeric: tabular-nums; }
+    .jar .j-amt { font-family: var(--font-money); font-weight: 700; font-size: 13.5px; color: var(--c-heading); font-variant-numeric: tabular-nums; }
+
+    .tx { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+    .tx + .tx { border-top: 1px solid var(--c-hairline); }
+    .tx .t-ic { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 10px; background: var(--c-surface-2); display: grid; place-items: center; }
+    .tx .t-ic .material-icons { font-size: 17px; color: var(--c-body); }
+    .tx .t-tx { flex: 1; min-width: 0; }
+    .tx .t-nm { font-size: 13px; font-weight: 600; color: var(--c-heading); }
+    .tx .t-cat { font-size: 11px; color: var(--c-body); margin-top: 1px; }
+    .tx .t-amt { font-family: var(--font-money); font-weight: 700; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+    .tx .t-amt.in { color: var(--c-success, #10B981); }
+    .tx .t-amt.out { color: var(--c-heading); }
+    .chip-row { display: flex; gap: 7px; margin-top: 14px; flex-wrap: wrap; }
+    .pv-chip { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: var(--radius-pill); }
+    .pv-chip.brand { background: var(--c-brand-soft); color: var(--c-brand); }
+    .pv-chip.action { background: color-mix(in srgb, var(--c-action) 12%, var(--c-surface)); color: var(--c-action); }
+    .pv-chip.ghost { background: var(--c-surface-2); color: var(--c-body); }
+
+    /* ─── theory + exports below ─── */
+    section { margin-top: 50px; }
+    .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+    .sec-num { font-family: var(--font-money); font-weight: 700; font-size: 13px; color: var(--brand-primary); }
+    .sec-title { font-family: var(--font-display); font-weight: 700; font-size: 21px; letter-spacing: -.01em; }
+    .sec-desc { font-size: 14px; color: var(--fg-2); margin: 0 0 20px; max-width: 72ch; line-height: 1.6; }
+
+    .theory { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    @media (max-width: 900px) { .theory { grid-template-columns: 1fr 1fr; } }
+    .th { background: var(--surface-1); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-card); }
+    .th .th-bar { height: 6px; border-radius: 3px; margin-bottom: 12px; }
+    .th .th-n { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+    .th .th-pct { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-3); margin-top: 2px; }
+    .th .th-d { font-size: 12px; color: var(--fg-2); margin-top: 8px; line-height: 1.5; }
+
+    .export-card { background: var(--surface-1); border-radius: var(--radius-xl); box-shadow: var(--shadow-float); overflow: hidden; }
+    .tabs { display: flex; gap: 4px; padding: 14px 18px 0; border-bottom: 1px solid var(--border-hairline); }
+    .tab { border: 0; background: transparent; cursor: pointer; padding: 9px 15px; border-radius: var(--radius-sm) var(--radius-sm) 0 0; font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--fg-2); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .tab.on { color: var(--brand-primary); border-bottom-color: var(--brand-primary); }
+    .out-pane { display: none; position: relative; }
+    .out-pane.on { display: block; }
+    .out-pane pre { margin: 0; padding: 20px 22px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12.5px; line-height: 1.7; color: var(--fg-1); white-space: pre; overflow-x: auto; }
+    .copy-btn { position: absolute; top: 12px; right: 12px; display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-body); font-size: 12px; font-weight: 600; color: #fff; background: var(--brand-primary); border: 0; border-radius: var(--radius-pill); padding: 7px 13px; cursor: pointer; }
+    .copy-btn:hover { filter: brightness(1.06); }
+    .copy-btn .material-icons { font-size: 14px; }
+
+    .note { display: flex; gap: 12px; margin-top: 22px; padding: 16px 18px; background: var(--info-soft); border: 1px solid color-mix(in srgb, var(--info) 24%, transparent); border-radius: var(--radius-md); }
+    .note .material-icons { font-size: 19px; color: var(--info-fg); flex: 0 0 auto; }
+    .note .tx2 { font-size: 13px; line-height: 1.6; color: var(--fg-1); }
+    .note .tx2 b { font-weight: 700; }
+    code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; background: var(--surface-2); padding: 1px 6px; border-radius: 6px; color: var(--brand-primary); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <span class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M5 14c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="2" fill="#fff"/></svg></span>
+      OW Finance · <span style="color:var(--fg-3);font-weight:600">Esquema de color</span>
+    </span>
+    <span class="spacer"></span>
+    <a class="toplink" href="OW Finance - Guía de Integración.html"><span class="material-icons">menu_book</span>Guía de integración</a>
+    <button class="icon-toggle" id="page-theme" aria-label="Tema"><span class="material-icons">dark_mode</span></button>
+  </div>
+
+  <div id="app">
+    <header class="page-head">
+      <div class="eyebrow">Tema · 5 roles estandarizados</div>
+      <h1 class="title">Esquema de color personalizable</h1>
+      <p class="lede">Toda la marca cabe en <b>cinco variables</b>. Las fijas una vez como variables de entorno del frontend y el producto entero deriva de ellas — hover, fondos suaves, anillos, hairlines — con <code>color-mix()</code>. Cambia los 5 y mira la UI recolorearse al instante. <b>Los valores aún no son definitivos:</b> esto es el sistema; el color se decide después.</p>
+    </header>
+
+    <div class="grid">
+      <!-- CONTROLS -->
+      <div class="panel">
+        <div class="panel-h">
+          <span class="ph-t">Los 5 colores</span>
+          <div class="seg" id="themeSeg">
+            <button data-theme="light" class="on"><span class="material-icons">light_mode</span>Claro</button>
+            <button data-theme="dark"><span class="material-icons">dark_mode</span>Oscuro</button>
+          </div>
+        </div>
+        <div id="roles"></div>
+
+        <div class="panel-sub">Esquemas de ejemplo</div>
+        <div id="presets"></div>
+
+        <div class="panel-actions">
+          <button class="pa-btn" id="randomBtn"><span class="material-icons">casino</span>Aleatorio</button>
+        </div>
+      </div>
+
+      <!-- LIVE PREVIEW -->
+      <div class="pv-wrap">
+        <div id="previewRoot" data-theme="light">
+          <span class="pv-tag">Preview en vivo</span>
+          <div class="pv-headrow">
+            <div class="pv-brandmark">
+              <span class="pv-logo"><svg viewBox="0 0 24 24" fill="none"><path d="M5 14c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="2" fill="#fff"/></svg></span>
+              <span class="pv-brandname">OW Finance</span>
+            </div>
+            <div class="pv-nav">
+              <button class="on"><span class="material-icons">home</span>Inicio</button>
+              <button><span class="material-icons">receipt_long</span>Movimientos</button>
+              <button><span class="material-icons">savings</span>Cántaros</button>
+            </div>
+          </div>
+
+          <h2 class="pv-title">Hola, José.</h2>
+          <p class="pv-sub">Vas al 51% de lo asignado este mes. Te queda margen en tres cántaros.</p>
+
+          <div class="pv-hero">
+            <div class="h-eye">Saldo total · USD</div>
+            <div class="h-amt">$ 12,480.50<span class="ccy">USD</span></div>
+            <div class="h-row">
+              <span class="h-avail">Disponible <b>$ 6,118.00</b> · este mes</span>
+              <button class="pv-cta"><span class="material-icons">add</span>Registrar movimiento</button>
+            </div>
+          </div>
+
+          <div class="pv-cols">
+            <div class="pv-card">
+              <div class="pv-card-h"><span class="ch-t">Cántaros</span><span class="ch-link">Ver todos</span></div>
+              <div class="jar"><span class="ring" style="--p:72"><i><span class="material-icons">home</span></i></span><span class="j-tx"><div class="j-nm">Renta</div><div class="j-meta">72% · vence en 9 días</div></span><span class="j-amt">$ 1,080</span></div>
+              <div class="jar"><span class="ring" style="--p:45"><i><span class="material-icons">restaurant</span></i></span><span class="j-tx"><div class="j-nm">Comida</div><div class="j-meta">45% asignado</div></span><span class="j-amt">$ 320</span></div>
+              <div class="jar"><span class="ring" style="--p:88"><i><span class="material-icons">flight</span></i></span><span class="j-tx"><div class="j-nm">Viaje</div><div class="j-meta">88% · meta marzo</div></span><span class="j-amt">$ 2,200</span></div>
+              <div class="chip-row">
+                <span class="pv-chip brand">Marca</span>
+                <span class="pv-chip action">Acción</span>
+                <span class="pv-chip ghost">Neutral</span>
+              </div>
+            </div>
+            <div class="pv-card">
+              <div class="pv-card-h"><span class="ch-t">Movimientos</span><span class="ch-link">Ver todos</span></div>
+              <div class="tx"><span class="t-ic"><span class="material-icons">shopping_bag</span></span><span class="t-tx"><div class="t-nm">Supermercado</div><div class="t-cat">Comida · hoy</div></span><span class="t-amt out">− $ 84.20</span></div>
+              <div class="tx"><span class="t-ic"><span class="material-icons">payments</span></span><span class="t-tx"><div class="t-nm">Nómina</div><div class="t-cat">Ingreso · ayer</div></span><span class="t-amt in">+ $ 2,400.00</span></div>
+              <div class="tx"><span class="t-ic"><span class="material-icons">bolt</span></span><span class="t-tx"><div class="t-nm">Electricidad</div><div class="t-cat">Servicios · 5 jun</div></span><span class="t-amt out">− $ 56.00</span></div>
+              <div class="tx"><span class="t-ic"><span class="material-icons">local_cafe</span></span><span class="t-tx"><div class="t-nm">Café</div><div class="t-cat">Personal · 4 jun</div></span><span class="t-amt out">− $ 4.50</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THEORY -->
+    <section>
+      <div class="sec-head"><span class="sec-num">01</span><span class="sec-title">Por qué cinco</span></div>
+      <p class="sec-desc">Es el mínimo estandarizado por teoría del color: la regla <b>60-30-10</b> (fondo dominante, marca, acento) más dos tintas de texto. Menos no alcanza para jerarquía; más se vuelve inconsistente.</p>
+      <div class="theory">
+        <div class="th"><div class="th-bar" style="background:#1E3A8A"></div><div class="th-n">Marca</div><div class="th-pct">30% · identidad</div><div class="th-d">Estado activo de navegación, logo, chip enfocado.</div></div>
+        <div class="th"><div class="th-bar" style="background:#0EA5E9"></div><div class="th-n">Acción (CTA)</div><div class="th-pct">10% · acento</div><div class="th-d">El único botón que convierte. Puede igualar a Marca o destacar.</div></div>
+        <div class="th"><div class="th-bar" style="background:#0F172A"></div><div class="th-n">Títulos</div><div class="th-pct">Tinta alta</div><div class="th-d">Encabezados y montos. Máximo contraste sobre el fondo.</div></div>
+        <div class="th"><div class="th-bar" style="background:#64748B"></div><div class="th-n">Subtítulos</div><div class="th-pct">Tinta media</div><div class="th-d">Cuerpo, metadatos, descripciones. Legible, sin competir.</div></div>
+        <div class="th"><div class="th-bar" style="background:#F8FAFC;box-shadow:inset 0 0 0 1px rgba(15,23,42,.1)"></div><div class="th-n">Fondo</div><div class="th-pct">60% · dominante</div><div class="th-d">La superficie base. El neutro que sostiene todo lo demás.</div></div>
+      </div>
+      <div class="note">
+        <span class="material-icons">info</span>
+        <div class="tx2"><b>Los colores semánticos van aparte.</b> Ingreso (verde), gasto (rojo) y atención (ámbar) comunican <i>estado</i>, no identidad de marca — son funcionales y fijos por convención, así que no entran en los 5 personalizables.</div>
+      </div>
+    </section>
+
+    <!-- EXPORT -->
+    <section>
+      <div class="sec-head"><span class="sec-num">02</span><span class="sec-title">Variables de entorno</span></div>
+      <p class="sec-desc">Copia el formato que use tu frontend. Las 5 entran a <code>brand-scheme.css</code> y todo lo demás se deriva solo. Refleja el esquema activo (claro u oscuro, según el conmutador de arriba).</p>
+      <div class="export-card">
+        <div class="tabs">
+          <button class="tab on" data-tab="css">CSS variables</button>
+          <button class="tab" data-tab="env">.env</button>
+          <button class="tab" data-tab="js">Theme object</button>
+        </div>
+        <div class="out-pane on" id="out-pane-css"><button class="copy-btn" data-copy="css"><span class="material-icons">content_copy</span>Copiar</button><pre id="out-css"></pre></div>
+        <div class="out-pane" id="out-pane-env"><button class="copy-btn" data-copy="env"><span class="material-icons">content_copy</span>Copiar</button><pre id="out-env"></pre></div>
+        <div class="out-pane" id="out-pane-js"><button class="copy-btn" data-copy="js"><span class="material-icons">content_copy</span>Copiar</button><pre id="out-js"></pre></div>
+      </div>
+      <div class="note">
+        <span class="material-icons">lightbulb</span>
+        <div class="tx2"><b>Cómo se conecta.</b> <code>brand-scheme.css</code> ya mapea estos 5 roles a los tokens del sistema (<code>--c-brand → --brand-primary</code>, <code>--c-surface → --bg-canvas</code>…). Lo importas después de <code>colors_and_type.css</code> y el esquema personalizable manda — sin tocar componentes.</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="color-scheme.js"></script>
+</body>
+</html>

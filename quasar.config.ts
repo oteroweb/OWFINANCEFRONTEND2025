@@ -5,6 +5,8 @@ import { defineConfig } from '#q-app/wrappers';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig((ctx) => {
+  const isMobile = ctx.modeName === 'capacitor';
+
   return {
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
@@ -15,7 +17,7 @@ export default defineConfig((ctx) => {
     boot: ['i18n', 'axios'],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
-    css: ['app.scss'],
+    css: ['design-system.css', 'app.scss', 'marketing.scss'],
 
     // https://github.com/quasarframework/quasar/tree/dev/extras
     extras: [
@@ -29,6 +31,7 @@ export default defineConfig((ctx) => {
 
       'roboto-font', // optional, you are not bound to it
       'material-icons', // optional, you are not bound to it
+      'material-icons-outlined',
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#build
@@ -44,14 +47,14 @@ export default defineConfig((ctx) => {
         // extendTsConfig (tsConfig) {}
       },
 
-      vueRouterMode: 'history', // available values: 'hash', 'history'
-      vueRouterBase: '/app/',
+      vueRouterMode: isMobile ? 'hash' : 'history',
+      vueRouterBase: '/',
       // vueDevtools,
       // vueOptionsAPI: false,
 
-      // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
+      // rebuildCache: true, // rebuilds Vite/linter/etc cache
 
-      publicPath: '/app/',
+      publicPath: isMobile ? '/' : '/',
       // analyze: true,
       env: {
         VITE_API_BASE_URL: process.env.VITE_API_BASE_URL,
@@ -63,7 +66,17 @@ export default defineConfig((ctx) => {
       // polyfillModulePreload: true,
       // distDir
 
-      // extendViteConf (viteConf) {},
+      extendViteConf(viteConf) {
+        // Allow HMR from any LAN IP (not just localhost)
+        if (viteConf.server) {
+          viteConf.server.hmr = {
+            protocol: 'ws',
+            host: '0.0.0.0',
+            port: 9000,
+            clientPort: 9000,
+          };
+        }
+      },
       // viteVuePluginOptions: {},
 
       vitePlugins: [
@@ -88,6 +101,10 @@ export default defineConfig((ctx) => {
           'vite-plugin-checker',
           {
             vueTsc: true,
+            // Overlay desactivado en dev: los errores siguen reportándose en terminal y en build/CI.
+            // Evita que el overlay de typecheck (p.ej. conflictos de casing User/user heredados de git)
+            // tape la UI mientras se prueba. La normalización de casing es una tarea aparte del plan.
+            overlay: false,
             eslint: {
               lintCommand: 'eslint -c ./eslint.config.js "./src*/**/*.{ts,js,mjs,cjs,vue}"',
               useFlatConfig: true,
@@ -102,6 +119,8 @@ export default defineConfig((ctx) => {
     devServer: {
       // https: true,
       open: true, // opens browser window automatically
+      host: '0.0.0.0',
+      port: 9000,
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework
