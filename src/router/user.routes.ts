@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 export const userRoutes: RouteRecordRaw[] = [
   {
     path: '/user',
-    component: () => import('layouts/DynamicRoleLayout.vue'),
+    component: () => import('layouts/AppShell.vue'),
     meta: { requiresAuth: true, role: 'user' },
     children: [
       { path: '', redirect: '/user/home' },

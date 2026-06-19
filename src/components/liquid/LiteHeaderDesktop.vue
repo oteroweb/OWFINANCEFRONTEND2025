@@ -1,373 +1,228 @@
 <template>
-  <div class="dte-header">
-    <div class="dte-header__inner">
-      <!-- Left: Logo -->
-      <div class="dte-header__logo" @click="router.push('/user/home')" role="button" tabindex="0">
-        <div class="dte-header__logo-icon">
-          <q-icon name="savings" color="white" size="18px" />
+  <header class="lhd">
+    <div class="lhd__inner">
+      <!-- Left: avatar + greeting -->
+      <div class="lhd__left">
+        <button class="lhd__avatar" aria-label="Abrir menú de perfil" @click="$emit('avatar-click')">
+          {{ initial }}
+        </button>
+        <div class="lhd__greeting">
+          <span class="lhd__greeting-sub">{{ greeting }}</span>
+          <span class="lhd__greeting-name">{{ userName }}</span>
         </div>
-        <span class="dte-header__logo-text">OW Finance <span class="dte-header__logo-lite">Lite</span></span>
       </div>
 
-      <!-- Center: Nav + Compact Interval -->
-      <div class="dte-header__center">
-      <nav class="dte-header__nav" role="navigation">
+      <!-- Right: utility actions -->
+      <div class="lhd__right">
+        <!-- Currency chip -->
+        <span class="lhd__currency-chip">{{ currencyCode }}</span>
+
+        <span class="lhd__divider" aria-hidden="true" />
+
+        <!-- Hide/show balance -->
         <button
-          v-for="tab in navTabs"
-          :key="tab.id"
-          class="dte-header__tab"
-          :class="{ 'dte-header__tab--active': currentTab === tab.id }"
-          :title="tab.label"
-          :aria-label="tab.label"
-          @click="onTabClick(tab)"
+          class="lhd__icon-btn"
+          :aria-label="balanceVisible ? 'Ocultar saldos' : 'Mostrar saldos'"
+          @click="$emit('toggle-visibility')"
         >
-          <q-icon :name="currentTab === tab.id ? tab.icon : 'o_' + tab.icon" size="20px" />
-          <span>{{ tab.label }}</span>
+          <span class="material-icons">{{ balanceVisible ? 'visibility' : 'visibility_off' }}</span>
         </button>
-      </nav>
-      <div v-if="showIntervalMenu" class="dte-header__interval">
-        <q-btn dense flat round icon="chevron_left" @click="$emit('interval-shift', -1)" />
-        <q-select
-          :model-value="intervalValue"
-          :options="intervalOptions"
-          emit-value
-          map-options
-          dense
-          outlined
-          class="dte-header__interval-select"
-          @update:model-value="(val) => $emit('interval-change', val)"
-        />
-        <q-btn dense flat round icon="chevron_right" @click="$emit('interval-shift', 1)" />
-      </div>
-      </div>
 
-      <!-- Right: Actions -->
-      <div class="dte-header__actions">
-        <button class="dte-header__btn-plus" @click="$emit('nuevo-click')" aria-label="Nuevo">
-          <q-icon name="add" size="18px" />
+        <!-- Dark mode toggle -->
+        <button
+          class="lhd__icon-btn"
+          :aria-label="isDark ? 'Modo claro' : 'Modo oscuro'"
+          @click="toggleDark"
+        >
+          <span class="material-icons">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
         </button>
-        <button class="dte-header__btn-assistant" @click="$emit('assistant-click')" aria-label="Asistente virtual">
-          <q-icon name="psychology" size="20px" />
-        </button>
-        <button class="dte-header__icon-btn" @click="$emit('notifications-click')" aria-label="Notificaciones">
-          <q-icon name="notifications" size="20px" />
-        </button>
-        <button class="dte-header__avatar" @click="$emit('avatar-click')" aria-label="Perfil">
-          <img v-if="user?.avatar" :src="user.avatar" :alt="user?.name || 'U'" />
-          <span v-else class="dte-header__avatar-initials">{{ user?.initials || 'JO' }}</span>
+
+        <!-- Notifications -->
+        <div class="lhd__notif-wrap">
+          <button class="lhd__icon-btn" aria-label="Notificaciones" @click="$emit('open-notifications')">
+            <span class="material-icons">notifications</span>
+          </button>
+          <span v-if="(notificationCount ?? 0) > 0" class="lhd__notif-badge" aria-hidden="true" />
+        </div>
+
+        <!-- Hamburger menu -->
+        <button class="lhd__icon-btn" aria-label="Abrir menú" @click="$emit('open-menu')">
+          <span class="material-icons">menu</span>
         </button>
       </div>
     </div>
-  </div>
+  </header>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-
-interface User {
-  name?: string;
-  avatar?: string | null;
-  initials?: string;
-}
-
-type HeaderInterval = 'month' | 'week' | 'year';
+import { useQuasar } from 'quasar';
+import { useAuthStore } from 'stores/auth';
 
 withDefaults(defineProps<{
-  user?: User;
-  intervalValue?: HeaderInterval;
-  showIntervalMenu?: boolean;
+  balanceVisible?: boolean;
+  notificationCount?: number;
 }>(), {
-  intervalValue: 'month',
-  showIntervalMenu: false,
+  balanceVisible: true,
+  notificationCount: 0,
 });
 
 defineEmits<{
-  'nuevo-click': [];
-  'assistant-click': [];
   'avatar-click': [];
-  'notifications-click': [];
-  'interval-change': [value: HeaderInterval];
-  'interval-shift': [direction: -1 | 1];
+  'toggle-visibility': [];
+  'open-notifications': [];
+  'open-menu': [];
 }>();
 
-const router = useRouter();
-const route = useRoute();
+const $q = useQuasar();
+const auth = useAuthStore();
 
-const navTabs = [
-  { id: 'home', label: 'Inicio', icon: 'home', route: '/user/home' },
-  { id: 'transactions', label: 'Movimientos', icon: 'receipt_long', route: '/user/transactions' },
-  { id: 'jars', label: 'Cántaros', icon: 'savings', route: '/user/jars' },
-  { id: 'settings', label: 'Ajustes', icon: 'settings', route: '/user/config' },
-];
+const isDark = computed(() => $q.dark.isActive);
+const userName = computed(() => auth.user?.name || 'Usuario');
+const currencyCode = computed(() => auth.defaultCurrencyCode || 'USD');
+const initial = computed(() => userName.value.charAt(0).toUpperCase());
 
-const intervalOptions: Array<{ label: string; value: HeaderInterval }> = [
-  { label: 'Mensual', value: 'month' },
-  { label: 'Semanal', value: 'week' },
-  { label: 'Anual', value: 'year' },
-];
-
-const currentTab = computed(() => {
-  const path = route.path;
-  if (path.includes('/transactions')) return 'transactions';
-  if (path.includes('/jars')) return 'jars';
-  if (path.includes('/config') || path.includes('/settings')) return 'settings';
-  return 'home';
+const greeting = computed(() => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Buenos días,';
+  if (h < 19) return 'Buenas tardes,';
+  return 'Buenas noches,';
 });
 
-function onTabClick(tab: { route: string }) {
-  void router.push(tab.route);
+function toggleDark() {
+  $q.dark.toggle();
 }
 </script>
 
 <style lang="scss" scoped>
-.dte-header {
+.lhd {
   width: 100%;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  height: 72px;
-
-  .body--dark & {
-    background: rgba(15, 23, 42, 0.92);
-  }
 
   &__inner {
-    max-width: 1280px;
-    margin: 0 auto;
-    height: 100%;
-    padding: 0 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    padding: 18px 32px 14px;
+    max-width: var(--container-max, 1200px);
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  &__logo {
+  &__left {
     display: flex;
     align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    flex-shrink: 0;
-    user-select: none;
+    gap: 13px;
   }
 
-  &__logo-icon {
-    width: 32px;
-    height: 32px;
-    background: #1e3a8a;
-    border-radius: 9px;
-    display: flex;
+  &__avatar {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    border-radius: var(--radius-pill);
+    background: var(--brand-primary);
+    color: var(--fg-on-brand);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-  }
-
-  &__logo-text {
-    font-family: 'Manrope', 'DM Sans', sans-serif;
-    font-weight: 700;
-    font-size: 17px;
-    color: #1e3a8a;
-    white-space: nowrap;
-
-    .body--dark & { color: #93c5fd; }
-  }
-
-  &__logo-lite {
-    font-weight: 500;
-    opacity: 0.5;
-  }
-
-  &__nav {
-    display: flex;
-    align-items: center;
-    background: #f8fafc;
-    padding: 4px;
-    border-radius: 16px;
-    border: 1px solid #f1f5f9;
-    gap: 4px;
     flex-shrink: 0;
+    transition: opacity 150ms;
 
-    .body--dark & {
-      background: #1e293b;
-      border-color: #334155;
-    }
+    &:hover { opacity: 0.85; }
   }
 
-  &__center {
+  &__greeting {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1.25;
   }
 
-  &__interval {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 3px 4px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-
-    .body--dark & {
-      background: #1a1a2e;
-    }
+  &__greeting-sub {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--fg-2);
+    white-space: nowrap;
   }
 
-  &__interval-select {
-    min-width: 126px;
+  &__greeting-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--fg-1);
+    white-space: nowrap;
+    letter-spacing: -0.01em;
   }
 
-  &__tab {
+  &__right {
     display: flex;
     align-items: center;
     gap: 8px;
-    justify-content: center;
-    height: 38px;
-    padding: 0 14px;
-    border-radius: 12px;
-    border: none;
-    background: transparent;
-    color: #94a3b8;
-    cursor: pointer;
-    transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
-
-    .body--dark & { color: #64748b; }
-
-    span {
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 1;
-      white-space: nowrap;
-    }
-
-    &:hover {
-      color: #1e3a8a;
-      .body--dark & { color: #93c5fd; }
-    }
-
-    &--active {
-      background: white;
-      color: #1e3a8a;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(30, 58, 138, 0.12);
-
-      span { font-weight: 700; }
-
-      .body--dark & {
-        background: #0f172a;
-        color: #93c5fd;
-      }
-    }
-
-    &:active { transform: scale(0.97); }
   }
 
-  &__actions {
-    display: flex;
+  &__currency-chip {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--fg-1);
+    white-space: nowrap;
+  }
+
+  &__divider {
+    width: 1px;
+    height: 22px;
+    background: var(--border-hairline);
+    margin: 0 2px;
     flex-shrink: 0;
-  }
-
-  &__btn-plus {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    background: #1e3a8a;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
-    transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
-
-    &:hover { background: #1d3278; }
-    &:active { transform: scale(0.97); }
-  }
-
-  &__btn-assistant {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    background: rgba(139, 92, 246, 0.12);
-    color: #7c3aed;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
-
-    &:hover {
-      background: rgba(139, 92, 246, 0.2);
-    }
-
-    &:active { transform: scale(0.97); }
-
-    .body--dark & {
-      background: rgba(139, 92, 246, 0.18);
-      color: #c4b5fd;
-    }
   }
 
   &__icon-btn {
     width: 38px;
     height: 38px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: none;
+    border: 0;
+    border-radius: var(--radius-sm);
     background: transparent;
-    color: #94a3b8;
-    border-radius: 10px;
+    color: var(--fg-2);
     cursor: pointer;
-    transition: all 160ms ease;
+    transition: background var(--dur-base, 150ms), color var(--dur-base, 150ms);
+
+    .material-icons { font-size: 20px; }
 
     &:hover {
-      background: #f1f5f9;
-      color: #475569;
-
-      .body--dark & {
-        background: #1e293b;
-        color: #cbd5e1;
-      }
+      background: var(--surface-2);
+      color: var(--fg-1);
     }
   }
 
-  &__avatar {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    border: 2px solid #e2e8f0;
-    overflow: hidden;
-    cursor: pointer;
-    background: #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: border-color 160ms ease;
-    padding: 0;
-
-    .body--dark & { border-color: #334155; }
-
-    &:hover { border-color: #0ea5e9; }
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+  &__notif-wrap {
+    position: relative;
   }
 
-  &__avatar-initials {
-    font-size: 13px;
-    font-weight: 700;
-    color: #1e3a8a;
-
-    .body--dark & { color: #93c5fd; }
+  &__notif-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--expense, #ef4444);
+    box-shadow: 0 0 0 2px var(--surface-1);
   }
 }
 </style>

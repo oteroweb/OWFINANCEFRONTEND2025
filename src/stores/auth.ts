@@ -277,6 +277,28 @@ export const useAuthStore = defineStore('auth', {
     },
     setLayoutMode(mode: 'lite' | 'pro' | 'legacy') {
       this.updateLayoutMode(mode)
+    },
+    /** Persiste settings parciales al backend y actualiza estado local. */
+    async updateSettings(partial: Partial<UserSetting> & { preferences?: Record<string, unknown> }) {
+      // Actualización optimista inmediata
+      if (this.settings) {
+        this.settings = { ...this.settings, ...partial }
+        localStorage.setItem('settings', JSON.stringify(this.settings))
+      }
+      if (partial.layout_mode && this.user) {
+        this.user = { ...this.user, layout_mode: partial.layout_mode }
+        localStorage.setItem('user', JSON.stringify(this.user))
+      }
+      try {
+        const res = await api.patch('/user/settings', partial)
+        const data = res.data?.data as UserSetting
+        if (data) {
+          this.settings = data
+          localStorage.setItem('settings', JSON.stringify(this.settings))
+        }
+      } catch {
+        // Silencioso — el estado local ya refleja el cambio
+      }
     }
   }
 })

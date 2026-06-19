@@ -1,10 +1,10 @@
 <template>
-  <nav class="nav-pill" role="navigation" aria-label="Primary">
+  <nav class="bnm" role="navigation" aria-label="Primary">
     <button
-      v-for="item in NAV_ITEMS"
+      v-for="item in items"
       :key="item.id"
-      class="nav-pill__tab"
-      :class="{ 'nav-pill__tab--active': currentTab === item.id }"
+      class="bnm__tab"
+      :class="{ 'bnm__tab--active': currentTab === item.id }"
       :aria-current="currentTab === item.id ? 'page' : false"
       @click="navigate(item)"
     >
@@ -12,7 +12,7 @@
       {{ item.label }}
     </button>
 
-    <button class="nav-pill__fab" aria-label="Agregar transacción" @click="$emit('quick-add')">
+    <button class="bnm__fab" aria-label="Agregar transacción" @click="$emit('quick-add')">
       <span class="material-icons">add</span>
     </button>
   </nav>
@@ -22,39 +22,50 @@
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 
+interface NavItem {
+  id: string;
+  label: string;
+  icon: string;
+  route: string;
+}
+
+withDefaults(defineProps<{
+  items?: NavItem[];
+  accent?: string;
+}>(), {
+  accent: 'var(--brand-primary)',
+  items: () => [
+    { id: 'home',         label: 'Home',     icon: 'home',         route: '/user/home' },
+    { id: 'transactions', label: 'Movs',     icon: 'receipt_long', route: '/user/transactions' },
+    { id: 'jars',         label: 'Cántaros', icon: 'savings',      route: '/user/jars' },
+    { id: 'dreams',       label: 'Sueños',   icon: 'auto_awesome', route: '/user/dreams' },
+    { id: 'config',       label: 'Ajustes',  icon: 'settings',     route: '/user/config' },
+  ],
+});
+
 defineEmits<{ 'quick-add': [] }>();
 
 const router = useRouter();
-const route = useRoute();
-
-const NAV_ITEMS = [
-  { id: 'home',         label: 'Home',     icon: 'home',         route: '/user/home' },
-  { id: 'transactions', label: 'Movs',     icon: 'receipt_long', route: '/user/transactions' },
-  { id: 'analisis',     label: 'Análisis', icon: 'donut_small',  route: '/user/expense-analysis' },
-  { id: 'jars',         label: 'Cántaros', icon: 'savings',      route: '/user/jars' },
-  { id: 'dreams',       label: 'Sueños',   icon: 'auto_awesome', route: '/user/dreams' },
-  { id: 'debts',        label: 'Deudas',   icon: 'credit_card',  route: '/user/debts' },
-  { id: 'config',       label: 'Ajustes',  icon: 'settings',     route: '/user/config' },
-];
+const route  = useRoute();
 
 const currentTab = computed(() => {
   const p = route.path;
-  if (p.includes('/transactions'))             return 'transactions';
-  if (p.includes('/expense-analysis'))         return 'analisis';
-  if (p.includes('/jars'))                     return 'jars';
-  if (p.includes('/dreams'))                   return 'dreams';
-  if (p.includes('/debts'))                    return 'debts';
+  if (p.includes('/transactions'))                      return 'transactions';
+  if (p.includes('/expense-analysis'))                  return 'analisis';
+  if (p.includes('/jars'))                              return 'jars';
+  if (p.includes('/dreams'))                            return 'dreams';
+  if (p.includes('/debts'))                             return 'debts';
   if (p.includes('/config') || p.includes('/settings')) return 'config';
   return 'home';
 });
 
-function navigate(item: { route: string }) {
+function navigate(item: NavItem) {
   void router.push(item.route);
 }
 </script>
 
 <style lang="scss" scoped>
-.nav-pill {
+.bnm {
   position: fixed;
   bottom: 28px;
   left: 50%;
@@ -75,6 +86,7 @@ function navigate(item: { route: string }) {
     right: 12px;
     transform: none;
     justify-content: center;
+    flex-wrap: wrap;
   }
 
   &__tab {
@@ -100,13 +112,13 @@ function navigate(item: { route: string }) {
     }
 
     &--active {
-      background: var(--brand-primary);
-      color: var(--fg-on-brand);
+      background: v-bind(accent);
+      color: #fff;
       font-weight: 600;
 
       &:hover {
-        background: var(--brand-primary);
-        color: var(--fg-on-brand);
+        background: v-bind(accent);
+        color: #fff;
       }
     }
   }
@@ -118,12 +130,12 @@ function navigate(item: { route: string }) {
     border: 0;
     cursor: pointer;
     border-radius: var(--radius-pill);
-    background: var(--brand-primary);
-    color: var(--fg-on-brand);
+    background: v-bind(accent);
+    color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 14px rgba(30, 58, 138, 0.30);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.20);
     transition: transform 150ms, box-shadow 150ms;
     flex-shrink: 0;
 
@@ -131,7 +143,6 @@ function navigate(item: { route: string }) {
 
     &:hover {
       transform: scale(1.07);
-      box-shadow: 0 6px 20px rgba(30, 58, 138, 0.40);
     }
 
     &:active { transform: scale(0.93); }

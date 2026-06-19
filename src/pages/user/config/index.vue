@@ -8,6 +8,50 @@
         <span class="t-eyebrow">Configuración</span>
         <h1 class="t-h1" style="margin: 6px 0 16px;">Preferencias</h1>
       </div>
+      <!-- ── App Prefs: modo + tema ─────────────────────────────── -->
+      <div class="apref">
+        <span class="t-eyebrow apref__label">Modo de vista</span>
+        <div class="apref__mode-row">
+          <button
+            class="apref__mode-btn"
+            :class="{ 'apref__mode-btn--active': activeLayoutMode === 'lite' }"
+            @click="switchMode('lite')"
+          >
+            <span class="material-icons">phone_iphone</span>
+            <span>Lite</span>
+            <span class="apref__mode-sub">Simple y rápido</span>
+          </button>
+          <button
+            class="apref__mode-btn"
+            :class="{ 'apref__mode-btn--active': activeLayoutMode === 'pro' }"
+            @click="switchMode('pro')"
+          >
+            <span class="material-icons">desktop_mac</span>
+            <span>Pro</span>
+            <span class="apref__mode-sub">Sidebar + análisis</span>
+          </button>
+        </div>
+
+        <div class="apref__row" @click="toggleTheme">
+          <span class="material-icons apref__row-icon">{{ isDark ? 'dark_mode' : 'light_mode' }}</span>
+          <div class="apref__row-text">
+            <span>Tema</span>
+            <span class="apref__row-hint">{{ isDark ? 'Oscuro' : 'Claro' }}</span>
+          </div>
+          <div class="apref__toggle" :class="{ 'apref__toggle--on': isDark }" />
+        </div>
+
+        <div class="apref__row" @click="ui.toggleHideValues()">
+          <span class="material-icons apref__row-icon">visibility_off</span>
+          <div class="apref__row-text">
+            <span>Ocultar saldos por defecto</span>
+            <span class="apref__row-hint">{{ ui.hideValues ? 'Activado' : 'Desactivado' }}</span>
+          </div>
+          <div class="apref__toggle" :class="{ 'apref__toggle--on': ui.hideValues }" />
+        </div>
+      </div>
+
+      <!-- ── Nav items ───────────────────────────────────────────── -->
       <div class="lite-config__nav">
         <button
           v-for="item in configNav"
@@ -632,6 +676,7 @@ import CrudPage from 'components/CrudPage.vue';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import AccountsTree from 'components/AccountsTree.vue';
 import { useAuthStore } from 'stores/auth';
+import { useUiStore } from 'stores/ui';
 import { defaultAvatarUrl } from '../config';
 import { dictionary as taxesDictionary } from '../taxes/dictionary';
 import { api } from 'boot/axios';
@@ -646,11 +691,23 @@ defineOptions({ name: 'user_config_page' });
 const $q = useQuasar();
 const router = useRouter();
 const auth = useAuthStore();
+const ui = useUiStore();
 const showOnboarding = ref(false);
 const tab = ref<'profile' | 'finance' | 'categories' | 'accounts' | 'taxes'>('profile');
 
 const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.user?.layout_mode));
 const isLiteLayout = computed(() => activeLayoutMode.value === 'lite');
+const isDark = computed(() => $q.dark.isActive);
+
+async function switchMode(mode: 'lite' | 'pro') {
+  auth.updateLayoutMode(mode);
+  await auth.updateSettings({ layout_mode: mode });
+}
+
+function toggleTheme() {
+  $q.dark.toggle();
+  try { localStorage.setItem('ow-theme', $q.dark.isActive ? 'dark' : 'light'); } catch { /* noop */ }
+}
 
 type ConfigNavItem = {
   name: 'profile' | 'finance' | 'categories' | 'accounts' | 'taxes';
@@ -1780,5 +1837,118 @@ async function saveProfile() {
   .lite-config__nav {
     padding: 0 16px;
   }
+}
+
+/* ── AppPrefs ────────────────────────────────────────────────── */
+.apref {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 24px 16px;
+  max-width: 640px;
+}
+.apref__label {
+  display: block;
+  margin-bottom: 4px;
+}
+.apref__mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.apref__mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px;
+  border: 2px solid var(--border-hairline, #e2e8f0);
+  border-radius: 16px;
+  background: var(--surface-1, #fff);
+  cursor: pointer;
+  font-family: var(--font-body, sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-2, #64748b);
+  transition: all 150ms;
+  text-align: center;
+}
+.apref__mode-btn .material-icons {
+  font-size: 28px;
+  color: var(--fg-2, #64748b);
+}
+.apref__mode-btn--active {
+  border-color: var(--brand-primary, #1e3a8a);
+  background: rgba(30, 58, 138, 0.07);
+  color: var(--brand-primary, #1e3a8a);
+}
+.apref__mode-btn--active .material-icons {
+  color: var(--brand-primary, #1e3a8a);
+}
+.apref__mode-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--fg-2, #64748b);
+}
+.apref__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--surface-1, #fff);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.apref__row:hover { background: var(--surface-2, #f1f5f9); }
+.apref__row-icon {
+  font-size: 20px;
+  color: var(--fg-2, #64748b);
+  flex-shrink: 0;
+}
+.apref__row-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-body, sans-serif);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg-1, #0f172a);
+}
+.apref__row-hint {
+  font-size: 12px;
+  color: var(--fg-2, #64748b);
+  font-weight: 400;
+}
+.apref__toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 99px;
+  background: var(--surface-2, #e2e8f0);
+  position: relative;
+  transition: background 200ms;
+  flex-shrink: 0;
+}
+.apref__toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--fg-2, #94a3b8);
+  transition: transform 200ms, background 200ms;
+}
+.apref__toggle--on {
+  background: var(--brand-primary, #1e3a8a);
+}
+.apref__toggle--on::after {
+  transform: translateX(20px);
+  background: white;
+}
+@media (max-width: 480px) {
+  .apref { padding: 0 16px 16px; }
 }
 </style>
