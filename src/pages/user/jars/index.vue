@@ -815,6 +815,20 @@
                               </template>
                             </div>
 
+                            <!-- Descripción / propósito del cántaro -->
+                            <q-input
+                              v-model="jar.description"
+                              type="textarea"
+                              dense
+                              filled
+                              class="q-mt-sm"
+                              label="Propósito (opcional)"
+                              placeholder="¿Para qué es este cántaro? El asesor IA usará este contexto."
+                              rows="2"
+                              autogrow
+                              :maxlength="300"
+                            />
+
                             <!-- Balance card (right after config) -->
                             <div v-if="jar.id && jarBalances[jar.id]" class="q-mt-md">
                               <JarCard
@@ -1267,6 +1281,7 @@ type Jar = {
   target_amount?: number | null;
   leverage_from_jar_id?: number | null;
   color?: string | undefined;
+  description?: string | null;
   categories?: Array<{ id: string; label: string }>;
   active?: boolean;
   collapsed?: boolean;
@@ -1577,6 +1592,7 @@ function mkJar(name: string, percent: number, type: 'percent' | 'fixed', id?: nu
     target_amount: null,
     leverage_from_jar_id: null,
     color: undefined,
+    description: null,
     categories: [],
     active: true,
     collapsed: true,
@@ -2387,6 +2403,7 @@ async function loadJarData() {
       j.reset_cycle_day = r.reset_cycle_day ?? 1;
       j.target_amount = r.target_amount ?? null;
       j.leverage_from_jar_id = (r as { leverage_from_jar_id?: number | null }).leverage_from_jar_id ?? null;
+      j.description = (r as { description?: string | null }).description ?? null;
       j.collapsed = true;
 
       const act = (r as { is_active?: unknown }).is_active ?? (r as { active?: unknown }).active;
@@ -3262,6 +3279,7 @@ async function saveChanges() {
         reset_cycle_day: j.reset_cycle_day ?? 1,
         target_amount: j.target_amount ?? null,
         leverage_from_jar_id: j.leverage_from_jar_id ?? null,
+        description: j.description ?? null,
         sort_order: idx + 1,
         active: j.active ?? true,
         category_ids, // Categorías asignadas (drag-drop)
