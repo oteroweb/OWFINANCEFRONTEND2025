@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <title>OW Finance · Desktop UI Kit</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .material-icons {
+      font-family: 'Material Icons', sans-serif; font-style: normal;
+      display: inline-flex; align-items: center; justify-content: center;
+      line-height: 1; letter-spacing: normal; text-transform: none;
+      white-space: nowrap; direction: ltr;
+      -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Demo toolbar — docked top bar (occupies layout, never overlaps app) ── */
+    #demo-toolbar {
+      position: sticky; top: 0; z-index: 9000;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 8px 16px;
+      background: var(--surface-1);
+      border-bottom: 1px solid var(--border-hairline);
+      box-shadow: var(--shadow-card);
+    }
+    #demo-toolbar .tb-brand {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-display); font-weight: 600; font-size: 13px;
+      color: var(--fg-1); white-space: nowrap;
+    }
+    #demo-toolbar .tb-brand .dot {
+      width: 18px; height: 18px; border-radius: 6px;
+      background: var(--brand-primary);
+    }
+    #demo-toolbar .tb-controls {
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    #demo-toolbar .sep {
+      width: 1px; height: 20px; background: var(--border-hairline);
+      margin: 0 2px;
+    }
+    #demo-toolbar button {
+      border: 0; cursor: pointer; padding: 6px 14px;
+      border-radius: 999px;
+      font-family: var(--font-body); font-size: 12px; font-weight: 500;
+      background: transparent; color: var(--fg-2);
+      display: inline-flex; align-items: center; gap: 5px;
+      transition: background 150ms, color 150ms;
+    }
+    #demo-toolbar button .material-icons { font-size: 14px; }
+    #demo-toolbar button.active {
+      background: var(--brand-primary); color: #fff; font-weight: 600;
+    }
+    #demo-toolbar button.active-pro {
+      background: var(--info); color: #fff; font-weight: 600;
+    }
+    #demo-toolbar .mode-label {
+      font-family: var(--font-body); font-size: 10px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3);
+      padding: 0 4px;
+    }
+
+    /* ── Tablet device preview frame (desktop layout, framed) ── */
+    body.viewport-tablet {
+      background:
+        radial-gradient(1200px 700px at 50% -10%, #1b2540, #0b1020 60%);
+    }
+    body.viewport-tablet #root {
+      width: 834px; max-width: 834px;
+      margin: 28px auto 40px;
+      height: calc(100vh - 68px);
+      background: var(--bg-canvas);
+      border: 13px solid #0a0f1e;
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 40px 90px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,255,255,0.04) inset;
+    }
+    body.viewport-tablet #root > * {
+      height: 100% !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+    }
+
+    /* ── Mobile device preview frame ── */
+    body.viewport-mobile {
+      background:
+        radial-gradient(1200px 600px at 50% -10%, #1b2540, #0b1020 60%);
+    }
+    body.viewport-mobile #root {
+      width: 412px; max-width: 412px;
+      margin: 28px auto 40px;
+      height: calc(100vh - 68px);
+      background: var(--bg-canvas);
+      border: 11px solid #0a0f1e;
+      border-radius: 46px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 40px 90px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,255,255,0.04) inset;
+    }
+    /* notch */
+    body.viewport-mobile #root::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 150px; height: 26px; background: #0a0f1e;
+      border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 9999;
+    }
+    /* make the app inside scroll within the frame */
+    body.viewport-mobile #root > * {
+      height: 100% !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+      padding-bottom: 0 !important;
+    }
+    /* the page content is the only scroll region */
+    body.viewport-mobile #root main {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 12px 16px 24px !important;
+      max-width: none !important;
+    }
+    /* header: tighter side padding on a narrow screen (Lite + Pro) */
+    body.viewport-mobile #root header {
+      padding-left: 16px !important;
+      padding-right: 16px !important;
+      max-width: none !important;
+    }
+    /* shrink the KPI amounts so the 3-up row never clips */
+    body.viewport-mobile main .t-amount-lg { font-size: 18px !important; }
+    /* shrink the hero amount so the "Agregar" button stays on screen */
+    body.viewport-mobile main .t-hero-amount { font-size: 38px !important; }
+
+    /* floating pill → full-width bottom tab bar docked to the frame */
+    body.viewport-mobile nav[aria-label="Primary"] {
+      position: relative !important;
+      left: auto !important; right: auto !important; bottom: auto !important;
+      transform: none !important;
+      width: 100% !important;
+      flex: 0 0 auto !important;
+      border-radius: 0 !important;
+      border-top: 1px solid var(--border-hairline) !important;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.06) !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      gap: 2px !important;
+      padding: 7px 6px 9px !important;
+      box-sizing: border-box !important;
+    }
+    body.viewport-mobile nav[aria-label="Primary"] > button {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      flex-direction: column !important;
+      gap: 2px !important;
+      padding: 5px 2px !important;
+      font-size: 9px !important;
+      border-radius: 12px !important;
+      white-space: nowrap !important;
+    }
+    body.viewport-mobile nav[aria-label="Primary"] > button .material-icons {
+      font-size: 22px !important;
+    }
+    body.viewport-mobile nav[aria-label="Primary"] > button[aria-label="Quick add"] {
+      flex: 0 0 auto !important;
+      width: 46px !important; height: 46px !important;
+      border-radius: 50% !important;
+      margin-left: 2px !important;
+      padding: 0 !important;
+      align-self: center !important;
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       TWEAK OVERRIDES — driven by data-tw-* on <html>. Each control remaps
+       a whole family of tokens (not one property), and the dark variants
+       carry higher specificity so theme keeps winning. Default values
+       (navy / std / geometric) are intentionally NOT listed: absence of the
+       attribute = the canonical design.
+       ════════════════════════════════════════════════════════════════════ */
+
+    /* ── 1 · Personalidad de marca — remaps the brand ramp ── */
+    :root[data-tw-brand="emerald"] {
+      --brand-primary: #059669; --brand-primary-hover: #047857; --brand-primary-press: #065F46;
+      --brand-primary-soft: #D1FAE5; --brand-primary-fg-soft: #047857; --focus-ring: #059669;
+    }
+    :root[data-tw-brand="emerald"][data-theme="dark"] {
+      --brand-primary: #34D399; --brand-primary-hover: #6EE7B7; --brand-primary-press: #10B981;
+      --brand-primary-soft: rgba(16,185,129,0.16); --brand-primary-fg-soft: #6EE7B7; --focus-ring: #34D399;
+    }
+    :root[data-tw-brand="violet"] {
+      --brand-primary: #7C3AED; --brand-primary-hover: #6D28D9; --brand-primary-press: #5B21B6;
+      --brand-primary-soft: #EDE9FE; --brand-primary-fg-soft: #6D28D9; --focus-ring: #7C3AED;
+    }
+    :root[data-tw-brand="violet"][data-theme="dark"] {
+      --brand-primary: #A78BFA; --brand-primary-hover: #C4B5FD; --brand-primary-press: #8B5CF6;
+      --brand-primary-soft: rgba(139,92,246,0.18); --brand-primary-fg-soft: #C4B5FD; --focus-ring: #A78BFA;
+    }
+    :root[data-tw-brand="graphite"] {
+      --brand-primary: #334155; --brand-primary-hover: #1E293B; --brand-primary-press: #0F172A;
+      --brand-primary-soft: #F1F5F9; --brand-primary-fg-soft: #334155; --focus-ring: #334155;
+    }
+    :root[data-tw-brand="graphite"][data-theme="dark"] {
+      --brand-primary: #94A3B8; --brand-primary-hover: #CBD5E1; --brand-primary-press: #64748B;
+      --brand-primary-soft: rgba(148,163,184,0.16); --brand-primary-fg-soft: #CBD5E1; --focus-ring: #94A3B8;
+    }
+
+    /* ── 2 · Forma & elevación — radii + shadow language move together ── */
+    :root[data-tw-shape="soft"] {
+      --radius-xs: 12px; --radius-sm: 16px; --radius-md: 20px; --radius-lg: 26px; --radius-xl: 34px;
+      --shadow-card:   0 8px 30px rgba(15,23,42,0.10);
+      --shadow-hover:  0 12px 38px rgba(15,23,42,0.14);
+      --shadow-float:  0 16px 44px rgba(15,23,42,0.16);
+      --shadow-popover:0 24px 60px rgba(15,23,42,0.22);
+    }
+    :root[data-tw-shape="soft"][data-theme="dark"] {
+      --shadow-card:   0 1px 0 rgba(255,255,255,0.05) inset, 0 12px 34px rgba(0,0,0,0.42);
+      --shadow-hover:  0 1px 0 rgba(255,255,255,0.06) inset, 0 16px 40px rgba(0,0,0,0.50);
+      --shadow-float:  0 1px 0 rgba(255,255,255,0.07) inset, 0 20px 50px rgba(0,0,0,0.58);
+      --shadow-popover:0 1px 0 rgba(255,255,255,0.08) inset, 0 28px 64px rgba(0,0,0,0.66);
+    }
+    :root[data-tw-shape="editorial"] {
+      --radius-xs: 3px; --radius-sm: 4px; --radius-md: 5px; --radius-lg: 7px; --radius-xl: 9px;
+      --shadow-card:   0 0 0 1px var(--border-hairline);
+      --shadow-hover:  0 0 0 1px rgba(15,23,42,0.12);
+      --shadow-float:  0 2px 10px rgba(15,23,42,0.08);
+      --shadow-popover:0 10px 30px rgba(15,23,42,0.16);
+    }
+    :root[data-tw-shape="editorial"][data-theme="dark"] {
+      --shadow-hover:  0 0 0 1px rgba(255,255,255,0.12);
+      --shadow-float:  0 2px 12px rgba(0,0,0,0.45);
+      --shadow-popover:0 12px 34px rgba(0,0,0,0.6);
+    }
+
+    /* ── 3 · Tipografía — font pairing reshapes the voice ── */
+    :root[data-tw-type="humanist"] {
+      --font-display: "Inter", system-ui, -apple-system, sans-serif;
+      --font-body:    "Inter", system-ui, -apple-system, sans-serif;
+      --font-money:   "Inter", system-ui, sans-serif;
+    }
+    :root[data-tw-type="expressive"] {
+      --font-display: "Manrope", "Satoshi", system-ui, sans-serif;
+      --font-body:    "DM Sans", system-ui, sans-serif;
+      --font-money:   "Manrope", "Satoshi", system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App chrome lives inside React now — theme in header, mode/lang/device in Settings -->
+
+  <div id="root"></div>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- ── i18n (must load before components) ─────────────────────── -->
+  <script type="text/babel" src="data/i18n.jsx"></script>
+
+  <!-- ── Tweaks panel (host-protocol shell + controls) ──────────── -->
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+
+  <!-- ── Atoms ─────────────────────────────────────────────────── -->
+  <script type="text/babel" src="atoms/Primitives.jsx"></script>
+  <script type="text/babel" src="atoms/Buttons.jsx"></script>
+  <script type="text/babel" src="atoms/Chips.jsx"></script>
+
+  <!-- ── Molecules ─────────────────────────────────────────────── -->
+  <script type="text/babel" src="molecules/SectionHeader.jsx"></script>
+  <script type="text/babel" src="molecules/FormControls.jsx"></script>
+  <script type="text/babel" src="molecules/ChipGroup.jsx"></script>
+
+  <!-- ── Organisms · Lite chrome ───────────────────────────────── -->
+  <script type="text/babel" src="organisms/LiteHeader.jsx"></script>
+  <script type="text/babel" src="organisms/MonthNavigator.jsx"></script>
+  <script type="text/babel" src="organisms/AccountFilter.jsx"></script>
+  <script type="text/babel" src="organisms/LiteNavPill.jsx"></script>
+  <script type="text/babel" src="organisms/MobileTabBar.jsx"></script>
+  <script type="text/babel" src="organisms/ExpandedMenu.jsx"></script>
+  <script type="text/babel" src="organisms/NotificationsPanel.jsx"></script>
+
+  <!-- ── Organisms · Shared modals (Lite + Pro) ────────────────── -->
+  <script type="text/babel" src="organisms/ExchangeRatesWidget.jsx"></script>
+  <script type="text/babel" src="organisms/TransactionForm.jsx"></script>
+  <script type="text/babel" src="organisms/BulkImportPanel.jsx"></script>
+  <script type="text/babel" src="organisms/DesktopQuickModal.jsx"></script>
+  <script type="text/babel" src="organisms/SmartTransactionModal.jsx"></script>
+  <script type="text/babel" src="organisms/TransactionDetailModal.jsx"></script>
+  <script type="text/babel" src="organisms/AIAdvisorPanel.jsx"></script>
+  <script type="text/babel" src="organisms/JarsConfig.jsx"></script>
+  <script type="text/babel" src="organisms/OnboardingFlow.jsx"></script>
+
+  <!-- ── Organisms · Financial display ─────────────────────────── -->
+  <script type="text/babel" src="organisms/HeroBalance.jsx"></script>
+  <script type="text/babel" src="organisms/JarsPreview.jsx"></script>
+  <script type="text/babel" src="organisms/DebtsPreview.jsx"></script>
+  <script type="text/babel" src="organisms/DreamsPreview.jsx"></script>
+  <script type="text/babel" src="organisms/RecentTransactions.jsx"></script>
+  <script type="text/babel" src="organisms/AccountsPanel.jsx"></script>
+  <script type="text/babel" src="organisms/AnalisisParts.jsx"></script>
+
+  <!-- ── Data ─────────────────────────────────────────────────── -->
+  <script type="text/babel" src="data/finance-data.jsx"></script>
+  <script type="text/babel" src="data/sample-data.jsx"></script>
+  <script type="text/babel" src="data/profile-data.jsx"></script>
+  <script type="text/babel" src="data/analisis-data.jsx"></script>
+
+  <!-- ── Templates · Lite routes ───────────────────────────────── -->
+  <script type="text/babel" src="templates/HomeRoute.jsx"></script>
+  <script type="text/babel" src="templates/TransactionsRoute.jsx"></script>
+  <script type="text/babel" src="templates/JarsRoute.jsx"></script>
+  <script type="text/babel" src="templates/DreamsRoute.jsx"></script>
+  <script type="text/babel" src="templates/DebtsRoute.jsx"></script>
+  <script type="text/babel" src="templates/ConfigRoute.jsx"></script>
+  <script type="text/babel" src="templates/ProfileRoute.jsx"></script>
+  <script type="text/babel" src="templates/FinancialProfileRoute.jsx"></script>
+  <script type="text/babel" src="templates/AnalisisRoute.jsx"></script>
+
+  <!-- ── Templates · Pro route ─────────────────────────────────── -->
+  <script type="text/babel" src="templates/ProHomeRoute.jsx"></script>
+  <script type="text/babel" src="templates/ProAnalisisRoute.jsx"></script>
+
+  <!-- ── Shells (pages) ────────────────────────────────────────── -->
+  <script type="text/babel" src="shells/LiteShell.jsx"></script>
+  <script type="text/babel" src="shells/ProShell.jsx"></script>
+
+  <!-- ── Mount + toolbar wiring ───────────────────────────────── -->
+  <script type="text/babel">
+    let currentMode = 'lite';
+    const reactRoot = ReactDOM.createRoot(document.getElementById('root'));
+
+    function renderApp() {
+      if (currentMode === 'pro') {
+        reactRoot.render(<ProShell />);
+      } else {
+        reactRoot.render(<LiteShell />);
+      }
+    }
+    window.renderApp = renderApp;
+
+    renderApp();
+  </script>
+
+  <!-- ── Tweaks: three expressive levers, own React root ──────────── -->
+  <div id="tweaks-root"></div>
+  <script type="text/babel">
+    (function mountTweaks() {
+      const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+        "brand": "navy",
+        "shape": "std",
+        "type": "geometric"
+      }/*EDITMODE-END*/;
+
+      const root = document.documentElement;
+      const apply = (t) => {
+        // Default values map to "no attribute" so the canonical design is untouched.
+        t.brand === 'navy'      ? root.removeAttribute('data-tw-brand') : root.setAttribute('data-tw-brand', t.brand);
+        t.shape === 'std'       ? root.removeAttribute('data-tw-shape') : root.setAttribute('data-tw-shape', t.shape);
+        t.type  === 'geometric' ? root.removeAttribute('data-tw-type')  : root.setAttribute('data-tw-type', t.type);
+      };
+
+      function Tweaks() {
+        const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+        React.useEffect(() => { apply(t); }, [t.brand, t.shape, t.type]);
+        return (
+          <TweaksPanel title="Tweaks">
+            <TweakSection label="Personalidad de marca" />
+            <TweakRadio label="Acento" value={t.brand}
+              options={[
+                { value: 'navy',     label: 'Navy' },
+                { value: 'emerald',  label: 'Esmeralda' },
+                { value: 'violet',   label: 'Violeta' },
+                { value: 'graphite', label: 'Grafito' },
+              ]}
+              onChange={(v) => setTweak('brand', v)} />
+
+            <TweakSection label="Forma & elevación" />
+            <TweakRadio label="Lenguaje" value={t.shape}
+              options={[
+                { value: 'soft',      label: 'Suave' },
+                { value: 'std',       label: 'Estándar' },
+                { value: 'editorial', label: 'Editorial' },
+              ]}
+              onChange={(v) => setTweak('shape', v)} />
+
+            <TweakSection label="Tipografía" />
+            <TweakRadio label="Voz" value={t.type}
+              options={[
+                { value: 'geometric',  label: 'Geométrica' },
+                { value: 'humanist',   label: 'Humanista' },
+                { value: 'expressive', label: 'Expresiva' },
+              ]}
+              onChange={(v) => setTweak('type', v)} />
+          </TweaksPanel>
+        );
+      }
+
+      // Apply persisted defaults immediately, even before the panel is opened.
+      apply(TWEAK_DEFAULTS);
+      ReactDOM.createRoot(document.getElementById('tweaks-root')).render(<Tweaks />);
+    })();
+  </script>
+
+  <script>
+    // ── App-level controls (no top bar — driven from header + Settings) ──
+
+    // Mode (Lite / Pro) — switched from Settings
+    window.getMode = () => currentMode;
+    window.setMode = (mode) => {
+      if (mode !== 'lite' && mode !== 'pro') return;
+      currentMode = mode;
+      if (window.renderApp) window.renderApp();
+    };
+
+    // Theme (light / dark) — toggled from the header
+    window.getAppTheme = () => document.documentElement.getAttribute('data-theme') || 'light';
+    window.setAppTheme = (theme) => {
+      const t = (theme === 'dark') ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+      try { localStorage.setItem('ow-theme', t); } catch (e) {}
+      if (window.renderApp) window.renderApp();
+    };
+    window.toggleAppTheme = () => window.setAppTheme(window.getAppTheme() === 'dark' ? 'light' : 'dark');
+
+    // Device preview (desktop / tablet / mobile) — picked from Settings
+    window.getDevice = () => (
+      document.body.classList.contains('viewport-mobile') ? 'mobile'
+      : document.body.classList.contains('viewport-tablet') ? 'tablet'
+      : 'desktop'
+    );
+    window.setDevice = (device) => {
+      document.body.classList.toggle('viewport-mobile', device === 'mobile');
+      document.body.classList.toggle('viewport-tablet', device === 'tablet');
+      try { localStorage.setItem('ow-device', device); } catch (e) {}
+      if (window.renderApp) window.renderApp(); // re-eval useViewportMobile consumers
+    };
+
+    // ── Restore persisted prefs + honor URL params ──
+    (function init() {
+      const qs = new URLSearchParams(location.search);
+      const urlTheme = qs.get('theme');
+      const savedTheme = (() => { try { return localStorage.getItem('ow-theme'); } catch (e) { return null; } })();
+      const theme = (urlTheme === 'dark' || urlTheme === 'light') ? urlTheme : savedTheme;
+      if (theme === 'dark' || theme === 'light') document.documentElement.setAttribute('data-theme', theme);
+
+      const urlMode = qs.get('mode');
+      if (urlMode === 'pro' || urlMode === 'lite') window.setMode(urlMode);
+
+      const urlDevice = qs.get('device');
+      const savedDevice = (() => { try { return localStorage.getItem('ow-device'); } catch (e) { return null; } })();
+      const device = ['desktop','tablet','mobile'].includes(urlDevice) ? urlDevice : savedDevice;
+      if (device && device !== 'desktop') window.setDevice(device);
+    })();
+  </script>
+</body>
+</html>
