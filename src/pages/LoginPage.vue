@@ -87,7 +87,7 @@
 
             <div v-if="mode === 'login'" class="row-between">
               <label class="check"><input v-model="rememberMe" type="checkbox" checked />Recuérdame</label>
-              <a class="link-cyan" style="font-size: 13.5px" href="#">¿Olvidaste tu contraseña?</a>
+              <router-link class="link-cyan" style="font-size: 13.5px" to="/forgot-password">¿Olvidaste tu contraseña?</router-link>
             </div>
 
             <button class="btn btn-primary btn-lg btn-block" type="submit" :disabled="loginLoading">

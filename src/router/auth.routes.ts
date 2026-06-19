@@ -14,11 +14,16 @@ export const authRoutes: RouteRecordRaw[] = [
   {
     path: '/register',
     component: () => import('layouts/MainLayout.vue'),
-    children: [
-      {
-        path: '',
-        component: () => import('pages/RegisterPage.vue'),
-      },
-    ],
+    children: [{ path: '', component: () => import('pages/RegisterPage.vue') }],
+  },
+  {
+    path: '/forgot-password',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [{ path: '', component: () => import('pages/ForgotPasswordPage.vue') }],
+  },
+  {
+    path: '/reset-password',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [{ path: '', component: () => import('pages/ResetPasswordPage.vue') }],
   },
 ];
