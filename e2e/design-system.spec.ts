@@ -3,6 +3,9 @@ import { login } from './helpers/auth';
 
 test.describe('Design System tokens — DS-01..04', () => {
   test.beforeEach(async ({ page }) => {
+    if (!process.env.PLAYWRIGHT_TEST_EMAIL) {
+      test.skip(true, 'Set PLAYWRIGHT_TEST_EMAIL + PLAYWRIGHT_TEST_PASSWORD to run auth-required tests');
+    }
     await login(page);
   });
 

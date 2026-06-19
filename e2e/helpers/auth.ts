@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 
 export const TEST_USER = {
-  email: 'user@demo.com',
-  password: 'S$ratoga.1990',
+  email: process.env.PLAYWRIGHT_TEST_EMAIL ?? 'user@demo.com',
+  password: process.env.PLAYWRIGHT_TEST_PASSWORD ?? 'S$ratoga.1990',
 };
 
 export async function login(page: Page, email = TEST_USER.email, password = TEST_USER.password) {
