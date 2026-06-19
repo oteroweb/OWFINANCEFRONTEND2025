@@ -670,7 +670,7 @@ const configNav: ConfigNavItem[] = [
 ];
 
 function handleNavItem(item: ConfigNavItem) {
-  if (item.route) { router.push(item.route); return; }
+  if (item.route) { void router.push(item.route); return; }
   if (item.action) { item.action(); return; }
   tab.value = item.name;
 }

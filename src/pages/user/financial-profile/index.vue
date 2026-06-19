@@ -4,7 +4,7 @@
 
       <!-- Header -->
       <div class="fp-page__header">
-        <button class="fp-page__back" @click="router.push('/user/config')">
+        <button class="fp-page__back" @click="void router.push('/user/config')">
           <q-icon name="chevron_left" size="18px" />
           Configuración
         </button>
@@ -138,7 +138,7 @@
 
         <!-- Actions -->
         <div class="fp-page__actions">
-          <q-btn flat label="Cancelar" @click="router.push('/user/config')" />
+          <q-btn flat label="Cancelar" @click="void router.push('/user/config')" />
           <q-btn unelevated color="primary" label="Guardar perfil" :loading="saving" @click="save" />
         </div>
       </template>
@@ -257,7 +257,7 @@ async function save() {
       onboarding_profile_completed: true,
     });
     $q.notify({ type: 'positive', message: 'Perfil financiero actualizado' });
-    router.push('/user/config');
+    void void router.push('/user/config');
   } catch (e: unknown) {
     const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Error al guardar';
     $q.notify({ type: 'negative', message: msg });

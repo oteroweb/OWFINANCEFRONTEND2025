@@ -4,7 +4,7 @@
 
       <!-- Header -->
       <div class="profile-page__header">
-        <button class="profile-page__back" @click="router.push('/user/config')">
+        <button class="profile-page__back" @click="void router.push('/user/config')">
           <q-icon name="chevron_left" size="18px" />
           Configuración
         </button>
@@ -75,7 +75,7 @@
 
       <!-- Actions -->
       <div class="profile-page__actions">
-        <q-btn flat label="Cancelar" @click="router.push('/user/config')" />
+        <q-btn flat label="Cancelar" @click="void router.push('/user/config')" />
         <q-btn unelevated color="primary" label="Guardar cambios" :loading="saving" @click="save" />
       </div>
 

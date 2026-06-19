@@ -228,8 +228,8 @@ async function finish() {
 async function skip() {
   try {
     await api.put('/user/financial-profile', { onboarding_profile_completed: true });
-  } catch {}
-  try { localStorage.setItem('ow-onboarded', '1'); } catch {}
+  } catch (_e) { /* best-effort */ }
+  try { localStorage.setItem('ow-onboarded', '1'); } catch (_e) { /* best-effort */ }
   emit('done');
   emit('update:modelValue', false);
 }
