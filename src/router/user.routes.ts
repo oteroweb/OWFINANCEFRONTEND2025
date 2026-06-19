@@ -21,6 +21,8 @@ export const userRoutes: RouteRecordRaw[] = [
       { path: 'asesor', component: () => import('src/pages/AsesorPage.vue') },
       { path: 'profile', component: () => import('src/pages/user/profile/index.vue') },
       { path: 'financial-profile', component: () => import('src/pages/user/financial-profile/index.vue') },
+      // /user/settings alias → mismo componente que /user/config (usado desde Pro sidebar)
+      { path: 'settings', redirect: '/user/config' },
     ],
   },
 ];

@@ -118,7 +118,7 @@
     <BottomNavMobile
       v-if="isPro && isMobile"
       accent="var(--info)"
-      :items="NAV_ITEMS"
+
       @quick-add="quickAddOpen = true"
     />
 

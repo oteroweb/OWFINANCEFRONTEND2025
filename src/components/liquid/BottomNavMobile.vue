@@ -85,8 +85,10 @@ function navigate(item: NavItem) {
     left: 12px;
     right: 12px;
     transform: none;
-    justify-content: center;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 4px;
   }
 
   &__tab {
@@ -105,6 +107,20 @@ function navigate(item: NavItem) {
     transition: background var(--dur-base, 150ms), color var(--dur-base, 150ms);
 
     .material-icons { font-size: 20px; }
+
+    @media (max-width: 480px) {
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px 6px;
+      font-size: 10px;
+      flex: 1;
+      min-width: 0;
+      justify-content: center;
+      white-space: nowrap;
+      overflow: hidden;
+
+      .material-icons { font-size: 22px; }
+    }
 
     &:hover {
       background: var(--surface-2);
@@ -127,6 +143,13 @@ function navigate(item: NavItem) {
     margin-left: 4px;
     width: 48px;
     height: 48px;
+
+    @media (max-width: 480px) {
+      width: 40px;
+      height: 40px;
+      margin-left: 2px;
+      flex-shrink: 0;
+    }
     border: 0;
     cursor: pointer;
     border-radius: var(--radius-pill);
