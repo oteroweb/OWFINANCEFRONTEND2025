@@ -19,6 +19,8 @@ export const userRoutes: RouteRecordRaw[] = [
       { path: 'dreams', component: () => import('src/pages/user/dreams/index.vue') },
       { path: 'debts', component: () => import('src/pages/user/debts/index.vue') },
       { path: 'asesor', component: () => import('src/pages/AsesorPage.vue') },
+      { path: 'profile', component: () => import('src/pages/user/profile/index.vue') },
+      { path: 'financial-profile', component: () => import('src/pages/user/financial-profile/index.vue') },
     ],
   },
 ];

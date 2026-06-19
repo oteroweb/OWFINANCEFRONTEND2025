@@ -13,8 +13,8 @@
           v-for="item in configNav"
           :key="item.name"
           class="lite-config__nav-item"
-          :class="{ 'lite-config__nav-item--active': tab === item.name }"
-          @click="tab = item.name"
+          :class="{ 'lite-config__nav-item--active': !item.route && tab === item.name }"
+          @click="handleNavItem(item)"
         >
           <q-icon :name="item.icon" size="20px" />
           <div class="lite-config__nav-text">
@@ -23,7 +23,17 @@
           </div>
           <q-icon name="chevron_right" size="18px" />
         </button>
+        <!-- Repetir onboarding -->
+        <button class="lite-config__nav-item" @click="showOnboarding = true">
+          <q-icon name="route" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">Configuración inicial</span>
+            <span class="lite-config__nav-hint">Volver a configurar tu perfil IA</span>
+          </div>
+          <q-icon name="chevron_right" size="18px" />
+        </button>
       </div>
+      <OnboardingFlow v-model="showOnboarding" />
     </template>
 
     <q-card flat :bordered="!isLiteLayout" class="lite-config__card">
@@ -616,6 +626,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+import OnboardingFlow from 'src/components/OnboardingFlow.vue';
 import CrudPage from 'components/CrudPage.vue';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import AccountsTree from 'components/AccountsTree.vue';
@@ -632,19 +644,36 @@ import {
 defineOptions({ name: 'user_config_page' });
 
 const $q = useQuasar();
+const router = useRouter();
 const auth = useAuthStore();
+const showOnboarding = ref(false);
 const tab = ref<'profile' | 'finance' | 'categories' | 'accounts' | 'taxes'>('profile');
 
 const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.user?.layout_mode));
 const isLiteLayout = computed(() => activeLayoutMode.value === 'lite');
 
-const configNav = [
-  { name: 'profile' as const, label: 'Perfil', hint: 'Información personal y seguridad', icon: 'person' },
-  { name: 'finance' as const, label: 'Finanzas', hint: 'Moneda, tasas e ingreso mensual', icon: 'account_balance' },
-  { name: 'categories' as const, label: 'Categorías', hint: 'Organiza tus categorías de gasto', icon: 'category' },
-  { name: 'accounts' as const, label: 'Cuentas', hint: 'Bancos, tarjetas y medios de pago', icon: 'account_balance_wallet' },
-  { name: 'taxes' as const, label: 'Impuestos', hint: 'Configuración de impuestos', icon: 'percent' },
+type ConfigNavItem = {
+  name: 'profile' | 'finance' | 'categories' | 'accounts' | 'taxes';
+  label: string;
+  hint: string;
+  icon: string;
+  route?: string;
+  action?: () => void;
+};
+
+const configNav: ConfigNavItem[] = [
+  { name: 'profile', label: 'Perfil', hint: 'Nombre, correo y contraseña', icon: 'person', route: '/user/profile' },
+  { name: 'finance', label: 'Mi perfil financiero', hint: 'Ingresos, metas y asesor IA', icon: 'insights', route: '/user/financial-profile' },
+  { name: 'accounts', label: 'Cuentas', hint: 'Bancos, tarjetas y medios de pago', icon: 'account_balance_wallet' },
+  { name: 'categories', label: 'Categorías', hint: 'Organiza tus categorías de gasto', icon: 'category' },
+  { name: 'taxes', label: 'Impuestos', hint: 'Configuración de impuestos', icon: 'percent' },
 ];
+
+function handleNavItem(item: ConfigNavItem) {
+  if (item.route) { router.push(item.route); return; }
+  if (item.action) { item.action(); return; }
+  tab.value = item.name;
+}
 
 // ----- Tasas de Cambio del Usuario -----
 type UserRate = {
