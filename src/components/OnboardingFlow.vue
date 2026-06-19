@@ -213,7 +213,7 @@ async function finish() {
       ...form.value,
       onboarding_profile_completed: true,
     });
-    try { localStorage.setItem('ow-onboarded', '1'); } catch {}
+    try { localStorage.setItem('ow-onboarded', '1'); } catch (lsErr) { void lsErr; }
     emit('done');
     emit('update:modelValue', false);
   } catch {
@@ -228,8 +228,8 @@ async function finish() {
 async function skip() {
   try {
     await api.put('/user/financial-profile', { onboarding_profile_completed: true });
-  } catch (_e) { /* best-effort */ }
-  try { localStorage.setItem('ow-onboarded', '1'); } catch (_e) { /* best-effort */ }
+  } catch (skipErr) { void skipErr; }
+  try { localStorage.setItem('ow-onboarded', '1'); } catch (lsErr) { void lsErr; }
   emit('done');
   emit('update:modelValue', false);
 }
