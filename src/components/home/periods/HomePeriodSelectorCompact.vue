@@ -18,23 +18,28 @@
 </template>
 
 <script setup lang="ts">
-export type HomeIntervalKey = 'month' | 'week' | 'year';
+import type { PeriodType } from 'stores/period';
 
 interface Props {
-  modelValue: HomeIntervalKey;
+  modelValue: PeriodType;
 }
 
 defineProps<Props>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: HomeIntervalKey];
+  'update:modelValue': [value: PeriodType];
   shift: [direction: -1 | 1];
 }>();
 
-const options: Array<{ label: string; value: HomeIntervalKey }> = [
-  { label: 'Mensual', value: 'month' },
+const options: Array<{ label: string; value: PeriodType }> = [
+  { label: 'Día', value: 'day' },
   { label: 'Semanal', value: 'week' },
+  { label: 'Quincenal', value: 'fortnight' },
+  { label: 'Mensual', value: 'month' },
+  { label: 'Trimestral', value: 'quarter' },
+  { label: 'Semestral', value: 'semester' },
   { label: 'Anual', value: 'year' },
+  { label: 'Todo', value: 'all' },
 ];
 </script>
 
