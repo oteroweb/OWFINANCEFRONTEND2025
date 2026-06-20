@@ -47,11 +47,11 @@
             <div class="plan-name">Plus</div>
             <div class="plan-desc">Control total para quien quiere precisión.</div>
             <div class="plan-price">
-              <span class="amt">${{ billing === 'm' ? '4.99' : '3.99' }}</span>
+              <span class="amt">${{ billing === 'm' ? '6' : '5' }}</span>
               <span class="per">/ mes</span>
             </div>
-            <div class="plan-note">{{ billing === 'm' ? 'Pago mensual' : 'Facturado anualmente' }}</div>
-            <router-link class="btn btn-primary btn-block" to="/register">Empezar con Plus</router-link>
+            <div class="plan-note">{{ billing === 'm' ? 'Facturado mensual' : 'Facturado anual · $ 57 / año' }}</div>
+            <router-link class="btn btn-primary btn-block" to="/register">Probar Plus<span class="material-icons">arrow_forward</span></router-link>
             <p class="feats-head">Todo lo de Gratis, más:</p>
             <ul class="plan-feats">
               <li><span class="material-icons">check</span>Multi-moneda (USD/EUR/VES)</li>
@@ -63,22 +63,23 @@
             </ul>
           </div>
 
-          <!-- Pro -->
+          <!-- Familiar -->
           <div class="plan">
-            <div class="plan-name">Pro</div>
-            <div class="plan-desc">Para equipos o familias que comparten finanzas.</div>
+            <div class="plan-name">Familiar</div>
+            <div class="plan-desc">Finanzas compartidas, para una casa o un equipo pequeño.</div>
             <div class="plan-price">
-              <span class="amt">${{ billing === 'm' ? '9.99' : '7.99' }}</span>
+              <span class="amt">${{ billing === 'm' ? '12' : '10' }}</span>
               <span class="per">/ mes</span>
             </div>
-            <div class="plan-note">{{ billing === 'm' ? 'Pago mensual' : 'Facturado anualmente' }}</div>
-            <router-link class="btn btn-ghost btn-block" to="/register">Empezar con Pro</router-link>
+            <div class="plan-note">{{ billing === 'm' ? 'Hasta 5 personas' : 'Hasta 5 personas · $ 115 / año' }}</div>
+            <router-link class="btn btn-ghost btn-block" to="/register">Elegir Familiar</router-link>
             <p class="feats-head">Todo lo de Plus, más:</p>
             <ul class="plan-feats">
-              <li><span class="material-icons">check</span>Usuarios adicionales</li>
-              <li><span class="material-icons">check</span>Reportes personalizados</li>
-              <li><span class="material-icons">check</span>Exportación (CSV, PDF)</li>
-              <li><span class="material-icons">check</span>Soporte prioritario</li>
+              <li><span class="material-icons">check_circle</span>Cuentas compartidas y carpetas</li>
+              <li><span class="material-icons">check_circle</span>Hasta 5 miembros con permisos</li>
+              <li><span class="material-icons">check_circle</span>Apalancamiento entre cántaros</li>
+              <li><span class="material-icons">check_circle</span>Histórico mensual por ciclos</li>
+              <li><span class="material-icons">check_circle</span>Soporte prioritario</li>
             </ul>
           </div>
         </div>
@@ -92,8 +93,16 @@
       </div>
     </section>
 
+    <!-- COMPARE STRIP -->
+    <section class="section-sm">
+      <div class="wrap reveal" style="text-align: center">
+        <p class="lede" style="margin: 0 auto; max-width: 560px">¿Quieres ver capacidad por capacidad qué incluye cada modo?</p>
+        <router-link class="btn btn-ghost" style="margin-top: 18px" to="/funciones#comparativa">Ver comparativa Lite vs Pro<span class="material-icons">arrow_forward</span></router-link>
+      </div>
+    </section>
+
     <!-- FAQ -->
-    <section class="section">
+    <section class="section surface-alt">
       <div class="wrap">
         <div class="section-head reveal" style="margin-bottom: 48px">
           <p class="eyebrow">Preguntas frecuentes</p>
@@ -124,6 +133,19 @@
             <summary>¿Hay descuento para estudiantes?<span class="material-icons">add</span></summary>
             <p>Contacta a soporte con tu correo institucional. Tenemos descuentos para educación y ONGs.</p>
           </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA BAND -->
+    <section class="section">
+      <div class="wrap">
+        <div class="band-navy reveal" style="text-align: center">
+          <h2 class="display-sm" style="max-width: 600px; margin: 0 auto">Empieza gratis hoy. Sube cuando lo necesites.</h2>
+          <div style="display: flex; gap: 12px; justify-content: center; margin-top: 28px; flex-wrap: wrap">
+            <router-link class="btn btn-on-navy btn-lg" to="/register">Crear cuenta gratis<span class="material-icons">arrow_forward</span></router-link>
+            <router-link class="btn btn-on-navy-ghost btn-lg" to="/">Volver al inicio</router-link>
+          </div>
         </div>
       </div>
     </section>

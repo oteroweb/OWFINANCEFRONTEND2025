@@ -31,7 +31,8 @@
               <li><span class="material-icons">check_circle</span>Reparto por porcentaje o monto fijo</li>
               <li><span class="material-icons">check_circle</span>Plantilla rápida 55 / 10 / 10 / 10 / 10</li>
               <li><span class="material-icons">check_circle</span>Meta de ahorro por cántaro con avance visible</li>
-              <li><span class="material-icons">check_circle</span>Transferencias entre cántaros</li>
+              <li><span class="material-icons">check_circle</span>Transferencias entre cántaros cuando cambian los planes</li>
+              <li><span class="material-icons">check_circle</span>En Pro: ajustes manuales, apalancamiento e histórico por ciclos</li>
             </ul>
             <router-link class="link-cyan" style="margin-top: 26px" to="/">Ver cántaros en acción<span class="material-icons">arrow_forward</span></router-link>
           </div>
@@ -143,9 +144,10 @@
             <h3>Carga masiva</h3>
             <p>Importa un extracto completo con vista previa.</p>
           </div>
-          <div class="feature" style="background: var(--brand-primary); color: #fff; justify-content: center">
-            <h3 style="color: #fff">Un botón Agregar, siempre a mano.</h3>
-            <p style="color: rgba(255, 255, 255, 0.82)">Sin menús que estorben. Registro en segundos.</p>
+          <div class="feature">
+            <span class="feat-ico"><span class="material-icons">receipt_long</span></span>
+            <h3>Ítems &amp; impuestos</h3>
+            <p>En Pro: divide por ítem, aplica IGTF 3% y reparte cada línea a su cántaro.</p>
           </div>
         </div>
       </div>
@@ -189,30 +191,19 @@
     <!-- CUENTAS Y MONEDAS -->
     <section class="section surface-alt" id="cuentas" style="scroll-margin-top: 84px">
       <div class="wrap">
-        <div class="split reverse reveal">
-          <div class="split-media">
-            <div class="card card-pad-lg">
-              <div class="mock-hero" style="background: var(--surface-2); border-radius: var(--radius-lg); padding: 20px">
-                <span class="mock-eyebrow">Disponible · <span style="color: var(--fg-2)">USD</span></span>
-                <span class="mock-amount">$ 12,480.50</span>
-                <div class="mock-kpis" style="margin-top: 14px">
-                  <div class="mock-kpi"><div class="k-lbl">VES</div><div class="k-val">746.84</div></div>
-                  <div class="mock-kpi"><div class="k-lbl">EUR</div><div class="k-val">0.92</div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="split-copy">
-            <span class="feat-ico cyan"><span class="material-icons">account_balance_wallet</span></span>
-            <h2 class="display-sm" style="margin-top: 18px">Cuentas &amp; monedas</h2>
-            <p class="lede" style="margin-top: 16px">USD, EUR y VES en simultáneo, con tasa al vuelo. En Pro, administra múltiples cuentas
-              (banco, tarjeta, efectivo) y transfiere entre ellas cambiando de moneda.</p>
-            <ul class="bullets">
-              <li><span class="material-icons">check_circle</span>Multi-moneda en tiempo real.</li>
-              <li><span class="material-icons">check_circle</span>Cuentas bancarias, tarjetas y efectivo.</li>
-              <li><span class="material-icons">check_circle</span>Transferencias cross-currency con impuestos.</li>
-            </ul>
-          </div>
+        <div class="section-head reveal" style="margin-bottom: 44px">
+          <span class="feat-ico cyan"><span class="material-icons">account_balance</span></span>
+          <h2 class="display-sm" style="margin-top: 18px">Cuentas y monedas <span class="chip cyan" style="vertical-align: middle; font-size: 12px">Pro</span></h2>
+          <p class="lede">Cuando necesitas trazabilidad total, Pro suma una capa de cuentas reales y multimoneda
+            — sin perder la simplicidad de los cántaros.</p>
+        </div>
+        <div class="feature-grid reveal">
+          <div class="feature"><span class="feat-ico cyan"><span class="material-icons">account_balance_wallet</span></span><h3>Multi-cuenta</h3><p>Banco, tarjeta, efectivo y más, organizadas en carpetas.</p></div>
+          <div class="feature"><span class="feat-ico"><span class="material-icons">currency_exchange</span></span><h3>Multimoneda</h3><p>USD, EUR y VES en simultáneo, con tasa al vuelo al registrar.</p></div>
+          <div class="feature"><span class="feat-ico amber"><span class="material-icons">swap_horiz</span></span><h3>Transferencias</h3><p>Entre cuentas, incluso cross-currency, con su tasa registrada.</p></div>
+          <div class="feature"><span class="feat-ico green"><span class="material-icons">groups</span></span><h3>Cuentas compartidas</h3><p>Para una casa o equipo, con saldo inicial e impuestos por cuenta.</p></div>
+          <div class="feature"><span class="feat-ico violet"><span class="material-icons">percent</span></span><h3>Impuestos</h3><p>IGTF 3%, Pago Móvil y reglas fiscales por cuenta.</p></div>
+          <div class="feature"><span class="feat-ico"><span class="material-icons">call_split</span></span><h3>Pago múltiple</h3><p>Divide un pago en varias cuentas en una sola transacción.</p></div>
         </div>
       </div>
     </section>
