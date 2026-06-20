@@ -125,6 +125,9 @@
     <!-- ═══ OVERLAYS GLOBALES ══════════════════════════════════════════════ -->
     <QuickActionSheet v-model="quickAddOpen" />
 
+    <!-- Smart Transaction Modal — global, disponible desde cualquier pantalla -->
+    <SmartTransactionModal @saved="onTransactionSaved" />
+
     <!-- Onboarding — primer login o repetición desde Config -->
     <OnboardingFlow v-model="showOnboarding" @done="onOnboardingDone" />
 
@@ -154,6 +157,7 @@ import LiteFloatingBottomNav from 'components/liquid/LiteFloatingBottomNav.vue';
 import BottomNavMobile from 'components/liquid/BottomNavMobile.vue';
 import ExpandedNavigationMenuLight from 'components/liquid/ExpandedNavigationMenuLight.vue';
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
+import SmartTransactionModal from 'components/SmartTransactionModal.vue';
 import OnboardingFlow from 'components/OnboardingFlow.vue';
 
 const router = useRouter();
@@ -179,6 +183,11 @@ onMounted(checkOnboarding);
 watch(() => auth.settings?.has_seen_onboarding, (val) => {
   if (val === false) showOnboarding.value = true;
 });
+
+function onTransactionSaved() {
+  // Emitir evento global para que las páginas de transacciones refresquen
+  window.dispatchEvent(new CustomEvent('owf:transaction-saved'));
+}
 
 async function onOnboardingDone() {
   showOnboarding.value = false;

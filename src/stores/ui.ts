@@ -11,6 +11,10 @@ export const useUiStore = defineStore('ui', {
     prefillAmount: null as number | null,
     prefillName: null as string | null,
     prefillDate: null as string | null,
+    // Smart Transaction Modal
+    showSmartModal: false as boolean,
+    smartModalTab: 'write' as 'write' | 'voice' | 'photo' | 'autoai',
+    smartModalType: 'expense' as 'expense' | 'income' | 'transfer',
     hideValues: localStorage.getItem('ow_hide_values') === 'true',
     jarStatus: {
       totalAvailable: 0,
@@ -45,6 +49,14 @@ export const useUiStore = defineStore('ui', {
         usedPercent: Number(payload.usedPercent || 0),
         jarCount: Number(payload.jarCount || 0),
       };
+    },
+    openSmartModal(tab: 'write' | 'voice' | 'photo' | 'autoai' = 'write', type: 'expense' | 'income' | 'transfer' = 'expense') {
+      this.smartModalTab = tab;
+      this.smartModalType = type;
+      this.showSmartModal = true;
+    },
+    closeSmartModal() {
+      this.showSmartModal = false;
     },
     openNewTransactionDialog(typeSlug?: string) {
       this.prefillTransactionId = null;
