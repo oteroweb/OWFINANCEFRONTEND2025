@@ -1605,6 +1605,13 @@ function removeTypeRule(index: number) {
   typeMappingRules.value.splice(index, 1)
 }
 
+// Re-normaliza tipos en preview cuando cambian las reglas o el toggle
+watch([enableTypeMappingRules, typeMappingRules], () => {
+  const rows = activeTab.value === 'excel' ? excelParsedRows.value : activeTab.value === 'text' ? textParsedRows.value : null
+  if (!rows) return
+  rows.forEach((row) => { row.type = normalizeTypeValue(row.type) })
+}, { deep: true })
+
 function addCategoryKeywordRule() {
   categoryKeywordRules.value.push({ keyword: '', categoryId: null })
 }
@@ -2246,12 +2253,16 @@ function buildRowPayloadFromNormalized(row: Record<string, unknown>): Transactio
 
   if (isTransfer) {
     const fallbackFrom = selectedAccountId.value ? Number(selectedAccountId.value) : NaN
-    const fromAccountId = Number(row.from_account_id ?? fallbackFrom)
-    const toAccountId = Number(row.to_account_id)
+    const resolveAccountByName = (name: unknown) => {
+      const n = safeText(name).trim().toLowerCase()
+      return n ? (allAccounts.value.find((a: { id: number; name: string }) => a.name.trim().toLowerCase() === n)?.id ?? NaN) : NaN
+    }
+    const fromAccountId = row.from_account_id ? Number(row.from_account_id) : (resolveAccountByName(row.from_account_name) || fallbackFrom)
+    const toAccountId = row.to_account_id ? Number(row.to_account_id) : resolveAccountByName(row.to_account_name)
     const transferAmount = Math.abs(Number(row.amount))
 
     if (!Number.isFinite(fromAccountId) || fromAccountId <= 0 || !Number.isFinite(toAccountId) || toAccountId <= 0) {
-      throw new Error(`La fila ${clientRowId || 'transfer'} es transferencia y requiere cuenta origen y destino`)
+      throw new Error(`La fila ${clientRowId || 'transfer'} es transferencia y requiere cuenta origen y destino (usa los nombres exactos de tus cuentas)`)
     }
 
     if (!Number.isFinite(transferAmount) || transferAmount <= 0) {

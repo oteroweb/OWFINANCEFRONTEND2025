@@ -1825,7 +1825,7 @@ function buildQueryParams(): Record<string, unknown> {
   };
   const params: Record<string, unknown> = {
     [pmap.page]: pagination.value.page,
-    [pmap.per_page]: pagination.value.rowsPerPage,
+    [pmap.per_page]: pagination.value.rowsPerPage === 0 ? 1000 : pagination.value.rowsPerPage,
     [pmap.sort_by]: pagination.value.sortBy,
     [pmap.descending]: pagination.value.descending,
   };
@@ -2718,6 +2718,7 @@ function openNewFab(): void {
 function handleBulkImported(count: number): void {
   showBulkImport.value = false;
   void fetchData();
+  if (singleAccountSelected.value) void fetchSingleAccountBalance();
   $q.notify({
     type: 'positive',
     message: `${count} transacciones importadas exitosamente`,
