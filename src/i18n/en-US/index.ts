@@ -14,6 +14,7 @@ export default {
     home: 'Home',
     transactions: 'Txns.',
     jars: 'Jars',
+    dreams: 'Dreams',
     config: 'Settings',
     add: 'Add',
     advisor: 'Advisor',

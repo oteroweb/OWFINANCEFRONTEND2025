@@ -1,7 +1,7 @@
 <template>
   <nav class="bnm" role="navigation" aria-label="Primary">
     <button
-      v-for="item in items"
+      v-for="item in navItems"
       :key="item.id"
       class="bnm__tab"
       :class="{ 'bnm__tab--active': currentTab === item.id }"
@@ -21,6 +21,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 
 interface NavItem {
   id: string;
@@ -29,19 +30,23 @@ interface NavItem {
   route: string;
 }
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   items?: NavItem[];
   accent?: string;
 }>(), {
   accent: 'var(--brand-primary)',
-  items: () => [
-    { id: 'home',         label: 'Home',     icon: 'home',         route: '/user/home' },
-    { id: 'transactions', label: 'Movs',     icon: 'receipt_long', route: '/user/transactions' },
-    { id: 'jars',         label: 'Cántaros', icon: 'savings',      route: '/user/jars' },
-    { id: 'dreams',       label: 'Sueños',   icon: 'auto_awesome', route: '/user/dreams' },
-    { id: 'config',       label: 'Ajustes',  icon: 'settings',     route: '/user/config' },
-  ],
+  items: undefined,
 });
+
+const { t } = useI18n();
+
+const navItems = computed<NavItem[]>(() => props.items ?? [
+  { id: 'home',         label: t('nav.home'),         icon: 'home',         route: '/user/home' },
+  { id: 'transactions', label: t('nav.transactions'), icon: 'receipt_long', route: '/user/transactions' },
+  { id: 'jars',         label: t('nav.jars'),         icon: 'savings',      route: '/user/jars' },
+  { id: 'dreams',       label: t('nav.dreams'),       icon: 'auto_awesome', route: '/user/dreams' },
+  { id: 'config',       label: t('nav.config'),       icon: 'settings',     route: '/user/config' },
+]);
 
 defineEmits<{ 'quick-add': [] }>();
 
@@ -62,6 +67,7 @@ const currentTab = computed(() => {
 function navigate(item: NavItem) {
   void router.push(item.route);
 }
+
 </script>
 
 <style lang="scss" scoped>

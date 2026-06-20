@@ -17,6 +17,7 @@ export default {
     home: 'Inicio',
     transactions: 'Movs.',
     jars: 'Cántaros',
+    dreams: 'Sueños',
     config: 'Ajustes',
     add: 'Agregar',
     advisor: 'Asesor',
