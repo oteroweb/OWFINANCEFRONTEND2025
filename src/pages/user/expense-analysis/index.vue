@@ -52,6 +52,26 @@
         </div>
       </section>
 
+      <!-- Jar strip (spec: AnJarStrip) — horizontal scroll de gasto por cántaro -->
+      <section v-if="chartRows.length" class="jar-strip">
+        <div
+          v-for="jar in jarStripRows"
+          :key="jar.id"
+          class="jar-strip__card"
+          :class="{ 'jar-strip__card--active': selectedJarId === jar.id }"
+          @click="selectedJarId = selectedJarId === jar.id ? null : jar.id"
+        >
+          <div class="jar-strip__name-row">
+            <span class="jar-strip__dot" :style="{ background: jar.color }" />
+            <span class="jar-strip__name">{{ jar.name }}</span>
+          </div>
+          <div class="jar-strip__amount">-{{ formatMoney(jar.spent) }}</div>
+          <div class="jar-strip__bar">
+            <div class="jar-strip__bar-fill" :style="{ width: `${jar.pct}%`, background: jar.color }" />
+          </div>
+        </div>
+      </section>
+
       <section class="metric-grid">
         <q-card v-for="item in metricCards" :key="item.key" flat bordered class="metric-card">
           <q-card-section>
@@ -839,6 +859,12 @@ const chartRows = computed(() => {
   return Array.from(byJar.values());
 });
 
+const jarStripRows = computed(() => {
+  const rows = chartRows.value.filter(j => j.spent > 0).sort((a, b) => b.spent - a.spent);
+  const max = rows[0]?.spent ?? 1;
+  return rows.map(j => ({ ...j, pct: Math.round((j.spent / max) * 100) }));
+});
+
 const activeFilterChips = computed(() => {
   const chips: Array<{ key: string; label: string }> = [];
   if (search.value.trim()) chips.push({ key: 'search', label: `Buscar: ${search.value.trim()}` });
@@ -1149,8 +1175,83 @@ onMounted(() => {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+}
+
+.expense-analysis-page--pro .metric-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* ── Jar strip ── */
+.jar-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 14px;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.jar-strip__card {
+  flex: 0 0 auto;
+  min-width: 130px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface-1, #fff);
+  box-shadow: var(--shadow-card, 0 1px 4px rgba(0,0,0,.08));
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: border-color 140ms, box-shadow 140ms;
+
+  &--active {
+    border-color: var(--brand-primary, #2d4da6);
+    box-shadow: 0 0 0 2px rgba(45,77,166,.18);
+  }
+
+  &:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+}
+
+.jar-strip__name-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+
+.jar-strip__dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+
+.jar-strip__name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-2, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jar-strip__amount {
+  font-family: var(--font-money, monospace);
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--expense-fg, #b91c1c);
+  font-variant-numeric: tabular-nums;
+}
+
+.jar-strip__bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-3, #e2e8f0);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.jar-strip__bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 400ms ease-out;
 }
 
 .metric-label {
