@@ -358,6 +358,7 @@ const progressColor = computed(() => {
 });
 
 function formatCurrency(amount: number): string {
+  if (!Number.isFinite(Number(amount))) return '—';
   const symbol = auth.user?.currency?.symbol || '$';
   const align = auth.user?.currency?.align || 'left';
   const formatted = Math.abs(amount).toFixed(2);

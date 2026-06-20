@@ -41,7 +41,8 @@ export function useCalculatedIncome() {
    * Negativo: ganó menos de lo esperado
    */
   const difference = computed(() => {
-    return calculatedIncome.value - expectedIncome.value;
+    const diff = calculatedIncome.value - expectedIncome.value;
+    return Number.isFinite(diff) ? diff : 0;
   });
 
   /**
@@ -52,7 +53,8 @@ export function useCalculatedIncome() {
    */
   const fulfillmentPercentage = computed(() => {
     if (expectedIncome.value === 0) return 0;
-    return Math.round((calculatedIncome.value / expectedIncome.value) * 100);
+    const pct = Math.round((calculatedIncome.value / expectedIncome.value) * 100);
+    return Number.isFinite(pct) ? pct : 0;
   });
 
   /**
