@@ -137,7 +137,7 @@
           :key="tx.id"
           class="tx-item"
           :class="{ 'tx-item--first': i === 0 }"
-          @click="goToDetail()"
+          @click="openDetail(tx)"
         >
           <div class="tx-icon" :class="tx.type === 'income' ? 'tx-icon--income' : 'tx-icon--expense'">
             <q-icon :name="tx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="16px" />
@@ -153,19 +153,81 @@
         </div>
       </div>
     </div>
+
+    <!-- Transaction detail bottom sheet -->
+    <q-dialog v-model="showDetail" position="bottom" :maximized="false">
+      <div v-if="detailTx" class="tx-detail-sheet">
+        <div class="tx-detail-sheet__handle" />
+
+        <!-- Hero -->
+        <div class="tx-detail-sheet__hero">
+          <div class="tx-detail-sheet__icon"
+            :class="detailTx.type === 'income' ? 'tx-detail-sheet__icon--income' : 'tx-detail-sheet__icon--expense'">
+            <q-icon :name="detailTx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="26px" />
+          </div>
+          <div class="tx-detail-sheet__amount"
+            :style="{ color: detailTx.type === 'income' ? 'var(--income-fg, #10b981)' : 'var(--expense-fg, #ef4444)' }">
+            {{ isHidden ? '$ ••••••' : `${detailTx.type === 'income' ? '+' : '−'} ${formatMoney(Math.abs(detailTx.amount))}` }}
+          </div>
+          <div class="tx-detail-sheet__label">{{ detailTx.name }}</div>
+        </div>
+
+        <!-- Detail rows -->
+        <div class="tx-detail-sheet__rows">
+          <div class="tx-detail-row">
+            <q-icon name="swap_vert" size="19px" class="tx-detail-row__icon" />
+            <span class="tx-detail-row__key">Tipo</span>
+            <span class="tx-detail-row__val" :style="{ color: detailTx.type === 'income' ? 'var(--income-fg)' : 'var(--expense-fg)' }">
+              {{ detailTx.type === 'income' ? 'Ingreso' : 'Gasto' }}
+            </span>
+          </div>
+          <div class="tx-detail-row">
+            <q-icon name="label" size="19px" class="tx-detail-row__icon" />
+            <span class="tx-detail-row__key">Categoría</span>
+            <span class="tx-detail-row__val">{{ detailTx.category }}</span>
+          </div>
+          <div v-if="detailTx.jarName" class="tx-detail-row">
+            <q-icon name="savings" size="19px" class="tx-detail-row__icon" />
+            <span class="tx-detail-row__key">Cántaro</span>
+            <span class="tx-detail-row__val" style="display:inline-flex;align-items:center;gap:7px">
+              <span v-if="detailTx.jarColor" :style="{ width: '9px', height: '9px', borderRadius: '50%', background: detailTx.jarColor, flexShrink: 0, display: 'inline-block' }" />
+              {{ detailTx.jarName }}
+            </span>
+          </div>
+          <div class="tx-detail-row">
+            <q-icon name="calendar_today" size="19px" class="tx-detail-row__icon" />
+            <span class="tx-detail-row__key">Fecha</span>
+            <span class="tx-detail-row__val">{{ formatDateShort(detailTx.date) }}</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="tx-detail-sheet__footer">
+          <button class="tx-detail-btn tx-detail-btn--danger" @click="void deleteFromDetail()">
+            <q-icon name="delete_outline" size="17px" /> Eliminar
+          </button>
+          <div style="flex:1" />
+          <button class="tx-detail-btn tx-detail-btn--ghost" @click="showDetail = false">
+            Cerrar
+          </button>
+          <button class="tx-detail-btn tx-detail-btn--primary" @click="editFromDetail">
+            <q-icon name="edit" size="17px" /> Editar
+          </button>
+        </div>
+      </div>
+    </q-dialog>
+
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import TxDropdown from './TxDropdown.vue';
 
 defineOptions({ name: 'LiteTransactionsView' });
 
-const router = useRouter();
 const ui = useUiStore();
 const isHidden = computed(() => ui.hideValues);
 
@@ -296,8 +358,28 @@ function applyPreset(p: typeof amountPresets[0]) {
   maxAmount.value = p.max;
 }
 
-function goToDetail() {
-  void router.push('/user/transactions');
+// ── Detail / Edit ────────────────────────────────────────────────────
+const detailTx = ref<TxItem | null>(null);
+const showDetail = ref(false);
+
+function openDetail(tx: TxItem) {
+  detailTx.value = tx;
+  showDetail.value = true;
+}
+
+function editFromDetail() {
+  showDetail.value = false;
+  if (!detailTx.value) return;
+  ui.openEditTransactionDialog(detailTx.value.id);
+}
+
+async function deleteFromDetail() {
+  if (!detailTx.value) return;
+  try {
+    await api.delete(`/transactions/${detailTx.value.id}`);
+    showDetail.value = false;
+    void loadTransactions();
+  } catch { /* silent */ }
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -381,8 +463,15 @@ async function loadTransactions() {
   }
 }
 
+function onTxSaved() { void loadTransactions(); }
+
 onMounted(() => {
   void loadTransactions();
+  window.addEventListener('owf:transaction-saved', onTxSaved);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('owf:transaction-saved', onTxSaved);
 });
 </script>
 
@@ -798,6 +887,108 @@ onMounted(() => {
     right: auto;
     left: 0;
     width: calc(100vw - 32px);
+  }
+}
+
+// ── Transaction detail sheet ──────────────────────────────────────────
+.tx-detail-sheet {
+  background: var(--surface-1, #fff);
+  border-radius: 22px 22px 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+  min-width: min(520px, 100vw);
+  display: flex;
+  flex-direction: column;
+
+  &__handle {
+    width: 40px; height: 4px;
+    background: var(--surface-3, #e2e8f0);
+    border-radius: 999px;
+    margin: 12px auto 0;
+    flex-shrink: 0;
+  }
+
+  &__hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 24px 18px;
+  }
+
+  &__icon {
+    width: 56px; height: 56px; border-radius: 28px;
+    display: flex; align-items: center; justify-content: center;
+
+    &--income  { background: rgba(16,185,129,.12); color: var(--income-fg, #10b981); }
+    &--expense { background: rgba(239,68,68,.1);   color: var(--expense-fg, #ef4444); }
+  }
+
+  &__amount {
+    font-family: var(--font-money, monospace);
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+  }
+
+  &__label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--fg-1, #0f172a);
+    text-align: center;
+  }
+
+  &__rows {
+    border-top: 1px solid var(--border-hairline, #e2e8f0);
+    border-bottom: 1px solid var(--border-hairline, #e2e8f0);
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+  }
+}
+
+.tx-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+
+  & + & { border-top: 1px solid var(--border-hairline, #f1f4f6); }
+
+  &__icon { color: var(--fg-3, #94a3b8); flex-shrink: 0; }
+  &__key  { flex: 1; font-size: 13px; color: var(--fg-2, #64748b); }
+  &__val  { font-size: 13.5px; font-weight: 600; color: var(--fg-1, #0f172a); }
+}
+
+.tx-detail-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; border-radius: 999px;
+  font-family: var(--font-body, sans-serif);
+  font-size: 13.5px; font-weight: 700; cursor: pointer;
+  padding: 9px 16px;
+  transition: opacity 140ms;
+
+  &--primary {
+    background: var(--brand-primary, #2d4da6); color: #fff;
+    box-shadow: 0 3px 10px rgba(45,77,166,.28);
+    &:hover { opacity: .9; }
+  }
+
+  &--ghost {
+    background: var(--surface-2, #f1f4f6); color: var(--fg-2);
+    &:hover { background: var(--surface-3); }
+  }
+
+  &--danger {
+    background: rgba(239,68,68,.1); color: #b91c1c;
+    &:hover { background: rgba(239,68,68,.18); }
   }
 }
 </style>
