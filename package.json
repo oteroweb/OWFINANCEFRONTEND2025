@@ -12,10 +12,13 @@
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev --port 3000 --host 0.0.0.0",
     "build": "quasar build",
+    "build:android": "quasar build -m capacitor -T android",
+    "dev:android": "quasar dev -m capacitor -T android",
     "postinstall": "quasar prepare"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",
+    "@sentry/vue": "^10.59.0",
     "axios": "^1.2.1",
     "capacitor-native-biometric": "^4.2.2",
     "echarts": "^6.0.0",
