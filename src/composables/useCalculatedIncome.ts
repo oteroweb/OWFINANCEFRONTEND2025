@@ -31,7 +31,8 @@ export function useCalculatedIncome() {
    * Puede ser el valor histórico o el actual
    */
   const expectedIncome = computed(() => {
-    return expectedIncomeValue.value || auth.user?.monthly_income || 0;
+    const v = Number(expectedIncomeValue.value || auth.user?.monthly_income || 0)
+    return Number.isFinite(v) ? v : 0
   });
 
   /**

@@ -317,19 +317,24 @@ const activeIncome = computed(() => {
 
 const available = computed(() => activeIncome.value - props.totalAssigned);
 
+const safeAssigned = computed(() => { const n = Number(props.totalAssigned); return Number.isFinite(n) ? n : 0 })
+
 const assignedPercentage = computed(() => {
-  if (expectedIncome.value === 0) return 0;
-  return Math.round((props.totalAssigned / expectedIncome.value) * 100);
+  const inc = Number(expectedIncome.value)
+  if (!Number.isFinite(inc) || inc === 0) return 0;
+  return Math.round((safeAssigned.value / inc) * 100);
 });
 
 const assignedPercentageReal = computed(() => {
-  if (calculatedIncome.value === 0) return 0;
-  return Math.round((props.totalAssigned / calculatedIncome.value) * 100);
+  const inc = Number(calculatedIncome.value)
+  if (!Number.isFinite(inc) || inc === 0) return 0;
+  return Math.round((safeAssigned.value / inc) * 100);
 });
 
 const availablePercentage = computed(() => {
-  if (activeIncome.value === 0) return 100;
-  return Math.max(0, 100 - Math.round((props.totalAssigned / activeIncome.value) * 100));
+  const inc = Number(activeIncome.value)
+  if (!Number.isFinite(inc) || inc === 0) return 100;
+  return Math.max(0, 100 - Math.round((safeAssigned.value / inc) * 100));
 });
 
 const availableClass = computed(() => {
