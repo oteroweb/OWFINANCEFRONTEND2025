@@ -74,12 +74,35 @@
               <ChipField label="¿Cómo quieres sentirte?" :options="OPTIONS.emotional_keyword" v-model="form.emotional_keyword" />
             </template>
 
-            <!-- Jars: placeholder — cántaros se configuran en la app -->
+            <!-- Jars: template picker -->
             <template v-if="step.id === 'jars'">
-              <div class="ob__jars-hint">
-                <q-icon name="savings" size="40px" color="primary" />
-                <p class="t-body">Los cántaros organizan tu dinero por propósito. Puedes personalizarlos en <strong>Configuración → Mi perfil financiero</strong> después del onboarding.</p>
+              <div v-if="templatesLoading" class="ob__jars-loading">
+                <q-spinner color="primary" size="32px" />
               </div>
+              <template v-else>
+                <div class="ob__templates">
+                  <button
+                    v-for="t in templates"
+                    :key="t.slug"
+                    class="ob__tpl"
+                    :class="{ 'ob__tpl--active': selectedTemplate === t.slug }"
+                    @click="selectedTemplate = selectedTemplate === t.slug ? null : t.slug"
+                  >
+                    <div class="ob__tpl-head">
+                      <span class="ob__tpl-name">{{ t.name }}</span>
+                      <span class="ob__tpl-check material-icons">{{ selectedTemplate === t.slug ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                    </div>
+                    <p class="ob__tpl-desc">{{ t.description }}</p>
+                    <div class="ob__tpl-jars">
+                      <span v-for="j in t.jars.slice(0, 5)" :key="j.id" class="ob__tpl-jar" :style="{ background: j.color + '22', color: j.color }">
+                        {{ j.name }} · {{ j.percent }}%
+                      </span>
+                      <span v-if="t.jars.length > 5" class="ob__tpl-jar ob__tpl-jar--more">+{{ t.jars.length - 5 }} más</span>
+                    </div>
+                  </button>
+                </div>
+                <p class="ob__tpl-skip-hint">Puedes omitir esto y crear tus cántaros manualmente después.</p>
+              </template>
             </template>
           </template>
 
@@ -102,9 +125,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineComponent, h } from 'vue';
+import { ref, computed, defineComponent, h, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
+
+interface JarTemplate {
+  id: number;
+  slug: string;
+  name: string;
+  description: string;
+  jars: Array<{ id: number; name: string; percent: number; color: string }>;
+}
 
 defineOptions({ name: 'OnboardingFlow' });
 
@@ -113,6 +144,23 @@ const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void; (e: 'done
 
 const $q = useQuasar();
 const saving = ref(false);
+
+const templates = ref<JarTemplate[]>([]);
+const templatesLoading = ref(false);
+const selectedTemplate = ref<string | null>(null);
+
+async function loadTemplates() {
+  if (templates.value.length) return;
+  templatesLoading.value = true;
+  try {
+    const res = await api.get<{ data: JarTemplate[] }>('/jar-templates');
+    templates.value = res.data?.data ?? (res.data as unknown as JarTemplate[]) ?? [];
+  } catch {
+    templates.value = [];
+  } finally {
+    templatesLoading.value = false;
+  }
+}
 
 const show = computed({
   get: () => props.modelValue,
@@ -130,6 +178,11 @@ const STEPS = [
 
 const currentIndex = ref(0);
 const step = computed(() => STEPS[currentIndex.value]!);
+
+watch(
+  () => step.value?.id,
+  (id) => { if (id === 'jars') void loadTemplates(); }
+);
 
 const OPTIONS = {
   occupation: [
@@ -209,6 +262,9 @@ function back() {
 async function finish() {
   saving.value = true;
   try {
+    if (selectedTemplate.value) {
+      await api.post('/jar-templates/apply', { template_slug: selectedTemplate.value });
+    }
     await api.put('/user/financial-profile', {
       ...form.value,
       onboarding_profile_completed: true,
@@ -422,15 +478,86 @@ const ChipField = defineComponent({
     }
   }
 
-  &__jars-hint {
+  &__jars-loading {
+    display: flex;
+    justify-content: center;
+    padding: 32px;
+  }
+
+  &__templates {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    text-align: center;
-    padding: 24px;
+    gap: 10px;
+  }
+
+  &__tpl {
+    border: 1.5px solid var(--border-hairline, rgba(0,0,0,.12));
+    border-radius: var(--radius-md, 12px);
     background: var(--surface-2);
-    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+
+    &:hover { border-color: var(--brand-primary); }
+
+    &--active {
+      border-color: var(--brand-primary);
+      background: var(--brand-primary-soft, #EEF2FF);
+    }
+  }
+
+  &__tpl-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  &__tpl-name {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fg-1);
+  }
+
+  &__tpl-check {
+    font-size: 20px;
+    color: var(--brand-primary);
+  }
+
+  &__tpl-desc {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    color: var(--fg-3);
+    margin: 0 0 10px;
+  }
+
+  &__tpl-jars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  &__tpl-jar {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+
+    &--more {
+      background: var(--surface-3);
+      color: var(--fg-3);
+    }
+  }
+
+  &__tpl-skip-hint {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--fg-3);
+    text-align: center;
+    margin: 4px 0 0;
   }
 
   &__footer {
