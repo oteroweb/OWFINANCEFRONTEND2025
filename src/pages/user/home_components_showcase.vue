@@ -59,16 +59,15 @@ import HomePeriodSelectorTabs from 'src/components/home/periods/HomePeriodSelect
 import HomePeriodSelectorChips from 'src/components/home/periods/HomePeriodSelectorChips.vue';
 import HomePeriodSelectorCompact from 'src/components/home/periods/HomePeriodSelectorCompact.vue';
 import type { HomeIntervalKey as TabsIntervalKey } from 'src/components/home/periods/HomePeriodSelectorTabs.vue';
-import type { HomeIntervalKey as ChipsIntervalKey } from 'src/components/home/periods/HomePeriodSelectorChips.vue';
-import type { HomeIntervalKey as CompactIntervalKey } from 'src/components/home/periods/HomePeriodSelectorCompact.vue';
+import type { PeriodType } from 'stores/period';
 
 defineOptions({ name: 'HomeComponentsShowcasePage' });
 
 const router = useRouter();
 
 const tabsValue = ref<TabsIntervalKey>('month');
-const chipsValue = ref<ChipsIntervalKey>('month');
-const compactValue = ref<CompactIntervalKey>('month');
+const chipsValue = ref<PeriodType>('month');
+const compactValue = ref<PeriodType>('month');
 const anchor = ref(new Date());
 
 const tabsLabel = computed(() =>

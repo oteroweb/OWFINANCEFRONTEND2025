@@ -415,23 +415,23 @@ async function onMenuReopen() {
   showMenu.value = false
 }
 
-async function onMenuDelete() {
+function onMenuDelete() {
   if (!menuTarget.value) return
   const name = menuTarget.value.name
+  const id = menuTarget.value.id
   showMenu.value = false
   $q.dialog({
     title: 'Eliminar sueño',
     message: `¿Eliminar "${name}"? Esta acción no se puede deshacer.`,
     cancel: 'Cancelar',
     ok: { label: 'Eliminar', color: 'negative' },
-  }).onOk(async () => {
-    try {
-      await store.remove(menuTarget.value!.id)
+  }).onOk(() => {
+    void store.remove(id).then(() => {
       meta.value = store.meta
       $q.notify({ type: 'positive', message: 'Sueño eliminado' })
-    } catch {
+    }).catch(() => {
       $q.notify({ type: 'negative', message: 'Error al eliminar' })
-    }
+    })
   })
 }
 </script>
