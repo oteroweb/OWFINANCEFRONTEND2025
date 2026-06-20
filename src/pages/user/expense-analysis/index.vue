@@ -13,10 +13,38 @@
               </q-chip>
             </div>
           </div>
-          <div class="text-h4 text-weight-bold">{{ heroTitle }}</div>
-          <div class="text-body2 text-grey-7 hero-copy__body">
-            {{ heroCopy }}
-          </div>
+
+          <!-- Lite mode: big expense hero (redesign pattern) -->
+          <template v-if="isLiteLayout">
+            <div class="analysis-lead">Tienes <b>{{ filteredRows.length }} movimientos</b>. Gastaste</div>
+            <div class="analysis-big">
+              <span class="analysis-big__unit">{{ baseCurrencyCode }}</span>
+              {{ ui.hideValues ? '••••••' : formatMoney(summary.gastosBase) }}
+            </div>
+            <div class="row items-center q-gutter-sm">
+              <span
+                v-if="summary.ingresosBase > 0"
+                class="analysis-delta analysis-delta--income"
+              >
+                <q-icon name="savings" size="15px" />
+                Ingresos · {{ ui.hideValues ? '••' : formatMoney(summary.ingresosBase) }}
+              </span>
+              <span v-if="summary.balanceBase >= 0" class="analysis-delta analysis-delta--ok">
+                <q-icon name="trending_up" size="15px" />
+                Balance positivo
+              </span>
+              <span v-else class="analysis-delta analysis-delta--warn">
+                <q-icon name="trending_down" size="15px" />
+                Balance negativo
+              </span>
+            </div>
+          </template>
+
+          <!-- Pro/Legacy mode: descriptive text -->
+          <template v-else>
+            <div class="text-h4 text-weight-bold">{{ heroTitle }}</div>
+            <div class="text-body2 text-grey-7 hero-copy__body">{{ heroCopy }}</div>
+          </template>
         </div>
         <div class="hero-actions">
           <q-btn color="primary" icon="add" label="Nueva transaccion" @click="ui.openNewTransactionDialog()" />
@@ -534,7 +562,7 @@ const showInlineChart = computed(() => !isLiteLayout.value);
 
 const heroEyebrow = computed(() => {
   if (isLegacyLayout.value) return 'Analitica expandida';
-  if (isLiteLayout.value) return 'Analitica compacta';
+  if (isLiteLayout.value) return 'En qué se fue';
   return 'Analitica de gastos';
 });
 
@@ -1045,6 +1073,55 @@ onMounted(() => {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+}
+
+.analysis-lead {
+  font-size: 15px;
+  color: var(--fg-2);
+  margin-bottom: 6px;
+  b { color: var(--fg-1); }
+}
+
+.analysis-big {
+  font-family: var(--font-money, 'DM Sans', system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 52px;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin-bottom: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--expense-fg, #ef4444);
+}
+
+.analysis-big__unit {
+  color: var(--fg-3);
+  font-size: 26px;
+  margin-right: 4px;
+}
+
+.analysis-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.analysis-delta--income {
+  background: var(--income-soft, #dcfce7);
+  color: var(--income-fg, #15803d);
+}
+
+.analysis-delta--ok {
+  background: var(--income-soft, #dcfce7);
+  color: var(--income-fg, #15803d);
+}
+
+.analysis-delta--warn {
+  background: var(--expense-soft, #fee2e2);
+  color: var(--expense-fg, #ef4444);
 }
 
 .hero-card {
