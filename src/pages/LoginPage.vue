@@ -121,16 +121,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from 'stores/auth';
 import { useBiometric } from 'src/composables/useBiometric';
+import { api } from 'boot/axios';
+import { usePublicTheme } from 'src/composables/usePublicTheme';
 
 const $q = useQuasar();
 const { t } = useI18n();
-import { usePublicTheme } from 'src/composables/usePublicTheme';
 
 const email = ref('');
 const password = ref('');
@@ -139,14 +140,20 @@ const mode = ref<'login' | 'register'>('login');
 const showPassword = ref(false);
 const rememberMe = ref(true);
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 const { isDark, toggleTheme } = usePublicTheme();
 
 const { saveCredentials, isAvailable } = useBiometric();
 const loginLoading = ref(false);
 
+onMounted(() => {
+  if (route.query['tab'] === 'register') mode.value = 'register';
+});
+
 function goToRegister() {
-  void router.push('/register');
+  mode.value = 'register';
+  void router.replace({ path: '/login', query: { tab: 'register' } });
 }
 
 function navigateByRole(role: string) {
@@ -169,20 +176,44 @@ async function submit() {
   if (loginLoading.value) return;
   loginLoading.value = true;
   try {
-    const result = await auth.login(email.value, password.value);
-    console.log('[Login] login result:', result);
-
-    if (isAvailable.value) {
-      await saveCredentials(email.value, password.value);
-    }
-
-    navigateByRole(result.role);
-  } catch (error: unknown) {
-    console.error('Error completo de login:', error);
-    if (error instanceof Error) {
-      $q.notify({ type: 'negative', message: error.message || t('notify.loginError') });
+    if (mode.value === 'register') {
+      const response = await api.post('/auth/register', {
+        name: name.value,
+        email: email.value,
+        password: password.value,
+        password_confirmation: password.value,
+      });
+      const body = response.data as Record<string, unknown>;
+      if (body['status'] === 'OK' && body['token']) {
+        auth.$patch({
+          token: body['token'] as string,
+          user: (body['data'] ?? null) as Parameters<typeof auth.$patch>[0] extends { user?: infer U } ? U : never,
+        });
+        const tokenStr = body['token'] as string;
+        localStorage.setItem('token', tokenStr);
+        localStorage.setItem('user', JSON.stringify(body['data'] ?? null));
+        api.defaults.headers.common.Authorization = `Bearer ${tokenStr}`;
+        void router.push('/user');
+      } else {
+        $q.notify({ type: 'negative', message: (body['message'] as string) || t('notify.registerFailed') });
+      }
     } else {
-      $q.notify({ type: 'negative', message: t('notify.loginError') });
+      const result = await auth.login(email.value, password.value);
+      if (isAvailable.value) {
+        await saveCredentials(email.value, password.value);
+      }
+      navigateByRole(result.role);
+    }
+  } catch (error: unknown) {
+    console.error('[Auth] submit error:', error);
+    const axiosError = error as { response?: { data?: { errors?: Record<string, string[]>; message?: string }; status?: number }; message?: string };
+    if (axiosError?.response?.status === 422 && axiosError.response.data?.errors) {
+      const rawErrors = axiosError.response.data.errors;
+      const first = Object.values(rawErrors)[0];
+      $q.notify({ type: 'negative', message: Array.isArray(first) ? first[0] ?? '' : String(first) });
+    } else {
+      const msg = axiosError?.response?.data?.message || axiosError?.message;
+      $q.notify({ type: 'negative', message: msg || t('notify.loginError') });
     }
   } finally {
     loginLoading.value = false;
