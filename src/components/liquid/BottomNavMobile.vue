@@ -35,7 +35,6 @@ const props = withDefaults(defineProps<{
   accent?: string;
 }>(), {
   accent: 'var(--brand-primary)',
-  items: undefined,
 });
 
 const { t } = useI18n();
