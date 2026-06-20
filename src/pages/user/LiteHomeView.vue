@@ -141,27 +141,65 @@
         </div>
       </section>
 
-      <!-- Dreams Preview (placeholder) -->
-      <section class="lite-home__section">
+      <!-- Dreams Preview -->
+      <section v-if="dreamsPreview.length || dreamsLoading" class="lite-home__section">
         <div class="lite-home__section-header">
           <h2 class="t-h2">Sueños</h2>
           <button class="lite-home__ghost-btn" @click="router.push('/user/dreams')">Ver todos</button>
         </div>
-        <div class="lite-home__empty">
-          <q-icon name="auto_awesome" size="32px" color="grey-5" />
-          <p class="t-body">Próximamente podrás definir metas financieras.</p>
+        <div v-if="dreamsLoading" class="lite-home__skeleton" style="height:80px" />
+        <div v-else class="home-dreams">
+          <div
+            v-for="dream in dreamsPreview"
+            :key="dream.id"
+            class="home-dream-card"
+            @click="router.push('/user/dreams')"
+          >
+            <div class="home-dream-card__top">
+              <span class="home-dream-card__name">{{ dream.name }}</span>
+              <span class="home-dream-card__pct">{{ dream.progress }}%</span>
+            </div>
+            <div class="home-dream-card__bar">
+              <div class="home-dream-card__fill" :style="{ width: `${dream.progress}%` }" />
+            </div>
+            <div class="home-dream-card__amounts">
+              <span class="t-body-sm" style="color:var(--income-fg)">{{ isHidden ? '••••••' : formatMoney(dream.current_amount) }}</span>
+              <span class="t-body-sm">/ {{ isHidden ? '••••••' : formatMoney(dream.target_amount) }}</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- Debts Preview (placeholder) -->
-      <section class="lite-home__section">
+      <!-- Debts Preview -->
+      <section v-if="debtsPreview.length || debtsLoading" class="lite-home__section">
         <div class="lite-home__section-header">
           <h2 class="t-h2">Deudas</h2>
           <button class="lite-home__ghost-btn" @click="router.push('/user/debts')">Ver todos</button>
         </div>
-        <div class="lite-home__empty">
-          <q-icon name="credit_card" size="32px" color="grey-5" />
-          <p class="t-body">Próximamente podrás gestionar tus deudas.</p>
+        <div v-if="debtsLoading" class="lite-home__skeleton" style="height:80px" />
+        <div v-else class="home-debts">
+          <div
+            v-for="debt in debtsPreview"
+            :key="debt.id"
+            class="home-debt-row"
+            @click="router.push('/user/debts')"
+          >
+            <div class="home-debt-row__icon" :class="`home-debt-row__icon--${debt.provider}`">
+              <q-icon name="credit_card" size="16px" />
+            </div>
+            <div class="home-debt-row__info">
+              <span class="home-debt-row__name">{{ debt.name }}</span>
+              <span class="home-debt-row__provider">{{ debt.provider }}</span>
+            </div>
+            <div class="home-debt-row__right">
+              <span class="home-debt-row__balance" style="color:var(--expense-fg)">
+                {{ isHidden ? '••••••' : formatMoney(debt.balance) }}
+              </span>
+              <span class="home-debt-row__status" :class="`home-debt-row__status--${debt.status}`">
+                {{ debt.status === 'late' ? 'Atrasada' : debt.status === 'due-soon' ? 'Por vencer' : 'Al día' }}
+              </span>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -204,6 +242,16 @@ interface JarItem {
 }
 const activeJars = ref<JarItem[]>([]);
 const jarsLoading = ref(false);
+
+// ─── Dreams preview ──────────────────────────────────────────────────
+interface DreamItem { id: number; name: string; current_amount: number; target_amount: number; progress: number }
+const dreamsPreview = ref<DreamItem[]>([]);
+const dreamsLoading = ref(false);
+
+// ─── Debts preview ────────────────────────────────────────────────────
+interface DebtItem { id: number; name: string; provider: string; balance: number; status: string }
+const debtsPreview = ref<DebtItem[]>([]);
+const debtsLoading = ref(false);
 
 // ─── Transactions ─────────────────────────────────────────────────────
 interface TxItem {
@@ -390,12 +438,46 @@ async function loadRecentTransactions() {
   }
 }
 
+async function loadDreams() {
+  dreamsLoading.value = true;
+  try {
+    const res = await api.get('/dreams', { params: { per_page: 3, sort_by: 'progress', descending: 'false' } });
+    const raw = res.data?.data?.data ?? res.data?.data ?? res.data ?? [];
+    dreamsPreview.value = (Array.isArray(raw) ? raw : []).slice(0, 3).map((d: Record<string, unknown>) => ({
+      id: Number(d.id),
+      name: typeof d.name === 'string' ? d.name : '',
+      current_amount: Number(d.current_amount ?? d.amount ?? 0),
+      target_amount: Number(d.target_amount ?? d.goal ?? 0),
+      progress: Number(d.progress ?? 0),
+    }));
+  } catch { /* silent */ }
+  finally { dreamsLoading.value = false; }
+}
+
+async function loadDebts() {
+  debtsLoading.value = true;
+  try {
+    const res = await api.get('/debts', { params: { per_page: 3 } });
+    const raw = res.data?.data?.data ?? res.data?.data ?? res.data ?? [];
+    debtsPreview.value = (Array.isArray(raw) ? raw : []).slice(0, 3).map((d: Record<string, unknown>) => ({
+      id: Number(d.id),
+      name: typeof d.name === 'string' ? d.name : '',
+      provider: typeof d.provider === 'string' ? d.provider : 'loan',
+      balance: Number(d.balance ?? 0),
+      status: typeof d.status === 'string' ? d.status : 'on-track',
+    }));
+  } catch { /* silent */ }
+  finally { debtsLoading.value = false; }
+}
+
 onMounted(() => {
   void Promise.all([
     loadBalanceSummary(),
     loadMonthSummary(),
     loadJars(),
     loadRecentTransactions(),
+    loadDreams(),
+    loadDebts(),
   ]);
 });
 </script>
@@ -691,6 +773,142 @@ onMounted(() => {
     &__jars {
       grid-template-columns: 1fr;
     }
+  }
+}
+
+// ── Dreams preview ──
+.home-dreams {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-dream-card {
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 150ms;
+  &:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__name {
+    font-family: var(--font-display, sans-serif);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg-1);
+  }
+
+  &__pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8B5CF6;
+    background: rgba(139,92,246,.1);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  &__bar {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #8B5CF6, #EC4899);
+    transition: width 500ms ease-out;
+  }
+
+  &__amounts {
+    display: flex;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// ── Debts preview ──
+.home-debts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-debt-row {
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: box-shadow 150ms;
+  &:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+
+  &__icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    &--cashea { background: rgba(249,115,22,.12); color: #F97316; }
+    &--card   { background: rgba(239,68,68,.12);  color: #EF4444; }
+    &--loan   { background: rgba(139,92,246,.12); color: #8B5CF6; }
+    &--personal { background: rgba(14,165,233,.12); color: #0EA5E9; }
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--fg-1);
+  }
+
+  &__provider {
+    font-size: 11px;
+    color: var(--fg-2);
+    text-transform: capitalize;
+  }
+
+  &__right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+
+  &__balance {
+    font-family: var(--font-money, monospace);
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__status {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    &--on-track { background: var(--income-soft); color: var(--income-fg); }
+    &--due-soon { background: var(--warning-soft); color: var(--warning-fg); }
+    &--late     { background: var(--expense-soft); color: var(--expense-fg); }
+    &--paid     { background: var(--surface-2);    color: var(--fg-3); }
   }
 }
 </style>

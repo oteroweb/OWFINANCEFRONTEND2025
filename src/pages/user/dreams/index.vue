@@ -1,128 +1,119 @@
 <template>
-  <div class="dreams-page">
+  <q-page class="dreams-page">
+    <div class="dreams-page__container">
 
-    <!-- GLOBAL SUMMARY -->
-    <div v-if="meta" class="dreams-summary card card-pad-lg">
-      <div class="summary-main">
-        <div>
-          <div class="ds-lbl">Total ahorrado</div>
-          <div class="ds-amount">{{ fmt(meta.total_saved) }}</div>
-          <div class="ds-sub">de {{ fmt(meta.total_target) }} en metas</div>
-        </div>
-        <div class="ds-donut-wrap">
-          <div
-            class="ds-donut"
-            :style="`background: conic-gradient(var(--brand-primary) 0 ${meta.global_progress}%, var(--surface-2) ${meta.global_progress}% 100%)`"
-          >
-            <div class="ds-donut-inner">
-              <span class="ds-pct">{{ meta.global_progress }}%</span>
-              <span class="ds-pct-lbl">global</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="summary-chips">
-        <span class="chip"><span class="material-icons" style="font-size:14px">flag</span>{{ meta.count }} sueños</span>
-        <span v-if="meta.completed_count" class="chip" style="background:var(--income-soft);color:var(--income-fg)">
-          <span class="material-icons" style="font-size:14px">check_circle</span>{{ meta.completed_count }} completados
-        </span>
-      </div>
-    </div>
-
-    <!-- PAGE HEADER -->
-    <div class="dreams-header">
-      <h1 class="t-h2">Mis sueños</h1>
-      <button class="btn btn-primary" @click="openCreate">
-        <span class="material-icons">add</span>Nuevo sueño
-      </button>
-    </div>
-
-    <!-- LOADING -->
-    <div v-if="store.loading" class="dreams-empty">
-      <span class="material-icons spin">autorenew</span>
-      <p>Cargando sueños...</p>
-    </div>
-
-    <!-- EMPTY -->
-    <div v-else-if="!store.dreams.length" class="dreams-empty">
-      <span class="material-icons empty-ico">auto_awesome</span>
-      <h3>Aún no tienes sueños</h3>
-      <p>Define una meta — una casa, un viaje, un posgrado — y rastrea tu avance aquí.</p>
-      <button class="btn btn-primary" @click="openCreate">
-        <span class="material-icons">add</span>Crear primer sueño
-      </button>
-    </div>
-
-    <!-- ACTIVE DREAMS -->
-    <div v-else class="dreams-list">
-      <div
-        v-for="dream in store.active"
-        :key="dream.id"
-        class="dream-card card card-pad-lg"
-        :style="dream.color ? `--dream-accent: ${dream.color}` : ''"
-      >
-        <div class="dc-top">
-          <div class="dc-ico" :style="dream.color ? `background:${dream.color}22;color:${dream.color}` : ''">
-            <span v-if="dream.emoji" class="dc-emoji">{{ dream.emoji }}</span>
-            <span v-else class="material-icons">auto_awesome</span>
-          </div>
-          <div class="dc-info">
-            <div class="dc-name">{{ dream.name }}</div>
-            <div v-if="dream.description" class="dc-desc">{{ dream.description }}</div>
-          </div>
-          <div class="dc-pct">{{ dream.progress }}%</div>
-          <button class="icon-btn dc-menu" @click="openMenu(dream)">
-            <span class="material-icons">more_vert</span>
-          </button>
-        </div>
-
-        <div class="dc-amounts">
-          <span class="dc-saved">{{ fmt(dream.saved_amount) }}</span>
-          <span class="dc-target">/ {{ fmt(dream.target_amount) }}</span>
-        </div>
-
-        <div class="bar dc-bar">
-          <i
-            :style="`width:${Math.min(dream.progress, 100)}%;background:${dream.color ?? 'var(--brand-primary)'}`"
-          ></i>
-        </div>
-
-        <div class="dc-actions">
-          <button class="btn btn-ghost btn-sm" @click="openDeposit(dream)">
-            <span class="material-icons">savings</span>Aportar
-          </button>
-          <button class="btn btn-ghost btn-sm" @click="openEdit(dream)">
-            <span class="material-icons">edit</span>Editar
-          </button>
-        </div>
+      <!-- Page heading -->
+      <div class="dreams-page__heading">
+        <span class="t-eyebrow">Sueños</span>
+        <h1 class="t-h1">Lo que estás construyendo</h1>
       </div>
 
-      <!-- COMPLETED -->
-      <div v-if="store.completed.length" class="completed-section">
-        <div class="completed-title">
-          <span class="material-icons" style="color:var(--income-fg)">check_circle</span>
-          Completados ({{ store.completed.length }})
+      <!-- Hero card -->
+      <div class="dreams-hero">
+        <div class="dreams-hero__left">
+          <span class="t-eyebrow">Total acumulado · USD</span>
+          <div class="dreams-hero__amount">{{ fmt(meta?.total_saved ?? 0) }}</div>
+          <p class="t-body-sm" style="color:var(--fg-2);margin:0">
+            {{ store.dreams.length }} sueños activos
+            <template v-if="meta?.total_target"> · meta combinada
+              <strong class="tabular" style="color:var(--fg-1)">${{ (meta.total_target).toLocaleString('en-US') }}</strong>
+            </template>
+            <template v-if="meta?.global_progress">
+              · <span style="color:#8B5CF6;font-weight:600">{{ meta.global_progress }}% del camino</span>
+            </template>
+          </p>
         </div>
+        <button class="dreams-hero__btn" @click="openCreate">
+          <q-icon name="add" size="18px" />Nuevo sueño
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="store.loading" class="dreams-loading">
+        <q-spinner color="primary" size="32px" />
+      </div>
+
+      <!-- Empty -->
+      <div v-else-if="!store.dreams.length" class="dreams-empty">
+        <q-icon name="auto_awesome" size="40px" color="grey-4" />
+        <h3 class="t-h2" style="margin:0">Aún no tienes sueños</h3>
+        <p class="t-body-sm" style="color:var(--fg-2);margin:0">Define una meta — una casa, un viaje, un posgrado — y rastrea tu avance aquí.</p>
+        <button class="dreams-hero__btn" @click="openCreate">
+          <q-icon name="add" size="18px" />Crear primer sueño
+        </button>
+      </div>
+
+      <!-- Dreams grid -->
+      <div v-else class="dreams-grid">
         <div
-          v-for="dream in store.completed"
+          v-for="dream in store.active"
           :key="dream.id"
-          class="dream-card dream-card--done card card-pad-lg"
+          class="dc"
+          :style="dream.color ? `--dc-accent: ${dream.color}` : ''"
         >
-          <div class="dc-top">
-            <div class="dc-ico done-ico">
-              <span v-if="dream.emoji" class="dc-emoji">{{ dream.emoji }}</span>
-              <span v-else class="material-icons">check_circle</span>
+          <div class="dc__header">
+            <div class="dc__ico" :style="dream.color ? `background:${dream.color}22;color:${dream.color}` : ''">
+              <span v-if="dream.emoji" style="font-size:18px">{{ dream.emoji }}</span>
+              <q-icon v-else name="auto_awesome" size="18px" />
             </div>
-            <div class="dc-info">
-              <div class="dc-name">{{ dream.name }}</div>
-              <div class="dc-desc" style="color:var(--income-fg)">¡Completado! {{ fmt(dream.saved_amount) }}</div>
+            <div class="dc__meta">
+              <span class="dc__name">{{ dream.name }}</span>
+              <span v-if="dream.description" class="dc__desc">{{ dream.description }}</span>
             </div>
-            <button class="icon-btn" @click="openMenu(dream)">
-              <span class="material-icons">more_vert</span>
+            <span class="dc__pct" :style="dream.color ? `color:${dream.color}` : ''">{{ dream.progress }}%</span>
+            <button class="dc__menu-btn" @click="openMenu(dream)">
+              <q-icon name="more_vert" size="18px" />
             </button>
           </div>
-          <div class="bar dc-bar">
-            <i style="width:100%;background:var(--income)"></i>
+
+          <div class="dc__amounts">
+            <span class="dc__saved" :style="dream.color ? `color:${dream.color}` : ''">{{ fmt(dream.saved_amount) }}</span>
+            <span class="dc__target"> / {{ fmt(dream.target_amount) }}</span>
+          </div>
+
+          <div class="dc__bar-track">
+            <div class="dc__bar-fill" :style="`width:${Math.min(dream.progress, 100)}%;background:${dream.color ?? '#8B5CF6'}`" />
+          </div>
+
+          <div class="dc__actions">
+            <button class="dc__action-btn" @click="openDeposit(dream)">
+              <q-icon name="savings" size="16px" />Aportar
+            </button>
+            <button class="dc__action-btn" @click="openEdit(dream)">
+              <q-icon name="edit" size="16px" />Editar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed section -->
+      <div v-if="store.completed.length" class="dreams-completed">
+        <div class="dreams-completed__label">
+          <q-icon name="check_circle" size="16px" style="color:var(--income-fg)" />
+          Completados ({{ store.completed.length }})
+        </div>
+        <div class="dreams-grid">
+          <div
+            v-for="dream in store.completed"
+            :key="dream.id"
+            class="dc dc--done"
+          >
+            <div class="dc__header">
+              <div class="dc__ico dc__ico--done">
+                <span v-if="dream.emoji" style="font-size:18px">{{ dream.emoji }}</span>
+                <q-icon v-else name="check_circle" size="18px" />
+              </div>
+              <div class="dc__meta">
+                <span class="dc__name">{{ dream.name }}</span>
+                <span class="dc__desc" style="color:var(--income-fg)">¡Completado! {{ fmt(dream.saved_amount) }}</span>
+              </div>
+              <button class="dc__menu-btn" @click="openMenu(dream)">
+                <q-icon name="more_vert" size="18px" />
+              </button>
+            </div>
+            <div class="dc__bar-track">
+              <div class="dc__bar-fill" style="width:100%;background:var(--income)" />
+            </div>
           </div>
         </div>
       </div>
@@ -264,7 +255,7 @@
       </q-card>
     </q-dialog>
 
-  </div>
+  </q-page>
 </template>
 
 <script setup lang="ts">
@@ -444,113 +435,235 @@ function onMenuDelete() {
   gap: 20px;
 }
 
-// Summary card
-.dreams-summary {
-  .summary-main {
+// ── Page layout ──
+.dreams-page {
+  background: var(--bg-canvas);
+  min-height: 100vh;
+
+  &__container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 24px 32px 120px;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
+    flex-direction: column;
+    gap: 28px;
   }
-  .ds-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--fg-3); font-weight: 600; }
-  .ds-amount { font-family: var(--font-money); font-weight: 700; font-size: 28px; letter-spacing: -0.02em; margin-top: 4px; }
-  .ds-sub { font-size: 13px; color: var(--fg-2); margin-top: 2px; }
-  .ds-donut-wrap { flex-shrink: 0; }
-  .ds-donut {
-    width: 72px; height: 72px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
+
+  &__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    .t-h1 { margin: 6px 0 0; }
   }
-  .ds-donut-inner {
-    width: 52px; height: 52px; border-radius: 50%; background: var(--surface-1);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-  }
-  .ds-pct { font-family: var(--font-money); font-weight: 700; font-size: 14px; line-height: 1; }
-  .ds-pct-lbl { font-size: 9px; color: var(--fg-3); text-transform: uppercase; }
-  .summary-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 }
 
-// Header
-.dreams-header {
+// ── Hero card ──
+.dreams-hero {
+  background: linear-gradient(135deg, rgba(139,92,246,.06) 0%, rgba(236,72,153,.06) 100%);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xl);
+  padding: 28px 32px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
+  gap: 24px;
+  flex-wrap: wrap;
+
+  &__left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__amount {
+    font-family: var(--font-money, monospace);
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #8B5CF6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: var(--radius-pill);
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-body, sans-serif);
+    font-size: 14px;
+    font-weight: 700;
+    background: #8B5CF6;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(139,92,246,.3);
+    transition: background 150ms, box-shadow 150ms;
+    white-space: nowrap;
+    &:hover { background: #7C3AED; box-shadow: 0 4px 16px rgba(139,92,246,.4); }
+    &:active { transform: scale(.97); }
+  }
 }
 
-// Empty / loading
+// ── Loading / empty ──
+.dreams-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
 .dreams-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 48px 24px;
+  gap: 14px;
+  padding: 56px 24px;
   text-align: center;
-  color: var(--fg-2);
-  .empty-ico { font-size: 48px; color: var(--fg-3); }
-  h3 { font-family: var(--font-display); font-size: 18px; margin: 0; color: var(--fg-1); }
-  p { font-size: 14px; max-width: 280px; margin: 0; }
-  .spin { animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
 }
 
-// Dream cards list
-.dreams-list { display: flex; flex-direction: column; gap: 14px; }
+// ── Dreams grid ──
+.dreams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
 
-.dream-card {
+// ── Dream card ──
+.dc {
+  background: var(--surface-1);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 150ms;
+  &:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+
   &--done { opacity: 0.72; }
 
-  .dc-top {
+  &__header {
     display: flex;
     align-items: flex-start;
     gap: 12px;
   }
-  .dc-ico {
-    width: 40px; height: 40px; border-radius: var(--radius-md);
-    background: var(--brand-primary-soft); color: var(--brand-primary-fg-soft);
+
+  &__ico {
+    width: 38px; height: 38px; border-radius: var(--radius-md);
+    background: rgba(139,92,246,.12); color: #8B5CF6;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    font-size: 20px;
+
+    &--done { background: var(--income-soft); color: var(--income-fg); }
   }
-  .done-ico { background: var(--income-soft); color: var(--income-fg); }
-  .dc-emoji { font-size: 22px; line-height: 1; }
-  .dc-info { flex: 1; min-width: 0; }
-  .dc-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .dc-desc { font-size: 12px; color: var(--fg-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .dc-pct { font-family: var(--font-money); font-weight: 700; font-size: 16px; color: var(--fg-1); flex-shrink: 0; }
-  .dc-menu { margin-left: -4px; }
-  .dc-amounts {
+
+  &__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+  &__name {
+    font-family: var(--font-display, sans-serif);
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--fg-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__desc {
+    font-size: 12px;
+    color: var(--fg-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__pct {
+    font-family: var(--font-money, monospace);
+    font-size: 15px;
+    font-weight: 800;
+    color: #8B5CF6;
+    flex-shrink: 0;
+  }
+
+  &__menu-btn {
+    border: none; background: transparent; cursor: pointer;
+    color: var(--fg-3); padding: 2px;
+    border-radius: var(--radius-sm);
+    &:hover { background: var(--surface-2); color: var(--fg-1); }
+  }
+
+  &__amounts {
     display: flex;
     align-items: baseline;
     gap: 4px;
-    margin-top: 12px;
+    font-variant-numeric: tabular-nums;
   }
-  .dc-saved { font-family: var(--font-money); font-weight: 700; font-size: 18px; }
-  .dc-target { font-size: 13px; color: var(--fg-3); }
-  .dc-bar { margin-top: 8px; }
-  .dc-actions {
+
+  &__saved {
+    font-family: var(--font-money, monospace);
+    font-size: 19px;
+    font-weight: 800;
+    color: #8B5CF6;
+  }
+
+  &__target { font-size: 13px; color: var(--fg-3); }
+
+  &__bar-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 600ms ease-out;
+  }
+
+  &__actions {
     display: flex;
     gap: 8px;
-    margin-top: 14px;
+  }
+
+  &__action-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-hairline);
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--font-body, sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-2);
+    transition: background 150ms, color 150ms;
+    &:hover { background: var(--surface-2); color: var(--fg-1); }
   }
 }
 
-.btn-sm { padding: 6px 12px; font-size: 13px; }
-.btn-sm .material-icons { font-size: 16px; }
-
-// Completed section
-.completed-section { margin-top: 8px; }
-.completed-title {
+// ── Completed section ──
+.dreams-completed {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--fg-3);
-  margin-bottom: 10px;
+  flex-direction: column;
+  gap: 12px;
+
+  &__label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--fg-3);
+  }
 }
 
-// Dialog
+// ── Dialog ──
 .dialog-card {
   border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
   background: var(--surface-1) !important;
@@ -591,7 +704,7 @@ function onMenuDelete() {
 
 .deposit-progress { margin-bottom: 4px; }
 
-// Menu dialog
+// ── Menu dialog ──
 .menu-item {
   display: flex;
   align-items: center;
@@ -601,14 +714,18 @@ function onMenuDelete() {
   border: none;
   background: transparent;
   cursor: pointer;
-  font-family: var(--font-body);
+  font-family: var(--font-body, sans-serif);
   font-size: 15px;
   color: var(--fg-1);
   text-align: left;
   border-radius: var(--radius-sm);
   &:hover { background: var(--surface-2); }
   &--danger { color: var(--danger, #ef4444); margin-top: 4px; }
-  .material-icons { font-size: 22px; color: var(--fg-2); }
-  &--danger .material-icons { color: inherit; }
+}
+
+@media (max-width: 768px) {
+  .dreams-page__container { padding: 16px 16px 100px; gap: 20px; }
+  .dreams-hero { padding: 20px; }
+  .dreams-grid { grid-template-columns: 1fr; }
 }
 </style>
