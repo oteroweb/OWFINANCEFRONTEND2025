@@ -52,6 +52,7 @@
       </div>
 
       <!-- ── Nav items ───────────────────────────────────────────── -->
+      <div class="lite-config__section-label">Cuenta</div>
       <div class="lite-config__nav">
         <button
           v-for="item in configNav"
@@ -76,7 +77,70 @@
           </div>
           <q-icon name="chevron_right" size="18px" />
         </button>
+        <!-- Exportar datos -->
+        <button class="lite-config__nav-item" @click="$q.notify({ message: 'Exportación próximamente', color: 'info' })">
+          <q-icon name="receipt_long" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">Exportar datos</span>
+            <span class="lite-config__nav-hint">CSV, PDF</span>
+          </div>
+          <q-icon name="chevron_right" size="18px" />
+        </button>
       </div>
+
+      <!-- ── Notificaciones ───────────────────────────────────────── -->
+      <div class="lite-config__section-label">Notificaciones</div>
+      <div class="lite-config__nav">
+        <div class="lite-config__nav-item lite-config__nav-item--toggle" @click="toggleNotif('weekDigest')">
+          <q-icon name="notifications" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">Resumen semanal</span>
+            <span class="lite-config__nav-hint">Un email cada lunes con tu balance</span>
+          </div>
+          <div class="apref__toggle" :class="{ 'apref__toggle--on': notifPrefs.weekDigest }" />
+        </div>
+        <div class="lite-config__nav-item lite-config__nav-item--toggle" @click="toggleNotif('idleAlerts')">
+          <q-icon name="notifications" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">Alertas de dinero ocioso</span>
+            <span class="lite-config__nav-hint">Cuando un cántaro no se mueve</span>
+          </div>
+          <div class="apref__toggle" :class="{ 'apref__toggle--on': notifPrefs.idleAlerts }" />
+        </div>
+        <div class="lite-config__nav-item lite-config__nav-item--toggle" @click="toggleNotif('overBudget')">
+          <q-icon name="notifications" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">Alerta de sobrepresupuesto</span>
+            <span class="lite-config__nav-hint">Si gastas más de lo asignado</span>
+          </div>
+          <div class="apref__toggle" :class="{ 'apref__toggle--on': notifPrefs.overBudget }" />
+        </div>
+      </div>
+
+      <!-- ── Seguridad ────────────────────────────────────────────── -->
+      <div class="lite-config__section-label">Seguridad</div>
+      <div class="lite-config__nav">
+        <button class="lite-config__nav-item" @click="void router.push('/user/profile')">
+          <q-icon name="lock" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">Contraseña</span>
+            <span class="lite-config__nav-hint">Cambiar tu contraseña de acceso</span>
+          </div>
+          <q-icon name="chevron_right" size="18px" />
+        </button>
+      </div>
+
+      <!-- ── Cerrar sesión ────────────────────────────────────────── -->
+      <div class="lite-config__nav lite-config__nav--danger">
+        <button class="lite-config__nav-item lite-config__nav-item--danger" @click="handleLogout">
+          <q-icon name="logout" size="20px" color="negative" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label" style="color: var(--expense-fg, #b91c1c)">Cerrar sesión</span>
+            <span class="lite-config__nav-hint">{{ auth.user?.email }}</span>
+          </div>
+        </button>
+      </div>
+
       <OnboardingFlow v-model="showOnboarding" />
     </template>
 
@@ -707,6 +771,38 @@ async function switchMode(mode: 'lite' | 'pro') {
 function toggleTheme() {
   $q.dark.toggle();
   try { localStorage.setItem('ow-theme', $q.dark.isActive ? 'dark' : 'light'); } catch { /* noop */ }
+}
+
+// ── Notification preferences ──────────────────────────────────────────────
+type NotifPrefs = { weekDigest: boolean; idleAlerts: boolean; overBudget: boolean };
+
+const notifPrefs = reactive<NotifPrefs>({ weekDigest: true, idleAlerts: true, overBudget: false });
+
+function loadNotifPrefs() {
+  const raw = auth.settings?.preferences as Record<string, unknown>;
+  if (raw?.notifications && typeof raw.notifications === 'object') {
+    const n = raw.notifications as Partial<NotifPrefs>;
+    notifPrefs.weekDigest  = n.weekDigest  ?? true;
+    notifPrefs.idleAlerts  = n.idleAlerts  ?? true;
+    notifPrefs.overBudget  = n.overBudget  ?? false;
+  }
+}
+
+async function toggleNotif(key: keyof NotifPrefs) {
+  notifPrefs[key] = !notifPrefs[key];
+  try {
+    const existing = (auth.settings?.preferences as Record<string, unknown>) ?? {};
+    await api.put('/user/settings', {
+      preferences: { ...existing, notifications: { ...notifPrefs } },
+    });
+  } catch { /* silent */ }
+}
+
+// ── Logout ────────────────────────────────────────────────────────────────
+async function handleLogout() {
+  try { await api.post('/auth/logout'); } catch { /* best-effort */ }
+  auth.logout();
+  await router.replace('/login');
 }
 
 type ConfigNavItem = {
@@ -1618,6 +1714,7 @@ async function loadFinanceTab() {
 }
 
 onMounted(async () => {
+  loadNotifPrefs();
   // Cargar monedas al entrar a la pestaña perfil o si ya está activa
   if (tab.value === 'profile') void ensureCurrenciesLoaded();
   if (tab.value === 'finance') void loadFinanceTab();
@@ -1821,6 +1918,32 @@ async function saveProfile() {
   font-family: var(--font-body);
   font-size: 12px;
   color: var(--fg-2);
+}
+
+.lite-config__section-label {
+  max-width: 800px;
+  margin: 4px auto 4px;
+  padding: 0 40px;
+  font-family: var(--font-body, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-3, #94a3b8);
+}
+
+.lite-config__nav-item--toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.lite-config__nav--danger {
+  margin-top: 8px;
+}
+
+.lite-config__nav-item--danger {
+  color: var(--expense-fg, #b91c1c);
+  &:hover { background: rgba(239,68,68,.07); }
 }
 
 .lite-config__card {
