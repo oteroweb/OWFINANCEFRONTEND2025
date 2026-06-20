@@ -82,7 +82,7 @@
             <button class="shell__icon-btn" :aria-label="isDark ? 'Modo claro' : 'Modo oscuro'" @click="$q.dark.toggle()">
               <span class="material-icons">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
             </button>
-            <button class="shell__icon-btn" aria-label="Notificaciones">
+            <button class="shell__icon-btn" aria-label="Notificaciones" @click="showNotifications = !showNotifications">
               <span class="material-icons">notifications</span>
             </button>
             <button class="shell__sidebar-user-avatar shell__icon-avatar" @click="menuOpen = !menuOpen">
@@ -131,6 +131,9 @@
     <!-- Onboarding — primer login o repetición desde Config -->
     <OnboardingFlow v-model="showOnboarding" @done="onOnboardingDone" />
 
+    <!-- Notifications panel (popover desktop / sheet mobile) -->
+    <NotificationsPanel :show="showNotifications" @close="showNotifications = false" />
+
     <q-dialog v-model="showAssistant">
       <q-card class="shell__assistant-card">
         <q-card-section>
@@ -159,6 +162,7 @@ import ExpandedNavigationMenuLight from 'components/liquid/ExpandedNavigationMen
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
 import SmartTransactionModal from 'components/SmartTransactionModal.vue';
 import OnboardingFlow from 'components/OnboardingFlow.vue';
+import NotificationsPanel from 'components/NotificationsPanel.vue';
 
 const router = useRouter();
 const route  = useRoute();
@@ -167,10 +171,11 @@ const auth   = useAuthStore();
 const ui     = useUiStore();
 
 // ── Overlays ──────────────────────────────────────────────────────────────
-const menuOpen      = ref(false);
-const quickAddOpen  = ref(false);
-const showAssistant = ref(false);
-const showOnboarding = ref(false);
+const menuOpen        = ref(false);
+const quickAddOpen    = ref(false);
+const showAssistant   = ref(false);
+const showOnboarding  = ref(false);
+const showNotifications = ref(false);
 
 // Auto-trigger onboarding si el usuario nunca lo ha visto
 function checkOnboarding() {
