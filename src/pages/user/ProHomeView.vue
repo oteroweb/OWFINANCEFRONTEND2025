@@ -90,6 +90,44 @@
         </div>
       </div>
 
+      <!-- Exchange Rates Widget -->
+      <div v-if="userRates.length" class="pro-card er-card">
+        <div class="pro-card__header" style="margin-bottom: 0;">
+          <div>
+            <span class="t-h3">Tipos de cambio</span>
+            <p class="er-card__hint">Tasa manual · 1 USD =</p>
+          </div>
+        </div>
+        <div>
+          <div
+            v-for="(rate, i) in userRates"
+            :key="rate.id"
+            class="er-row"
+            :class="{ 'er-row--first': i === 0 }"
+          >
+            <div class="er-row__flag">{{ rate.currency?.code?.slice(0, 2) }}</div>
+            <div class="er-row__info">
+              <span class="er-row__code">{{ rate.currency?.code }}</span>
+              <span class="er-row__name">{{ rate.currency?.name }}</span>
+            </div>
+            <span class="er-row__eq">1 USD =</span>
+            <div class="er-row__input-wrap" :class="{ 'er-row__input-wrap--focus': rateEditId === rate.id }">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                class="er-row__input"
+                :value="rate.current_rate"
+                @focus="rateEditId = rate.id"
+                @blur="rateEditId = null"
+                @change="updateRate(rate, ($event.target as HTMLInputElement).valueAsNumber)"
+              />
+              <span class="er-row__code-suffix">{{ rate.currency?.code }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- AI advisor prompt strip -->
       <button class="ai-strip" @click="openAssistant">
         <div class="ai-strip__avatar">
@@ -358,12 +396,50 @@ async function loadRecentTransactions() {
   }
 }
 
+// ── Exchange Rates ─────────────────────────────────────────────────────
+interface UserRate {
+  id: number;
+  currency_id: number;
+  currency?: { id: number; name: string; code: string };
+  current_rate: number;
+  is_current: boolean;
+  is_official: boolean;
+}
+
+const userRates = ref<UserRate[]>([]);
+const rateEditId = ref<number | null>(null);
+
+async function loadUserRates() {
+  try {
+    const res = await api.get('/user_currencies', { params: { per_page: 50 } });
+    const compact = res.data?.rates;
+    if (Array.isArray(compact) && compact.length) {
+      userRates.value = compact as UserRate[];
+      return;
+    }
+    const raw = res.data?.data?.data || res.data?.data || [];
+    userRates.value = Array.isArray(raw) ? (raw as UserRate[]) : [];
+  } catch { /* silent */ }
+}
+
+async function updateRate(rate: UserRate, newVal: number) {
+  if (!isFinite(newVal) || newVal <= 0) return;
+  const prev = rate.current_rate;
+  rate.current_rate = newVal;
+  try {
+    await api.put(`/user_currencies/${rate.id}`, { current_rate: newVal, is_current: true });
+  } catch {
+    rate.current_rate = prev;
+  }
+}
+
 onMounted(() => {
   void Promise.all([
     loadBalanceSummary(),
     loadMonthSummary(),
     loadJars(),
     loadRecentTransactions(),
+    loadUserRates(),
   ]);
 });
 </script>
@@ -690,6 +766,79 @@ onMounted(() => {
     &__tag {
       display: none;
     }
+  }
+}
+
+// ── Exchange Rates ──
+.er-card {
+  padding: 20px 0 0;
+
+  .pro-card__header {
+    padding: 0 22px 14px;
+    border-bottom: 1px solid var(--border-hairline);
+  }
+
+  &__hint {
+    font-size: 12px;
+    color: var(--fg-2);
+    margin: 2px 0 0;
+  }
+}
+
+.er-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 22px;
+  border-top: 1px solid var(--border-hairline);
+
+  &--first { border-top: none; }
+
+  &__flag {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 10px; font-weight: 700; color: var(--fg-2);
+    letter-spacing: 0.04em; flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1; display: flex; flex-direction: column; gap: 1px;
+  }
+
+  &__code {
+    font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--fg-1);
+  }
+
+  &__name {
+    font-family: var(--font-body); font-size: 11px; color: var(--fg-2);
+  }
+
+  &__eq {
+    font-family: var(--font-body); font-size: 12px; color: var(--fg-2); flex-shrink: 0;
+  }
+
+  &__input-wrap {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface-2); border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-sm); padding: 7px 12px;
+    transition: all 160ms; min-width: 130px;
+
+    &--focus {
+      background: var(--surface-1); border-color: var(--brand-primary);
+    }
+  }
+
+  &__input {
+    border: 0; background: transparent;
+    font-family: var(--font-money); font-size: 14px; font-weight: 600; color: var(--fg-1);
+    outline: none; width: 80px; font-variant-numeric: tabular-nums;
+    &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { opacity: 0; }
+  }
+
+  &__code-suffix {
+    font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--fg-2);
   }
 }
 </style>
