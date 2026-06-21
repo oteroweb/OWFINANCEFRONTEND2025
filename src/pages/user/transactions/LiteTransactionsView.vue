@@ -1,10 +1,29 @@
 <template>
   <q-page class="lite-page">
     <div class="lite-page__container">
-      <!-- Header -->
-      <div>
+      <!-- Header con navegación de mes -->
+      <div class="tx-month-bar">
         <span class="t-eyebrow">Transacciones</span>
-        <h1 class="t-h1" style="margin: 6px 0 0">{{ monthLabel }}</h1>
+        <div class="tx-month-nav">
+          <button class="tx-month-btn" @click="prevMonth">
+            <q-icon name="chevron_left" size="20px" />
+          </button>
+          <h1 class="t-h1 tx-month-label">{{ monthLabel }}</h1>
+          <button class="tx-month-btn" @click="nextMonth">
+            <q-icon name="chevron_right" size="20px" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Chips de tipo (siempre visibles) -->
+      <div class="type-chips-row">
+        <button
+          v-for="t in typeOptions"
+          :key="t.id"
+          class="type-chip"
+          :class="{ 'type-chip--active': type === t.id }"
+          @click="type = t.id"
+        >{{ t.label }}</button>
       </div>
 
       <!-- Filtro inteligente -->
@@ -40,20 +59,6 @@
               <div class="filter-panel__header">
                 <span class="filter-panel__title">Filtro inteligente</span>
                 <button v-if="activeCount > 0" class="filter-panel__clear" @click="clearAll">Limpiar todo</button>
-              </div>
-
-              <div class="filter-panel__field">
-                <span class="filter-panel__label">Tipo</span>
-                <div class="type-toggle">
-                  <button
-                    v-for="t in typeOptions"
-                    :key="t.id"
-                    :class="{ active: type === t.id }"
-                    @click="type = t.id"
-                  >
-                    {{ t.label }}
-                  </button>
-                </div>
               </div>
 
               <div class="filter-panel__field">
@@ -232,7 +237,7 @@ const ui = useUiStore();
 const isHidden = computed(() => ui.hideValues);
 
 // ─── State ──────────────────────────────────────────────────────────
-const type = ref<'all' | 'income' | 'expense'>('all');
+const type = ref<'all' | 'income' | 'expense' | 'jars'>('all');
 const jar = ref<string>('all');
 const category = ref<string>('all');
 const minAmount = ref<string>('');
@@ -268,6 +273,7 @@ const typeOptions = [
   { id: 'all' as const, label: 'Todas' },
   { id: 'income' as const, label: 'Ingresos' },
   { id: 'expense' as const, label: 'Gastos' },
+  { id: 'jars' as const, label: 'Cántaros' },
 ];
 
 const amountPresets = [
@@ -307,7 +313,8 @@ const categoryOptions = computed<TxOption[]>(() => {
 const filtered = computed(() => {
   return allTransactions.value.filter((t) => {
     if (type.value === 'income' && t.type !== 'income') return false;
-    if (type.value === 'expense' && t.type !== 'expense') return false;
+    if (type.value === 'expense' && (t.type !== 'expense' || t.category === 'Jar' || t.category === 'Transfer')) return false;
+    if (type.value === 'jars' && t.category !== 'Jar' && t.category !== 'Transfer') return false;
     if (jar.value === '__none' && t.jarName) return false;
     if (jar.value !== 'all' && jar.value !== '__none' && t.jarName !== jar.value) return false;
     if (category.value !== 'all' && t.category !== category.value) return false;
@@ -328,7 +335,7 @@ const netTotal = computed(() => filtered.value.reduce((s, t) => s + (t.type === 
 interface Chip { key: string; label: string; icon?: string | undefined; dot?: string | null | undefined; clear: () => void }
 const chips = computed<Chip[]>(() => {
   const out: Chip[] = [];
-  if (type.value !== 'all') out.push({ key: 'type', label: typeOptions.find((x) => x.id === type.value)?.label || '', icon: 'swap_vert', clear: () => { type.value = 'all'; } });
+  // type tiene sus propios chips visibles, no va en chips removibles
   if (jar.value !== 'all') {
     const jarOpt = jarOptions.value.find((o) => o.id === jar.value);
     out.push({ key: 'jar', label: jar.value === '__none' ? 'Sin cántaro' : jar.value, dot: jar.value !== '__none' ? (jarOpt?.color ?? null) : null, icon: jar.value === '__none' ? 'block' : undefined, clear: () => { jar.value = 'all'; } });
@@ -345,7 +352,6 @@ const chips = computed<Chip[]>(() => {
 const activeCount = computed(() => chips.value.length);
 
 function clearAll() {
-  type.value = 'all';
   jar.value = 'all';
   category.value = 'all';
   minAmount.value = '';
@@ -398,20 +404,37 @@ function formatDateShort(dateStr: string | Date): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
+const currentDate = ref(new Date());
+
 const monthLabel = computed(() => {
-  const now = new Date();
-  return now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  return currentDate.value.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 });
+
+function prevMonth() {
+  const d = new Date(currentDate.value);
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  currentDate.value = d;
+  void loadTransactions();
+}
+
+function nextMonth() {
+  const d = new Date(currentDate.value);
+  d.setDate(1);
+  d.setMonth(d.getMonth() + 1);
+  currentDate.value = d;
+  void loadTransactions();
+}
 
 // ─── Data loading ───────────────────────────────────────────────────
 async function loadTransactions() {
   loading.value = true;
   try {
-    const now = new Date();
+    const d = currentDate.value;
     const params = {
       period: 'month',
-      year: String(now.getFullYear()),
-      month: String(now.getMonth() + 1),
+      year: String(d.getFullYear()),
+      month: String(d.getMonth() + 1),
       per_page: '500',
       page: '1',
       sort_by: 'date',
@@ -989,6 +1012,75 @@ onUnmounted(() => {
   &--danger {
     background: rgba(239,68,68,.1); color: #b91c1c;
     &:hover { background: rgba(239,68,68,.18); }
+  }
+}
+
+/* ── MonthBar ─────────────────────────────────────────────────────── */
+.tx-month-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tx-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tx-month-label {
+  margin: 0;
+  flex: 1;
+  text-transform: capitalize;
+}
+
+.tx-month-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface-2, #f1f5f9);
+  color: var(--fg-2, #64748b);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 120ms;
+
+  &:hover { background: var(--surface-3, #e2e8f0); color: var(--fg-1); }
+}
+
+/* ── Type chips row (siempre visible) ─────────────────────────────── */
+.type-chips-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
+.type-chip {
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface-1, #fff);
+  color: var(--fg-1, #0f172a);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-card, 0 1px 4px rgba(0,0,0,.08));
+  transition: background 120ms, color 120ms;
+
+  &--active {
+    background: var(--brand-primary, #2d4da6);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: none;
   }
 }
 </style>

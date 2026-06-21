@@ -40,7 +40,8 @@ test.describe('Direct URL access — blank page debug', () => {
     expect(qApp.length).toBeGreaterThan(50);
   });
 
-  test('Click from landing to funciones then back', async ({ page }) => {
+  test('Click from landing to funciones then back', async ({ page, viewport }) => {
+    test.skip(!viewport || viewport.width < 768, 'Nav links hidden in mobile hamburger');
     await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1000);
     

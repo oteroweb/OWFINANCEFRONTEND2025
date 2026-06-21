@@ -1,7 +1,10 @@
 <template>
-  <q-page class="q-pa-md" :class="{ 'lite-config': isLiteLayout }">
+  <q-page :class="isLiteLayout ? 'q-pa-md lite-config' : 'pro-config'">
     <template v-if="!isLiteLayout">
-      <div class="text-h4 q-mb-md text-primary">⚙️ Configuraciones del Usuario</div>
+      <div class="pro-config__heading">
+        <span class="t-eyebrow">Sistema</span>
+        <h1 class="t-h1" style="margin: 4px 0 20px;">Configuración</h1>
+      </div>
     </template>
     <template v-else>
       <div class="lite-config__header">
@@ -144,7 +147,7 @@
       <OnboardingFlow v-model="showOnboarding" />
     </template>
 
-    <q-card flat :bordered="!isLiteLayout" class="lite-config__card">
+    <q-card flat :bordered="false" :class="isLiteLayout ? 'lite-config__card' : 'pro-config__card'">
       <q-tabs v-if="!isLiteLayout" v-model="tab" dense class="text-primary" align="left" inline-label>
         <q-tab name="profile" icon="person" label="Perfil" />
         <q-tab name="finance" icon="account_balance" label="Finanzas" />
@@ -2073,5 +2076,25 @@ async function saveProfile() {
 }
 @media (max-width: 480px) {
   .apref { padding: 0 16px 16px; }
+}
+
+/* ── Pro Config ──────────────────────────────────────────────── */
+.pro-config {
+  padding: 32px 40px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.pro-config__heading {
+  margin-bottom: 16px;
+}
+
+.pro-config__card {
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (max-width: 860px) {
+  .pro-config { padding: 24px 20px; }
 }
 </style>

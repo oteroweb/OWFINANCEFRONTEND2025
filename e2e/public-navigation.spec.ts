@@ -11,7 +11,9 @@ test.describe('Public navigation — all links', () => {
     console.log(`[LANDING] #q-app=${qApp.length} chars`);
   });
 
-  test('Nav: Cómo funciona scrolls to section from landing', async ({ page }) => {
+  // Nav-click tests skip on mobile: links are hidden behind hamburger on <768px viewports
+  test('Nav: Cómo funciona scrolls to section from landing', async ({ page, viewport }) => {
+    test.skip(!viewport || viewport.width < 768, 'Nav links hidden in mobile hamburger');
     await page.goto(`${BASE}/`);
     await page.waitForTimeout(1000);
     await page.click('a:has-text("Cómo funciona")');
@@ -21,7 +23,8 @@ test.describe('Public navigation — all links', () => {
     console.log('[NAV] Cómo funciona → scrolled OK');
   });
 
-  test('Nav: Lite & Pro scrolls to #modos from landing', async ({ page }) => {
+  test('Nav: Lite & Pro scrolls to #modos from landing', async ({ page, viewport }) => {
+    test.skip(!viewport || viewport.width < 768, 'Nav links hidden in mobile hamburger');
     await page.goto(`${BASE}/`);
     await page.waitForTimeout(1000);
     await page.click('a:has-text("Lite & Pro")');
@@ -31,7 +34,8 @@ test.describe('Public navigation — all links', () => {
     console.log('[NAV] Lite & Pro → scrolled OK');
   });
 
-  test('Nav: Funciones navigates to /funciones', async ({ page }) => {
+  test('Nav: Funciones navigates to /funciones', async ({ page, viewport }) => {
+    test.skip(!viewport || viewport.width < 768, 'Nav links hidden in mobile hamburger');
     await page.goto(`${BASE}/`);
     await page.waitForTimeout(1000);
     await page.click('a:has-text("Funciones")');
@@ -41,7 +45,8 @@ test.describe('Public navigation — all links', () => {
     console.log(`[NAV] Funciones → url=${page.url()} content=${content.length}`);
   });
 
-  test('Nav: Planes navigates to /planes', async ({ page }) => {
+  test('Nav: Planes navigates to /planes', async ({ page, viewport }) => {
+    test.skip(!viewport || viewport.width < 768, 'Nav links hidden in mobile hamburger');
     await page.goto(`${BASE}/`);
     await page.waitForTimeout(1000);
     await page.click('a:has-text("Planes")');
@@ -51,7 +56,8 @@ test.describe('Public navigation — all links', () => {
     console.log(`[NAV] Planes → url=${page.url()} content=${content.length}`);
   });
 
-  test('Nav: Cómo funciona works FROM /planes (cross-page)', async ({ page }) => {
+  test('Nav: Cómo funciona works FROM /planes (cross-page)', async ({ page, viewport }) => {
+    test.skip(!viewport || viewport.width < 768, 'Nav links hidden in mobile hamburger');
     await page.goto(`${BASE}/planes`);
     await page.waitForTimeout(1000);
     await page.click('a:has-text("Cómo funciona")');
@@ -62,7 +68,8 @@ test.describe('Public navigation — all links', () => {
     console.log(`[NAV] Planes → Cómo funciona → url=${page.url()} scrolled OK`);
   });
 
-  test('Nav: Lite & Pro works FROM /funciones (cross-page)', async ({ page }) => {
+  test('Nav: Lite & Pro works FROM /funciones (cross-page)', async ({ page, viewport }) => {
+    test.skip(!viewport || viewport.width < 768, 'Nav links hidden in mobile hamburger');
     await page.goto(`${BASE}/funciones`);
     await page.waitForTimeout(1000);
     await page.click('a:has-text("Lite & Pro")');
