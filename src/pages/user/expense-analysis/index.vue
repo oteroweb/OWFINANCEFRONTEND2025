@@ -1,6 +1,12 @@
 <template>
   <q-page :class="expenseAnalysisPageClasses">
     <div class="analysis-shell">
+      <!-- Pro heading (spec ProAnalisisRoute: "Navegador financiero") -->
+      <div v-if="!isLiteLayout" style="padding: 4px 0 18px;">
+        <span class="t-eyebrow" style="color: var(--info, #3b82f6);">Analítica de gastos</span>
+        <h1 class="t-h1" style="margin: 6px 0 0;">Navegador financiero</h1>
+      </div>
+
       <section class="hero-card">
         <div class="hero-copy">
           <div class="row items-center q-col-gutter-sm q-mb-sm">
@@ -49,6 +55,22 @@
         <div class="hero-actions">
           <q-btn color="primary" icon="add" label="Nueva transaccion" @click="ui.openNewTransactionDialog()" />
           <q-btn flat color="primary" icon="refresh" label="Recargar" :loading="loading" @click="loadData" />
+        </div>
+      </section>
+
+      <!-- Donut de distribución por cántaro — Lite mode (spec: AnDonutLegend) -->
+      <section v-if="isLiteLayout && donutSegments.length" class="an-donut-card">
+        <div class="t-h3" style="margin-bottom: 3px;">¿En qué se fue?</div>
+        <div style="color: var(--fg-2); font-size: 12.5px; margin-bottom: 18px;">Tu gasto del mes, por cántaro.</div>
+        <div class="an-donut-body">
+          <div class="an-donut" :style="{ background: donutGradient }" />
+          <div class="an-donut-legend">
+            <div v-for="s in donutSegments" :key="s.name" class="an-donut-legend__row">
+              <span class="an-donut-legend__dot" :style="{ background: s.color }" />
+              <span class="an-donut-legend__name">{{ s.name }}</span>
+              <span class="an-donut-legend__pct">{{ s.pct }}%</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -865,6 +887,25 @@ const jarStripRows = computed(() => {
   return rows.map(j => ({ ...j, pct: Math.round((j.spent / max) * 100) }));
 });
 
+const donutSegments = computed(() => {
+  const rows = chartRows.value.filter(j => j.spent > 0).sort((a, b) => b.spent - a.spent).slice(0, 8);
+  const total = rows.reduce((s, r) => s + r.spent, 0);
+  if (!total) return [];
+  return rows.map(r => ({ name: r.name, color: r.color || '#94a3b8', pct: Math.round((r.spent / total) * 100) }));
+});
+
+const donutGradient = computed(() => {
+  const segs = donutSegments.value;
+  if (!segs.length) return 'var(--surface-3)';
+  let cur = 0;
+  const parts = segs.map(s => {
+    const start = cur;
+    cur += s.pct;
+    return `${s.color} ${start}% ${cur}%`;
+  });
+  return `conic-gradient(${parts.join(', ')})`;
+});
+
 const activeFilterChips = computed(() => {
   const chips: Array<{ key: string; label: string }> = [];
   if (search.value.trim()) chips.push({ key: 'search', label: `Buscar: ${search.value.trim()}` });
@@ -1423,5 +1464,68 @@ onMounted(() => {
   .group-totals {
     text-align: left;
   }
+}
+
+/* ── Donut (Lite mode) ──────────────────────────────────────────── */
+.an-donut-card {
+  background: var(--surface-1);
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: var(--shadow-card);
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.an-donut-body {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.an-donut {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  -webkit-mask: radial-gradient(circle, transparent 52%, black 53%);
+  mask: radial-gradient(circle, transparent 52%, black 53%);
+}
+
+.an-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.an-donut-legend__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--fg-1);
+}
+
+.an-donut-legend__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.an-donut-legend__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.an-donut-legend__pct {
+  color: var(--fg-2);
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 </style>
