@@ -72,6 +72,11 @@
               </div>
 
               <div class="filter-panel__field">
+                <span class="filter-panel__label">Día</span>
+                <TxDropdown icon="event" label="Cualquier día" :value="day" :options="dayOptions" full @change="(v: string) => day = v" />
+              </div>
+
+              <div class="filter-panel__field">
                 <span class="filter-panel__label">Monto</span>
                 <div class="amount-inputs">
                   <div class="amount-input">
@@ -240,6 +245,7 @@ const isHidden = computed(() => ui.hideValues);
 const type = ref<'all' | 'income' | 'expense' | 'jars'>('all');
 const jar = ref<string>('all');
 const category = ref<string>('all');
+const day = ref<string>('all');
 const minAmount = ref<string>('');
 const maxAmount = ref<string>('');
 const query = ref('');
@@ -309,6 +315,18 @@ const categoryOptions = computed<TxOption[]>(() => {
   ];
 });
 
+const dayOptions = computed<TxOption[]>(() => {
+  const seen: Record<string, number> = {};
+  for (const t of allTransactions.value) {
+    const label = formatDateShort(t.date);
+    seen[label] = (seen[label] ?? 0) + 1;
+  }
+  return [
+    { id: 'all', label: 'Cualquier día', icon: 'event' },
+    ...Object.keys(seen).map((n) => ({ id: n, label: n, icon: 'calendar_today', count: seen[n] })),
+  ];
+});
+
 // ─── Filtering ──────────────────────────────────────────────────────
 const filtered = computed(() => {
   return allTransactions.value.filter((t) => {
@@ -318,6 +336,7 @@ const filtered = computed(() => {
     if (jar.value === '__none' && t.jarName) return false;
     if (jar.value !== 'all' && jar.value !== '__none' && t.jarName !== jar.value) return false;
     if (category.value !== 'all' && t.category !== category.value) return false;
+    if (day.value !== 'all' && formatDateShort(t.date) !== day.value) return false;
     const abs = Math.abs(t.amount);
     if (minAmount.value !== '' && abs < parseFloat(minAmount.value)) return false;
     if (maxAmount.value !== '' && abs > parseFloat(maxAmount.value)) return false;
@@ -341,6 +360,7 @@ const chips = computed<Chip[]>(() => {
     out.push({ key: 'jar', label: jar.value === '__none' ? 'Sin cántaro' : jar.value, dot: jar.value !== '__none' ? (jarOpt?.color ?? null) : null, icon: jar.value === '__none' ? 'block' : undefined, clear: () => { jar.value = 'all'; } });
   }
   if (category.value !== 'all') out.push({ key: 'cat', label: category.value, icon: 'label', clear: () => { category.value = 'all'; } });
+  if (day.value !== 'all') out.push({ key: 'day', label: day.value, icon: 'event', clear: () => { day.value = 'all'; } });
   if (minAmount.value !== '' || maxAmount.value !== '') {
     const label = `${minAmount.value !== '' ? '≥ $' + minAmount.value : ''}${minAmount.value !== '' && maxAmount.value !== '' ? ' · ' : ''}${maxAmount.value !== '' ? '≤ $' + maxAmount.value : ''}`;
     out.push({ key: 'amt', label, icon: 'payments', clear: () => { minAmount.value = ''; maxAmount.value = ''; } });
@@ -353,6 +373,7 @@ const activeCount = computed(() => chips.value.length);
 
 function clearAll() {
   jar.value = 'all';
+  day.value = 'all';
   category.value = 'all';
   minAmount.value = '';
   maxAmount.value = '';
