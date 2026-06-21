@@ -1670,16 +1670,13 @@ const contextPanelCopy = computed(() => {
   return 'Selecciona una cuenta para ver balance corrido y habilitar los ajustes rapidos.';
 });
 
-const heroEyebrow = computed(() => {
-  if (isLegacyLayout.value) return 'Legacy movements';
-  if (isLiteLayout.value) return 'Lite movements';
-  return 'Pro movements';
-});
+const heroEyebrow = computed(() => 'Transacciones');
 
 const heroTitle = computed(() => {
-  if (isLegacyLayout.value) return `${dictionary.title} con contexto ampliado`;
-  if (isLiteLayout.value) return dictionary.title;
-  return `${dictionary.title} en flujo balanceado`;
+  const period = periodStore.label;
+  if (period) return period;
+  if (isLegacyLayout.value) return dictionary.title;
+  return dictionary.title;
 });
 
 const heroStatColumnClasses = computed(() => {
