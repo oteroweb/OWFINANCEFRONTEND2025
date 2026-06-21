@@ -106,6 +106,263 @@
         </q-card>
       </section>
 
+      <!-- ─── Pro 3-col layout (spec ProAnalisisRoute) ────────────────── -->
+      <template v-if="!isLiteLayout">
+        <div class="pro-nav-grid">
+
+          <!-- Left rail: Vista / filtros (280px sticky) -->
+          <aside class="pro-nav-grid__rail">
+            <div class="pro-card" style="padding: 18px;">
+              <div class="t-h3" style="margin-bottom: 2px;">Vista</div>
+              <p class="pro-card__desc">Agrupa y filtra como prefieras.</p>
+
+              <div class="pro-field">
+                <label class="pro-field__label">Agrupación principal</label>
+                <q-select v-model="groupMode" :options="groupModeOptions" emit-value map-options outlined dense />
+              </div>
+
+              <div class="pro-field">
+                <label class="pro-field__label">Buscar</label>
+                <q-input v-model="search" outlined dense clearable placeholder="Concepto, categoría o cuenta">
+                  <template #append><q-icon name="search" /></template>
+                </q-input>
+              </div>
+
+              <div class="pro-field">
+                <label class="pro-field__label">Filtrar por cántaro</label>
+                <q-select v-model="selectedJarId" :options="jarOptions" emit-value map-options outlined dense clearable />
+              </div>
+
+              <div class="pro-field">
+                <label class="pro-field__label">Filtrar por categoría</label>
+                <q-select v-model="selectedCategory" :options="categoryOptions" emit-value map-options outlined dense clearable />
+              </div>
+
+              <div class="pro-field">
+                <label class="pro-field__label">Filtrar por cuenta</label>
+                <q-select v-model="selectedAccount" :options="accountOptions" emit-value map-options outlined dense clearable />
+              </div>
+
+              <div class="pro-field">
+                <label class="pro-field__label">Filtrar por tipo</label>
+                <q-select v-model="selectedType" :options="typeOptions" emit-value map-options outlined dense clearable />
+              </div>
+
+              <div class="pro-card__divider" />
+              <button class="pro-clear-btn" @click="clearFilters">
+                <q-icon name="filter_alt_off" size="16px" style="color: var(--info, #3b82f6)" />
+                Limpiar filtros
+              </button>
+            </div>
+          </aside>
+
+          <!-- Center: Donut + Top list -->
+          <div class="pro-nav-grid__center">
+            <!-- Donut -->
+            <div v-if="donutSegments.length" class="pro-card">
+              <div class="pro-card__head">
+                <span class="t-h3">Distribución por cántaro</span>
+                <span class="pro-card__hint">Gastos · {{ periodStore.label }}</span>
+              </div>
+              <p class="pro-card__desc">Pasa por la leyenda para enfocar un cántaro.</p>
+              <div class="an-donut-body">
+                <div class="an-donut" :style="{ background: donutGradient }" />
+                <div class="an-donut-legend">
+                  <div
+                    v-for="s in donutSegments"
+                    :key="s.name"
+                    class="an-donut-legend__row"
+                    style="cursor: pointer"
+                    @click="selectedJarId = selectedJarId === (chartRows.find(r => r.name === s.name)?.id ?? null) ? null : (chartRows.find(r => r.name === s.name)?.id ?? null)"
+                  >
+                    <span class="an-donut-legend__dot" :style="{ background: s.color }" />
+                    <span class="an-donut-legend__name">{{ s.name }}</span>
+                    <span class="an-donut-legend__pct">{{ s.pct }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top cántaros -->
+            <div v-if="jarStripRows.length" class="pro-card">
+              <div class="pro-card__head">
+                <span class="t-h3">Top cántaros</span>
+                <span class="pro-card__hint">Toca para filtrar</span>
+              </div>
+              <div class="top-list">
+                <button
+                  v-for="jar in jarStripRows.slice(0, 6)"
+                  :key="jar.id"
+                  class="top-list__row"
+                  :class="{ 'top-list__row--active': selectedJarId === jar.id }"
+                  @click="selectedJarId = selectedJarId === jar.id ? null : jar.id"
+                >
+                  <span class="top-list__dot" :style="{ background: jar.color }" />
+                  <span class="top-list__name">{{ jar.name }}</span>
+                  <div class="top-list__bar-wrap">
+                    <div class="top-list__bar-fill" :style="{ width: jar.pct + '%', background: jar.color }" />
+                  </div>
+                  <span class="top-list__amount">-{{ ui.hideValues ? '••' : formatMoney(jar.spent) }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Budget + Insight -->
+          <div class="pro-nav-grid__right">
+            <!-- Asignado vs gastado -->
+            <div v-if="budgetRows.length" class="pro-card">
+              <div class="pro-card__head"><span class="t-h3">Asignado vs gastado</span></div>
+              <p class="pro-card__desc">Lo planificado contra lo consumido.</p>
+              <div class="budget-list">
+                <div v-for="b in budgetRows" :key="b.name" class="budget-row">
+                  <div class="budget-row__top">
+                    <span class="budget-row__dot" :style="{ background: b.color }" />
+                    <span class="budget-row__name">{{ b.name }}</span>
+                    <span class="budget-row__pct" :class="{ 'budget-row__pct--over': b.overspent }">{{ b.pct }}%</span>
+                  </div>
+                  <div class="budget-bar">
+                    <div
+                      class="budget-bar__fill"
+                      :class="{ 'budget-bar__fill--over': b.overspent }"
+                      :style="{ width: Math.min(b.pct, 100) + '%', background: b.overspent ? 'var(--expense-fg, #ef4444)' : b.color }"
+                    />
+                  </div>
+                  <div class="budget-row__amounts">
+                    <span>{{ ui.hideValues ? '••' : formatMoney(b.spent) }}</span>
+                    <span style="color: var(--fg-3)">/ {{ ui.hideValues ? '••' : formatMoney(b.assigned) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Insight card -->
+            <div v-if="insightJar" class="pro-insight">
+              <q-icon name="warning" size="18px" style="color: var(--expense-fg, #ef4444); flex-shrink: 0; margin-top: 1px;" />
+              <div>
+                <b>{{ insightJar.name }}</b> superó su presupuesto:
+                {{ ui.hideValues ? '••' : formatMoney(insightJar.spent) }} /
+                {{ ui.hideValues ? '••' : formatMoney(insightJar.assigned) }}
+                ({{ insightJar.pct }}%).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalle agrupado (full width) -->
+        <div class="pro-card" style="margin-top: 20px;">
+          <div class="pro-card__head">
+            <span class="t-h3">Detalle agrupado</span>
+            <span class="pro-card__hint">Moneda base: {{ baseCurrencyCode }}</span>
+          </div>
+          <p class="pro-card__desc">Haz click en cualquier transacción para abrir la edición completa.</p>
+          <div v-if="loading" class="q-py-xl flex flex-center">
+            <q-spinner color="primary" size="40px" />
+          </div>
+          <div v-else-if="!groupedRows.length" class="empty-state">
+            <q-icon name="insights" size="42px" color="grey-5" />
+            <div class="text-subtitle1 q-mt-sm">No hay movimientos para mostrar</div>
+            <div class="text-caption text-grey-7">Ajusta filtros o cambia el periodo actual.</div>
+          </div>
+          <div v-else class="group-stack" style="margin-top: 8px;">
+            <q-expansion-item
+              v-for="(group, groupIndex) in groupedRows"
+              :key="group.key"
+              :default-opened="shouldOpenGroup(groupIndex)"
+              expand-separator
+              class="group-card"
+              header-class="group-card__header"
+            >
+              <template #header>
+                <div class="group-head">
+                  <div>
+                    <div class="text-subtitle2 text-weight-bold">{{ group.label }}</div>
+                    <div class="text-caption text-grey-6">{{ group.rows.length }} transacciones</div>
+                  </div>
+                  <div class="group-totals">
+                    <div class="text-caption text-grey-7">Gastos {{ formatMoney(group.summary.gastosBase) }}</div>
+                    <div class="text-caption text-grey-7">Ingresos {{ formatMoney(group.summary.ingresosBase) }}</div>
+                    <div class="text-caption" :class="group.summary.balanceBase >= 0 ? 'text-positive' : 'text-negative'">
+                      Balance {{ formatMoney(group.summary.balanceBase) }}
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <div v-if="group.children?.length" class="subgroup-stack">
+                <q-expansion-item
+                  v-for="(child, childIndex) in group.children"
+                  :key="child.key"
+                  dense
+                  :default-opened="shouldOpenSubgroup(childIndex)"
+                  expand-separator
+                  class="subgroup-card"
+                >
+                  <template #header>
+                    <div class="subgroup-head">
+                      <div>
+                        <div class="text-body2 text-weight-medium">{{ child.label }}</div>
+                        <div class="text-caption text-grey-6">{{ child.rows.length }} transacciones</div>
+                      </div>
+                      <div class="text-caption text-grey-7">{{ formatMoney(child.summary.balanceBase) }}</div>
+                    </div>
+                  </template>
+                  <div class="rows-list">
+                    <button
+                      v-for="row in child.rows"
+                      :key="row.id"
+                      type="button"
+                      :class="txRowClasses"
+                      @click="openTransaction(row.id)"
+                    >
+                      <div class="tx-main">
+                        <div class="tx-title-row">
+                          <span class="text-body2 text-weight-medium">{{ row.name }}</span>
+                          <q-badge outline color="primary">{{ row.typeName }}</q-badge>
+                        </div>
+                        <div class="text-caption text-grey-7">
+                          {{ row.dateLabel }} · {{ row.accountLabel }} · {{ row.categoryName || 'Sin categoria' }}
+                        </div>
+                      </div>
+                      <div class="tx-amounts">
+                        <div :class="row.amountBase >= 0 ? 'text-positive text-weight-bold' : 'text-negative text-weight-bold'">
+                          {{ formatMoney(row.amountBase) }}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </q-expansion-item>
+              </div>
+              <div v-else class="rows-list rows-list--root">
+                <button
+                  v-for="row in group.rows"
+                  :key="row.id"
+                  type="button"
+                  :class="txRowClasses"
+                  @click="openTransaction(row.id)"
+                >
+                  <div class="tx-main">
+                    <div class="tx-title-row">
+                      <span class="text-body2 text-weight-medium">{{ row.name }}</span>
+                      <q-badge outline color="primary">{{ row.typeName }}</q-badge>
+                    </div>
+                    <div class="text-caption text-grey-7">
+                      {{ row.dateLabel }} · {{ row.accountLabel }} · {{ row.categoryName || 'Sin categoria' }}
+                    </div>
+                  </div>
+                  <div class="tx-amounts">
+                    <div :class="row.amountBase >= 0 ? 'text-positive text-weight-bold' : 'text-negative text-weight-bold'">
+                      {{ formatMoney(row.amountBase) }}
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </q-expansion-item>
+          </div>
+        </div>
+      </template>
+
+      <!-- ─── Lite 2-col layout (unchanged) ────────────────────────── -->
+      <template v-else>
       <section :class="contentGridClasses">
         <aside :class="filtersPanelClasses">
           <q-card flat bordered class="panel-card">
@@ -461,6 +718,7 @@
           </q-card>
         </div>
       </section>
+      </template><!-- end v-else Lite -->
     </div>
   </q-page>
 </template>
@@ -905,6 +1163,27 @@ const donutGradient = computed(() => {
   });
   return `conic-gradient(${parts.join(', ')})`;
 });
+
+const budgetRows = computed(() => {
+  return chartRows.value
+    .filter(j => j.spent > 0 || j.assignedExpected > 0)
+    .sort((a, b) => {
+      const pctA = a.assignedExpected > 0 ? (a.spent / a.assignedExpected) * 100 : 0;
+      const pctB = b.assignedExpected > 0 ? (b.spent / b.assignedExpected) * 100 : 0;
+      return pctB - pctA;
+    })
+    .slice(0, 8)
+    .map(j => ({
+      name: j.name,
+      color: j.color,
+      assigned: j.assignedExpected,
+      spent: j.spent,
+      pct: j.assignedExpected > 0 ? Math.min(Math.round((j.spent / j.assignedExpected) * 100), 200) : 0,
+      overspent: j.assignedExpected > 0 && j.spent > j.assignedExpected,
+    }));
+});
+
+const insightJar = computed(() => budgetRows.value.find(b => b.overspent) ?? null);
 
 const activeFilterChips = computed(() => {
   const chips: Array<{ key: string; label: string }> = [];
@@ -1527,5 +1806,231 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
+}
+
+/* ─── Pro 3-col nav grid ──────────────────────────────────────── */
+.pro-nav-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 340px;
+  gap: 16px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+@media (max-width: 1024px) {
+  .pro-nav-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pro-nav-grid__rail {
+  position: sticky;
+  top: 16px;
+}
+
+.pro-nav-grid__center,
+.pro-nav-grid__right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pro-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+
+.pro-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+
+.pro-card__desc {
+  color: var(--fg-3);
+  font-size: 13px;
+  margin: 4px 0 16px;
+}
+
+.pro-card__hint {
+  color: var(--fg-3);
+  font-size: 12px;
+}
+
+.pro-card__divider {
+  border-top: 1px solid var(--border-hairline);
+  margin: 14px 0;
+}
+
+.pro-field {
+  margin-bottom: 14px;
+}
+
+.pro-field__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--fg-3);
+  margin-bottom: 5px;
+}
+
+.pro-clear-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--info, #3b82f6);
+  font-size: 13px;
+  padding: 0;
+}
+
+/* Top list */
+.top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.top-list__row {
+  display: grid;
+  grid-template-columns: 9px 1fr 80px auto;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+  border-radius: var(--radius-sm, 6px);
+  transition: background 0.1s;
+}
+
+.top-list__row:hover {
+  background: var(--surface-2);
+}
+
+.top-list__row--active {
+  background: color-mix(in srgb, var(--info, #3b82f6) 10%, transparent);
+}
+
+.top-list__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.top-list__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-list__bar-wrap {
+  height: 6px;
+  background: var(--surface-3, #e2e8f0);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.top-list__bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.top-list__amount {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--expense-fg, #ef4444);
+  white-space: nowrap;
+}
+
+/* Budget list */
+.budget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.budget-row__top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+}
+
+.budget-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.budget-row__name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-row__pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg-2);
+}
+
+.budget-row__pct--over {
+  color: var(--expense-fg, #ef4444);
+}
+
+.budget-bar {
+  height: 6px;
+  background: var(--surface-3, #e2e8f0);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.budget-bar__fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.budget-row__amounts {
+  display: flex;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-2);
+}
+
+/* Insight card */
+.pro-insight {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--expense-fg, #ef4444) 8%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--expense-fg, #ef4444) 25%, var(--border-hairline));
+  border-radius: var(--radius-lg, 12px);
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--fg-1);
+  line-height: 1.5;
 }
 </style>
