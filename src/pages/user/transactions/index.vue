@@ -149,6 +149,55 @@
               </q-card-section>
 
               <q-card-section class="q-pt-none">
+                <!-- AccountFilter: solo en modo Pro (no lite, no legacy) -->
+                <div v-if="isPro" ref="acctFilterRef" class="tx-acct-filter q-mb-md">
+                  <button
+                    :class="['tx-acct-filter__pill', acctFilterActive ? 'tx-acct-filter__pill--active' : '']"
+                    @click.stop="acctFilterOpen = !acctFilterOpen"
+                  >
+                    <q-icon name="account_balance" size="16px" />
+                    <span>{{ acctFilterLabel }}</span>
+                    <q-icon :name="acctFilterOpen ? 'expand_less' : 'expand_more'" size="16px" />
+                  </button>
+
+                  <div v-if="acctFilterOpen" class="tx-acct-dropdown" @click.stop>
+                    <!-- Opción "Todas" -->
+                    <button
+                      :class="['tx-acct-row', !acctFilterActive ? 'tx-acct-row--selected' : '']"
+                      @click="clearAccountFilter(); acctFilterOpen = false"
+                    >
+                      <span class="tx-acct-row__dot tx-acct-row__dot--all" />
+                      <span class="tx-acct-row__name">Todas las cuentas</span>
+                      <q-icon v-if="!acctFilterActive" name="check" size="16px" class="tx-acct-row__check" />
+                    </button>
+
+                    <div class="tx-acct-dropdown__divider" />
+
+                    <button
+                      v-for="acct in availableAccounts"
+                      :key="acct.id"
+                      :class="['tx-acct-row', selectedAccountNums.includes(acct.id) ? 'tx-acct-row--selected' : '']"
+                      @click="toggleAccountFilter(acct.id)"
+                    >
+                      <span
+                        class="tx-acct-row__dot"
+                        :style="acct.color ? { background: acct.color } : {}"
+                      />
+                      <span class="tx-acct-row__name">{{ acct.name }}</span>
+                      <q-icon
+                        v-if="selectedAccountNums.includes(acct.id)"
+                        name="check"
+                        size="16px"
+                        class="tx-acct-row__check"
+                      />
+                    </button>
+
+                    <div v-if="!availableAccounts.length" class="tx-acct-dropdown__empty">
+                      Cargando cuentas...
+                    </div>
+                  </div>
+                </div>
+
                 <div class="row q-col-gutter-md items-start">
                   <div class="col-12 col-md-7">
                     <div class="text-caption q-mb-xs">{{ dictionary.finderLabel }}</div>
@@ -621,7 +670,6 @@ import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRoute } from 'vue-router';
 import { useQuasar, QInput, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
-import { useI18n } from 'vue-i18n';
 import { useAuthStore } from 'stores/auth';
 import { dictionary as dictionaryDef } from './dictionary';
 import { AccountsSidebarWidget, TransactionFormDialog } from 'components';
@@ -639,7 +687,6 @@ import {
 defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
-const { t } = useI18n();
 const route = useRoute();
 const authStore = useAuthStore();
 const defaultCurrencyCode = computed(() => authStore.defaultCurrencyCode);
@@ -659,6 +706,7 @@ const activeLayoutModeOption = computed<LayoutModeOption>(
 );
 const isLegacyLayout = computed(() => activeLayoutMode.value === 'legacy');
 const isLiteLayout = computed(() => activeLayoutMode.value === 'lite');
+const isPro = computed(() => !isLiteLayout.value && !isLegacyLayout.value);
 const transactionsPageClasses = computed(() => [
   'transactions-lite',
   'q-pa-md',
@@ -748,6 +796,75 @@ interface CrudDictionary {
 }
 
 const dictionary = dictionaryDef as unknown as CrudDictionary;
+
+// ===== AccountFilter (Pro mode) =====
+type AvailableAccount = {
+  id: number;
+  name: string;
+  color: string | null;
+  txCount: number;
+};
+const availableAccounts = ref<AvailableAccount[]>([]);
+const acctFilterOpen = ref(false);
+const acctFilterRef = ref<HTMLElement | null>(null);
+
+function toggleAccountFilter(id: number): void {
+  const current = txStore.selectedAccountIds.map(Number).filter(Number.isFinite);
+  const idx = current.indexOf(id);
+  if (idx >= 0) {
+    txStore.setSelectedAccountIds(current.filter((x) => x !== id));
+  } else {
+    txStore.setSelectedAccountIds([...current, id]);
+  }
+}
+
+function clearAccountFilter(): void {
+  txStore.setSelectedAccountIds([]);
+}
+
+function onAcctFilterClickOutside(e: MouseEvent): void {
+  if (acctFilterRef.value && !acctFilterRef.value.contains(e.target as Node)) {
+    acctFilterOpen.value = false;
+  }
+}
+
+async function fetchAvailableAccounts(): Promise<void> {
+  try {
+    const res = await api.get('/accounts', {
+      params: { per_page: 1000, user_id: authStore.user?.id },
+    });
+    const raw = res.data?.data ?? res.data;
+    const list: Array<Record<string, unknown>> = Array.isArray(raw)
+      ? (raw as Array<Record<string, unknown>>)
+      : Array.isArray((raw as Record<string, unknown>)?.['data'])
+      ? ((raw as Record<string, unknown>)['data'] as Array<Record<string, unknown>>)
+      : [];
+    availableAccounts.value = list.map((a) => {
+      const id = Number(a['id']);
+      const name = typeof a['name'] === 'string' ? a['name'] : `Cuenta #${id}`;
+      const color =
+        typeof a['color'] === 'string' && a['color']
+          ? a['color']
+          : null;
+      return { id, name, color, txCount: 0 };
+    }).filter((a) => Number.isFinite(a.id));
+  } catch {
+    // silently ignore — widget degrades gracefully
+  }
+}
+
+const selectedAccountNums = computed<number[]>(() =>
+  txStore.selectedAccountIds.map(Number).filter(Number.isFinite)
+);
+
+const acctFilterLabel = computed(() => {
+  const n = selectedAccountNums.value.length;
+  if (n === 0) return 'Cuentas';
+  if (n === 1) return 'Cuentas · 1';
+  return `Cuentas · ${n}`;
+});
+
+const acctFilterActive = computed(() => selectedAccountNums.value.length > 0);
 
 // Estado filtros
 type FilterValue = string | number | boolean | null | undefined;
@@ -1670,13 +1787,16 @@ const contextPanelCopy = computed(() => {
   return 'Selecciona una cuenta para ver balance corrido y habilitar los ajustes rapidos.';
 });
 
-const heroEyebrow = computed(() => 'Transacciones');
+const heroEyebrow = computed(() => {
+  if (isLegacyLayout.value) return 'Legacy movements';
+  if (isLiteLayout.value) return 'Lite movements';
+  return 'Pro movements';
+});
 
 const heroTitle = computed(() => {
-  const period = periodStore.label;
-  if (period) return period;
-  if (isLegacyLayout.value) return dictionary.title;
-  return dictionary.title;
+  if (isLegacyLayout.value) return `${dictionary.title} con contexto ampliado`;
+  if (isLiteLayout.value) return dictionary.title;
+  return `${dictionary.title} en flujo balanceado`;
 });
 
 const heroStatColumnClasses = computed(() => {
@@ -1743,7 +1863,7 @@ async function submitAdjustTop(): Promise<void> {
   if (!id) return;
   const n = Number(adjustBalanceTop.value);
   if (!Number.isFinite(n)) {
-    $q.notify({ type: 'warning', message: t('notify.validBalance') });
+    $q.notify({ type: 'warning', message: 'Ingresa un saldo válido' });
     return;
   }
   try {
@@ -1753,7 +1873,7 @@ async function submitAdjustTop(): Promise<void> {
       include_in_balance: includeInBalanceTop.value,
     });
     await api.post(`/accounts/${id}/recalculate-account`);
-    $q.notify({ type: 'positive', message: t('notify.balanceAdjusted') });
+    $q.notify({ type: 'positive', message: 'Saldo ajustado' });
     showAdjustTop.value = false;
     await runFetch(true);
     await fetchSingleAccountBalance();
@@ -1761,7 +1881,7 @@ async function submitAdjustTop(): Promise<void> {
       new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'adjust' } })
     );
   } catch {
-    $q.notify({ type: 'negative', message: t('notify.balanceAdjustError') });
+    $q.notify({ type: 'negative', message: 'Error ajustando saldo' });
   } finally {
     adjustingTop.value = false;
   }
@@ -1772,14 +1892,14 @@ async function recalcSingleAccountTop(): Promise<void> {
   try {
     $q.loading.show({ message: 'Recalculando saldo...' });
     await api.post(`/accounts/${id}/recalculate-account`);
-    $q.notify({ type: 'positive', message: t('notify.balanceRecalculated') });
+    $q.notify({ type: 'positive', message: 'Saldo recalculado' });
     await runFetch(true);
     await fetchSingleAccountBalance();
     window.dispatchEvent(
       new CustomEvent('ow:transactions:changed', { detail: { account_id: id, reason: 'recalc' } })
     );
   } catch {
-    $q.notify({ type: 'negative', message: t('notify.balanceRecalcError') });
+    $q.notify({ type: 'negative', message: 'Error recalculando saldo' });
   } finally {
     $q.loading.hide();
   }
@@ -1822,7 +1942,7 @@ function buildQueryParams(): Record<string, unknown> {
   };
   const params: Record<string, unknown> = {
     [pmap.page]: pagination.value.page,
-    [pmap.per_page]: pagination.value.rowsPerPage === 0 ? 1000 : pagination.value.rowsPerPage,
+    [pmap.per_page]: pagination.value.rowsPerPage,
     [pmap.sort_by]: pagination.value.sortBy,
     [pmap.descending]: pagination.value.descending,
   };
@@ -1883,7 +2003,7 @@ async function fetchData(params?: Record<string, unknown>): Promise<void> {
   } catch (err) {
     const e = err as { name?: string } | undefined;
     if ((e && e.name === 'CanceledError') || controller.signal.aborted) return;
-    $q.notify({ type: 'negative', message: t('notify.errorLoadingData') });
+    $q.notify({ type: 'negative', message: 'Error cargando datos' });
   } finally {
     loading.value = false;
   }
@@ -1976,6 +2096,10 @@ onMounted(async () => {
   await runFetch(true);
   visibleColumnNames.value = columns.value.filter((c) => c.name !== 'actions').map((c) => c.name);
 
+  // Cargar cuentas disponibles para AccountFilter (Pro mode)
+  void fetchAvailableAccounts();
+  document.addEventListener('click', onAcctFilterClickOutside);
+
   // Escuchar cambios en transacciones para refrescar la tabla SIEMPRE;
   // si hay una sola cuenta seleccionada, además refrescamos el saldo/bandera.
   const handler = () => {
@@ -1994,6 +2118,7 @@ onMounted(async () => {
   onBeforeUnmount(() => {
     window.removeEventListener('ow:transactions:changed', handler);
     window.removeEventListener('ow:accounts:selected', accountsSelectedHandler);
+    document.removeEventListener('click', onAcctFilterClickOutside);
   });
 });
 
@@ -2532,12 +2657,17 @@ const activeFilterChips = computed<ActiveFilterChip[]>(() => {
       value: getFilterDisplayValue(f, val),
     });
   }
-  if (Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length > 1) {
-    chips.push({
-      key: '__accounts_multi',
-      label: 'Cuentas',
-      value: `${txStore.selectedAccountIds.length} seleccionadas`,
-    });
+  // Chips individuales por cuenta seleccionada (AccountFilter — solo Pro)
+  if (Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length > 0) {
+    for (const rawId of txStore.selectedAccountIds) {
+      const numId = Number(rawId);
+      const acct = availableAccounts.value.find((a) => a.id === numId);
+      chips.push({
+        key: `__acct_${numId}`,
+        label: 'Cuenta',
+        value: acct ? acct.name : `#${numId}`,
+      });
+    }
   }
   if (periodStore.state.type !== 'all') {
     chips.push({ key: '__period', label: 'Periodo', value: periodStore.label });
@@ -2697,8 +2827,9 @@ watch(
 function removeFilterChip(key: string): void {
   if (key === '__search') {
     filters.search = '';
-  } else if (key === '__accounts_multi') {
-    txStore.setSelectedAccountIds([]);
+  } else if (key.startsWith('__acct_')) {
+    const numId = Number(key.replace('__acct_', ''));
+    if (Number.isFinite(numId)) toggleAccountFilter(numId);
   } else if (key === '__period') {
     periodStore.setType('all');
   } else {
@@ -2715,7 +2846,6 @@ function openNewFab(): void {
 function handleBulkImported(count: number): void {
   showBulkImport.value = false;
   void fetchData();
-  if (singleAccountSelected.value) void fetchSingleAccountBalance();
   $q.notify({
     type: 'positive',
     message: `${count} transacciones importadas exitosamente`,
@@ -2791,11 +2921,11 @@ function remove(row: Record<string, unknown>) {
     void (async () => {
       try {
         await txStore.deleteTransaction(id);
-        $q.notify({ type: 'positive', message: t('notify.txDeleted') });
+        $q.notify({ type: 'positive', message: 'Transacción eliminada' });
         void runFetch(true);
         if (singleAccountSelected.value) void fetchSingleAccountBalance();
       } catch {
-        $q.notify({ type: 'negative', message: t('notify.txDeleteError') });
+        $q.notify({ type: 'negative', message: 'Error eliminando transacción' });
       }
     })();
   });
@@ -2807,7 +2937,7 @@ function removeSelectedRows() {
     .filter((id) => Number.isFinite(id));
 
   if (!ids.length) {
-    $q.notify({ type: 'warning', message: t('notify.txNoneSelected') });
+    $q.notify({ type: 'warning', message: 'No hay transacciones seleccionadas' });
     return;
   }
 
@@ -2833,14 +2963,14 @@ function removeSelectedRows() {
       if (singleAccountSelected.value) void fetchSingleAccountBalance();
 
       if (deleted === ids.length) {
-        $q.notify({ type: 'positive', message: t('notify.txDeleteBulk', { count: deleted }) });
+        $q.notify({ type: 'positive', message: `${deleted} transacciones eliminadas` });
       } else if (deleted > 0) {
         $q.notify({
           type: 'warning',
           message: `Se eliminaron ${deleted} de ${ids.length} transacciones`,
         });
       } else {
-        $q.notify({ type: 'negative', message: t('notify.txDeleteBulkPartial') });
+        $q.notify({ type: 'negative', message: 'No se pudo eliminar ninguna transacción' });
       }
     })();
   });
@@ -3170,5 +3300,117 @@ function exportCSV(): void {
   .transactions-lite__hero-section {
     padding: 18px;
   }
+}
+
+/* ── AccountFilter (Pro mode) ── */
+.tx-acct-filter {
+  position: relative;
+  display: inline-block;
+}
+
+.tx-acct-filter__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--surface-2);
+  color: var(--fg-1);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tx-acct-filter__pill--active {
+  background: color-mix(in srgb, var(--info) 14%, var(--surface-1));
+  color: var(--info);
+  font-weight: 600;
+}
+
+.tx-acct-filter__pill:hover {
+  filter: brightness(0.96);
+}
+
+.tx-acct-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 70;
+  min-width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-hairline);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+  padding: 6px;
+}
+
+.tx-acct-dropdown__divider {
+  height: 1px;
+  background: var(--border-hairline);
+  margin: 4px 6px;
+}
+
+.tx-acct-dropdown__empty {
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--fg-3);
+  text-align: center;
+}
+
+.tx-acct-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-1);
+  background: transparent;
+  transition: background 0.1s ease;
+}
+
+.tx-acct-row:hover {
+  background: var(--surface-2);
+}
+
+.tx-acct-row--selected {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.tx-acct-row__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--fg-3);
+}
+
+.tx-acct-row__dot--all {
+  background: var(--info);
+}
+
+.tx-acct-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-acct-row__check {
+  color: var(--info);
+  flex-shrink: 0;
 }
 </style>
