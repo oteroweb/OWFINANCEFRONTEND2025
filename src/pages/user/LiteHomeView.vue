@@ -234,7 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
@@ -258,7 +258,6 @@ const monthlyExpense = ref(0);
 const monthlyDelta = ref<number | null>(null);
 const accountsCount = ref<number | null>(null);
 const lastUpdated = ref<string | null>(null);
-let _lastUpdatedTimer: ReturnType<typeof setInterval> | null = null;
 
 const isHidden = computed(() => ui.hideValues);
 const hasNoAccounts = computed(() => accountsCount.value === 0);
@@ -551,9 +550,7 @@ onMounted(() => {
   ]);
 });
 
-onUnmounted(() => {
-  if (_lastUpdatedTimer !== null) clearInterval(_lastUpdatedTimer);
-});
+
 </script>
 
 <style scoped lang="scss">
