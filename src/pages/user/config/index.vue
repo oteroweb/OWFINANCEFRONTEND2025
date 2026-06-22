@@ -52,6 +52,15 @@
           </div>
           <div class="apref__toggle" :class="{ 'apref__toggle--on': ui.hideValues }" />
         </div>
+
+        <div class="apref__row" style="cursor:pointer" @click="router.push('/user/accounts')">
+          <span class="material-icons apref__row-icon">payments</span>
+          <div class="apref__row-text">
+            <span>Divisa predeterminada</span>
+            <span class="apref__row-hint">USD · gestionar en Cuentas</span>
+          </div>
+          <span class="material-icons" style="font-size:18px;color:var(--fg-3)">chevron_right</span>
+        </div>
       </div>
 
       <!-- ── Nav items ───────────────────────────────────────────── -->
@@ -820,7 +829,7 @@ type ConfigNavItem = {
 const configNav: ConfigNavItem[] = [
   { name: 'profile', label: 'Perfil', hint: 'Nombre, correo y contraseña', icon: 'person', route: '/user/profile' },
   { name: 'finance', label: 'Mi perfil financiero', hint: 'Ingresos, metas y asesor IA', icon: 'insights', route: '/user/financial-profile' },
-  { name: 'accounts', label: 'Cuentas', hint: 'Bancos, tarjetas y medios de pago', icon: 'account_balance_wallet' },
+  { name: 'accounts', label: 'Cuentas vinculadas', hint: 'Bancos, tarjetas y medios de pago', icon: 'account_balance_wallet', route: '/user/accounts' },
   { name: 'categories', label: 'Categorías', hint: 'Organiza tus categorías de gasto', icon: 'category' },
   { name: 'taxes', label: 'Impuestos', hint: 'Configuración de impuestos', icon: 'percent' },
 ];

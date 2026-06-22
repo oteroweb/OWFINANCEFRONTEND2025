@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>OW Finance · Ciclo de entrada</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .material-icons{font-family:'Material Icons';font-style:normal;line-height:1;vertical-align:-3px;-webkit-font-feature-settings:'liga';font-feature-settings:'liga'}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg-canvas);font-family:var(--font-body);color:var(--fg-1);-webkit-font-smoothing:antialiased;line-height:1.6}
+  .page{max-width:1040px;margin:0 auto;padding:56px 48px 96px}
+  .kicker{font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-primary)}
+  h1.title{font-family:var(--font-display);font-weight:700;font-size:38px;line-height:1.1;letter-spacing:-.02em;margin:12px 0 14px}
+  .lede{font-size:17px;color:var(--fg-2);line-height:1.55;max-width:680px}
+  h2{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.01em;margin:46px 0 16px;display:flex;align-items:center;gap:11px}
+  h2 .n{width:30px;height:30px;border-radius:8px;background:var(--brand-primary-soft);color:var(--brand-primary);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:var(--font-money)}
+
+  /* problem/solution callout */
+  .note{display:flex;gap:14px;border-radius:var(--radius-lg);padding:18px 20px;margin:18px 0}
+  .note.warn{background:var(--warning-soft)}
+  .note.ok{background:var(--income-soft)}
+  .note .material-icons{font-size:22px;flex-shrink:0}
+  .note.warn .material-icons{color:var(--warning-fg)}
+  .note.ok .material-icons{color:var(--income-fg)}
+  .note p{margin:0;font-size:14px;line-height:1.55}
+  .note strong{font-weight:700}
+
+  /* lifecycle rail */
+  .rail{display:flex;align-items:stretch;gap:0;margin:8px 0 6px;flex-wrap:wrap}
+  .stage{flex:1;min-width:150px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;padding:0 6px}
+  .stage .dot{width:52px;height:52px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;color:#fff;margin-bottom:10px;box-shadow:var(--shadow-card)}
+  .stage .lbl{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--fg-1)}
+  .stage .sub{font-family:var(--font-body);font-size:11.5px;color:var(--fg-2);margin-top:3px;line-height:1.4}
+  .stage:not(:last-child)::after{content:'arrow_forward';font-family:'Material Icons';position:absolute;top:18px;right:-10px;color:var(--fg-3);font-size:20px;-webkit-font-feature-settings:'liga';font-feature-settings:'liga'}
+
+  /* link cards */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+  a.card{display:flex;gap:15px;align-items:flex-start;text-decoration:none;background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow-card);transition:transform 140ms,box-shadow 140ms}
+  a.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+  a.card .ic{width:42px;height:42px;border-radius:12px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:var(--brand-primary-soft);color:var(--brand-primary)}
+  a.card .ic.mob{background:var(--info-soft);color:var(--info-fg)}
+  a.card .ic.app{background:var(--income-soft);color:var(--income-fg)}
+  a.card h4{font-family:var(--font-display);font-weight:600;font-size:15.5px;color:var(--fg-1);margin-bottom:3px;display:flex;align-items:center;gap:6px}
+  a.card p{font-size:13px;color:var(--fg-2);margin:0;line-height:1.5}
+  a.card .go{margin-left:auto;color:var(--fg-3);align-self:center}
+  .tag{display:inline-block;font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:5px;background:var(--surface-2);color:var(--fg-2);vertical-align:middle}
+
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px}
+  th{text-align:left;font-family:var(--font-display);font-weight:600;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding:0 12px 9px;border-bottom:1px solid var(--border-hairline)}
+  td{padding:11px 12px;border-bottom:1px solid var(--border-hairline);color:var(--fg-1);vertical-align:top}
+  td:first-child{font-weight:600;white-space:nowrap}
+  code{font-family:var(--font-money);font-size:12.5px;background:var(--surface-2);padding:2px 6px;border-radius:5px;color:var(--fg-1)}
+  ul{margin:10px 0 10px 2px;list-style:none}
+  li{position:relative;padding-left:24px;margin:8px 0;font-size:14.5px;line-height:1.55}
+  li::before{content:'';position:absolute;left:5px;top:9px;width:6px;height:6px;border-radius:2px;background:var(--brand-primary)}
+  .foot{margin-top:56px;padding-top:20px;border-top:1px solid var(--border-hairline);font-size:12.5px;color:var(--fg-3)}
+  @media(max-width:680px){.page{padding:36px 22px}.grid{grid-template-columns:1fr}h1.title{font-size:30px}.rail{flex-direction:column;gap:14px}.stage:not(:last-child)::after{display:none}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="kicker">Arquitectura · Flujo</div>
+  <h1 class="title">El ciclo de entrada de OW Finance</h1>
+  <p class="lede">Cómo se ordena la experiencia desde que el usuario llega hasta que usa la app — y cómo conectan las piezas que ya tenemos en mobile y desktop.</p>
+
+  <div class="note warn">
+    <span class="material-icons">history</span>
+    <p><strong>Antes:</strong> los dos archivos centrales (<code>ui_kits/mobile/index.html</code> y <code>ui_kits/lite-desktop/index.html</code>) arrancaban directo en el <strong>dashboard</strong>, saltando landing, registro y onboarding — el orden natural del ciclo. Ya corregido (ver abajo).</p>
+  </div>
+  <div class="note ok">
+    <span class="material-icons">check_circle</span>
+    <p><strong>Ya implementado:</strong> los dos <code>index.html</code> ahora arrancan en la <strong>Landing</strong>. Login/Registro → <strong>dashboard</strong> (registro abre el onboarding la 1ª vez). La sesión se guarda en <code>localStorage('ow-session')</code>: quien ya entró va directo al dashboard. “Cerrar sesión” (en Ajustes) vuelve a la Landing.</p>
+  </div>
+
+  <h2><span class="n">1</span>El ciclo, de un vistazo</h2>
+  <div class="rail">
+    <div class="stage"><span class="dot" style="background:var(--brand-primary)"><span class="material-icons">waving_hand</span></span><span class="lbl">Landing</span><span class="sub">Propuesta de valor · CTA a crear cuenta</span></div>
+    <div class="stage"><span class="dot" style="background:#6366F1"><span class="material-icons">person_add</span></span><span class="lbl">Registro / Login</span><span class="sub">Cuenta nueva o regreso</span></div>
+    <div class="stage"><span class="dot" style="background:#8B5CF6"><span class="material-icons">auto_awesome</span></span><span class="lbl">Onboarding</span><span class="sub">Perfil + cántaros · 1ª vez</span></div>
+    <div class="stage"><span class="dot" style="background:var(--income-fg)"><span class="material-icons">dashboard</span></span><span class="lbl">App / Dashboard</span><span class="sub">Lite o Pro · uso diario</span></div>
+  </div>
+  <ul>
+    <li><strong>Criterio de gateo:</strong> al entrar a la app se evalúa <code>onboarding_profile_completed</code>. Si es falso → onboarding; si es verdadero → dashboard.</li>
+    <li><strong>Perfil incompleto:</strong> "Completar después" deja entrar al dashboard con el perfil a medias; una tarjeta de progreso invita a terminarlo (ver gamificación).</li>
+  </ul>
+
+  <h2><span class="n">2</span>Las piezas (abrir cada una)</h2>
+  <div class="grid">
+    <a class="card" href="Onboarding Desktop.html">
+      <span class="ic"><span class="material-icons">desktop_windows</span></span>
+      <div><h4>Onboarding Desktop <span class="tag">nuevo</span></h4><p>Ciclo completo en desktop: landing → registro → wizard (tarjeta centrada) → recomendación → app.</p></div>
+      <span class="material-icons go">open_in_new</span>
+    </a>
+    <a class="card" href="Onboarding Mobile.html">
+      <span class="ic mob"><span class="material-icons">smartphone</span></span>
+      <div><h4>Onboarding Mobile</h4><p>Misma lógica en teléfono: wizard conversacional, gamificación, voz IA, panel y "Mi perfil".</p></div>
+      <span class="material-icons go">open_in_new</span>
+    </a>
+    <a class="card" href="../OW Finance - Landing.html">
+      <span class="ic"><span class="material-icons">web</span></span>
+      <div><h4>Landing (marketing)</h4><p>Página pública existente. Entrada real del ciclo en producción.</p></div>
+      <span class="material-icons go">open_in_new</span>
+    </a>
+    <a class="card" href="../OW Finance - Login.html">
+      <span class="ic"><span class="material-icons">login</span></span>
+      <div><h4>Login / Registro</h4><p>Auth existente (desktop, 2 columnas). El onboarding reusa su lógica de entrada.</p></div>
+      <span class="material-icons go">open_in_new</span>
+    </a>
+    <a class="card" href="../ui_kits/lite-desktop/index.html">
+      <span class="ic app"><span class="material-icons">dashboard</span></span>
+      <div><h4>App Lite / Pro (desktop)</h4><p>El dashboard destino. Hoy es el punto de arranque — debería ser el final del ciclo.</p></div>
+      <span class="material-icons go">open_in_new</span>
+    </a>
+    <a class="card" href="../ui_kits/mobile/index.html">
+      <span class="ic app"><span class="material-icons">phone_iphone</span></span>
+      <div><h4>App mobile</h4><p>Dashboard mobile. Mismo criterio de entrada que el desktop.</p></div>
+      <span class="material-icons go">open_in_new</span>
+    </a>
+  </div>
+
+  <h2><span class="n">3</span>Cómo está conectado</h2>
+  <p style="color:var(--fg-2);font-size:15px;max-width:720px">El <strong>gate de entrada</strong> ya vive en ambos <code>index.html</code> (componentes <code>EntryGate.jsx</code> / <code>EntryGateMobile.jsx</code>), sin tocar los shells ni los componentes. Decide la primera pantalla según la sesión:</p>
+  <table>
+    <thead><tr><th>Situación al abrir la app</th><th>Qué muestra</th></tr></thead>
+    <tbody>
+      <tr><td>Sin sesión (1ª visita)</td><td>Landing → Registro/Login</td></tr>
+      <tr><td>Login</td><td>Dashboard directo</td></tr>
+      <tr><td>Registro</td><td>Dashboard + abre onboarding (1ª vez)</td></tr>
+      <tr><td>Sesión guardada</td><td>Dashboard directo</td></tr>
+      <tr><td><code>?app=1</code></td><td>Entra directo al dashboard (modo showcase del kit)</td></tr>
+      <tr><td><code>?logout=1</code> · Ajustes → Cerrar sesión</td><td>Vuelve a la Landing</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="n">4</span>Una sola fuente de verdad</h2>
+  <ul>
+    <li><strong>Datos del flujo</strong> (<code>flow-data.jsx</code>): fases, preguntas, pasos avanzados Pro y estado base — compartidos por mobile y desktop.</li>
+    <li><strong>Gamificación</strong> (<code>gamification.jsx</code>): niveles Básico/Completo/Avanzado, % de completitud, anillo e insignias — idéntica en ambas plataformas.</li>
+    <li><strong>Recomendación</strong> (<code>onbRecommendTemplate</code>): la misma heurística perfil→cántaros alimenta ambas variantes.</li>
+    <li><strong>Diferencia por plataforma:</strong> solo la <em>presentación</em> (teléfono a pantalla completa vs. tarjeta centrada en ventana).</li>
+  </ul>
+
+  <div class="foot">OW Finance · Documento de orden del ciclo · acompaña a «Onboarding Desktop», «Onboarding Mobile» y «Estudio Onboarding».</div>
+
+</div>
+</body>
+</html>

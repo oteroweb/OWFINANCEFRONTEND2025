@@ -296,6 +296,7 @@
   <script type="text/babel" src="organisms/AIAdvisorPanel.jsx"></script>
   <script type="text/babel" src="organisms/JarsConfig.jsx"></script>
   <script type="text/babel" src="organisms/OnboardingFlow.jsx"></script>
+  <script type="text/babel" src="organisms/EntryGate.jsx"></script>
 
   <!-- ── Organisms · Financial display ─────────────────────────── -->
   <script type="text/babel" src="organisms/HeroBalance.jsx"></script>
@@ -335,8 +336,19 @@
   <script type="text/babel">
     let currentMode = 'lite';
     const reactRoot = ReactDOM.createRoot(document.getElementById('root'));
+    const hasSession = () => { try { return localStorage.getItem('ow-session') === '1'; } catch (e) { return false; } };
 
     function renderApp() {
+      // Gate de entrada: sin sesión → Landing/Login; con sesión → dashboard.
+      if (!hasSession()) {
+        reactRoot.render(<EntryGate onAuthed={(opts) => {
+          try { localStorage.setItem('ow-session', '1'); } catch (e) {}
+          window.__appRoute = 'home';
+          renderApp();
+          if (opts && opts.onboard) setTimeout(() => window.__owStartOnboarding && window.__owStartOnboarding(), 360);
+        }} />);
+        return;
+      }
       if (currentMode === 'pro') {
         reactRoot.render(<ProShell />);
       } else {
@@ -344,6 +356,8 @@
       }
     }
     window.renderApp = renderApp;
+    // Cerrar sesión → vuelve a la landing (para revisar el ciclo completo).
+    window.__owLogout = () => { try { localStorage.removeItem('ow-session'); } catch (e) {} window.__appRoute = 'home'; renderApp(); };
 
     renderApp();
   </script>
@@ -355,7 +369,7 @@
       const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
         "brand": "navy",
         "shape": "std",
-        "type": "geometric"
+        "type": "humanist"
       }/*EDITMODE-END*/;
 
       const root = document.documentElement;
@@ -445,6 +459,13 @@
     // ── Restore persisted prefs + honor URL params ──
     (function init() {
       const qs = new URLSearchParams(location.search);
+
+      // Sesión / ciclo de entrada: ?app=1 entra directo al dashboard; ?logout=1 fuerza landing.
+      try {
+        if (qs.get('app') === '1' || qs.get('screen') === 'app') localStorage.setItem('ow-session', '1');
+        if (qs.get('logout') === '1') localStorage.removeItem('ow-session');
+      } catch (e) {}
+
       const urlTheme = qs.get('theme');
       const savedTheme = (() => { try { return localStorage.getItem('ow-theme'); } catch (e) { return null; } })();
       const theme = (urlTheme === 'dark' || urlTheme === 'light') ? urlTheme : savedTheme;

@@ -2,6 +2,22 @@
   <q-page class="lite-home">
     <div class="lite-home__container">
 
+      <!-- Greeting header -->
+      <div class="lite-home__greeting">
+        <div class="lite-home__greeting-left">
+          <span class="t-eyebrow">Hola,</span>
+          <span class="lite-home__greeting-name">{{ firstName }}</span>
+        </div>
+        <div class="lite-home__greeting-actions">
+          <button class="lite-home__icon-btn" :title="isHidden ? 'Mostrar saldos' : 'Ocultar saldos'" @click="ui.toggleHideValues()">
+            <q-icon :name="isHidden ? 'visibility_off' : 'visibility'" size="22px" />
+          </button>
+          <button class="lite-home__icon-btn" title="Notificaciones" @click="router.push('/user/notifications')">
+            <q-icon name="notifications" size="22px" />
+          </button>
+        </div>
+      </div>
+
       <!-- Setup banner — sin cuentas -->
       <div v-if="hasNoAccounts && !balanceLoading" class="lite-home__setup-banner">
         <q-icon name="account_balance_wallet" size="32px" style="opacity:.6" />
@@ -211,11 +227,14 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
+import { useAuthStore } from 'stores/auth';
 
 defineOptions({ name: 'LiteHomeView' });
 
 const router = useRouter();
 const ui = useUiStore();
+const auth = useAuthStore();
+const firstName = computed(() => (auth.user?.name || '').split(' ')[0] || 'tú');
 
 const emit = defineEmits<{ 'quick-add': [] }>();
 
@@ -486,6 +505,47 @@ onMounted(() => {
 .lite-home {
   background: var(--bg-canvas);
   min-height: 100vh;
+
+  &__greeting {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__greeting-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  &__greeting-name {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--fg-1);
+    line-height: 1.2;
+    text-transform: capitalize;
+  }
+
+  &__greeting-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  &__icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--fg-2);
+    transition: background 0.15s;
+    &:hover { background: var(--surface-2); }
+  }
 
   &__container {
     max-width: var(--container-max);

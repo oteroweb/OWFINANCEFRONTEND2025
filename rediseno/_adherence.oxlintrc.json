@@ -19,6 +19,7 @@
               "cantaros-mobile/**",
               "color-scheme.js",
               "marketing.js",
+              "onboarding/**",
               "period-selector.js",
               "ui_kits/lite-desktop/**",
               "ui_kits/lite-desktop/atoms/**",

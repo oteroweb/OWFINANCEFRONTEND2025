@@ -31,7 +31,7 @@ const CONFIG_GROUPS = [
   {
     label: '',
     items: [
-      { icon: 'close', label: 'Cerrar sesión', destructive: true },
+      { icon: 'close', label: 'Cerrar sesión', destructive: true, act: 'logout' },
     ],
   },
 ];
@@ -76,7 +76,7 @@ function ConfigRoute({ rates = {}, onRatesChange, onGo, onStartOnboarding }) {
                 first={ii === 0}
                 value={item.toggle ? toggles[item.toggle] : undefined}
                 onToggle={item.toggle ? () => setToggles(s => ({ ...s, [item.toggle]: !s[item.toggle] })) : undefined}
-                onActivate={item.nav ? () => onGo && onGo(item.nav) : item.act === 'onboarding' ? () => onStartOnboarding && onStartOnboarding() : undefined}
+                onActivate={item.nav ? () => onGo && onGo(item.nav) : item.act === 'onboarding' ? () => onStartOnboarding && onStartOnboarding() : item.act === 'logout' ? () => window.__owLogout && window.__owLogout() : undefined}
               />
             ))}
           </Card>

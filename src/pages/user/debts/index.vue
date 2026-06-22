@@ -22,10 +22,15 @@
           <span v-else>$ {{ fmtN(meta.total_balance) }}</span>
         </div>
         <div class="debts-summary-card__sub">
-          {{ debts.length }} planes activos ·
-          {{ meta.cashea_count }} en Cashea ·
-          <span v-if="meta.late_count" style="color:#FCA5A5;font-weight:600">{{ meta.late_count }} atrasada{{ meta.late_count > 1 ? 's' : '' }}</span>
-          <span v-else style="color:#86EFAC;font-weight:600">todo al día</span>
+          <span v-if="meta.late_count" class="debts-status-badge debts-status-badge--late">
+            <q-icon name="warning" size="14px" />
+            {{ meta.late_count }} atrasada{{ meta.late_count > 1 ? 's' : '' }}
+          </span>
+          <span v-else class="debts-status-badge debts-status-badge--ok">
+            <q-icon name="check_circle" size="14px" />
+            Todo al día
+          </span>
+          · {{ debts.length }} planes · {{ meta.cashea_count }} en Cashea
         </div>
         <div class="debts-summary-card__sub" style="margin-top:4px">
           Próximas cuotas (30 días): <strong>$ {{ fmtN(meta.total_monthly) }}</strong>
@@ -506,6 +511,18 @@ function confirmDelete(debt: Debt) {
   &--warning { background: rgba(251,191,36,.15); color: #b45309; }
   &--income  { background: rgba(16,185,129,.12); color: #065f46; }
   &--expense { background: rgba(239,68,68,.12);  color: #b91c1c; }
+}
+
+.debts-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  &--late { background: rgba(239,68,68,.12); color: #b91c1c; }
+  &--ok   { background: rgba(16,185,129,.12); color: #065f46; }
 }
 
 // ── Empty state ──

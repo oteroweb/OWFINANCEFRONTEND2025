@@ -157,6 +157,7 @@
   <!-- Profile / onboarding building blocks (depend on Atoms + profile-data) -->
   <script type="text/babel" src="components/ProfileComponents.jsx"></script>
   <script type="text/babel" src="components/OnboardingMobile.jsx"></script>
+  <script type="text/babel" src="components/EntryGateMobile.jsx"></script>
 
   <!-- Reusable bottom sheet + transaction filter widgets -->
   <script type="text/babel" src="components/BottomSheet.jsx"></script>
@@ -201,7 +202,32 @@
   <script type="text/babel">
     const root = ReactDOM.createRoot(document.getElementById('root'));
     // Mode (Lite/Pro) and theme (Dark/Light) now live inside the app — Settings screen.
-    root.render(<MobileShell />);
+    const owHasSession = () => { try { return localStorage.getItem('ow-session') === '1'; } catch (e) { return false; } };
+
+    (function initEntry() {
+      const qs = new URLSearchParams(location.search);
+      try {
+        if (qs.get('app') === '1' || qs.get('screen') === 'app') localStorage.setItem('ow-session', '1');
+        if (qs.get('logout') === '1') localStorage.removeItem('ow-session');
+      } catch (e) {}
+    })();
+
+    function renderMobile() {
+      // Gate de entrada: sin sesión → Landing/Login; con sesión → dashboard.
+      if (!owHasSession()) {
+        root.render(<EntryGateMobile onAuthed={(opts) => {
+          try { localStorage.setItem('ow-session', '1'); } catch (e) {}
+          renderMobile();
+          if (opts && opts.onboard) setTimeout(() => window.__owStartOnboardingMobile && window.__owStartOnboardingMobile(), 360);
+        }} />);
+        return;
+      }
+      root.render(<MobileShell />);
+    }
+    window.renderMobile = renderMobile;
+    window.__owLogout = () => { try { localStorage.removeItem('ow-session'); } catch (e) {} renderMobile(); };
+
+    renderMobile();
   </script>
 </body>
 </html>

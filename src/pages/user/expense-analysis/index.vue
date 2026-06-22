@@ -46,10 +46,17 @@
             </div>
           </template>
 
-          <!-- Pro/Legacy mode: descriptive text -->
+          <!-- Pro mode: narrative text (spec ProAnalisisRoute) -->
           <template v-else>
-            <div class="text-h4 text-weight-bold">{{ heroTitle }}</div>
-            <div class="text-body2 text-grey-7 hero-copy__body">{{ heroCopy }}</div>
+            <div class="analysis-lead" style="font-size:15px;line-height:1.6;color:var(--fg-1)">
+              En <b>{{ periodStore.label }}</b> registraste
+              <b>{{ filteredRows.length }} movimiento{{ filteredRows.length !== 1 ? 's' : '' }}</b>.
+              Gastaste
+              <b style="color:var(--expense-fg,#ef4444)">{{ ui.hideValues ? '••••' : formatMoney(summary.gastosBase) }}</b>
+              <template v-if="summary.ingresosBase > 0">
+                e ingresaste <b style="color:var(--income-fg,#16a34a)">{{ ui.hideValues ? '••••' : formatMoney(summary.ingresosBase) }}</b>.
+              </template>
+            </div>
           </template>
         </div>
         <div class="hero-actions">

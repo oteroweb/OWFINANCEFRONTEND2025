@@ -35,7 +35,7 @@ const SETTINGS_GROUPS = [
   {
     label: '',
     items: [
-      { icon: 'close',         label: 'Cerrar sesión', destructive: true },
+      { icon: 'close',         label: 'Cerrar sesión', destructive: true, act: 'logout' },
     ],
   },
 ];
@@ -107,7 +107,7 @@ function SettingsScreen({ onBack, mode = 'lite', onModeChange, theme = 'dark', o
                 <div key={ii}>
                   {ii > 0 && <Divider />}
                   <button
-                    onClick={item.toggle ? () => setToggles(s => ({ ...s, [item.toggle]: !s[item.toggle] })) : item.nav ? () => onGoTo && onGoTo(item.nav) : item.act === 'onboarding' ? () => onStartOnboarding && onStartOnboarding() : undefined}
+                    onClick={item.toggle ? () => setToggles(s => ({ ...s, [item.toggle]: !s[item.toggle] })) : item.nav ? () => onGoTo && onGoTo(item.nav) : item.act === 'onboarding' ? () => onStartOnboarding && onStartOnboarding() : item.act === 'logout' ? () => window.__owLogout && window.__owLogout() : undefined}
                     style={{
                       width: '100%', border: 0, background: 'transparent', cursor: item.toggle || item.chevron || item.nav || item.act ? 'pointer' : 'default',
                       display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', textAlign: 'left',

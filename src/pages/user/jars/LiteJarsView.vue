@@ -72,15 +72,18 @@
             </div>
           </div>
 
-          <!-- Right column: percent + balance -->
+          <!-- Right column: percent + balance + attention indicator -->
           <div class="jar-row__right">
             <span class="jar-row__percent">{{ jar.percent }}%</span>
             <span class="jar-row__balance">
               {{ isHidden ? '••••' : formatMoney(jar.balance) }}
             </span>
+            <span v-if="jar.balance < 0 || jar.progress > 100" class="jar-row__attention" title="Requiere atención">
+              <q-icon name="warning" size="14px" />
+            </span>
           </div>
 
-          <q-icon name="chevron_right" size="20px" color="grey-4" />
+          <q-icon v-if="jar.balance >= 0 && jar.progress <= 100" name="chevron_right" size="20px" color="grey-4" />
         </div>
       </div>
 
@@ -127,11 +130,51 @@
           </div>
 
           <!-- Footer actions -->
-          <div class="jar-detail-sheet__footer">
-            <button class="jd-btn jd-btn--ghost" @click="showDetail = false">Cerrar</button>
-            <button class="jd-btn jd-btn--primary" @click="goToFullJars">
-              <q-icon name="edit" size="17px" /> Gestionar cántaros
+          <div class="jar-detail-sheet__footer" style="flex-wrap:wrap;gap:8px;">
+            <button class="jd-btn jd-btn--ghost" style="color:var(--expense-fg,#ef4444)" @click="confirmDeleteJar(detailJar)">
+              <q-icon name="delete_outline" size="17px" /> Eliminar
             </button>
+            <button class="jd-btn jd-btn--ghost" @click="showDetail = false">Cerrar</button>
+            <button class="jd-btn jd-btn--primary" @click="openEditSheet(detailJar)">
+              <q-icon name="edit" size="17px" /> Editar
+            </button>
+          </div>
+        </div>
+      </q-dialog>
+
+      <!-- Edit jar sheet -->
+      <q-dialog v-model="showEditSheet" position="bottom">
+        <div v-if="editJar" class="jar-detail-sheet">
+          <div class="jar-detail-sheet__handle" />
+          <div style="padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px;">
+            <div class="jar-detail-sheet__name" style="font-size:17px">Editar cántaro</div>
+            <div class="jf-field">
+              <label class="jf-label">Nombre *</label>
+              <input v-model="editJar.name" class="jf-input" placeholder="Nombre del cántaro" />
+            </div>
+            <div class="jf-field">
+              <label class="jf-label">Porcentaje (%)</label>
+              <input v-model.number="editJar.percent" type="number" min="1" max="100" class="jf-input" />
+            </div>
+            <div class="jf-field">
+              <label class="jf-label">Color</label>
+              <div class="jf-colors">
+                <button v-for="c in colorPalette" :key="c"
+                  class="jf-color-btn"
+                  :class="{ 'jf-color-btn--active': editJar.color === c }"
+                  :style="{ background: c }"
+                  @click="editJar.color = c"
+                />
+              </div>
+            </div>
+            <div class="jar-detail-sheet__footer">
+              <button class="jd-btn jd-btn--ghost" @click="showEditSheet = false">Cancelar</button>
+              <button class="jd-btn jd-btn--primary" :disabled="editSaving || !editJar.name" @click="saveEditJar">
+                <q-spinner v-if="editSaving" size="15px" color="white" />
+                <q-icon v-else name="check" size="17px" />
+                {{ editSaving ? 'Guardando…' : 'Guardar' }}
+              </button>
+            </div>
           </div>
         </div>
       </q-dialog>
@@ -220,6 +263,56 @@ function openDetail(jar: JarItem) {
 function goToFullJars() {
   showDetail.value = false;
   void router.push('/user/jars');
+}
+
+// ── Edit ──────────────────────────────────────────────────────────────────
+const showEditSheet = ref(false);
+const editJar = ref<{ id: number; name: string; percent: number; color: string } | null>(null);
+const editSaving = ref(false);
+
+function openEditSheet(jar: JarItem) {
+  editJar.value = { id: jar.id, name: jar.name, percent: jar.percent, color: jar.color || '#3B82F6' };
+  showDetail.value = false;
+  showEditSheet.value = true;
+}
+
+async function saveEditJar() {
+  if (!editJar.value) return;
+  editSaving.value = true;
+  try {
+    await api.put(`/jars/${editJar.value.id}`, {
+      name: editJar.value.name,
+      percent: editJar.value.percent,
+      color: editJar.value.color,
+    });
+    showEditSheet.value = false;
+    await loadJars();
+    $q.notify({ type: 'positive', message: 'Cántaro actualizado' });
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error al actualizar el cántaro' });
+  } finally {
+    editSaving.value = false;
+  }
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────
+function confirmDeleteJar(jar: JarItem | null) {
+  if (!jar) return;
+  $q.dialog({
+    title: 'Eliminar cántaro',
+    message: `¿Eliminar "${jar.name}"? Esta acción no se puede deshacer.`,
+    cancel: { label: 'Cancelar', flat: true },
+    ok: { label: 'Eliminar', color: 'negative', unelevated: true },
+  }).onOk(async () => {
+    try {
+      await api.delete(`/jars/${jar.id}`);
+      showDetail.value = false;
+      await loadJars();
+      $q.notify({ type: 'positive', message: 'Cántaro eliminado' });
+    } catch {
+      $q.notify({ type: 'negative', message: 'Error al eliminar' });
+    }
+  });
 }
 
 // ── Add ───────────────────────────────────────────────────────────────────
@@ -464,6 +557,12 @@ onMounted(() => { void loadJars(); });
     align-items: flex-end;
     gap: 4px;
     flex-shrink: 0;
+  }
+
+  &__attention {
+    color: var(--expense-fg, #ef4444);
+    display: inline-flex;
+    align-items: center;
   }
 
   &__percent {

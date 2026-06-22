@@ -10,9 +10,15 @@
         </button>
         <span class="t-eyebrow">Cuenta</span>
         <h1 class="t-h1">Mi perfil financiero</h1>
-        <p class="t-body-sm fp-page__subtitle">
-          El asesor IA usa esta información para personalizar sus consejos.
-        </p>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px">
+          <p class="t-body-sm fp-page__subtitle" style="margin:0">
+            El asesor IA usa esta información para personalizar sus consejos.
+          </p>
+          <span v-if="updatedDaysAgo !== null" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--fg-3)">
+            <q-icon name="history" size="14px" />
+            Actualizado hace {{ updatedDaysAgo === 0 ? 'hoy' : `${updatedDaysAgo} día${updatedDaysAgo !== 1 ? 's' : ''}` }}
+          </span>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -160,6 +166,7 @@ const $q = useQuasar();
 
 const loading = ref(true);
 const saving = ref(false);
+const updatedDaysAgo = ref<number | null>(null);
 
 const OPTIONS = {
   occupation: [
@@ -242,6 +249,10 @@ onMounted(async () => {
     form.value.main_goal = d.main_goal ?? null;
     form.value.dream = d.dream ?? '';
     form.value.emotional_keyword = d.emotional_keyword ?? null;
+    if (d.updated_at) {
+      const diff = Math.floor((Date.now() - new Date(d.updated_at as string).getTime()) / 86400000);
+      updatedDaysAgo.value = diff;
+    }
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar el perfil financiero' });
   } finally {
