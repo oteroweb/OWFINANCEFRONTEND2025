@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"OWFinanceDesignSystem_5fd9e1","components":[],"sourceHashes":{"cantaros-mobile/atoms.jsx":"33c397067107","cantaros-mobile/categories.jsx":"7e02272eb796","cantaros-mobile/data.jsx":"ae66b19d7bad","cantaros-mobile/detail.jsx":"cdcd6ac7f442","cantaros-mobile/screen.jsx":"2ac5ed578694","cantaros-mobile/tweaks-panel.jsx":"6591467622ed","color-scheme.js":"3826de35bf09","marketing.js":"36bbac9b2d80","onboarding/auth.jsx":"5a9d5645064a","onboarding/flow-data.jsx":"12b314de4853","onboarding/flow-desktop.jsx":"70a0407ae2de","onboarding/flow.jsx":"8ef62e3c2391","onboarding/gamification.jsx":"776a66fb1228","onboarding/onb-atoms.jsx":"c8f8c2eb35c2","onboarding/profile-panel.jsx":"69f128c3abf7","period-selector.js":"c2a20d7eedfd","ui_kits/lite-desktop/atoms/Buttons.jsx":"c3e71689c42d","ui_kits/lite-desktop/atoms/Chips.jsx":"a65662ac37ef","ui_kits/lite-desktop/atoms/Primitives.jsx":"e7aac8cbb6a3","ui_kits/lite-desktop/data/analisis-data.jsx":"e23f915aba6d","ui_kits/lite-desktop/data/finance-data.jsx":"9e55498219c8","ui_kits/lite-desktop/data/i18n.jsx":"18323dc652db","ui_kits/lite-desktop/data/profile-data.jsx":"597c7186c8f3","ui_kits/lite-desktop/data/sample-data.jsx":"e733d349e52e","ui_kits/lite-desktop/molecules/ChipGroup.jsx":"6ff71ea675aa","ui_kits/lite-desktop/molecules/FormControls.jsx":"b9ef67ebbd31","ui_kits/lite-desktop/molecules/SectionHeader.jsx":"c678a94f59f6","ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx":"4fbe1bc97d0b","ui_kits/lite-desktop/organisms/AccountFilter.jsx":"d818f684b95b","ui_kits/lite-desktop/organisms/AccountsPanel.jsx":"056fe9295aa8","ui_kits/lite-desktop/organisms/AnalisisParts.jsx":"37d94b451029","ui_kits/lite-desktop/organisms/BulkImportPanel.jsx":"65d4fd8387e2","ui_kits/lite-desktop/organisms/DebtsPreview.jsx":"b4733871862e","ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx":"cfecb8dac9d5","ui_kits/lite-desktop/organisms/DreamsPreview.jsx":"5462b9553bdd","ui_kits/lite-desktop/organisms/EntryGate.jsx":"1241adaea1c0","ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx":"a07bd95d9511","ui_kits/lite-desktop/organisms/ExpandedMenu.jsx":"0c3e79aec576","ui_kits/lite-desktop/organisms/HeroBalance.jsx":"5cecf9195e72","ui_kits/lite-desktop/organisms/JarsConfig.jsx":"485cb17c69ed","ui_kits/lite-desktop/organisms/JarsPreview.jsx":"5c5508796730","ui_kits/lite-desktop/organisms/LiteHeader.jsx":"6e4a5afe2210","ui_kits/lite-desktop/organisms/LiteNavPill.jsx":"f054260b22fc","ui_kits/lite-desktop/organisms/MobileTabBar.jsx":"1fbb5dbe5887","ui_kits/lite-desktop/organisms/MonthNavigator.jsx":"3f120d76053e","ui_kits/lite-desktop/organisms/NotificationsPanel.jsx":"38325011a256","ui_kits/lite-desktop/organisms/OnboardingFlow.jsx":"1dcdc6d4617c","ui_kits/lite-desktop/organisms/RecentTransactions.jsx":"e92eaeefbcf5","ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx":"90e5576352f1","ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx":"ddfc5df722f7","ui_kits/lite-desktop/organisms/TransactionForm.jsx":"0c08e3146319","ui_kits/lite-desktop/shells/LiteShell.jsx":"a390819044d6","ui_kits/lite-desktop/shells/ProShell.jsx":"b3b8dd47b658","ui_kits/lite-desktop/templates/AnalisisRoute.jsx":"592e90af5138","ui_kits/lite-desktop/templates/ConfigRoute.jsx":"3a55abc1a780","ui_kits/lite-desktop/templates/DebtsRoute.jsx":"92530729a003","ui_kits/lite-desktop/templates/DreamsRoute.jsx":"b614f96aa92e","ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx":"7a9c2f2ef8f2","ui_kits/lite-desktop/templates/HomeRoute.jsx":"cb2aebdcad3c","ui_kits/lite-desktop/templates/JarsRoute.jsx":"53325c31755b","ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx":"53219c9595fb","ui_kits/lite-desktop/templates/ProHomeRoute.jsx":"80ccaf7f02fc","ui_kits/lite-desktop/templates/ProfileRoute.jsx":"87b7e118a222","ui_kits/lite-desktop/templates/TransactionsRoute.jsx":"f1b2de2dd1f5","ui_kits/lite-desktop/tweaks-panel.jsx":"6591467622ed","ui_kits/mobile/Shell.jsx":"48ffe926c013","ui_kits/mobile/components/Atoms.jsx":"f89904173ab3","ui_kits/mobile/components/BalanceCard.jsx":"01b71c947363","ui_kits/mobile/components/BottomSheet.jsx":"6356b7e22efd","ui_kits/mobile/components/ChatComponents.jsx":"753c82f5ef5f","ui_kits/mobile/components/DebtComponents.jsx":"d97be1dc6da0","ui_kits/mobile/components/DreamComponents.jsx":"0a03e5018be8","ui_kits/mobile/components/EntryGateMobile.jsx":"a71a2ffcff53","ui_kits/mobile/components/JarComponents.jsx":"f023ec4718e6","ui_kits/mobile/components/MonthNavigatorMobile.jsx":"98c8dfe1d41e","ui_kits/mobile/components/Navigation.jsx":"668e1954c585","ui_kits/mobile/components/OnboardingMobile.jsx":"b2119402d9b2","ui_kits/mobile/components/ProfileComponents.jsx":"017ea1f55228","ui_kits/mobile/components/QuickActionSheet.jsx":"899bed51132c","ui_kits/mobile/components/SmartTransactionSheet.jsx":"87d9ec1c246e","ui_kits/mobile/components/TransactionComponents.jsx":"0f6c229e479f","ui_kits/mobile/components/TransactionDetailSheet.jsx":"b24a4b486cd5","ui_kits/mobile/components/TransactionFilters.jsx":"c2e2df3c685e","ui_kits/mobile/components/TransactionFormSheet.jsx":"102aa4c04d01","ui_kits/mobile/data.jsx":"2673360bfb71","ui_kits/mobile/profile-data.jsx":"597c7186c8f3","ui_kits/mobile/screens/AIAdvisorScreen.jsx":"c8481db07461","ui_kits/mobile/screens/DebtsScreen.jsx":"0c314f06d687","ui_kits/mobile/screens/DreamsScreen.jsx":"2e7a2a5c2f88","ui_kits/mobile/screens/FinancialProfileScreen.jsx":"a459a34c5105","ui_kits/mobile/screens/HomeScreenLite.jsx":"697b1d4f35e4","ui_kits/mobile/screens/HomeScreenPro.jsx":"a28b6371e4e1","ui_kits/mobile/screens/JarsScreen.jsx":"c4d236dbde24","ui_kits/mobile/screens/ProfileScreen.jsx":"c5bf2f4025af","ui_kits/mobile/screens/SettingsScreen.jsx":"338a248ecbbe","ui_kits/mobile/screens/TransactionsScreen.jsx":"913bcb11abac","ui_kits/mobile/tokens.js":"66ccee7c23e3"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"OWFinanceDesignSystem_5fd9e1","components":[],"sourceHashes":{"cantaros-mobile/atoms.jsx":"33c397067107","cantaros-mobile/categories.jsx":"7e02272eb796","cantaros-mobile/data.jsx":"ae66b19d7bad","cantaros-mobile/detail.jsx":"cdcd6ac7f442","cantaros-mobile/screen.jsx":"2ac5ed578694","cantaros-mobile/tweaks-panel.jsx":"6591467622ed","color-scheme.js":"3826de35bf09","marketing.js":"36bbac9b2d80","onboarding/auth.jsx":"5a9d5645064a","onboarding/flow-data.jsx":"12b314de4853","onboarding/flow-desktop.jsx":"70a0407ae2de","onboarding/flow.jsx":"8ef62e3c2391","onboarding/gamification.jsx":"776a66fb1228","onboarding/onb-atoms.jsx":"c8f8c2eb35c2","onboarding/profile-panel.jsx":"69f128c3abf7","onboarding/welcome-dashboard.jsx":"7367e470c73b","onboarding/welcome-modal.jsx":"ef9f508ea9a8","period-selector.js":"c2a20d7eedfd","ui_kits/lite-desktop/atoms/Buttons.jsx":"c3e71689c42d","ui_kits/lite-desktop/atoms/Chips.jsx":"a65662ac37ef","ui_kits/lite-desktop/atoms/Primitives.jsx":"e7aac8cbb6a3","ui_kits/lite-desktop/data/analisis-data.jsx":"e23f915aba6d","ui_kits/lite-desktop/data/finance-data.jsx":"9e55498219c8","ui_kits/lite-desktop/data/i18n.jsx":"18323dc652db","ui_kits/lite-desktop/data/profile-data.jsx":"597c7186c8f3","ui_kits/lite-desktop/data/sample-data.jsx":"e733d349e52e","ui_kits/lite-desktop/molecules/ChipGroup.jsx":"6ff71ea675aa","ui_kits/lite-desktop/molecules/FormControls.jsx":"b9ef67ebbd31","ui_kits/lite-desktop/molecules/SectionHeader.jsx":"c678a94f59f6","ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx":"4fbe1bc97d0b","ui_kits/lite-desktop/organisms/AccountFilter.jsx":"d818f684b95b","ui_kits/lite-desktop/organisms/AccountsPanel.jsx":"056fe9295aa8","ui_kits/lite-desktop/organisms/AnalisisParts.jsx":"37d94b451029","ui_kits/lite-desktop/organisms/BulkImportPanel.jsx":"65d4fd8387e2","ui_kits/lite-desktop/organisms/DebtsPreview.jsx":"b4733871862e","ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx":"cfecb8dac9d5","ui_kits/lite-desktop/organisms/DreamsPreview.jsx":"5462b9553bdd","ui_kits/lite-desktop/organisms/EntryGate.jsx":"1241adaea1c0","ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx":"a07bd95d9511","ui_kits/lite-desktop/organisms/ExpandedMenu.jsx":"0c3e79aec576","ui_kits/lite-desktop/organisms/HeroBalance.jsx":"5cecf9195e72","ui_kits/lite-desktop/organisms/JarsConfig.jsx":"485cb17c69ed","ui_kits/lite-desktop/organisms/JarsPreview.jsx":"5c5508796730","ui_kits/lite-desktop/organisms/LiteHeader.jsx":"6e4a5afe2210","ui_kits/lite-desktop/organisms/LiteNavPill.jsx":"f054260b22fc","ui_kits/lite-desktop/organisms/MobileTabBar.jsx":"1fbb5dbe5887","ui_kits/lite-desktop/organisms/MonthNavigator.jsx":"513eb7e07020","ui_kits/lite-desktop/organisms/NotificationsPanel.jsx":"38325011a256","ui_kits/lite-desktop/organisms/OnboardingFlow.jsx":"1dcdc6d4617c","ui_kits/lite-desktop/organisms/RecentTransactions.jsx":"e92eaeefbcf5","ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx":"90e5576352f1","ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx":"ddfc5df722f7","ui_kits/lite-desktop/organisms/TransactionForm.jsx":"0c08e3146319","ui_kits/lite-desktop/shells/LiteShell.jsx":"a390819044d6","ui_kits/lite-desktop/shells/ProShell.jsx":"67d2053a07ab","ui_kits/lite-desktop/templates/AnalisisRoute.jsx":"592e90af5138","ui_kits/lite-desktop/templates/ConfigRoute.jsx":"3a55abc1a780","ui_kits/lite-desktop/templates/DebtsRoute.jsx":"92530729a003","ui_kits/lite-desktop/templates/DreamsRoute.jsx":"b614f96aa92e","ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx":"7a9c2f2ef8f2","ui_kits/lite-desktop/templates/HomeRoute.jsx":"cb2aebdcad3c","ui_kits/lite-desktop/templates/JarsRoute.jsx":"53325c31755b","ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx":"53219c9595fb","ui_kits/lite-desktop/templates/ProHomeRoute.jsx":"80ccaf7f02fc","ui_kits/lite-desktop/templates/ProfileRoute.jsx":"87b7e118a222","ui_kits/lite-desktop/templates/TransactionsRoute.jsx":"6826709b3aee","ui_kits/lite-desktop/tweaks-panel.jsx":"6591467622ed","ui_kits/mobile/Shell.jsx":"48ffe926c013","ui_kits/mobile/components/Atoms.jsx":"f89904173ab3","ui_kits/mobile/components/BalanceCard.jsx":"01b71c947363","ui_kits/mobile/components/BottomSheet.jsx":"6356b7e22efd","ui_kits/mobile/components/ChatComponents.jsx":"753c82f5ef5f","ui_kits/mobile/components/DebtComponents.jsx":"d97be1dc6da0","ui_kits/mobile/components/DreamComponents.jsx":"0a03e5018be8","ui_kits/mobile/components/EntryGateMobile.jsx":"a71a2ffcff53","ui_kits/mobile/components/JarComponents.jsx":"f023ec4718e6","ui_kits/mobile/components/MonthNavigatorMobile.jsx":"98c8dfe1d41e","ui_kits/mobile/components/Navigation.jsx":"668e1954c585","ui_kits/mobile/components/OnboardingMobile.jsx":"b2119402d9b2","ui_kits/mobile/components/ProfileComponents.jsx":"017ea1f55228","ui_kits/mobile/components/QuickActionSheet.jsx":"899bed51132c","ui_kits/mobile/components/SmartTransactionSheet.jsx":"87d9ec1c246e","ui_kits/mobile/components/TransactionComponents.jsx":"0f6c229e479f","ui_kits/mobile/components/TransactionDetailSheet.jsx":"b24a4b486cd5","ui_kits/mobile/components/TransactionFilters.jsx":"c2e2df3c685e","ui_kits/mobile/components/TransactionFormSheet.jsx":"102aa4c04d01","ui_kits/mobile/data.jsx":"2673360bfb71","ui_kits/mobile/profile-data.jsx":"597c7186c8f3","ui_kits/mobile/screens/AIAdvisorScreen.jsx":"c8481db07461","ui_kits/mobile/screens/DebtsScreen.jsx":"0c314f06d687","ui_kits/mobile/screens/DreamsScreen.jsx":"2e7a2a5c2f88","ui_kits/mobile/screens/FinancialProfileScreen.jsx":"a459a34c5105","ui_kits/mobile/screens/HomeScreenLite.jsx":"697b1d4f35e4","ui_kits/mobile/screens/HomeScreenPro.jsx":"a28b6371e4e1","ui_kits/mobile/screens/JarsScreen.jsx":"c4d236dbde24","ui_kits/mobile/screens/ProfileScreen.jsx":"c5bf2f4025af","ui_kits/mobile/screens/SettingsScreen.jsx":"338a248ecbbe","ui_kits/mobile/screens/TransactionsScreen.jsx":"913bcb11abac","ui_kits/mobile/tokens.js":"66ccee7c23e3"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -8992,6 +8992,2415 @@ Object.assign(window, {
   onbTip
 });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "onboarding/profile-panel.jsx", error: String((e && e.message) || e) }); }
+
+// onboarding/welcome-dashboard.jsx
+try { (() => {
+/* ─── Onboarding · Panel de fondo + raíz del demo (modal de bienvenida) ──
+ * Panel Lite Desktop en estado de usuario NUEVO (saldo en cero, sin
+ * movimientos, plan por configurar). El modal de bienvenida aparece encima
+ * en el primer acceso. Al terminar, el panel refleja el plan y la
+ * completitud del perfil. Barra de demo para re-abrir / alternar estado.
+ * ──────────────────────────────────────────────────────────────────────── */
+/* global React, ReactDOM, AIAvatar, Avatar, MJarMiniBar, OnbRing, OnbLevelBadge,
+   onbCompleteness, onbRecommendTemplate, WelcomeModal, WmBtn */
+const {
+  useState: useDashState,
+  useEffect: useDashEffect
+} = React;
+
+/* Logo */
+function DashLogo({
+  size = 32
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 9
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: size,
+      height: size,
+      borderRadius: size * 0.3,
+      background: 'linear-gradient(150deg, var(--brand-primary), var(--brand-primary-press))',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: size * 0.54,
+      color: '#fff'
+    }
+  }, "savings")), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: size * 0.5,
+      color: 'var(--fg-1)',
+      letterSpacing: '-0.01em'
+    }
+  }, "OW Finance"));
+}
+
+/* Tarjeta de saldo (estado cero del usuario nuevo) */
+function DashHero({
+  userName
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'var(--surface-1)',
+      borderRadius: 'var(--radius-2xl, 28px)',
+      boxShadow: 'var(--shadow-float)',
+      padding: 30
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)',
+      marginBottom: 10
+    }
+  }, "Saldo disponible"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'flex-end',
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontWeight: 700,
+      fontSize: 46,
+      color: 'var(--fg-1)',
+      letterSpacing: '-0.02em',
+      lineHeight: 1,
+      fontVariantNumeric: 'tabular-nums'
+    }
+  }, "$ 0.00"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: '0.06em',
+      color: 'var(--fg-3)',
+      background: 'var(--surface-2)',
+      padding: '4px 8px',
+      borderRadius: 7,
+      marginBottom: 6
+    }
+  }, "USD")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 28,
+      marginTop: 22
+    }
+  }, [{
+    l: 'Ingresos del mes',
+    v: '$ 0.00'
+  }, {
+    l: 'Gastos del mes',
+    v: '$ 0.00'
+  }].map((k, i) => /*#__PURE__*/React.createElement("div", {
+    key: i
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10.5,
+      fontWeight: 700,
+      letterSpacing: '0.06em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)',
+      marginBottom: 5
+    }
+  }, k.l), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontWeight: 700,
+      fontSize: 17,
+      color: 'var(--fg-2)',
+      fontVariantNumeric: 'tabular-nums'
+    }
+  }, k.v)))));
+}
+
+/* Tarjeta de cántaros: vacía (sin plan) o con el esquema elegido */
+function DashJars({
+  tpl
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'var(--surface-1)',
+      borderRadius: 'var(--radius-xl)',
+      boxShadow: 'var(--shadow-card)',
+      padding: 22
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 8,
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 16,
+      color: 'var(--fg-1)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20,
+      color: 'var(--brand-primary)'
+    }
+  }, "savings"), "Tus c\xE1ntaros"), tpl && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      color: 'var(--fg-2)'
+    }
+  }, tpl.name)), tpl ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(MJarMiniBar, {
+    segments: tpl.segments,
+    height: 16
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginTop: 14
+    }
+  }, tpl.segments.slice(0, 6).map((s, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      color: 'var(--fg-2)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 9,
+      height: 9,
+      borderRadius: 2,
+      background: s.color
+    }
+  }), s.name)), tpl.segments.length > 6 && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      color: 'var(--fg-3)'
+    }
+  }, "+", tpl.segments.length - 6, " m\xE1s"))) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      textAlign: 'center',
+      padding: '20px 10px 14px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      background: 'var(--surface-2)',
+      color: 'var(--fg-3)',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 24
+    }
+  }, "add")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      color: 'var(--fg-2)',
+      lineHeight: 1.5,
+      maxWidth: 220
+    }
+  }, "A\xFAn no tienes un plan de c\xE1ntaros. Completa tu perfil para configurarlo.")));
+}
+
+/* Movimientos recientes — estado vacío del usuario nuevo */
+function DashRecent() {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'var(--surface-1)',
+      borderRadius: 'var(--radius-xl)',
+      boxShadow: 'var(--shadow-card)',
+      padding: 22
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 16,
+      color: 'var(--fg-1)'
+    }
+  }, "Movimientos recientes")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      textAlign: 'center',
+      padding: '20px 10px 14px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      background: 'var(--surface-2)',
+      color: 'var(--fg-3)',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 24
+    }
+  }, "receipt_long")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      color: 'var(--fg-2)',
+      lineHeight: 1.5,
+      maxWidth: 220
+    }
+  }, "A\xFAn no hay movimientos. Registra el primero con el bot\xF3n a\xF1adir.")));
+}
+
+/* Nudge de perfil: visible mientras el perfil no está completo */
+function DashProfileNudge({
+  comp,
+  completed,
+  onContinue
+}) {
+  if (completed) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        background: 'var(--income-soft)',
+        border: '1px solid var(--income)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '14px 18px'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        flexShrink: 0,
+        background: 'var(--income-fg)',
+        color: '#fff',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 20
+      }
+    }, "check")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-display)',
+        fontWeight: 700,
+        fontSize: 15,
+        color: 'var(--fg-1)'
+      }
+    }, "Perfil completo \xB7 nivel ", comp.level.label), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 13,
+        color: 'var(--fg-2)'
+      }
+    }, "Tu asesor ya trabaja con tu informaci\xF3n.")), /*#__PURE__*/React.createElement(OnbLevelBadge, {
+      level: comp.level,
+      size: "sm"
+    }));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 16,
+      background: 'var(--surface-1)',
+      borderRadius: 'var(--radius-lg)',
+      boxShadow: 'var(--shadow-card)',
+      padding: '16px 20px'
+    }
+  }, /*#__PURE__*/React.createElement(OnbRing, {
+    pct: comp.pct,
+    size: 52,
+    stroke: 6,
+    color: comp.level.color
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontWeight: 700,
+      fontSize: 14,
+      color: 'var(--fg-1)'
+    }
+  }, comp.pct, "%")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 15.5,
+      color: 'var(--fg-1)',
+      marginBottom: 2
+    }
+  }, "Completa tu perfil"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      color: 'var(--fg-2)'
+    }
+  }, "Tu asesor personaliza tus consejos y arma tu plan a tu medida.")), /*#__PURE__*/React.createElement(WmBtn, {
+    variant: "primary",
+    size: "sm",
+    iconRight: "arrow_forward",
+    onClick: onContinue
+  }, "Continuar"));
+}
+
+/* Nav pill flotante (Lite Desktop) */
+function DashNavPill() {
+  const items = [{
+    icon: 'home',
+    label: 'Inicio',
+    on: true
+  }, {
+    icon: 'receipt_long',
+    label: 'Movimientos'
+  }, {
+    icon: 'savings',
+    label: 'Cántaros'
+  }, {
+    icon: 'settings',
+    label: 'Ajustes'
+  }];
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      bottom: 22,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: 7,
+      borderRadius: 999,
+      background: 'var(--surface-1)',
+      boxShadow: 'var(--shadow-float)',
+      zIndex: 5
+    }
+  }, items.map((it, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 7,
+      padding: '9px 15px',
+      borderRadius: 999,
+      background: it.on ? 'var(--brand-primary)' : 'transparent',
+      color: it.on ? '#fff' : 'var(--fg-2)',
+      cursor: 'pointer',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      fontWeight: 600
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19
+    }
+  }, it.icon), it.on && it.label)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 1,
+      height: 24,
+      background: 'var(--border-hairline)',
+      margin: '0 2px'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 7,
+      padding: '9px 16px',
+      borderRadius: 999,
+      background: 'var(--brand-primary-soft)',
+      color: 'var(--brand-primary)',
+      cursor: 'pointer',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      fontWeight: 700
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19
+    }
+  }, "add"), "A\xF1adir"));
+}
+
+/* Panel completo */
+function DashPanel({
+  userName,
+  profile,
+  chosenSlug,
+  completed,
+  onOpenModal,
+  blurred
+}) {
+  const comp = onbCompleteness({
+    ...profile,
+    template_slug: chosenSlug || profile.template_slug
+  }, {
+    pro: false
+  });
+  const tpl = completed ? (window.JAR_TEMPLATES || []).find(t => t.slug === (chosenSlug || profile.template_slug)) : null;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      inset: 0,
+      overflowY: 'auto',
+      background: 'var(--bg-canvas)',
+      filter: blurred ? 'blur(3px)' : 'none',
+      transform: blurred ? 'scale(1.01)' : 'none',
+      transition: 'filter 280ms, transform 280ms'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 1100,
+      margin: '0 auto',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '26px 32px 6px'
+    }
+  }, /*#__PURE__*/React.createElement(DashLogo, {
+    size: 30
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      background: 'var(--surface-1)',
+      boxShadow: 'var(--shadow-card)',
+      color: 'var(--fg-2)',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 21
+    }
+  }, "notifications")), /*#__PURE__*/React.createElement(Avatar, {
+    initial: (userName || 'J')[0],
+    size: 40
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 1100,
+      margin: '0 auto',
+      padding: '14px 32px 0'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 14,
+      color: 'var(--fg-2)'
+    }
+  }, "Hola", userName ? ',' : ''), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 26,
+      color: 'var(--fg-1)',
+      letterSpacing: '-0.01em',
+      marginBottom: 18
+    }
+  }, userName || 'tu panel'), /*#__PURE__*/React.createElement(DashProfileNudge, {
+    comp: comp,
+    completed: completed,
+    onContinue: onOpenModal
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 1100,
+      margin: '0 auto',
+      padding: '18px 32px 120px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 18
+    }
+  }, /*#__PURE__*/React.createElement(DashHero, {
+    userName: userName
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1.1fr 1fr',
+      gap: 18
+    }
+  }, /*#__PURE__*/React.createElement(DashJars, {
+    tpl: tpl
+  }), /*#__PURE__*/React.createElement(DashRecent, null))), /*#__PURE__*/React.createElement(DashNavPill, null));
+}
+
+/* Toast de confirmación */
+function DashToast({
+  show,
+  text
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      bottom: 90,
+      left: '50%',
+      transform: `translateX(-50%) translateY(${show ? 0 : 16}px)`,
+      opacity: show ? 1 : 0,
+      pointerEvents: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      background: 'var(--fg-1)',
+      color: 'var(--bg-canvas)',
+      padding: '12px 18px',
+      borderRadius: 999,
+      boxShadow: 'var(--shadow-float)',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      fontWeight: 600,
+      zIndex: 6,
+      transition: 'opacity 240ms, transform 240ms',
+      maxWidth: '90%'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18,
+      color: 'var(--income)'
+    }
+  }, "check_circle"), text);
+}
+
+/* ═══ Landing (entrada del ciclo) ═══ */
+function WmLanding({
+  onRegister,
+  onLogin
+}) {
+  const feats = [{
+    icon: 'savings',
+    t: 'Cántaros con propósito',
+    d: 'Reparte tu ingreso en frascos que reflejan tu vida, no una hoja de cálculo.'
+  }, {
+    icon: 'auto_awesome',
+    t: 'Asesor con IA',
+    d: 'Aprende de tu perfil y te aconseja en tu idioma, sin juicios.'
+  }, {
+    icon: 'insights',
+    t: 'Claridad mes a mes',
+    d: 'Ves a dónde va tu dinero y cuánto te queda disponible, siempre.'
+  }];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "wm-scroll",
+    style: {
+      position: 'absolute',
+      inset: 0,
+      overflowY: 'auto',
+      background: 'var(--bg-canvas)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 1040,
+      margin: '0 auto',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '22px 36px'
+    }
+  }, /*#__PURE__*/React.createElement(DashLogo, {
+    size: 30
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement(WmBtn, {
+    variant: "ghost",
+    size: "sm",
+    onClick: onLogin
+  }, "Iniciar sesi\xF3n"), /*#__PURE__*/React.createElement(WmBtn, {
+    variant: "primary",
+    size: "sm",
+    onClick: onRegister
+  }, "Crear cuenta"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 1040,
+      margin: '0 auto',
+      padding: '20px 36px 48px',
+      display: 'grid',
+      gridTemplateColumns: '1.05fr 0.95fr',
+      gap: 48,
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 7,
+      fontFamily: 'var(--font-body)',
+      fontSize: 12.5,
+      fontWeight: 700,
+      letterSpacing: '0.04em',
+      color: 'var(--brand-primary)',
+      background: 'var(--brand-primary-soft)',
+      padding: '6px 13px',
+      borderRadius: 999,
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15
+    }
+  }, "auto_awesome"), "Finanzas personales con IA"), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 44,
+      lineHeight: 1.06,
+      letterSpacing: '-0.025em',
+      color: 'var(--fg-1)',
+      margin: '0 0 16px'
+    }
+  }, "Tu dinero,", /*#__PURE__*/React.createElement("br", null), "con un plan claro."), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 17,
+      color: 'var(--fg-2)',
+      lineHeight: 1.5,
+      margin: '0 0 28px',
+      maxWidth: 420
+    }
+  }, "OW organiza tu ingreso en c\xE1ntaros y te acompa\xF1a con un asesor que aprende de ti. Empieza en dos minutos."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement(WmBtn, {
+    variant: "primary",
+    size: "lg",
+    iconRight: "arrow_forward",
+    onClick: onRegister
+  }, "Crear mi cuenta gratis"), /*#__PURE__*/React.createElement(WmBtn, {
+    variant: "ghost",
+    size: "lg",
+    onClick: onLogin
+  }, "Ya tengo cuenta"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 13
+    }
+  }, feats.map((f, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: 'flex',
+      gap: 15,
+      alignItems: 'flex-start',
+      background: 'var(--surface-1)',
+      borderRadius: 'var(--radius-lg)',
+      boxShadow: 'var(--shadow-card)',
+      padding: 18
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 46,
+      height: 46,
+      borderRadius: 13,
+      flexShrink: 0,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--brand-primary-soft)',
+      color: 'var(--brand-primary)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 24
+    }
+  }, f.icon)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 600,
+      fontSize: 16,
+      color: 'var(--fg-1)',
+      marginBottom: 3
+    }
+  }, f.t), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      color: 'var(--fg-2)',
+      lineHeight: 1.5
+    }
+  }, f.d)))))));
+}
+
+/* ═══ Auth (registro / login) ═══ */
+function WmAuth({
+  mode,
+  data,
+  setData,
+  onSubmit,
+  onSwap,
+  onBack
+}) {
+  const [show, setShow] = useDashState(false);
+  const isReg = mode === 'register';
+  const valid = isReg ? data.name.trim() && /\S+@\S+\.\S+/.test(data.email) && data.password.length >= 6 : /\S+@\S+\.\S+/.test(data.email) && data.password.length >= 1;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "wm-scroll",
+    style: {
+      position: 'absolute',
+      inset: 0,
+      overflowY: 'auto',
+      background: 'var(--bg-canvas)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 1040,
+      margin: '0 auto',
+      padding: '22px 36px'
+    }
+  }, /*#__PURE__*/React.createElement(WmBtn, {
+    variant: "ghost",
+    size: "sm",
+    icon: "arrow_back",
+    onClick: onBack
+  }, "Inicio")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      padding: '14px 24px 48px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      maxWidth: 400
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: 'center',
+      marginBottom: 24
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14,
+      display: 'flex',
+      justifyContent: 'center'
+    }
+  }, /*#__PURE__*/React.createElement(DashLogo, {
+    size: 36
+  })), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 26,
+      color: 'var(--fg-1)',
+      margin: '0 0 6px',
+      letterSpacing: '-0.01em'
+    }
+  }, isReg ? 'Crea tu cuenta' : 'Hola de nuevo'), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 14.5,
+      color: 'var(--fg-2)',
+      margin: 0
+    }
+  }, isReg ? 'Menos de un minuto. Luego tu asesor personaliza todo.' : 'Entra para seguir con tu plan.')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12
+    }
+  }, isReg && /*#__PURE__*/React.createElement(OnbInput, {
+    value: data.name,
+    onChange: v => setData({
+      ...data,
+      name: v
+    }),
+    placeholder: "Tu nombre",
+    icon: "person"
+  }), /*#__PURE__*/React.createElement(OnbInput, {
+    value: data.email,
+    onChange: v => setData({
+      ...data,
+      email: v
+    }),
+    placeholder: "tu@correo.com",
+    type: "email",
+    icon: "mail"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'relative'
+    }
+  }, /*#__PURE__*/React.createElement(OnbInput, {
+    value: data.password,
+    onChange: v => setData({
+      ...data,
+      password: v
+    }),
+    placeholder: isReg ? 'Contraseña (mín. 6)' : 'Contraseña',
+    type: show ? 'text' : 'password',
+    icon: "lock",
+    onEnter: () => valid && onSubmit()
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setShow(s => !s),
+    style: {
+      position: 'absolute',
+      top: '50%',
+      right: 14,
+      transform: 'translateY(-50%)',
+      border: 0,
+      background: 'transparent',
+      cursor: 'pointer',
+      color: 'var(--fg-3)',
+      display: 'flex'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20
+    }
+  }, show ? 'visibility_off' : 'visibility'))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 6,
+      opacity: valid ? 1 : 0.55,
+      pointerEvents: valid ? 'auto' : 'none'
+    }
+  }, /*#__PURE__*/React.createElement(WmBtn, {
+    variant: "primary",
+    fullWidth: true,
+    icon: isReg ? 'arrow_forward' : 'login',
+    onClick: () => valid && onSubmit()
+  }, isReg ? 'Continuar' : 'Iniciar sesión'))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      color: 'var(--fg-2)',
+      textAlign: 'center',
+      marginTop: 22
+    }
+  }, isReg ? '¿Ya tienes cuenta? ' : '¿Aún no tienes cuenta? ', /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onSwap,
+    style: {
+      border: 0,
+      background: 'transparent',
+      cursor: 'pointer',
+      color: 'var(--brand-primary)',
+      fontWeight: 700,
+      fontSize: 13,
+      fontFamily: 'var(--font-body)'
+    }
+  }, isReg ? 'Inicia sesión' : 'Crear cuenta')), isReg && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      color: 'var(--fg-3)',
+      textAlign: 'center',
+      marginTop: 12,
+      lineHeight: 1.5
+    }
+  }, "Al continuar, tu asesor abrir\xE1 el onboarding para llenar tu perfil."))));
+}
+
+/* ═══ Raíz del demo ═══ */
+const WM_BLANK = window.ONB_BLANK;
+function WmRoot() {
+  const [theme, setTheme] = useDashState('light');
+  const [phase, setPhase] = useDashState('landing'); // landing | register | login | app
+  const [auth, setAuth] = useDashState({
+    name: '',
+    email: '',
+    password: ''
+  });
+  const [profile, setProfile] = useDashState({
+    ...WM_BLANK
+  });
+  const [chosenSlug, setChosenSlug] = useDashState(null);
+  const [modalOpen, setModalOpen] = useDashState(false);
+  const [completed, setCompleted] = useDashState(false);
+  const [toast, setToast] = useDashState(false);
+  useDashEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+  const setField = (k, v) => setProfile(p => ({
+    ...p,
+    [k]: v
+  }));
+  const userName = (auth.name || '').trim().split(' ')[0] || '';
+
+  /* Registro (usuario nuevo) → dashboard + modal de bienvenida (1ª vez) */
+  const doRegister = () => {
+    setAuth(a => ({
+      ...a,
+      name: a.name.trim() || 'José'
+    }));
+    setProfile({
+      ...WM_BLANK
+    });
+    setChosenSlug(null);
+    setCompleted(false);
+    setToast(false);
+    setPhase('app');
+    setTimeout(() => setModalOpen(true), 420);
+  };
+  /* Login (usuario recurrente) → dashboard directo, perfil ya completo */
+  const doLogin = () => {
+    const seed = window.AI_PROFILE || {};
+    setAuth(a => ({
+      ...a,
+      name: a.name.trim() || 'José Pérez'
+    }));
+    setProfile({
+      ...WM_BLANK,
+      ...seed
+    });
+    setChosenSlug(seed.template_slug || 'moderado');
+    setCompleted(true);
+    setModalOpen(false);
+    setToast(false);
+    setPhase('app');
+  };
+  const restart = () => {
+    setAuth({
+      name: '',
+      email: '',
+      password: ''
+    });
+    setProfile({
+      ...WM_BLANK
+    });
+    setChosenSlug(null);
+    setCompleted(false);
+    setModalOpen(false);
+    setToast(false);
+    setPhase('landing');
+  };
+  const onComplete = slug => {
+    setChosenSlug(slug || onbRecommendTemplate(profile).slug);
+    setProfile(p => ({
+      ...p,
+      template_slug: slug || onbRecommendTemplate(p).slug
+    }));
+    setCompleted(true);
+    setToast(true);
+    setTimeout(() => setToast(false), 3400);
+  };
+  const stages = [{
+    id: 'landing',
+    icon: 'waving_hand',
+    label: 'Landing'
+  }, {
+    id: 'auth',
+    icon: 'person_add',
+    label: 'Registro / Login'
+  }, {
+    id: 'app',
+    icon: 'dashboard',
+    label: 'Dashboard'
+  }];
+  const stageIdx = phase === 'landing' ? 0 : phase === 'app' ? 2 : 1;
+  const ctl = (icon, label, onClick) => /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onClick,
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 7,
+      border: 0,
+      cursor: 'pointer',
+      background: 'rgba(255,255,255,0.08)',
+      color: '#C3CAD6',
+      fontFamily: 'var(--font-body)',
+      fontSize: 12.5,
+      fontWeight: 600,
+      padding: '8px 13px',
+      borderRadius: 999,
+      transition: 'background 140ms, color 140ms'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15
+    }
+  }, icon), label);
+  let view;
+  if (phase === 'landing') {
+    view = /*#__PURE__*/React.createElement(WmLanding, {
+      onRegister: () => setPhase('register'),
+      onLogin: () => setPhase('login')
+    });
+  } else if (phase === 'register' || phase === 'login') {
+    view = /*#__PURE__*/React.createElement(WmAuth, {
+      mode: phase,
+      data: auth,
+      setData: setAuth,
+      onBack: () => setPhase('landing'),
+      onSwap: () => setPhase(phase === 'register' ? 'login' : 'register'),
+      onSubmit: () => phase === 'register' ? doRegister() : doLogin()
+    });
+  } else {
+    view = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(DashPanel, {
+      userName: userName,
+      profile: profile,
+      chosenSlug: chosenSlug,
+      completed: completed,
+      onOpenModal: () => setModalOpen(true),
+      blurred: modalOpen
+    }), /*#__PURE__*/React.createElement(DashToast, {
+      show: toast,
+      text: "Perfil guardado \xB7 plan configurado"
+    }), modalOpen && /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        zIndex: 20,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 28
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      onClick: () => setModalOpen(false),
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'rgba(8,11,18,0.55)'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'relative',
+        width: '100%',
+        maxWidth: 540,
+        maxHeight: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--surface-1)',
+        borderRadius: 'var(--radius-2xl, 28px)',
+        boxShadow: '0 30px 80px rgba(0,0,0,0.45)',
+        overflow: 'hidden',
+        animation: 'wmPopIn .42s var(--ease-out)'
+      }
+    }, /*#__PURE__*/React.createElement(WelcomeModal, {
+      userName: userName,
+      profile: profile,
+      setField: setField,
+      chosenSlug: chosenSlug,
+      setChosenSlug: setChosenSlug,
+      onClose: () => setModalOpen(false),
+      onComplete: onComplete
+    }))));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '22px 22px 40px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      maxWidth: 1180,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      flexWrap: 'wrap',
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
+      color: '#5A6478'
+    }
+  }, "Ciclo"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 4
+    }
+  }, stages.map((s, i) => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: s.id
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: '6px 11px',
+      borderRadius: 999,
+      background: i === stageIdx ? 'var(--brand-primary)' : 'rgba(255,255,255,0.06)',
+      color: i === stageIdx ? '#fff' : i < stageIdx ? '#9FE3C2' : '#7A8395',
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      fontWeight: 600
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 14
+    }
+  }, i < stageIdx ? 'check' : s.icon), s.label), i < stages.length - 1 && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15,
+      color: '#3A4456'
+    }
+  }, "chevron_right")))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }), phase === 'app' && !completed && ctl('auto_awesome', 'Re-abrir bienvenida', () => setModalOpen(true)), ctl('refresh', 'Reiniciar ciclo', restart), ctl(theme === 'light' ? 'dark_mode' : 'light_mode', theme === 'light' ? 'Oscuro' : 'Claro', () => setTheme(t => t === 'light' ? 'dark' : 'light'))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      maxWidth: 1180,
+      borderRadius: 14,
+      overflow: 'hidden',
+      boxShadow: '0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)',
+      background: 'var(--surface-1)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      padding: '11px 16px',
+      background: theme === 'light' ? '#E4E7EE' : '#1d2230'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 12,
+      height: 12,
+      borderRadius: '50%',
+      background: '#FF5F57'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 12,
+      height: 12,
+      borderRadius: '50%',
+      background: '#FEBC2E'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 12,
+      height: 12,
+      borderRadius: '50%',
+      background: '#28C840'
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      fontFamily: 'var(--font-body)',
+      fontSize: 12.5,
+      color: theme === 'light' ? '#5A6478' : '#9AA3B2'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 14
+    }
+  }, "lock"), "app.owfinance.com"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 54
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'relative',
+      height: 768,
+      overflow: 'hidden',
+      background: 'var(--bg-canvas)'
+    }
+  }, view)));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(WmRoot, null));
+})(); } catch (e) { __ds_ns.__errors.push({ path: "onboarding/welcome-dashboard.jsx", error: String((e && e.message) || e) }); }
+
+// onboarding/welcome-modal.jsx
+try { (() => {
+/* ─── Onboarding · Modal de bienvenida (primer acceso · usuario nuevo) ───
+ * Aparece SÓLO la primera vez sobre el panel real. El asesor IA se presenta
+ * y ofrece ayudar a llenar el perfil. El formulario va integrado dentro del
+ * modal como wizard por pasos (intro → formulario → recomendación → listo),
+ * con el plan formándose en vivo y la barra de completitud.
+ * Reutiliza: AIAvatar, MJarMiniBar, OnbChoice, OnbRing, OnbLevelBadge,
+ *            onbCompleteness, onbRecommendTemplate, PROFILE_FIELDS,
+ *            ONB_FLAT, ONB_PHASES, ONB_BLANK, JAR_TEMPLATES.
+ * ──────────────────────────────────────────────────────────────────────── */
+/* global React, AIAvatar, Avatar, MJarMiniBar, OnbChoice, OnbRing, OnbLevelBadge,
+   onbCompleteness, onbRecommendTemplate */
+const {
+  useState: useWmState,
+  useEffect: useWmEffect,
+  useRef: useWmRef
+} = React;
+
+/* Estilos propios (entradas sólo transform/opacity del overlay) */
+if (typeof document !== 'undefined' && !document.getElementById('wm-style')) {
+  const s = document.createElement('style');
+  s.id = 'wm-style';
+  s.textContent = '@keyframes wmFadeIn{from{opacity:.001}to{opacity:1}}' + '@keyframes wmPopIn{0%{transform:translateY(16px) scale(.97)}100%{transform:translateY(0) scale(1)}}' + '@keyframes wmStepIn{from{transform:translateY(10px)}to{transform:translateY(0)}}' + '@keyframes wmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}' + '@keyframes wmDot{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}' + '@keyframes wmRipple{0%{box-shadow:0 0 0 0 rgba(124,58,237,.35)}100%{box-shadow:0 0 0 14px rgba(124,58,237,0)}}' + '.wm-stagger>*{animation:wmStepIn .42s var(--ease-out) both}' + '.wm-stagger>*:nth-child(1){animation-delay:.04s}.wm-stagger>*:nth-child(2){animation-delay:.10s}' + '.wm-stagger>*:nth-child(3){animation-delay:.16s}.wm-stagger>*:nth-child(4){animation-delay:.22s}' + '.wm-scroll::-webkit-scrollbar{width:0}';
+  document.head.appendChild(s);
+}
+
+/* Botón pill local (mismas reglas de marca) */
+function WmBtn({
+  children,
+  icon,
+  iconRight,
+  variant = 'primary',
+  onClick,
+  size = 'md',
+  fullWidth,
+  disabled
+}) {
+  const [h, setH] = useWmState(false);
+  const pad = size === 'lg' ? '15px 28px' : size === 'sm' ? '9px 16px' : '13px 22px';
+  const fs = size === 'lg' ? 16 : size === 'sm' ? 13.5 : 15;
+  const map = {
+    primary: {
+      bg: disabled ? 'var(--surface-3)' : h ? 'var(--brand-primary-hover)' : 'var(--brand-primary)',
+      color: disabled ? 'var(--fg-3)' : '#fff',
+      bd: 0,
+      sh: 'none'
+    },
+    ghost: {
+      bg: h ? 'var(--surface-2)' : 'transparent',
+      color: 'var(--fg-1)',
+      bd: '1.5px solid var(--border-hairline)',
+      sh: 'none'
+    },
+    soft: {
+      bg: h ? 'var(--surface-2)' : 'var(--surface-1)',
+      color: 'var(--fg-1)',
+      bd: 0,
+      sh: 'var(--shadow-card)'
+    }
+  }[variant] || {};
+  return /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: disabled ? undefined : onClick,
+    onMouseEnter: () => setH(true),
+    onMouseLeave: () => setH(false),
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 9,
+      fontFamily: 'var(--font-body)',
+      fontWeight: 700,
+      fontSize: fs,
+      border: map.bd,
+      borderRadius: 'var(--radius-pill)',
+      cursor: disabled ? 'default' : 'pointer',
+      padding: pad,
+      background: map.bg,
+      color: map.color,
+      boxShadow: map.sh,
+      width: fullWidth ? '100%' : 'auto',
+      transition: 'background 160ms'
+    }
+  }, icon && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: fs + 3
+    }
+  }, icon), children, iconRight && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: fs + 3
+    }
+  }, iconRight));
+}
+
+/* Encabezado del wizard dentro del modal: back + progreso por fases + cerrar */
+function WmWizardHeader({
+  phases,
+  step,
+  onBack,
+  onClose,
+  count
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      flexShrink: 0,
+      padding: '18px 22px 12px',
+      borderBottom: '1px solid var(--border-hairline)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onBack,
+    style: {
+      border: 0,
+      background: 'var(--surface-2)',
+      cursor: 'pointer',
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'var(--fg-1)',
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20
+    }
+  }, "arrow_back")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement(AIAvatar, {
+    size: 26
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 12.5,
+      fontWeight: 600,
+      color: 'var(--fg-2)'
+    }
+  }, count)), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onClose,
+    style: {
+      border: 0,
+      background: 'transparent',
+      cursor: 'pointer',
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'var(--fg-3)',
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20
+    }
+  }, "close"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 6
+    }
+  }, phases.map((ph, i) => {
+    const done = i < step.phaseIndex,
+      active = i === step.phaseIndex;
+    const fill = done ? 1 : active ? (step.stepInPhase + 1) / step.phaseSteps : 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: ph.id,
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: 5,
+        borderRadius: 3,
+        background: 'var(--surface-3)',
+        overflow: 'hidden'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: '100%',
+        width: fill * 100 + '%',
+        borderRadius: 3,
+        background: 'var(--brand-primary)',
+        transition: 'width 380ms var(--ease-out)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 9.5,
+        fontWeight: active ? 700 : 600,
+        letterSpacing: '0.02em',
+        color: active || done ? 'var(--brand-primary)' : 'var(--fg-3)',
+        textAlign: 'center',
+        marginTop: 6
+      }
+    }, ph.label));
+  })));
+}
+
+/* Strip "tu plan se va formando" dentro del modal */
+function WmPlanStrip({
+  profile
+}) {
+  const essentials = ['occupation', 'income_range', 'main_goal'];
+  const filled = essentials.filter(f => profile[f]).length;
+  const rec = onbRecommendTemplate(profile);
+  const forming = filled < essentials.length;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      margin: '18px 0 4px',
+      padding: '12px 14px',
+      borderRadius: 'var(--radius-lg)',
+      background: 'var(--surface-2)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 13
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      flexShrink: 0,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: forming ? 'var(--surface-3)' : 'var(--brand-primary-soft)',
+      color: forming ? 'var(--fg-3)' : 'var(--brand-primary)',
+      transition: 'all 300ms'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18
+    }
+  }, "savings")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)',
+      marginBottom: 6
+    }
+  }, forming ? 'Tu plan se va formando…' : `Plan en formación · ${rec.tpl.name}`), /*#__PURE__*/React.createElement("div", {
+    style: {
+      opacity: 0.35 + filled / essentials.length * 0.65,
+      filter: forming ? 'saturate(0.6)' : 'none',
+      transition: 'opacity 400ms, filter 400ms'
+    }
+  }, /*#__PURE__*/React.createElement(MJarMiniBar, {
+    segments: rec.tpl.segments,
+    height: 9
+  }))));
+}
+
+/* ═══ El modal (controlado por WmRoot) ═══ */
+function WelcomeModal({
+  userName,
+  profile,
+  setField,
+  chosenSlug,
+  setChosenSlug,
+  onClose,
+  onComplete
+}) {
+  const ONB_FLAT = window.ONB_FLAT,
+    ONB_PHASES = window.ONB_PHASES,
+    PROFILE_FIELDS = window.PROFILE_FIELDS || {};
+  const ONB_STEP_ICONS = window.ONB_STEP_ICONS || {};
+  const phs = window.DREAM_PLACEHOLDERS || ['Tu sueño aquí…'];
+  const [stage, setStage] = useWmState('intro'); // intro | form | recommend | done
+  const [stepIdx, setStepIdx] = useWmState(0);
+  const [thinking, setThinking] = useWmState(false);
+  const [dreamPh, setDreamPh] = useWmState(0);
+  const advanceTimer = useWmRef(null);
+  const steps = ONB_FLAT;
+  const step = steps[Math.min(stepIdx, steps.length - 1)];
+  const essentialsReady = profile.occupation && profile.income_range && profile.main_goal;
+  useWmEffect(() => () => advanceTimer.current && clearTimeout(advanceTimer.current), []);
+  useWmEffect(() => {
+    if (step && step.kind === 'dream') {
+      const t = setInterval(() => setDreamPh(p => (p + 1) % phs.length), 2800);
+      return () => clearInterval(t);
+    }
+  }, [step && step.field]);
+  const goNext = () => {
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    if (stepIdx >= steps.length - 1) gotoRecommend();else setStepIdx(i => i + 1);
+  };
+  const goBack = () => {
+    if (stepIdx <= 0) setStage('intro');else setStepIdx(i => i - 1);
+  };
+  const selectChip = (field, val) => {
+    setField(field, val);
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    advanceTimer.current = setTimeout(goNext, 280);
+  };
+  const gotoRecommend = () => {
+    setStage('recommend');
+    setThinking(true);
+    setTimeout(() => setThinking(false), 1500);
+  };
+
+  /* ── Stage: INTRO (presentación del asesor) ── */
+  const comp0 = onbCompleteness({
+    ...profile,
+    template_slug: chosenSlug || profile.template_slug
+  }, {
+    pro: false
+  });
+  if (stage === 'intro') {
+    const previewPhases = window.ONB_PHASES || [];
+    const totalQ = (window.ONB_FLAT || []).length;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "wm-scroll",
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        overflowY: 'auto',
+        maxHeight: '100%'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'relative',
+        padding: '30px 30px 8px',
+        textAlign: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: onClose,
+      style: {
+        position: 'absolute',
+        top: 18,
+        right: 18,
+        border: 0,
+        background: 'var(--surface-2)',
+        cursor: 'pointer',
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--fg-2)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 20
+      }
+    }, "close")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'inline-flex',
+        position: 'relative',
+        animation: 'wmFloat 5s ease-in-out infinite',
+        marginBottom: 4
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        borderRadius: '50%',
+        animation: 'wmRipple 2.4s ease-out infinite'
+      }
+    }), /*#__PURE__*/React.createElement(AIAvatar, {
+      size: 62
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 10.5,
+        fontWeight: 700,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        color: '#8B5CF6',
+        margin: '18px 0 6px'
+      }
+    }, "Tu asesor de OW"), /*#__PURE__*/React.createElement("h1", {
+      style: {
+        fontFamily: 'var(--font-display)',
+        fontWeight: 700,
+        fontSize: 26,
+        lineHeight: 1.18,
+        color: 'var(--fg-1)',
+        margin: '0 0 10px',
+        letterSpacing: '-0.01em'
+      }
+    }, userName ? `Hola, ${userName}.` : 'Hola.', /*#__PURE__*/React.createElement("br", null), "Aqu\xED te ayudo a llenar tu perfil."), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 15,
+        color: 'var(--fg-2)',
+        lineHeight: 1.55,
+        margin: '0 auto',
+        maxWidth: 400
+      }
+    }, "Con unas pocas preguntas personalizo tus consejos y armo tu plan de c\xE1ntaros a tu medida.")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: '20px 30px 6px'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 10.5,
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: 'var(--fg-3)',
+        marginBottom: 11
+      }
+    }, "El proceso \xB7 ", previewPhases.length, " fases \xB7 ", totalQ, " preguntas"), /*#__PURE__*/React.createElement("div", {
+      className: "wm-stagger",
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 9
+      }
+    }, previewPhases.map((ph, i) => /*#__PURE__*/React.createElement("div", {
+      key: ph.id,
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '11px 13px',
+        borderRadius: 'var(--radius-lg)',
+        background: 'var(--surface-2)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--brand-primary)',
+        color: '#fff',
+        fontFamily: 'var(--font-money)',
+        fontWeight: 700,
+        fontSize: 12
+      }
+    }, i + 1), /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--brand-primary-soft)',
+        color: 'var(--brand-primary)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 19
+      }
+    }, ph.icon)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-display)',
+        fontWeight: 600,
+        fontSize: 14.5,
+        color: 'var(--fg-1)'
+      }
+    }, ph.label), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12,
+        color: 'var(--fg-2)',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap'
+      }
+    }, ph.steps.length, " preguntas \xB7 \u201C", ph.steps[0].q, "\u201D"))))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        marginTop: 14,
+        flexWrap: 'wrap'
+      }
+    }, [['schedule', '~2 minutos'], ['lock', 'Privado'], ['redo', 'Puedes saltar']].map(([ic, tx]) => /*#__PURE__*/React.createElement("span", {
+      key: tx,
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        fontFamily: 'var(--font-body)',
+        fontSize: 12,
+        fontWeight: 600,
+        color: 'var(--fg-3)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 15
+      }
+    }, ic), tx)))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flexShrink: 0,
+        padding: '16px 30px 26px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 11
+      }
+    }, /*#__PURE__*/React.createElement(WmBtn, {
+      variant: "primary",
+      size: "lg",
+      fullWidth: true,
+      iconRight: "arrow_forward",
+      onClick: () => {
+        setStage('form');
+        setStepIdx(0);
+      }
+    }, "Empezar mi perfil"), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: onClose,
+      style: {
+        border: 0,
+        background: 'transparent',
+        cursor: 'pointer',
+        fontFamily: 'var(--font-body)',
+        fontSize: 14,
+        color: 'var(--fg-3)',
+        padding: 6
+      }
+    }, "Ahora no \xB7 explorar primero"), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 11.5,
+        color: 'var(--fg-3)',
+        textAlign: 'center',
+        margin: 0,
+        lineHeight: 1.5
+      }
+    }, "Puedes completarlo cuando quieras desde ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: 'var(--fg-2)',
+        fontWeight: 600
+      }
+    }, "Mi perfil"), ".")));
+  }
+
+  /* ── Stage: FORM (wizard integrado) ── */
+  if (stage === 'form') {
+    const isDream = step.kind === 'dream';
+    const options = step.options || (PROFILE_FIELDS[step.field] ? PROFILE_FIELDS[step.field].options : []);
+    const icon = step.icon || ONB_STEP_ICONS[step.field];
+    const hasValue = isDream ? !!profile.long_term_dream : !!profile[step.field];
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%'
+      }
+    }, /*#__PURE__*/React.createElement(WmWizardHeader, {
+      phases: ONB_PHASES,
+      step: step,
+      onBack: goBack,
+      onClose: onClose,
+      count: `Paso ${stepIdx + 1} de ${steps.length}`
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "wm-scroll",
+      style: {
+        flex: 1,
+        overflowY: 'auto',
+        padding: '20px 26px 8px'
+      },
+      key: step.field
+    }, /*#__PURE__*/React.createElement("h1", {
+      style: {
+        fontFamily: 'var(--font-display)',
+        fontWeight: 700,
+        fontSize: 23,
+        lineHeight: 1.2,
+        color: 'var(--fg-1)',
+        margin: '0 0 6px',
+        letterSpacing: '-0.01em',
+        animation: 'wmStepIn .4s var(--ease-out)'
+      }
+    }, step.q), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 13.5,
+        color: 'var(--fg-2)',
+        margin: '0 0 18px',
+        lineHeight: 1.45,
+        animation: 'wmStepIn .4s var(--ease-out) .05s both'
+      }
+    }, step.sub), isDream ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'relative'
+      }
+    }, /*#__PURE__*/React.createElement("textarea", {
+      value: profile.long_term_dream,
+      maxLength: 240,
+      onChange: e => setField('long_term_dream', e.target.value),
+      placeholder: phs[dreamPh],
+      rows: 4,
+      style: {
+        width: '100%',
+        boxSizing: 'border-box',
+        border: '1.5px solid var(--border-hairline)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '15px',
+        fontFamily: 'var(--font-body)',
+        fontSize: 15,
+        lineHeight: 1.5,
+        color: 'var(--fg-1)',
+        background: 'var(--surface-1)',
+        outline: 'none',
+        resize: 'none',
+        transition: 'border-color 150ms'
+      },
+      onFocus: e => e.target.style.borderColor = 'var(--brand-primary)',
+      onBlur: e => e.target.style.borderColor = 'var(--border-hairline)'
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        position: 'absolute',
+        bottom: 12,
+        right: 14,
+        fontFamily: 'var(--font-money)',
+        fontSize: 11,
+        color: 'var(--fg-3)'
+      }
+    }, (profile.long_term_dream || '').length, "/240")) : /*#__PURE__*/React.createElement("div", {
+      className: "wm-stagger",
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, options.map(opt => /*#__PURE__*/React.createElement(OnbChoice, {
+      key: opt.value,
+      label: opt.label,
+      desc: opt.desc,
+      icon: icon,
+      selected: profile[step.field] === opt.value,
+      onClick: () => selectChip(step.field, opt.value)
+    }))), /*#__PURE__*/React.createElement(WmPlanStrip, {
+      profile: profile
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flexShrink: 0,
+        padding: '12px 26px 18px',
+        borderTop: '1px solid var(--border-hairline)'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, step.optional && !hasValue && /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: goNext,
+      style: {
+        border: 0,
+        background: 'transparent',
+        cursor: 'pointer',
+        fontFamily: 'var(--font-body)',
+        fontSize: 13.5,
+        fontWeight: 600,
+        color: 'var(--fg-2)',
+        padding: '6px 4px',
+        flexShrink: 0
+      }
+    }, "Saltar"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement(WmBtn, {
+      variant: hasValue ? 'primary' : 'soft',
+      fullWidth: true,
+      iconRight: "arrow_forward",
+      onClick: goNext
+    }, stepIdx >= steps.length - 1 ? 'Ver mi plan' : 'Continuar'))), essentialsReady && stepIdx < steps.length - 1 && /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: gotoRecommend,
+      style: {
+        width: '100%',
+        border: 0,
+        background: 'transparent',
+        cursor: 'pointer',
+        fontFamily: 'var(--font-body)',
+        fontSize: 12.5,
+        color: 'var(--fg-3)',
+        padding: '9px 0 0'
+      }
+    }, "Ya tengo lo esencial \xB7 ir a mi plan \u2192")));
+  }
+
+  /* ── Stage: RECOMMEND ── */
+  if (stage === 'recommend') {
+    const rec = onbRecommendTemplate(profile);
+    const templates = window.JAR_TEMPLATES || [];
+    const active = templates.find(t => t.slug === (chosenSlug || rec.slug)) || rec.tpl;
+    if (thinking) {
+      return /*#__PURE__*/React.createElement("div", {
+        style: {
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          padding: '40px 30px'
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          animation: 'wmFloat 2.4s ease-in-out infinite'
+        }
+      }, /*#__PURE__*/React.createElement(AIAvatar, {
+        size: 64
+      })), /*#__PURE__*/React.createElement("h1", {
+        style: {
+          fontFamily: 'var(--font-display)',
+          fontWeight: 700,
+          fontSize: 22,
+          color: 'var(--fg-1)',
+          margin: '22px 0 8px'
+        }
+      }, "Armando tu plan\u2026"), /*#__PURE__*/React.createElement("p", {
+        style: {
+          fontFamily: 'var(--font-body)',
+          fontSize: 14.5,
+          color: 'var(--fg-2)',
+          lineHeight: 1.5,
+          maxWidth: 300
+        }
+      }, "Leo tu perfil para darte un punto de partida s\xF3lido."), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: 'flex',
+          gap: 7,
+          marginTop: 22
+        }
+      }, [0, 1, 2].map(i => /*#__PURE__*/React.createElement("span", {
+        key: i,
+        style: {
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          background: 'var(--brand-primary)',
+          animation: `wmDot 1s ease-in-out ${i * 0.16}s infinite`
+        }
+      }))));
+    }
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flexShrink: 0,
+        padding: '18px 22px 10px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        borderBottom: '1px solid var(--border-hairline)'
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: () => {
+        setStepIdx(steps.length - 1);
+        setStage('form');
+      },
+      style: {
+        border: 0,
+        background: 'var(--surface-2)',
+        cursor: 'pointer',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--fg-1)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 20
+      }
+    }, "arrow_back")), /*#__PURE__*/React.createElement("span", {
+      style: {
+        flex: 1,
+        fontFamily: 'var(--font-display)',
+        fontWeight: 700,
+        fontSize: 16,
+        color: 'var(--fg-1)'
+      }
+    }, "Tu plan recomendado"), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: onClose,
+      style: {
+        border: 0,
+        background: 'transparent',
+        cursor: 'pointer',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--fg-3)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 20
+      }
+    }, "close"))), /*#__PURE__*/React.createElement("div", {
+      className: "wm-scroll",
+      style: {
+        flex: 1,
+        overflowY: 'auto',
+        padding: '18px 26px 8px'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        gap: 11,
+        alignItems: 'flex-start',
+        marginBottom: 18,
+        animation: 'wmStepIn .4s var(--ease-out)'
+      }
+    }, /*#__PURE__*/React.createElement(AIAvatar, {
+      size: 38
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        background: 'var(--surface-1)',
+        border: '1px solid var(--border-hairline)',
+        borderRadius: '4px 16px 16px 16px',
+        padding: '12px 14px',
+        boxShadow: 'var(--shadow-card)'
+      }
+    }, /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 13.5,
+        color: 'var(--fg-1)',
+        lineHeight: 1.5,
+        margin: 0
+      }
+    }, rec.why))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: 'var(--surface-1)',
+        borderRadius: 'var(--radius-xl)',
+        border: '1.5px solid var(--brand-primary)',
+        boxShadow: 'var(--shadow-float)',
+        padding: 18,
+        animation: 'wmPopIn .5s var(--ease-out)'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 14
+      }
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-display)',
+        fontWeight: 700,
+        fontSize: 19,
+        color: 'var(--fg-1)'
+      }
+    }, active.name), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12,
+        color: 'var(--fg-2)'
+      }
+    }, active.count, " c\xE1ntaros \xB7 ", active.forWho)), active.slug === rec.slug && /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        fontFamily: 'var(--font-body)',
+        fontSize: 10.5,
+        fontWeight: 700,
+        color: 'var(--brand-primary)',
+        background: 'var(--brand-primary-soft)',
+        padding: '4px 8px',
+        borderRadius: 999,
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 12
+      }
+    }, "auto_awesome"), "IA")), /*#__PURE__*/React.createElement("div", {
+      key: active.slug,
+      style: {
+        animation: 'wmStepIn .4s var(--ease-out)'
+      }
+    }, /*#__PURE__*/React.createElement(MJarMiniBar, {
+      segments: active.segments,
+      height: 15
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 7,
+        marginTop: 13
+      }
+    }, active.segments.map((sg, i) => /*#__PURE__*/React.createElement("span", {
+      key: i,
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        fontFamily: 'var(--font-body)',
+        fontSize: 11.5,
+        color: 'var(--fg-1)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 9,
+        height: 9,
+        borderRadius: 3,
+        background: sg.color
+      }
+    }), sg.name, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-money)',
+        fontWeight: 700,
+        color: 'var(--fg-2)'
+      }
+    }, sg.percent, "%")))))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 16
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12,
+        fontWeight: 700,
+        color: 'var(--fg-2)',
+        marginBottom: 9
+      }
+    }, "\xBFPrefieres otro esquema?"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        gap: 8,
+        flexWrap: 'wrap'
+      }
+    }, templates.map(t => {
+      const on = (chosenSlug || rec.slug) === t.slug;
+      return /*#__PURE__*/React.createElement("button", {
+        key: t.slug,
+        type: "button",
+        onClick: () => setChosenSlug(t.slug),
+        style: {
+          cursor: 'pointer',
+          padding: '8px 14px',
+          borderRadius: 999,
+          border: on ? '1.5px solid var(--brand-primary)' : '1.5px solid var(--border-hairline)',
+          background: on ? 'var(--brand-primary-soft)' : 'var(--surface-1)',
+          color: on ? 'var(--brand-primary-fg-soft)' : 'var(--fg-1)',
+          fontFamily: 'var(--font-body)',
+          fontSize: 13,
+          fontWeight: 600
+        }
+      }, t.name);
+    })))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flexShrink: 0,
+        padding: '12px 26px 18px',
+        borderTop: '1px solid var(--border-hairline)'
+      }
+    }, /*#__PURE__*/React.createElement(WmBtn, {
+      variant: "primary",
+      fullWidth: true,
+      icon: "check",
+      onClick: () => {
+        setChosenSlug(chosenSlug || rec.slug);
+        setStage('done');
+      }
+    }, "Usar este plan")));
+  }
+
+  /* ── Stage: DONE ── */
+  const comp = onbCompleteness({
+    ...profile,
+    template_slug: chosenSlug || profile.template_slug
+  }, {
+    pro: false
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+      padding: '40px 30px',
+      position: 'relative',
+      overflow: 'hidden'
+    }
+  }, ['#10B981', '#F59E0B', '#8B5CF6', '#0EA5E9', '#EC4899', '#F97316'].map((c, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    style: {
+      position: 'absolute',
+      top: '24%',
+      left: `${14 + i * 13}%`,
+      width: 9,
+      height: 9,
+      borderRadius: 2,
+      background: c,
+      animation: `wmFloat ${1.2 + i * 0.12}s ease-in-out infinite`,
+      opacity: 0.85
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      animation: 'wmPopIn .6s var(--ease-out)'
+    }
+  }, /*#__PURE__*/React.createElement(OnbRing, {
+    pct: comp.pct,
+    size: 112,
+    stroke: 10,
+    color: comp.level.color
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 42,
+      color: comp.level.color
+    }
+  }, comp.level.icon))), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 26,
+      color: 'var(--fg-1)',
+      margin: '20px 0 8px',
+      letterSpacing: '-0.01em'
+    }
+  }, "\xA1Tu perfil est\xE1 listo", userName ? `, ${userName}` : '', "!"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement(OnbLevelBadge, {
+    level: comp.level
+  })), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 15,
+      color: 'var(--fg-2)',
+      lineHeight: 1.5,
+      maxWidth: 320
+    }
+  }, "Tus c\xE1ntaros est\xE1n configurados y conozco tu perfil. ", comp.nextLevel ? `Completa más para subir a ${comp.nextLevel.label} y afinar mis consejos.` : 'Estoy listo para acompañarte.'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      maxWidth: 320,
+      marginTop: 26
+    }
+  }, /*#__PURE__*/React.createElement(WmBtn, {
+    variant: "primary",
+    size: "lg",
+    fullWidth: true,
+    iconRight: "arrow_forward",
+    onClick: () => {
+      onComplete(chosenSlug || onbRecommendTemplate(profile).slug);
+      onClose();
+    }
+  }, "Ir a mi panel")));
+}
+window.WelcomeModal = WelcomeModal;
+window.WmBtn = WmBtn;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "onboarding/welcome-modal.jsx", error: String((e && e.message) || e) }); }
 
 // period-selector.js
 try { (() => {
@@ -18502,11 +20911,17 @@ Object.assign(window, {
 // ui_kits/lite-desktop/organisms/MonthNavigator.jsx
 try { (() => {
 /* global React */
-/* ─── App-wide Month / Date navigator ───────────────────────────────────
- * A single global period selector that lives in BOTH shells (Lite + Pro),
- * above the route content, so every screen shares the same selected month.
- * Steppers move month-by-month (rolling the year), the centre pill opens a
- * month+year grid picker, and "Hoy" jumps back to the current month.
+/* ─── App-wide Period navigator (selector de periodo) ───────────────────
+ * A single global PERIOD selector shared by both shells (Lite + Pro), above
+ * the route content, so every screen (incluyendo Transacciones y Cántaros)
+ * comparte el mismo periodo. Granularidades: Día · Semana · Quincena · Mes ·
+ * Bimestre · Trimestre · Semestre · Año · Todo. Flechas para navegar periodo
+ * a periodo; el grano se elige en el desplegable; el centro abre un picker
+ * adaptado al grano y "Hoy" vuelve al periodo actual.
+ *
+ * Compat: mantiene MonthStore { m, y }, useAppMonth() y monthLabel() para las
+ * pantallas que ya leían el mes; además expone PeriodStore, useAppPeriod() y
+ * periodLabel(). Cada cambio de periodo sincroniza el mes ancla.
  * ──────────────────────────────────────────────────────────────────────── */
 const {
   useState: useMnState,
@@ -18514,21 +20929,220 @@ const {
   useEffect: useMnEffect,
   useSyncExternalStore: useMnSync
 } = React;
+const mnT = s => window.t ? window.t(s) : s;
 const MN_MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const MN_ABBR = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const MN_DOW = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-/* "Today" for this prototype = June 2026 (matches the live data). */
+/* "Hoy" de este prototipo = junio 2026 (coincide con los datos vivos). */
 const MN_TODAY = {
   m: 5,
   y: 2026
 };
+const PERIOD_TODAY = new Date(2026, 5, 7);
 
-/* ── Tiny global store so shells + routes stay in sync without prop drilling ── */
+/* ── Catálogo de granos ── */
+const PERIOD_GRAINS = [{
+  id: 'dia',
+  name: 'Día',
+  icon: 'today',
+  group: 'Cortos'
+}, {
+  id: 'semana',
+  name: 'Semana',
+  icon: 'date_range',
+  group: 'Cortos'
+}, {
+  id: 'quincena',
+  name: 'Quincena',
+  icon: 'splitscreen',
+  group: 'Cortos'
+}, {
+  id: 'mes',
+  name: 'Mes',
+  icon: 'calendar_view_month',
+  group: 'Estándar'
+}, {
+  id: 'bimestre',
+  name: 'Bimestre',
+  icon: 'calendar_view_week',
+  group: 'Estándar'
+}, {
+  id: 'trimestre',
+  name: 'Trimestre',
+  icon: 'event_note',
+  group: 'Estándar'
+}, {
+  id: 'semestre',
+  name: 'Semestre',
+  icon: 'calendar_month',
+  group: 'Estándar'
+}, {
+  id: 'anio',
+  name: 'Año',
+  icon: 'calendar_today',
+  group: 'Largos'
+}, {
+  id: 'todo',
+  name: 'Todo',
+  icon: 'all_inclusive',
+  group: 'Especiales'
+}];
+const PERIOD_GRAIN_BY_ID = Object.fromEntries(PERIOD_GRAINS.map(g => [g.id, g]));
+
+/* ── Helpers de fecha ── */
+const pdClone = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+const pdAddDays = (dt, n) => {
+  const x = pdClone(dt);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+const pdAddMonths = (dt, n) => {
+  const x = pdClone(dt);
+  x.setMonth(x.getMonth() + n, 1);
+  return x;
+};
+const pdLastDay = (y, m) => new Date(y, m + 1, 0).getDate();
+const pdD = (y, m, day) => new Date(y, m, day);
+const pdMondayOf = dt => {
+  const x = pdClone(dt);
+  const wd = (x.getDay() + 6) % 7;
+  return pdAddDays(x, -wd);
+};
+const pdIsoWeek = dt => {
+  const tt = pdClone(dt);
+  tt.setDate(tt.getDate() + 4 - (tt.getDay() + 6) % 7);
+  const ys = new Date(tt.getFullYear(), 0, 1);
+  return Math.ceil(((tt - ys) / 86400000 + 1) / 7);
+};
+
+/* ── Resolución periodo: grano + ancla → { from, to, label, noStep } ── */
+function periodResolve(grain, anchor) {
+  const a = pdClone(anchor);
+  const y = a.getFullYear(),
+    m = a.getMonth(),
+    day = a.getDate();
+  switch (grain) {
+    case 'dia':
+      return {
+        from: a,
+        to: a,
+        label: `${day} ${MN_ABBR[m]} ${y}`
+      };
+    case 'semana':
+      {
+        const mon = pdMondayOf(a),
+          sun = pdAddDays(mon, 6);
+        const span = sun.getMonth() === mon.getMonth() ? `${mon.getDate()}–${sun.getDate()} ${MN_ABBR[mon.getMonth()]}` : `${mon.getDate()} ${MN_ABBR[mon.getMonth()]}–${sun.getDate()} ${MN_ABBR[sun.getMonth()]}`;
+        return {
+          from: mon,
+          to: sun,
+          label: `Sem ${pdIsoWeek(a)} · ${span}`
+        };
+      }
+    case 'quincena':
+      {
+        const first = day <= 15;
+        const from = pdD(y, m, first ? 1 : 16),
+          to = pdD(y, m, first ? 15 : pdLastDay(y, m));
+        return {
+          from,
+          to,
+          label: `Q${first ? 1 : 2} ${MN_ABBR[m]} · ${from.getDate()}–${to.getDate()}`
+        };
+      }
+    case 'mes':
+      return {
+        from: pdD(y, m, 1),
+        to: pdD(y, m, pdLastDay(y, m)),
+        label: `${mnT(MN_MONTHS[m])} ${y}`
+      };
+    case 'bimestre':
+      {
+        const bStart = Math.floor(m / 2) * 2;
+        return {
+          from: pdD(y, bStart, 1),
+          to: pdD(y, bStart + 1, pdLastDay(y, bStart + 1)),
+          label: `${MN_ABBR[bStart]}–${MN_ABBR[bStart + 1]} ${y}`
+        };
+      }
+    case 'trimestre':
+      {
+        const qStart = Math.floor(m / 3) * 3,
+          q = qStart / 3 + 1;
+        return {
+          from: pdD(y, qStart, 1),
+          to: pdD(y, qStart + 2, pdLastDay(y, qStart + 2)),
+          label: `T${q} ${y} · ${MN_ABBR[qStart]}–${MN_ABBR[qStart + 2]}`
+        };
+      }
+    case 'semestre':
+      {
+        const sStart = m < 6 ? 0 : 6,
+          s = sStart === 0 ? 1 : 2;
+        return {
+          from: pdD(y, sStart, 1),
+          to: pdD(y, sStart + 5, pdLastDay(y, sStart + 5)),
+          label: `S${s} ${y} · ${MN_ABBR[sStart]}–${MN_ABBR[sStart + 5]}`
+        };
+      }
+    case 'anio':
+      return {
+        from: pdD(y, 0, 1),
+        to: pdD(y, 11, 31),
+        label: `${y}`
+      };
+    case 'todo':
+      return {
+        from: null,
+        to: null,
+        label: mnT('Todo el histórico'),
+        noStep: true
+      };
+    default:
+      return {
+        from: pdD(y, m, 1),
+        to: pdD(y, m, pdLastDay(y, m)),
+        label: `${mnT(MN_MONTHS[m])} ${y}`
+      };
+  }
+}
+function periodStep(grain, anchor, dir) {
+  switch (grain) {
+    case 'dia':
+      return pdAddDays(anchor, dir);
+    case 'semana':
+      return pdAddDays(anchor, dir * 7);
+    case 'quincena':
+      {
+        const first = anchor.getDate() <= 15;
+        if (dir > 0) return first ? pdD(anchor.getFullYear(), anchor.getMonth(), 16) : pdAddMonths(anchor, 1);
+        return first ? (() => {
+          const p = pdAddMonths(anchor, -1);
+          return pdD(p.getFullYear(), p.getMonth(), 16);
+        })() : pdD(anchor.getFullYear(), anchor.getMonth(), 1);
+      }
+    case 'mes':
+      return pdAddMonths(anchor, dir);
+    case 'bimestre':
+      return pdAddMonths(anchor, dir * 2);
+    case 'trimestre':
+      return pdAddMonths(anchor, dir * 3);
+    case 'semestre':
+      return pdAddMonths(anchor, dir * 6);
+    case 'anio':
+      return pdAddMonths(anchor, dir * 12);
+    default:
+      return anchor;
+  }
+}
+
+/* ── Store de mes (compat) ── */
 const MonthStore = (() => {
   let state = window.__appMonth || {
     m: 4,
     y: 2026
-  }; // default: Mayo 2026
+  };
   window.__appMonth = state;
   const subs = new Set();
   return {
@@ -18546,53 +21160,285 @@ const MonthStore = (() => {
 })();
 window.MonthStore = MonthStore;
 
-/* Hook: read the shared month anywhere. */
+/* ── Store de periodo (grano + ancla) ── */
+const PeriodStore = (() => {
+  let state = window.__appPeriod || {
+    grain: 'mes',
+    anchor: new Date(2026, 4, 1)
+  }; // Mayo 2026
+  window.__appPeriod = state;
+  const subs = new Set();
+  const syncMonth = () => MonthStore.set({
+    m: state.anchor.getMonth(),
+    y: state.anchor.getFullYear()
+  });
+  const api = {
+    get: () => state,
+    set: next => {
+      state = {
+        ...state,
+        ...next
+      };
+      window.__appPeriod = state;
+      syncMonth();
+      subs.forEach(fn => fn());
+    },
+    setGrain: grain => api.set({
+      grain
+    }),
+    setAnchor: anchor => api.set({
+      anchor: pdClone(anchor)
+    }),
+    step: dir => {
+      const r = periodResolve(state.grain, state.anchor);
+      if (r.noStep) return;
+      api.set({
+        anchor: periodStep(state.grain, state.anchor, dir)
+      });
+    },
+    today: () => api.set({
+      anchor: pdClone(PERIOD_TODAY)
+    }),
+    subscribe: fn => {
+      subs.add(fn);
+      return () => subs.delete(fn);
+    }
+  };
+  return api;
+})();
+window.PeriodStore = PeriodStore;
+// sincroniza el mes ancla al cargar
+MonthStore.set({
+  m: PeriodStore.get().anchor.getMonth(),
+  y: PeriodStore.get().anchor.getFullYear()
+});
 function useAppMonth() {
   return useMnSync(MonthStore.subscribe, MonthStore.get, MonthStore.get);
 }
+function useAppPeriod() {
+  return useMnSync(PeriodStore.subscribe, PeriodStore.get, PeriodStore.get);
+}
 window.useAppMonth = useAppMonth;
+window.useAppPeriod = useAppPeriod;
+window.monthLabel = (mo = MonthStore.get()) => `${mnT(MN_MONTHS[mo.m])} ${mo.y}`;
+window.periodLabel = () => {
+  const s = PeriodStore.get();
+  return periodResolve(s.grain, s.anchor).label;
+};
 
-/* Helpers for screens that want the label / range text. */
-window.monthLabel = (mo = MonthStore.get()) => `${t(MN_MONTHS[mo.m])} ${mo.y}`;
+/* ── Picker adaptado al grano ── */
+function PeriodPicker({
+  grain,
+  anchor,
+  accent,
+  onPick
+}) {
+  const [page, setPage] = useMnState(pdClone(anchor));
+  const sel = periodResolve(grain, anchor);
+  const inSel = dt => sel.from && sel.to && dt >= sel.from && dt <= sel.to;
+  const cell = (on, extra = {}) => ({
+    border: 0,
+    cursor: 'pointer',
+    borderRadius: 'var(--radius-md)',
+    padding: '10px 0',
+    background: on ? accent : 'transparent',
+    color: on ? '#fff' : 'var(--fg-1)',
+    fontFamily: 'var(--font-body)',
+    fontSize: 13,
+    fontWeight: on ? 700 : 500,
+    transition: 'background 120ms',
+    ...extra
+  });
+  const nav = (delta, title) => /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPage(p => pdAddMonths(p, -delta)),
+    style: {
+      width: 30,
+      height: 30,
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center',
+      color: 'var(--fg-1)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18
+    }
+  }, "chevron_left")), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 15,
+      color: 'var(--fg-1)'
+    }
+  }, title), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPage(p => pdAddMonths(p, delta)),
+    style: {
+      width: 30,
+      height: 30,
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center',
+      color: 'var(--fg-1)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18
+    }
+  }, "chevron_right")));
+  const y = page.getFullYear(),
+    m = page.getMonth();
+  if (grain === 'todo') {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12.5,
+        color: 'var(--fg-2)',
+        lineHeight: 1.6,
+        padding: '4px 2px'
+      }
+    }, mnT('Sin límite de fechas — incluye cada movimiento registrado.'));
+  }
+  if (grain === 'dia' || grain === 'semana' || grain === 'quincena') {
+    const first = pdMondayOf(pdD(y, m, 1));
+    return /*#__PURE__*/React.createElement("div", null, nav(1, `${mnT(MN_MONTHS[m])} ${y}`), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, 1fr)',
+        gap: 4
+      }
+    }, MN_DOW.map((w, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        textAlign: 'center',
+        fontFamily: 'var(--font-body)',
+        fontSize: 10.5,
+        fontWeight: 700,
+        color: 'var(--fg-3)',
+        padding: '2px 0'
+      }
+    }, w)), Array.from({
+      length: 42
+    }).map((_, i) => {
+      const cur = pdAddDays(first, i);
+      const inMonth = cur.getMonth() === m;
+      return /*#__PURE__*/React.createElement("button", {
+        key: i,
+        onClick: () => onPick(cur),
+        style: cell(inSel(cur), {
+          padding: '8px 0',
+          opacity: inMonth ? 1 : 0.32,
+          fontSize: 12.5
+        })
+      }, cur.getDate());
+    })));
+  }
+  if (grain === 'mes' || grain === 'bimestre') {
+    return /*#__PURE__*/React.createElement("div", null, nav(12, `${y}`), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 6
+      }
+    }, MN_ABBR.map((ab, mo) => /*#__PURE__*/React.createElement("button", {
+      key: mo,
+      onClick: () => onPick(pdD(y, mo, 1)),
+      style: cell(inSel(pdD(y, mo, 1)))
+    }, mnT(ab)))));
+  }
+  if (grain === 'trimestre' || grain === 'semestre') {
+    const n = grain === 'trimestre' ? 4 : 2;
+    return /*#__PURE__*/React.createElement("div", null, nav(12, `${y}`), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: 6
+      }
+    }, Array.from({
+      length: n
+    }).map((_, i) => {
+      const mo = grain === 'trimestre' ? i * 3 : i * 6;
+      const tag = grain === 'trimestre' ? `T${i + 1}` : `S${i + 1}`;
+      const sub = grain === 'trimestre' ? `${MN_ABBR[mo]}–${MN_ABBR[mo + 2]}` : `${MN_ABBR[mo]}–${MN_ABBR[mo + 5]}`;
+      const on = inSel(pdD(y, mo, 1));
+      return /*#__PURE__*/React.createElement("button", {
+        key: i,
+        onClick: () => onPick(pdD(y, mo, 1)),
+        style: cell(on, {
+          padding: '14px 4px',
+          lineHeight: 1.5
+        })
+      }, tag, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 10.5,
+          fontWeight: 600,
+          opacity: 0.7
+        }
+      }, sub));
+    })));
+  }
+  // anio
+  const base = y - 4;
+  return /*#__PURE__*/React.createElement("div", null, nav(108, `${base}–${base + 8}`), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: 6
+    }
+  }, Array.from({
+    length: 9
+  }).map((_, i) => {
+    const yr = base + i;
+    return /*#__PURE__*/React.createElement("button", {
+      key: yr,
+      onClick: () => onPick(pdD(yr, 0, 1)),
+      style: cell(yr === anchor.getFullYear())
+    }, yr);
+  })));
+}
 function MonthNavigator({
   accent = 'var(--brand-primary)',
   compact = false
 }) {
-  const month = useAppMonth();
-  const [open, setOpen] = useMnState(false);
-  const [pickYear, setPickYear] = useMnState(month.y);
-  const ref = useMnRef(null);
+  const period = useAppPeriod();
+  const {
+    grain,
+    anchor
+  } = period;
+  const resolved = periodResolve(grain, anchor);
+  const grainMeta = PERIOD_GRAIN_BY_ID[grain] || PERIOD_GRAIN_BY_ID.mes;
+  const [grainOpen, setGrainOpen] = useMnState(false);
+  const [pickOpen, setPickOpen] = useMnState(false);
+  const grainRef = useMnRef(null);
+  const pickRef = useMnRef(null);
   useMnEffect(() => {
-    if (!open) return;
-    setPickYear(month.y);
+    if (!grainOpen && !pickOpen) return;
     const close = e => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (grainRef.current && !grainRef.current.contains(e.target)) setGrainOpen(false);
+      if (pickRef.current && !pickRef.current.contains(e.target)) setPickOpen(false);
     };
     const id = setTimeout(() => document.addEventListener('mousedown', close), 0);
     return () => {
       document.removeEventListener('mousedown', close);
       clearTimeout(id);
     };
-  }, [open]); // eslint-disable-line
-
-  const step = dir => {
-    let m = month.m + dir,
-      y = month.y;
-    if (m < 0) {
-      m = 11;
-      y -= 1;
-    }
-    if (m > 11) {
-      m = 0;
-      y += 1;
-    }
-    MonthStore.set({
-      m,
-      y
-    });
-  };
-  const isToday = month.m === MN_TODAY.m && month.y === MN_TODAY.y;
-  const isFuture = month.y > MN_TODAY.y || month.y === MN_TODAY.y && month.m >= MN_TODAY.m;
+  }, [grainOpen, pickOpen]);
+  const todayResolved = periodResolve(grain, PERIOD_TODAY);
+  const isToday = resolved.label === todayResolved.label;
   const stepBtn = {
     width: 36,
     height: 36,
@@ -18614,6 +21460,7 @@ function MonthNavigator({
     e.currentTarget.style.background = 'var(--surface-1)';
     e.currentTarget.style.borderColor = 'var(--border-hairline)';
   };
+  const groups = ['Cortos', 'Estándar', 'Largos', 'Especiales'];
   return /*#__PURE__*/React.createElement("div", {
     "data-comment-anchor": "month-navigator",
     style: {
@@ -18623,11 +21470,125 @@ function MonthNavigator({
       flexWrap: 'wrap',
       marginBottom: compact ? 16 : 22
     }
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: grainRef,
+    style: {
+      position: 'relative'
+    }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => step(-1),
-    "aria-label": "Mes anterior",
-    style: stepBtn,
-    onMouseEnter: hoverOn,
+    onClick: () => {
+      setGrainOpen(o => !o);
+      setPickOpen(false);
+    },
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '8px 14px',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      cursor: 'pointer',
+      color: 'var(--fg-1)',
+      fontFamily: 'var(--font-body)',
+      fontWeight: 600,
+      fontSize: 13.5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18,
+      color: accent
+    }
+  }, grainMeta.icon), mnT(grainMeta.name), /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18,
+      color: 'var(--fg-3)'
+    }
+  }, grainOpen ? 'expand_less' : 'expand_more')), grainOpen && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 'calc(100% + 8px)',
+      left: 0,
+      zIndex: 'var(--z-popover, 80)',
+      width: 230,
+      background: 'var(--surface-1)',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-lg)',
+      boxShadow: '0 22px 60px rgba(15,23,42,.22)',
+      padding: 6
+    }
+  }, groups.map(grp => /*#__PURE__*/React.createElement("div", {
+    key: grp
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)',
+      padding: '8px 10px 4px'
+    }
+  }, grp), PERIOD_GRAINS.filter(g => g.group === grp).map(g => {
+    const on = g.id === grain;
+    return /*#__PURE__*/React.createElement("button", {
+      key: g.id,
+      onClick: () => {
+        PeriodStore.setGrain(g.id);
+        setGrainOpen(false);
+      },
+      onMouseEnter: e => {
+        if (!on) e.currentTarget.style.background = 'var(--surface-2)';
+      },
+      onMouseLeave: e => {
+        if (!on) e.currentTarget.style.background = 'transparent';
+      },
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        width: '100%',
+        textAlign: 'left',
+        border: 0,
+        cursor: 'pointer',
+        padding: '9px 10px',
+        borderRadius: 'var(--radius-sm)',
+        background: on ? 'color-mix(in srgb, ' + accent + ' 12%, var(--surface-1))' : 'transparent',
+        color: on ? accent : 'var(--fg-1)',
+        fontFamily: 'var(--font-body)',
+        fontSize: 13.5,
+        fontWeight: on ? 700 : 500
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 18,
+        color: on ? accent : 'var(--fg-2)'
+      }
+    }, g.icon), /*#__PURE__*/React.createElement("span", {
+      style: {
+        flex: 1
+      }
+    }, mnT(g.name)), on && /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 17
+      }
+    }, "check"));
+  }))))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => PeriodStore.step(-1),
+    "aria-label": "Periodo anterior",
+    disabled: resolved.noStep,
+    style: {
+      ...stepBtn,
+      opacity: resolved.noStep ? 0.4 : 1,
+      cursor: resolved.noStep ? 'not-allowed' : 'pointer'
+    },
+    onMouseEnter: e => {
+      if (!resolved.noStep) hoverOn(e);
+    },
     onMouseLeave: hoverOff
   }, /*#__PURE__*/React.createElement("span", {
     className: "material-icons",
@@ -18635,24 +21596,28 @@ function MonthNavigator({
       fontSize: 20
     }
   }, "chevron_left")), /*#__PURE__*/React.createElement("div", {
-    ref: ref,
+    ref: pickRef,
     style: {
       position: 'relative'
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setOpen(o => !o),
+    onClick: () => {
+      if (resolved.noStep) return;
+      setPickOpen(o => !o);
+      setGrainOpen(false);
+    },
     style: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: 10,
       padding: '8px 16px',
-      minWidth: 168,
+      minWidth: 180,
       justifyContent: 'center',
       border: '1px solid var(--border-hairline)',
       borderRadius: 'var(--radius-pill)',
       background: 'var(--surface-1)',
       boxShadow: 'var(--shadow-card)',
-      cursor: 'pointer',
+      cursor: resolved.noStep ? 'default' : 'pointer',
       color: 'var(--fg-1)'
     }
   }, /*#__PURE__*/React.createElement("span", {
@@ -18661,20 +21626,20 @@ function MonthNavigator({
       fontSize: 19,
       color: accent
     }
-  }, "calendar_month"), /*#__PURE__*/React.createElement("span", {
+  }, grainMeta.icon), /*#__PURE__*/React.createElement("span", {
     style: {
       fontFamily: 'var(--font-display)',
       fontWeight: 700,
       fontSize: 16,
       letterSpacing: '-0.01em'
     }
-  }, t(MN_MONTHS[month.m]), " ", month.y), /*#__PURE__*/React.createElement("span", {
+  }, resolved.label), !resolved.noStep && /*#__PURE__*/React.createElement("span", {
     className: "material-icons",
     style: {
       fontSize: 19,
       color: 'var(--fg-3)'
     }
-  }, open ? 'expand_less' : 'expand_more')), open && /*#__PURE__*/React.createElement("div", {
+  }, pickOpen ? 'expand_less' : 'expand_more')), pickOpen && !resolved.noStep && /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'absolute',
       top: 'calc(100% + 10px)',
@@ -18688,104 +21653,25 @@ function MonthNavigator({
       boxShadow: '0 22px 60px rgba(15,23,42,.22)',
       padding: 14
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 12
+  }, /*#__PURE__*/React.createElement(PeriodPicker, {
+    grain: grain,
+    anchor: anchor,
+    accent: accent,
+    onPick: dt => {
+      PeriodStore.setAnchor(dt);
+      setPickOpen(false);
     }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setPickYear(y => y - 1),
+  }))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => PeriodStore.step(1),
+    "aria-label": "Periodo siguiente",
+    disabled: resolved.noStep,
     style: {
       ...stepBtn,
-      width: 30,
-      height: 30
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "material-icons",
-    style: {
-      fontSize: 18
-    }
-  }, "chevron_left")), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontFamily: 'var(--font-display)',
-      fontWeight: 700,
-      fontSize: 15,
-      color: 'var(--fg-1)'
-    }
-  }, pickYear), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setPickYear(y => y + 1),
-    style: {
-      ...stepBtn,
-      width: 30,
-      height: 30
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "material-icons",
-    style: {
-      fontSize: 18
-    }
-  }, "chevron_right"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(4, 1fr)',
-      gap: 6
-    }
-  }, MN_ABBR.map((ab, i) => {
-    const on = i === month.m && pickYear === month.y;
-    const today = i === MN_TODAY.m && pickYear === MN_TODAY.y;
-    return /*#__PURE__*/React.createElement("button", {
-      key: ab,
-      onClick: () => {
-        MonthStore.set({
-          m: i,
-          y: pickYear
-        });
-        setOpen(false);
-      },
-      onMouseEnter: e => {
-        if (!on) e.currentTarget.style.background = 'var(--surface-2)';
-      },
-      onMouseLeave: e => {
-        if (!on) e.currentTarget.style.background = 'transparent';
-      },
-      style: {
-        position: 'relative',
-        border: 0,
-        cursor: 'pointer',
-        padding: '10px 0',
-        borderRadius: 'var(--radius-md)',
-        background: on ? accent : 'transparent',
-        color: on ? '#fff' : 'var(--fg-1)',
-        fontFamily: 'var(--font-body)',
-        fontSize: 13,
-        fontWeight: on ? 700 : 500,
-        transition: 'background 120ms'
-      }
-    }, t(ab), today && !on && /*#__PURE__*/React.createElement("span", {
-      style: {
-        position: 'absolute',
-        bottom: 5,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: 4,
-        height: 4,
-        borderRadius: 999,
-        background: accent
-      }
-    }));
-  })))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => step(1),
-    "aria-label": "Mes siguiente",
-    disabled: isFuture,
-    style: {
-      ...stepBtn,
-      opacity: isFuture ? 0.4 : 1,
-      cursor: isFuture ? 'not-allowed' : 'pointer'
+      opacity: resolved.noStep ? 0.4 : 1,
+      cursor: resolved.noStep ? 'not-allowed' : 'pointer'
     },
     onMouseEnter: e => {
-      if (!isFuture) hoverOn(e);
+      if (!resolved.noStep) hoverOn(e);
     },
     onMouseLeave: hoverOff
   }, /*#__PURE__*/React.createElement("span", {
@@ -18794,9 +21680,7 @@ function MonthNavigator({
       fontSize: 20
     }
   }, "chevron_right")), !isToday && /*#__PURE__*/React.createElement("button", {
-    onClick: () => MonthStore.set({
-      ...MN_TODAY
-    }),
+    onClick: () => PeriodStore.today(),
     style: {
       marginLeft: 2,
       display: 'inline-flex',
@@ -18817,10 +21701,12 @@ function MonthNavigator({
     style: {
       fontSize: 17
     }
-  }, "today"), t('Hoy')));
+  }, "today"), mnT('Hoy')));
 }
 Object.assign(window, {
-  MonthNavigator
+  MonthNavigator,
+  periodResolve,
+  periodStep
 });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/lite-desktop/organisms/MonthNavigator.jsx", error: String((e && e.message) || e) }); }
 
@@ -23050,6 +25936,8 @@ function ProShell() {
   const [notifOpen, setNotifOpen] = useProState(false);
   const [detailTx, setDetailTx] = useProState(null);
   const [onbOpen, setOnbOpen] = useProState(false);
+  const [navOpen, setNavOpen] = useProState(true); // barra lateral izquierda
+  const [panelOpen, setPanelOpen] = useProState(true); // panel derecho (cuentas)
   const [, setDataVer] = useProState(0);
   React.useEffect(() => {
     window.__owOpenTxDetailDesktop = tx => setDetailTx(tx);
@@ -23087,7 +25975,7 @@ function ProShell() {
       overflow: 'hidden',
       position: 'relative'
     }
-  }, !isMobile && /*#__PURE__*/React.createElement("aside", {
+  }, !isMobile && navOpen && /*#__PURE__*/React.createElement("aside", {
     style: {
       width: 240,
       flexShrink: 0,
@@ -23315,12 +26203,22 @@ function ProShell() {
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, !isMobile && /*#__PURE__*/React.createElement(IconButton, {
+    icon: navOpen ? 'menu_open' : 'menu',
+    ariaLabel: navOpen ? 'Ocultar menú' : 'Mostrar menú',
+    onClick: () => setNavOpen(v => !v)
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
       fontFamily: 'var(--font-display)',
       fontWeight: 700,
       fontSize: 18,
       color: 'var(--fg-1)'
     }
-  }, route === 'profile' ? t('Perfil') : route === 'finprofile' ? t('Mi perfil financiero') : t(PRO_NAV.find(n => n.id === route)?.label) || t('Inicio')), /*#__PURE__*/React.createElement("div", {
+  }, route === 'profile' ? t('Perfil') : route === 'finprofile' ? t('Mi perfil financiero') : t(PRO_NAV.find(n => n.id === route)?.label) || t('Inicio'))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -23383,6 +26281,18 @@ function ProShell() {
       background: 'var(--expense)',
       boxShadow: '0 0 0 2px var(--surface-1)'
     }
+  })), !isMobile && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 1,
+      height: 22,
+      background: 'var(--border-hairline)',
+      margin: '0 2px',
+      flexShrink: 0
+    }
+  }), /*#__PURE__*/React.createElement(IconButton, {
+    icon: "view_sidebar",
+    ariaLabel: panelOpen ? 'Ocultar panel de cuentas' : 'Mostrar panel de cuentas',
+    onClick: () => setPanelOpen(v => !v)
   })))), /*#__PURE__*/React.createElement("main", {
     style: {
       flex: 1,
@@ -23425,7 +26335,7 @@ function ProShell() {
     onGo: setRoute
   }), route === 'finprofile' && /*#__PURE__*/React.createElement(FinancialProfileRoute, {
     onGo: setRoute
-  }))), !isMobile && /*#__PURE__*/React.createElement(AccountsPanel, {
+  }))), !isMobile && panelOpen && /*#__PURE__*/React.createElement(AccountsPanel, {
     hidden: hidden,
     rates: rates
   }), isMobile && /*#__PURE__*/React.createElement(MobileTabBar, {
@@ -26160,7 +29070,7 @@ function TransactionsRoute({
     style: {
       margin: '6px 0 0'
     }
-  }, window.monthLabel(month))), /*#__PURE__*/React.createElement(Card, {
+  }, window.periodLabel ? window.periodLabel() : window.monthLabel(month))), /*#__PURE__*/React.createElement(Card, {
     padding: 16,
     style: {
       display: 'flex',

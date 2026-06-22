@@ -28,6 +28,8 @@ function ProShell() {
   const [notifOpen,      setNotifOpen]      = useProState(false);
   const [detailTx,       setDetailTx]       = useProState(null);
   const [onbOpen,        setOnbOpen]        = useProState(false);
+  const [navOpen,        setNavOpen]        = useProState(true);   // barra lateral izquierda
+  const [panelOpen,      setPanelOpen]      = useProState(true);   // panel derecho (cuentas)
   const [, setDataVer]                      = useProState(0);
 
   React.useEffect(() => {
@@ -47,7 +49,7 @@ function ProShell() {
     <div data-screen-label="Pro Desktop" style={{ display: 'flex', height: '100vh', background: 'var(--bg-canvas)', overflow: 'hidden', position: 'relative' }}>
 
       {/* ── Left sidebar ─────────────────────────────────────────── */}
-      {!isMobile && (
+      {!isMobile && navOpen && (
       <aside style={{ width: 240, flexShrink: 0, background: 'var(--surface-1)', borderRight: '1px solid var(--border-hairline)', display: 'flex', flexDirection: 'column', padding: '24px 16px', boxSizing: 'border-box' }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px 28px' }}>
@@ -102,8 +104,11 @@ function ProShell() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {/* Top bar */}
         <header style={{ height: 60, flexShrink: 0, padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-1)', borderBottom: '1px solid var(--border-hairline)' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--fg-1)' }}>
-            {route === 'profile' ? t('Perfil') : route === 'finprofile' ? t('Mi perfil financiero') : (t(PRO_NAV.find(n => n.id === route)?.label) || t('Inicio'))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {!isMobile && <IconButton icon={navOpen ? 'menu_open' : 'menu'} ariaLabel={navOpen ? 'Ocultar menú' : 'Mostrar menú'} onClick={() => setNavOpen(v => !v)} />}
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--fg-1)' }}>
+              {route === 'profile' ? t('Perfil') : route === 'finprofile' ? t('Mi perfil financiero') : (t(PRO_NAV.find(n => n.id === route)?.label) || t('Inicio'))}
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button onClick={openQuick} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', border: 0, cursor: 'pointer', borderRadius: 'var(--radius-pill)', background: 'var(--info)', color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 14px rgba(14,165,233,.30)' }}>
@@ -116,6 +121,12 @@ function ProShell() {
               <IconButton icon="notifications" ariaLabel="Notificaciones" onClick={() => setNotifOpen(o => !o)} />
               <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, background: 'var(--expense)', boxShadow: '0 0 0 2px var(--surface-1)' }} />
             </div>
+            {!isMobile && (
+              <React.Fragment>
+                <span style={{ width: 1, height: 22, background: 'var(--border-hairline)', margin: '0 2px', flexShrink: 0 }} />
+                <IconButton icon="view_sidebar" ariaLabel={panelOpen ? 'Ocultar panel de cuentas' : 'Mostrar panel de cuentas'} onClick={() => setPanelOpen(v => !v)} />
+              </React.Fragment>
+            )}
           </div>
         </header>
 
@@ -140,7 +151,7 @@ function ProShell() {
       </div>
 
       {/* ── Right panel: Accounts + Debts (desktop only) ─────── */}
-      {!isMobile && <AccountsPanel hidden={hidden} rates={rates} />}
+      {!isMobile && panelOpen && <AccountsPanel hidden={hidden} rates={rates} />}
 
       {/* ── Mobile bottom tab bar ─────────────────────────────── */}
       {isMobile && (

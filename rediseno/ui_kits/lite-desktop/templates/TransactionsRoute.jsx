@@ -161,7 +161,7 @@ function TransactionsRoute({ hidden }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
         <Eyebrow>{t("Transacciones")}</Eyebrow>
-        <h1 className="t-h1" style={{ margin: '6px 0 0' }}>{window.monthLabel(month)}</h1>
+        <h1 className="t-h1" style={{ margin: '6px 0 0' }}>{window.periodLabel ? window.periodLabel() : window.monthLabel(month)}</h1>
       </div>
 
       {/* ── Filtro inteligente ─────────────────────────────────────── */}
