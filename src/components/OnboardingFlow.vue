@@ -79,8 +79,8 @@
               </div>
             </div>
             <div class="ob__level-badge" :class="`ob__level-badge--${levelKey}`">
-              <q-icon :name="LEVELS[levelKey].icon" size="16px" />
-              {{ LEVELS[levelKey].label }}
+              <q-icon :name="LEVELS[levelKey]!.icon" size="16px" />
+              {{ LEVELS[levelKey]!.label }}
             </div>
             <h2 class="t-h1 ob__done-title">¡Tu perfil está listo!</h2>
             <p class="ob__done-sub">

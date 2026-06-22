@@ -222,7 +222,6 @@ function isSemesterActive(s: number) {
 }
 
 function pickMonth(mo: number) {
-  const d = new Date(pickerYear.value, mo, 1);
   period.setAnchor(`${pickerYear.value}-${String(mo+1).padStart(2,'0')}-01`);
   pickOpen.value = false;
 }
