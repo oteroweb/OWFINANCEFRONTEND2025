@@ -873,21 +873,6 @@ const heroEyebrow = computed(() => {
   return 'Analitica de gastos';
 });
 
-const heroTitle = computed(() => {
-  if (isLegacyLayout.value) return 'Navegador financiero por cantaro';
-  if (isLiteLayout.value) return 'Vista rapida por categoria';
-  return 'Analisis balanceado del periodo';
-});
-
-const heroCopy = computed(() => {
-  if (isLegacyLayout.value) {
-    return 'Mantiene chart, filtros y desglose jerarquico visibles para revisar cantaros, categorias y cuentas sin cambiar de contexto.';
-  }
-  if (isLiteLayout.value) {
-    return 'Reduce ruido visual y prioriza filtros compactos, agrupaciones simples y un recorrido rapido por los movimientos del periodo.';
-  }
-  return 'Equilibra lectura ejecutiva y detalle navegable. Cada fila muestra el monto en tu moneda base y la tasa usada para esa transaccion.';
-});
 
 function getRatePerUsd(code: string): number {
   const normalized = (code || 'USD').toUpperCase();

@@ -260,11 +260,6 @@ function openDetail(jar: JarItem) {
   showDetail.value = true;
 }
 
-function goToFullJars() {
-  showDetail.value = false;
-  void router.push('/user/jars');
-}
-
 // ── Edit ──────────────────────────────────────────────────────────────────
 const showEditSheet = ref(false);
 const editJar = ref<{ id: number; name: string; percent: number; color: string } | null>(null);
@@ -303,15 +298,17 @@ function confirmDeleteJar(jar: JarItem | null) {
     message: `¿Eliminar "${jar.name}"? Esta acción no se puede deshacer.`,
     cancel: { label: 'Cancelar', flat: true },
     ok: { label: 'Eliminar', color: 'negative', unelevated: true },
-  }).onOk(async () => {
-    try {
-      await api.delete(`/jars/${jar.id}`);
-      showDetail.value = false;
-      await loadJars();
-      $q.notify({ type: 'positive', message: 'Cántaro eliminado' });
-    } catch {
-      $q.notify({ type: 'negative', message: 'Error al eliminar' });
-    }
+  }).onOk(() => {
+    void (async () => {
+      try {
+        await api.delete(`/jars/${jar.id}`);
+        showDetail.value = false;
+        await loadJars();
+        $q.notify({ type: 'positive', message: 'Cántaro eliminado' });
+      } catch {
+        $q.notify({ type: 'negative', message: 'Error al eliminar' });
+      }
+    })();
   });
 }
 
