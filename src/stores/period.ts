@@ -183,6 +183,10 @@ export const usePeriodStore = defineStore('period', () => {
 		return p;
 	});
 
+	function setAnchor(isoDate: string) {
+		state.value.anchor = isoDate;
+	}
+
 	const signature = computed(
 		() => `${state.value.type}|${state.value.anchor}|${state.value.customFrom}|${state.value.customTo}`
 	);
@@ -190,6 +194,7 @@ export const usePeriodStore = defineStore('period', () => {
 	return {
 		state,
 		setType,
+		setAnchor,
 		setCustomRange,
 		shift,
 		label,

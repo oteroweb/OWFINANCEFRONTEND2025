@@ -1,29 +1,11 @@
 <template>
   <q-page class="lite-page">
     <div class="lite-page__container">
-      <!-- Header con navegación de mes -->
-      <div class="tx-month-bar">
+      <!-- Header + Period navigator -->
+      <div>
         <span class="t-eyebrow">Transacciones</span>
-        <div class="tx-month-nav">
-          <button class="tx-month-btn" @click="prevMonth">
-            <q-icon name="chevron_left" size="20px" />
-          </button>
-          <h1 class="t-h1 tx-month-label">{{ monthLabel }}</h1>
-          <button class="tx-month-btn" @click="nextMonth">
-            <q-icon name="chevron_right" size="20px" />
-          </button>
-        </div>
-      </div>
-
-      <!-- Chips de tipo (siempre visibles) -->
-      <div class="type-chips-row">
-        <button
-          v-for="t in typeOptions"
-          :key="t.id"
-          class="type-chip"
-          :class="{ 'type-chip--active': type === t.id }"
-          @click="type = t.id"
-        >{{ t.label }}</button>
+        <h1 class="t-h1" style="margin: 6px 0 16px; text-transform: capitalize;">{{ period.label }}</h1>
+        <PeriodNavigator :compact="true" />
       </div>
 
       <!-- Filtro inteligente -->
@@ -59,6 +41,18 @@
               <div class="filter-panel__header">
                 <span class="filter-panel__title">Filtro inteligente</span>
                 <button v-if="activeCount > 0" class="filter-panel__clear" @click="clearAll">Limpiar todo</button>
+              </div>
+
+              <div class="filter-panel__field">
+                <span class="filter-panel__label">Tipo</span>
+                <div class="type-toggle">
+                  <button
+                    v-for="t in typeOptions"
+                    :key="t.id"
+                    :class="{ active: type === t.id }"
+                    @click="type = t.id"
+                  >{{ t.label }}</button>
+                </div>
               </div>
 
               <div class="filter-panel__field">
@@ -231,18 +225,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
+import { usePeriodStore } from 'stores/period';
 import TxDropdown from './TxDropdown.vue';
+import PeriodNavigator from 'components/PeriodNavigator.vue';
 
 defineOptions({ name: 'LiteTransactionsView' });
 
 const ui = useUiStore();
+const period = usePeriodStore();
 const isHidden = computed(() => ui.hideValues);
 
 // ─── State ──────────────────────────────────────────────────────────
-const type = ref<'all' | 'income' | 'expense' | 'jars'>('all');
+const type = ref<'all' | 'income' | 'expense'>('all');
 const jar = ref<string>('all');
 const category = ref<string>('all');
 const day = ref<string>('all');
@@ -279,7 +276,6 @@ const typeOptions = [
   { id: 'all' as const, label: 'Todas' },
   { id: 'income' as const, label: 'Ingresos' },
   { id: 'expense' as const, label: 'Gastos' },
-  { id: 'jars' as const, label: 'Cántaros' },
 ];
 
 const amountPresets = [
@@ -331,8 +327,7 @@ const dayOptions = computed<TxOption[]>(() => {
 const filtered = computed(() => {
   return allTransactions.value.filter((t) => {
     if (type.value === 'income' && t.type !== 'income') return false;
-    if (type.value === 'expense' && (t.type !== 'expense' || t.category === 'Jar' || t.category === 'Transfer')) return false;
-    if (type.value === 'jars' && t.category !== 'Jar' && t.category !== 'Transfer') return false;
+    if (type.value === 'expense' && t.type !== 'expense') return false;
     if (jar.value === '__none' && t.jarName) return false;
     if (jar.value !== 'all' && jar.value !== '__none' && t.jarName !== jar.value) return false;
     if (category.value !== 'all' && t.category !== category.value) return false;
@@ -425,42 +420,46 @@ function formatDateShort(dateStr: string | Date): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-const currentDate = ref(new Date());
-
-const monthLabel = computed(() => {
-  return currentDate.value.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-});
-
-function prevMonth() {
-  const d = new Date(currentDate.value);
-  d.setDate(1);
-  d.setMonth(d.getMonth() - 1);
-  currentDate.value = d;
-  void loadTransactions();
-}
-
-function nextMonth() {
-  const d = new Date(currentDate.value);
-  d.setDate(1);
-  d.setMonth(d.getMonth() + 1);
-  currentDate.value = d;
-  void loadTransactions();
+// ─── Period → API params ────────────────────────────────────────────
+function buildPeriodParams(): Record<string, string | number> {
+  const s = period.state;
+  const base = { per_page: '500', page: '1', sort_by: 'date', descending: 'true' } as Record<string, string | number>;
+  if (s.type === 'all') return base;
+  if (s.type === 'custom' && s.customFrom && s.customTo) {
+    return { ...base, date_from: s.customFrom + ' 00:00:00', date_to: s.customTo + ' 23:59:59' };
+  }
+  const a = new Date(s.anchor + 'T00:00:00');
+  const y = a.getFullYear();
+  const m = a.getMonth() + 1;
+  switch (s.type) {
+    case 'year':
+      return { ...base, period: 'year', year: String(y) };
+    case 'quarter':
+      return { ...base, period: 'quarter', year: String(y), quarter: String(Math.ceil(m / 3)) };
+    case 'semester':
+      return { ...base, period: 'semester', year: String(y), semester: String(m <= 6 ? 1 : 2) };
+    case 'fortnight':
+      return { ...base, period: 'fortnight', year: String(y), month: String(m), fortnight: String(a.getDate() <= 15 ? 1 : 2) };
+    case 'week': {
+      const mon = new Date(s.anchor + 'T00:00:00');
+      const wd = (mon.getDay() + 6) % 7;
+      mon.setDate(mon.getDate() - wd);
+      const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      return { ...base, date_from: fmt(mon) + ' 00:00:00', date_to: fmt(sun) + ' 23:59:59' };
+    }
+    case 'day':
+      return { ...base, date_from: s.anchor + ' 00:00:00', date_to: s.anchor + ' 23:59:59' };
+    default:
+      return { ...base, period: 'month', year: String(y), month: String(m) };
+  }
 }
 
 // ─── Data loading ───────────────────────────────────────────────────
 async function loadTransactions() {
   loading.value = true;
   try {
-    const d = currentDate.value;
-    const params = {
-      period: 'month',
-      year: String(d.getFullYear()),
-      month: String(d.getMonth() + 1),
-      per_page: '500',
-      page: '1',
-      sort_by: 'date',
-      descending: 'true',
-    };
+    const params = buildPeriodParams();
     const res = await api.get('/transactions', { params });
     const data = res.data?.data;
     const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[]) : [];
@@ -508,6 +507,9 @@ async function loadTransactions() {
 }
 
 function onTxSaved() { void loadTransactions(); }
+
+// Recargar cuando cambia el periodo
+watch(() => period.signature, () => void loadTransactions());
 
 onMounted(() => {
   void loadTransactions();
@@ -1036,72 +1038,4 @@ onUnmounted(() => {
   }
 }
 
-/* ── MonthBar ─────────────────────────────────────────────────────── */
-.tx-month-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tx-month-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tx-month-label {
-  margin: 0;
-  flex: 1;
-  text-transform: capitalize;
-}
-
-.tx-month-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-md, 8px);
-  background: var(--surface-2, #f1f5f9);
-  color: var(--fg-2, #64748b);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 120ms;
-
-  &:hover { background: var(--surface-3, #e2e8f0); color: var(--fg-1); }
-}
-
-/* ── Type chips row (siempre visible) ─────────────────────────────── */
-.type-chips-row {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
-
-  &::-webkit-scrollbar { display: none; }
-}
-
-.type-chip {
-  flex-shrink: 0;
-  border: none;
-  cursor: pointer;
-  padding: 8px 16px;
-  border-radius: var(--radius-pill, 999px);
-  background: var(--surface-1, #fff);
-  color: var(--fg-1, #0f172a);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
-  box-shadow: var(--shadow-card, 0 1px 4px rgba(0,0,0,.08));
-  transition: background 120ms, color 120ms;
-
-  &--active {
-    background: var(--brand-primary, #2d4da6);
-    color: #fff;
-    font-weight: 600;
-    box-shadow: none;
-  }
-}
 </style>
