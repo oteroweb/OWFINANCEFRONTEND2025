@@ -44,10 +44,14 @@
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="activeJars.length === 0" class="empty-card">
-        <q-icon name="savings" size="40px" color="grey-5" />
-        <p class="t-body">No tienes cántaros activos.</p>
-        <button class="ghost-btn" @click="openAddSheet">Crear primer cántaro</button>
+      <div v-else-if="activeJars.length === 0" class="entry-gate">
+        <q-icon name="water" size="48px" style="color: var(--brand-primary); opacity: 0.4;" />
+        <h2>Tus cántaros están vacíos</h2>
+        <p>Registra un ingreso para distribuirlo entre tus cántaros.</p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+          <button class="add-btn" @click="ui.openSmartModal('write', 'income')">+ Registrar ingreso</button>
+          <button class="ghost-btn" @click="openAddSheet">Crear cántaro</button>
+        </div>
       </div>
 
       <!-- Jar list (spec: vertical rows) -->
@@ -578,7 +582,7 @@ onMounted(() => { void loadJars(); });
   }
 }
 
-// ── Empty ──
+// ── Empty / Entry gate ──
 .empty-card {
   background: var(--surface-1, #fff);
   border-radius: var(--radius-lg, 16px);
@@ -589,6 +593,34 @@ onMounted(() => { void loadJars(); });
   gap: 12px;
   text-align: center;
   box-shadow: var(--shadow-card);
+}
+
+.entry-gate {
+  background: var(--surface-1, #fff);
+  border-radius: var(--radius-xl, 20px);
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+
+  h2 {
+    font-family: var(--font-display, 'DM Sans', sans-serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--fg-1, #0f172a);
+  }
+
+  p {
+    color: var(--fg-2, #64748b);
+    margin: 0;
+    max-width: 280px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
 }
 
 .ghost-btn {

@@ -129,8 +129,16 @@
         </div>
       </div>
 
-      <!-- Lista -->
-      <div v-if="filtered.length === 0" class="lite-card" style="padding: 48px 20px; text-align: center;">
+      <!-- Lista: usuario nuevo sin datos -->
+      <div v-if="!loading && allTransactions.length === 0" class="entry-gate">
+        <q-icon name="receipt_long" size="48px" style="color: var(--brand-primary); opacity: 0.4;" />
+        <h2>Aún no hay movimientos</h2>
+        <p>Agrega tu primer ingreso o gasto para empezar.</p>
+        <button class="entry-gate__btn" @click="ui.openSmartModal()">+ Primer movimiento</button>
+      </div>
+
+      <!-- Lista: filtro sin resultados -->
+      <div v-else-if="filtered.length === 0" class="lite-card" style="padding: 48px 20px; text-align: center;">
         <q-icon name="search_off" size="36px" color="var(--fg-3)" />
         <p class="t-body" style="color: var(--fg-2); margin-top: 10px;">Ningún movimiento coincide con estos filtros.</p>
       </div>
@@ -933,6 +941,52 @@ onUnmounted(() => {
     right: auto;
     left: 0;
     width: calc(100vw - 32px);
+  }
+}
+
+// ── Entry gate (sin datos) ────────────────────────────────────────────
+.entry-gate {
+  background: var(--surface-1);
+  border-radius: var(--radius-xl);
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--fg-1);
+  }
+
+  p {
+    color: var(--fg-2);
+    margin: 0;
+    max-width: 280px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    border: 0;
+    cursor: pointer;
+    border-radius: var(--radius-pill);
+    background: var(--brand-primary);
+    color: var(--fg-on-brand, #fff);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 700;
+    transition: opacity 140ms;
+    &:hover { opacity: 0.9; }
   }
 }
 

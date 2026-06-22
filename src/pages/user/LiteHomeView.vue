@@ -33,8 +33,16 @@
         />
       </div>
 
+      <!-- Entry gate — usuario nuevo sin datos -->
+      <div v-else-if="isNewUser" class="entry-gate">
+        <q-icon name="account_balance_wallet" size="48px" style="color: var(--brand-primary); opacity: 0.4;" />
+        <h2>¡Bienvenido a OW Finance!</h2>
+        <p>Registra tu primer movimiento para ver tus finanzas aquí.</p>
+        <button class="lite-home__add-btn" @click="ui.openSmartModal()">+ Registrar movimiento</button>
+      </div>
+
       <!-- Hero Balance -->
-      <section class="lite-home__hero">
+      <section v-else class="lite-home__hero">
         <div v-if="balanceLoading" class="lite-home__skeleton">
           <div class="lite-home__skeleton-line" style="width: 120px; height: 14px;" />
           <div class="lite-home__skeleton-line" style="width: 280px; height: 56px; margin-top: 12px;" />
@@ -59,6 +67,9 @@
               <span>Agregar</span>
             </button>
           </div>
+
+          <!-- Timestamp asOf -->
+          <p v-if="lastUpdated" class="lite-home__as-of">Actualizado · {{ lastUpdated }}</p>
 
           <!-- KPIs -->
           <div class="lite-home__kpis">
@@ -223,7 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
@@ -246,9 +257,17 @@ const monthlyIncome = ref(0);
 const monthlyExpense = ref(0);
 const monthlyDelta = ref<number | null>(null);
 const accountsCount = ref<number | null>(null);
+const lastUpdated = ref<string | null>(null);
+let _lastUpdatedTimer: ReturnType<typeof setInterval> | null = null;
 
 const isHidden = computed(() => ui.hideValues);
 const hasNoAccounts = computed(() => accountsCount.value === 0);
+const isNewUser = computed(() =>
+  !balanceLoading.value &&
+  !transactionsLoading.value &&
+  balanceSummary.value.total_global_balance === 0 &&
+  recentTransactions.value.length === 0
+);
 
 // ─── Jars ───────────────────────────────────────────────────────────
 interface JarItem {
@@ -339,33 +358,65 @@ async function loadBalanceSummary() {
   }
 }
 
+function _sumMonthTxs(list: Record<string, unknown>[]): { income: number; expense: number } {
+  let income = 0;
+  let expense = 0;
+  for (const tx of list) {
+    const amount = Number(tx.amount ?? 0);
+    const absAmount = Math.abs(amount);
+    const txClass = classifyTx(tx, amount);
+    if (txClass === 'transfer') continue;
+    if (txClass === 'income') income += absAmount;
+    if (txClass === 'expense') expense += absAmount;
+  }
+  return { income, expense };
+}
+
 async function loadMonthSummary() {
   const now = new Date();
-  const params = {
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const paramsNow = {
     period: 'month',
     year: String(now.getFullYear()),
     month: String(now.getMonth() + 1),
     per_page: '500',
   };
+  const paramsPrev = {
+    period: 'month',
+    year: String(prevDate.getFullYear()),
+    month: String(prevDate.getMonth() + 1),
+    per_page: '500',
+  };
   try {
-    const res = await api.get('/transactions', { params });
-    const data = res.data?.data;
-    const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[]) : [];
+    const [resNow, resPrev] = await Promise.allSettled([
+      api.get('/transactions', { params: paramsNow }),
+      api.get('/transactions', { params: paramsPrev }),
+    ]);
 
-    let income = 0;
-    let expense = 0;
-    for (const tx of list) {
-      const amount = Number(tx.amount ?? 0);
-      const absAmount = Math.abs(amount);
-      const txClass = classifyTx(tx, amount);
-      if (txClass === 'transfer') continue;
-      if (txClass === 'income') income += absAmount;
-      if (txClass === 'expense') expense += absAmount;
-    }
+    const dataNow = resNow.status === 'fulfilled' ? resNow.value.data?.data : null;
+    const listNow: Record<string, unknown>[] = Array.isArray(dataNow) ? dataNow : Array.isArray(dataNow?.data) ? (dataNow.data as Record<string, unknown>[]) : [];
+    const { income, expense } = _sumMonthTxs(listNow);
     monthlyIncome.value = income;
     monthlyExpense.value = expense;
-    // Simulated delta (would need historical comparison)
-    monthlyDelta.value = income > 0 ? ((income - expense) / income) * 100 : 0;
+
+    // Compute real MoM delta on global balance proxy (income - expense)
+    if (resPrev.status === 'fulfilled') {
+      const dataPrev = resPrev.value.data?.data;
+      const listPrev: Record<string, unknown>[] = Array.isArray(dataPrev) ? dataPrev : Array.isArray(dataPrev?.data) ? (dataPrev.data as Record<string, unknown>[]) : [];
+      const { income: incPrev, expense: expPrev } = _sumMonthTxs(listPrev);
+      const netNow = income - expense;
+      const netPrev = incPrev - expPrev;
+      if (netPrev !== 0) {
+        monthlyDelta.value = ((netNow - netPrev) / Math.abs(netPrev)) * 100;
+      } else {
+        monthlyDelta.value = null;
+      }
+    } else {
+      monthlyDelta.value = null;
+    }
+
+    // Stamp last-updated time
+    lastUpdated.value = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
   } catch (err) {
     console.warn('[LiteHome] Month summary error:', err);
   }
@@ -499,6 +550,10 @@ onMounted(() => {
     loadDebts(),
   ]);
 });
+
+onUnmounted(() => {
+  if (_lastUpdatedTimer !== null) clearInterval(_lastUpdatedTimer);
+});
 </script>
 
 <style scoped lang="scss">
@@ -618,6 +673,15 @@ onMounted(() => {
     &:active {
       transform: scale(0.98);
     }
+  }
+
+  &__as-of {
+    margin: 0 0 16px;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-3);
+    letter-spacing: 0.02em;
   }
 
   &__kpis {
@@ -807,6 +871,35 @@ onMounted(() => {
 @keyframes skeleton-pulse {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+// ── Entry gate (usuario nuevo sin datos) ──
+.entry-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 24px;
+  gap: 12px;
+  background: var(--surface-1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--fg-1);
+  }
+
+  p {
+    color: var(--fg-2);
+    margin: 0;
+    max-width: 280px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
 }
 
 @media (max-width: 768px) {

@@ -67,6 +67,10 @@
             <label class="profile-page__label">Ingreso mensual</label>
             <q-input v-model.number="form.monthly_income" type="number" outlined dense prefix="$" min="0" />
           </div>
+          <div class="profile-page__field">
+            <label class="profile-page__label">Fecha de nacimiento</label>
+            <q-input v-model="form.birthdate" type="date" outlined dense />
+          </div>
         </div>
       </div>
 
@@ -113,6 +117,18 @@
         </div>
       </div>
 
+      <!-- Financial profile link -->
+      <router-link to="/user/financial-profile" class="profile-page__nav-link">
+        <div class="profile-page__nav-link-content">
+          <q-icon name="account_balance_wallet" size="20px" class="profile-page__nav-link-icon" />
+          <div class="profile-page__nav-link-text">
+            <span class="profile-page__nav-link-title">Mi perfil financiero</span>
+            <span class="profile-page__nav-link-sub">Ingresos, metas y asesor IA</span>
+          </div>
+        </div>
+        <q-icon name="chevron_right" size="20px" class="profile-page__nav-link-chevron" />
+      </router-link>
+
       <!-- Actions -->
       <div class="profile-page__actions">
         <q-btn flat label="Cancelar" @click="void router.push('/user/config')" />
@@ -156,10 +172,11 @@ const form = ref({
   city: '',
   country: '',
   monthly_income: 0,
+  birthdate: '',
   password: '',
 });
 
-const completenessFields = ['name', 'email', 'phone', 'monthly_income'];
+const completenessFields = ['name', 'email', 'phone', 'monthly_income', 'birthdate'];
 const pct = computed(() => {
   const filled = completenessFields.filter(k => {
     const v = form.value[k as keyof typeof form.value];
@@ -181,6 +198,7 @@ onMounted(async () => {
     form.value.city = u.city ?? '';
     form.value.country = u.country ?? '';
     form.value.monthly_income = u.monthly_income ?? 0;
+    form.value.birthdate = u.birthdate ?? '';
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar el perfil' });
   }
@@ -197,6 +215,7 @@ async function save() {
       city: form.value.city,
       country: form.value.country,
       monthly_income: form.value.monthly_income,
+      birthdate: form.value.birthdate || null,
     };
     if (form.value.password) payload.password = form.value.password;
 
@@ -395,6 +414,56 @@ async function save() {
     font-size: 12.5px;
     font-weight: 600;
     color: var(--fg-2);
+  }
+
+  &__nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface-1);
+    border: 1px solid var(--border-hairline, rgba(0,0,0,.08));
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    &:hover { background: var(--surface-2); }
+  }
+
+  &__nav-link-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  &__nav-link-icon {
+    color: var(--brand-primary);
+    flex-shrink: 0;
+  }
+
+  &__nav-link-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__nav-link-title {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg-1);
+  }
+
+  &__nav-link-sub {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--fg-2);
+  }
+
+  &__nav-link-chevron {
+    color: var(--fg-3, var(--fg-2));
+    flex-shrink: 0;
   }
 
   &__actions {

@@ -53,6 +53,15 @@
           <div class="apref__toggle" :class="{ 'apref__toggle--on': ui.hideValues }" />
         </div>
 
+        <div class="apref__row" @click="toggleNotif('overBudget')">
+          <span class="material-icons apref__row-icon">account_balance_wallet</span>
+          <div class="apref__row-text">
+            <span>Presupuesto estricto</span>
+            <span class="apref__row-hint">Alertas cuando superas el límite del cántaro</span>
+          </div>
+          <div class="apref__toggle" :class="{ 'apref__toggle--on': notifPrefs.overBudget }" />
+        </div>
+
         <div class="apref__row" style="cursor:pointer" @click="router.push('/user/accounts')">
           <span class="material-icons apref__row-icon">payments</span>
           <div class="apref__row-text">
@@ -82,10 +91,10 @@
         </button>
         <!-- Repetir onboarding -->
         <button class="lite-config__nav-item" @click="showOnboarding = true">
-          <q-icon name="route" size="20px" />
+          <q-icon name="restart_alt" size="20px" />
           <div class="lite-config__nav-text">
-            <span class="lite-config__nav-label">Configuración inicial</span>
-            <span class="lite-config__nav-hint">Volver a configurar tu perfil IA</span>
+            <span class="lite-config__nav-label">Repetir configuración inicial</span>
+            <span class="lite-config__nav-hint">Vuelve a ver el asistente de bienvenida</span>
           </div>
           <q-icon name="chevron_right" size="18px" />
         </button>
@@ -118,14 +127,6 @@
             <span class="lite-config__nav-hint">Cuando un cántaro no se mueve</span>
           </div>
           <div class="apref__toggle" :class="{ 'apref__toggle--on': notifPrefs.idleAlerts }" />
-        </div>
-        <div class="lite-config__nav-item lite-config__nav-item--toggle" @click="toggleNotif('overBudget')">
-          <q-icon name="notifications" size="20px" />
-          <div class="lite-config__nav-text">
-            <span class="lite-config__nav-label">Alerta de sobrepresupuesto</span>
-            <span class="lite-config__nav-hint">Si gastas más de lo asignado</span>
-          </div>
-          <div class="apref__toggle" :class="{ 'apref__toggle--on': notifPrefs.overBudget }" />
         </div>
       </div>
 
