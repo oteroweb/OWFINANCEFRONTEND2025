@@ -225,14 +225,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 
 defineOptions({ name: 'LiteJarsView' });
 
-const router = useRouter();
 const $q = useQuasar();
 const ui = useUiStore();
 const isHidden = computed(() => ui.hideValues);
