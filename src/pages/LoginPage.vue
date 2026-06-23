@@ -83,6 +83,19 @@
                 <input id="i-pass" v-model="password" :type="showPassword ? 'text' : 'password'" :placeholder="showPassword ? 'password' : '••••••••'" :autocomplete="mode === 'register' ? 'new-password' : 'current-password'" />
                 <span class="material-icons eye" @click="showPassword = !showPassword">{{ showPassword ? 'visibility' : 'visibility_off' }}</span>
               </div>
+              <!-- Password strength meter — visible only on register -->
+              <div v-if="mode === 'register' && password.length > 0" class="pw-strength">
+                <div class="pw-strength__bar">
+                  <div
+                    v-for="i in 4"
+                    :key="i"
+                    class="pw-strength__seg"
+                    :class="{ 'pw-strength__seg--active': i <= pwStrength.score }"
+                    :style="i <= pwStrength.score ? { background: pwStrength.color } : {}"
+                  />
+                </div>
+                <span class="pw-strength__label" :style="{ color: pwStrength.color }">{{ pwStrength.label }}</span>
+              </div>
             </div>
 
             <div v-if="mode === 'login'" class="row-between">
@@ -121,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
@@ -139,6 +152,18 @@ const name = ref('');
 const mode = ref<'login' | 'register'>('login');
 const showPassword = ref(false);
 const rememberMe = ref(true);
+
+const pwStrength = computed(() => {
+  const p = password.value;
+  let score = 0;
+  if (p.length >= 8) score++;
+  if (/[A-Z]/.test(p)) score++;
+  if (/[0-9]/.test(p)) score++;
+  if (/[^A-Za-z0-9]/.test(p)) score++;
+  const labels = ['Muy débil', 'Débil', 'Aceptable', 'Fuerte'];
+  const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
+  return { score, label: labels[score - 1] ?? 'Muy débil', color: colors[score - 1] ?? '#ef4444' };
+});
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
@@ -222,3 +247,37 @@ async function submit() {
 
 // Biometric login logic preserved in useBiometric composable
 </script>
+
+<style scoped>
+.pw-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.pw-strength__bar {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.pw-strength__seg {
+  height: 4px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--surface-3, #e5e7eb);
+  transition: background 200ms;
+
+  &--active {
+    /* color set via :style binding */
+  }
+}
+
+.pw-strength__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 200ms;
+}
+</style>
