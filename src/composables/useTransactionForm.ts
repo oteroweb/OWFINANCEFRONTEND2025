@@ -105,7 +105,7 @@ export function useTransactionForm() {
   function reloadProviders() { providersLoaded = false; void ensureProvidersLoaded(); }
 
   // ===== Accounts =====
-  interface AccountOption { id: number; name: string; balance?: number; currencySymbol?: string; currencyCode?: string; currencyId?: number | null }
+  interface AccountOption { id: number; name: string; isDefault?: boolean; balance?: number; currencySymbol?: string; currencyCode?: string; currencyId?: number | null }
   const accountOptions = ref<AccountOption[]>([]);
    const allAccounts = ref<AccountOption[]>([]);
   let accountsLoaded = false;
@@ -128,7 +128,7 @@ export function useTransactionForm() {
     try {
       const r = await api.get('/accounts');
       // Tipar la respuesta de cuentas mínimamente
-      interface RawAccount { id: number; name: string; balance?: number; balance_cached?: number; currency?: { id?: number; code?: string; symbol?: string }; currency_symbol?: string; currency_code?: string; currency_id?: number }
+      interface RawAccount { id: number; name: string; is_default?: boolean; balance?: number; balance_cached?: number; currency?: { id?: number; code?: string; symbol?: string }; currency_symbol?: string; currency_code?: string; currency_id?: number }
       const list = (r.data?.data || r.data) as RawAccount[];
         const mapped: AccountOption[] = (Array.isArray(list) ? list : []).map((a: RawAccount) => ({
         id: a.id,
@@ -137,14 +137,16 @@ export function useTransactionForm() {
         currencySymbol: a.currency?.symbol || a.currency_symbol || '',
         currencyCode: a.currency?.code || a.currency_code || '',
         currencyId: a.currency?.id ?? a.currency_id ?? null,
+        isDefault: a.is_default ?? false,
       }));
         allAccounts.value = mapped;
         accountOptions.value = mapped.slice();
       accountsLoaded = true;
-      // Lite: auto-assign first account as implicit wallet
+      // Lite: auto-assign default account (is_default=true / Billetera) as implicit wallet
       if (isLiteMode.value && !form.value.account_id && mapped.length > 0) {
-        form.value.account_id = mapped[0]!.id;
-        form.value.account_from_id = mapped[0]!.id;
+        const defaultAcc = mapped.find(a => a.isDefault) ?? mapped[0]!;
+        form.value.account_id = defaultAcc.id;
+        form.value.account_from_id = defaultAcc.id;
       }
     } catch (e) {
       console.warn('Error cargando cuentas', e);

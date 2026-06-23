@@ -693,7 +693,7 @@ const defaultCurrencyCode = computed(() => authStore.defaultCurrencyCode);
 const txStore = useTransactionsStore();
 const ui = useUiStore();
 const periodStore = usePeriodStore();
-const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(authStore.user?.layout_mode));
+const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(authStore.settings?.layout_mode ?? authStore.user?.layout_mode));
 const fallbackLayoutModeOption: LayoutModeOption = {
   label: 'Pro',
   value: 'pro',

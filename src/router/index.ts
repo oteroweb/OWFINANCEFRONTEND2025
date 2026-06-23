@@ -52,6 +52,14 @@ export default route(function () {
       return next('/login')
     }
 
+    // Lite mode: /user/accounts is a Pro-only page — redirect to config
+    if (to.path === '/user/accounts') {
+      const layoutMode = auth.settings?.layout_mode ?? auth.user?.layout_mode
+      if (layoutMode === 'lite') {
+        return next('/user/config')
+      }
+    }
+
     next()
   })
 

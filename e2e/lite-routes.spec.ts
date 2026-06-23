@@ -19,37 +19,37 @@ test.describe('Lite Routes — DS-20..25', () => {
   });
 
   test('Transactions route loads', async ({ page }) => {
-    await page.goto('http://localhost:3000/user/transactions');
+    await page.goto('/user/transactions');
     await expect(page).toHaveURL(/\/user\/transactions/);
     await expect(page.locator('body')).toBeVisible();
   });
 
   test('Jars route loads', async ({ page }) => {
-    await page.goto('http://localhost:3000/user/jars');
+    await page.goto('/user/jars');
     await expect(page).toHaveURL(/\/user\/jars/);
     await expect(page.locator('body')).toBeVisible();
   });
 
   test('Config route loads', async ({ page }) => {
-    await page.goto('http://localhost:3000/user/config');
+    await page.goto('/user/config');
     await expect(page).toHaveURL(/\/user\/config/);
     await expect(page.locator('body')).toBeVisible();
   });
 
   test('Expense analysis route loads', async ({ page }) => {
-    await page.goto('http://localhost:3000/user/expense-analysis');
+    await page.goto('/user/expense-analysis');
     await expect(page).toHaveURL(/\/user\/expense-analysis/);
     await expect(page.locator('body')).toBeVisible();
   });
 
   test('Dreams route loads', async ({ page }) => {
-    await page.goto('http://localhost:3000/user/dreams');
+    await page.goto('/user/dreams');
     await expect(page).toHaveURL(/\/user\/dreams/);
     await expect(page.locator('body')).toBeVisible();
   });
 
   test('Debts route loads', async ({ page }) => {
-    await page.goto('http://localhost:3000/user/debts');
+    await page.goto('/user/debts');
     await expect(page).toHaveURL(/\/user\/debts/);
     await expect(page.locator('body')).toBeVisible();
   });

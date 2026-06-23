@@ -8,7 +8,8 @@ export const TEST_USER = {
   password: process.env.PLAYWRIGHT_TEST_PASSWORD ?? 'S$ratoga.1990',
 };
 
-const AUTH_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth.json');
+// Must match the path written by e2e/global-setup.ts (one level up from this helpers/ dir)
+const AUTH_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.auth.json');
 const API_BASE = 'https://owfinances.com/api/v1';
 
 // Read auth from file (written by global-setup). Falls back to direct API call if file missing.
@@ -37,8 +38,9 @@ export async function login(page: Page) {
 
   const auth = await getAuth();
 
-  // Inject token into localStorage so router guard picks it up on next navigation
-  await page.goto('http://localhost:3000/');
+  // Inject token into localStorage so router guard picks it up on next navigation.
+  // Use '/' relative path — Playwright resolves against baseURL (localhost or prod).
+  await page.goto('/');
   await page.evaluate(
     ({ token, user, role }) => {
       localStorage.setItem('token', token);
@@ -49,6 +51,6 @@ export async function login(page: Page) {
   );
 
   // Navigate to app — router guard calls loadFromStorage() and authorizes
-  await page.goto('http://localhost:3000/user');
+  await page.goto('/user');
   await page.waitForURL(/\/user/, { timeout: 15000 });
 }

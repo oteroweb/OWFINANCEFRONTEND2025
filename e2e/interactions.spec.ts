@@ -13,43 +13,48 @@ test.describe('Interaction tests (OWF-114)', () => {
   });
 
   // ── PeriodNavigator ──────────────────────────────────────────────────
+  // PeriodNavigator uses: .pnav__label-text (period label), .pnav__step (prev/next buttons)
   test.describe('PeriodNavigator', () => {
     test('prev/next month buttons change displayed month', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(500);
 
-      // Get current month label
-      const monthLabel = page.locator('.period-label, .month-label, [data-testid="period-label"]').first();
-      const before = await monthLabel.textContent().catch(() => '');
+      const monthLabel = page.locator('.pnav__label-text').first();
+      const before = await monthLabel.textContent({ timeout: 8000 }).catch(() => '');
 
-      // Click prev
-      const prevBtn = page.locator('button[aria-label*="anterior"], button[aria-label*="prev"], .period-prev, [data-testid="period-prev"]').first();
-      if (await prevBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await prevBtn.click();
-        await page.waitForTimeout(300);
-        const after = await monthLabel.textContent().catch(() => '');
+      // Use the next button (shift(+1)) — second .pnav__step — which is reliably interactive
+      const nextBtn = page.locator('.pnav__step').nth(1);
+      if (await nextBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await nextBtn.click();
+        await page.waitForTimeout(600);
+        const after = await monthLabel.textContent({ timeout: 5000 }).catch(() => '');
         expect(after).not.toBe(before);
       }
     });
 
     test('next button advances month forward', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
 
-      const nextBtn = page.locator('button[aria-label*="siguiente"], .period-next, [data-testid="period-next"]').first();
-      if (await nextBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        // Click prev first so we can go forward
-        const prevBtn = page.locator('button[aria-label*="anterior"], .period-prev').first();
+      const steps = page.locator('.pnav__step');
+      if (await steps.count() >= 2) {
+        const prevBtn = steps.nth(0);
+        const nextBtn = steps.nth(1);
+        const monthLabel = page.locator('.pnav__label-text').first();
+
+        // Go back first
         if (await prevBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
           await prevBtn.click();
           await page.waitForTimeout(200);
         }
-        const monthLabel = page.locator('.period-label, .month-label').first();
-        const before = await monthLabel.textContent().catch(() => '');
-        await nextBtn.click();
-        await page.waitForTimeout(300);
-        const after = await monthLabel.textContent().catch(() => '');
-        expect(after).not.toBe(before);
+        const before = await monthLabel.textContent({ timeout: 3000 }).catch(() => '');
+        if (await nextBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await nextBtn.click();
+          await page.waitForTimeout(300);
+          const after = await monthLabel.textContent({ timeout: 3000 }).catch(() => '');
+          expect(after).not.toBe(before);
+        }
       }
     });
   });
@@ -57,20 +62,25 @@ test.describe('Interaction tests (OWF-114)', () => {
   // ── FilterPanel ──────────────────────────────────────────────────────
   test.describe('FilterPanel', () => {
     test('opens filter panel on button click', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
+      // Wait for the filter button to be ready (transactions page may take a moment to hydrate)
+      await page.waitForTimeout(500);
 
       const filterBtn = page.locator('.filter-btn, button').filter({ hasText: /filtro/i }).first();
-      await expect(filterBtn).toBeVisible({ timeout: 8000 });
+      await expect(filterBtn).toBeVisible({ timeout: 10000 });
       await filterBtn.click();
-      // Panel should appear (desktop dropdown or mobile dialog)
-      const panel = page.locator('.filter-panel, .filter-sheet, [role="dialog"]').first();
-      await expect(panel).toBeVisible({ timeout: 3000 });
+      await page.waitForTimeout(400);
+      // .filter-panel--desktop is the desktop dropdown (hidden on mobile via CSS)
+      // .filter-sheet-dialog is the mobile q-dialog bottom-sheet
+      // Use :visible pseudo to skip the hidden desktop panel on mobile
+      const panel = page.locator('.filter-panel--desktop:visible, .filter-sheet-dialog, [role="dialog"]').first();
+      await expect(panel).toBeVisible({ timeout: 8000 });
     });
 
     test('type chip selection changes filtered results', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
 
       // Click type chip "Gastos"
       const gastosChip = page.locator('.type-chip, .filter-chip, button').filter({ hasText: /gastos/i }).first();
@@ -87,8 +97,8 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('clear filters button resets filters', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
 
       const clearBtn = page.locator('button').filter({ hasText: /limpiar/i }).first();
       if (await clearBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -102,8 +112,8 @@ test.describe('Interaction tests (OWF-114)', () => {
   // ── SmartTxModal ─────────────────────────────────────────────────────
   test.describe('SmartTxModal — 4 modes', () => {
     test('opens modal on FAB click', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
 
       const fab = page.locator('.tx-fab, [data-testid="tx-fab"], button[aria-label*="nueva"], button[aria-label*="registrar"]').first();
       if (await fab.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -114,8 +124,8 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('mode: expense — can fill amount and description', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
 
       const fab = page.locator('.tx-fab, button').filter({ hasText: /nueva|registrar|\+/i }).first();
       if (await fab.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -131,8 +141,8 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('mode: income — type toggle switches to income', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
 
       const fab = page.locator('.tx-fab, button').filter({ hasText: /nueva|registrar|\+/i }).first();
       if (await fab.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -147,8 +157,8 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('mode: transfer — transfer option visible', async ({ page }) => {
-      await page.goto('http://localhost:3000/user/transactions');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/user/transactions');
+      await page.waitForLoadState('domcontentloaded');
 
       const fab = page.locator('.tx-fab, button').filter({ hasText: /nueva|registrar|\+/i }).first();
       if (await fab.isVisible({ timeout: 3000 }).catch(() => false)) {

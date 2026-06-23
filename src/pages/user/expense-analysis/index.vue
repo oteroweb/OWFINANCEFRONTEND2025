@@ -35,14 +35,26 @@
                 <q-icon name="savings" size="15px" />
                 Ingresos · {{ ui.hideValues ? '••' : formatMoney(summary.ingresosBase) }}
               </span>
-              <span v-if="summary.balanceBase >= 0" class="analysis-delta analysis-delta--ok">
-                <q-icon name="trending_up" size="15px" />
-                Balance positivo
-              </span>
-              <span v-else class="analysis-delta analysis-delta--warn">
-                <q-icon name="trending_down" size="15px" />
-                Balance negativo
-              </span>
+              <template v-if="momExpenseDelta !== null">
+                <span v-if="momExpenseDelta <= 0" class="analysis-delta analysis-delta--ok">
+                  <q-icon name="trending_down" size="15px" />
+                  {{ Math.abs(Math.round(momExpenseDelta)) }}% menos que el mes anterior
+                </span>
+                <span v-else class="analysis-delta analysis-delta--warn">
+                  <q-icon name="trending_up" size="15px" />
+                  {{ Math.round(momExpenseDelta) }}% más que el mes anterior
+                </span>
+              </template>
+              <template v-else>
+                <span v-if="summary.balanceBase >= 0" class="analysis-delta analysis-delta--ok">
+                  <q-icon name="trending_up" size="15px" />
+                  Balance positivo
+                </span>
+                <span v-else class="analysis-delta analysis-delta--warn">
+                  <q-icon name="trending_down" size="15px" />
+                  Balance negativo
+                </span>
+              </template>
             </div>
           </template>
 
@@ -78,6 +90,41 @@
               <span class="an-donut-legend__pct">{{ s.pct }}%</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- Budget pulse — Lite mode (spec AnalisisRoute: conic-gradient circle) -->
+      <section v-if="isLiteLayout && budgetPulsePct > 0" class="an-budget-pulse">
+        <div class="t-h3">Tu presupuesto</div>
+        <div class="an-budget-pulse__hint">Cómo vas contra lo que asignaste este mes.</div>
+        <div class="an-budget-pulse__row">
+          <div
+            class="an-budget-pulse__circle"
+            :style="{
+              background: `conic-gradient(var(--brand-primary) ${Math.min(budgetPulsePct, 100) / 100 * 360}deg, var(--surface-3) 0)`,
+              boxShadow: 'inset 0 0 0 4px var(--surface-2)'
+            }"
+          >
+            <span class="an-budget-pulse__pct">{{ Math.round(budgetPulsePct) }}%</span>
+          </div>
+          <div class="an-budget-pulse__text">
+            Vas al <b>{{ Math.round(budgetPulsePct) }}%</b> de lo asignado
+            ({{ ui.hideValues ? '••••' : formatMoney(budgetTotalSpent) }} de
+            {{ ui.hideValues ? '••••' : formatMoney(budgetTotalAssigned) }}).
+            <template v-if="insightJar">
+              <b style="color: var(--expense-fg)">{{ insightJar.name }}</b> ya se pasó del límite.
+            </template>
+          </div>
+        </div>
+      </section>
+
+      <!-- AnInsight — Lite mode (spec AnalisisParts.jsx: violet card with top-jar insight) -->
+      <section v-if="isLiteLayout && donutSegments.length >= 1" class="an-insight-card">
+        <div class="an-insight-icon"><q-icon name="bolt" size="20px" /></div>
+        <div class="an-insight-text">
+          El <b>{{ donutTopPct }}%</b> de tu gasto fue en
+          <b>{{ donutSegments[0]!.name }}</b><template v-if="donutSegments.length >= 2"> y <b>{{ donutSegments[1]!.name }}</b></template>.
+          Ahí está el foco si quieres mover la aguja.
         </div>
       </section>
 
@@ -815,7 +862,7 @@ const fallbackLayoutModeOption: LayoutModeOption = {
   description: 'Balance general entre densidad, navegacion y visibilidad.',
 };
 
-const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.user?.layout_mode));
+const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.settings?.layout_mode ?? auth.user?.layout_mode));
 const activeLayoutModeOption = computed<LayoutModeOption>(
   () =>
     layoutModeOptions.find((option) => option.value === activeLayoutMode.value) ||
@@ -1177,6 +1224,25 @@ const budgetRows = computed(() => {
 
 const insightJar = computed(() => budgetRows.value.find(b => b.overspent) ?? null);
 
+// Budget pulse
+const budgetTotalAssigned = computed(() => budgetRows.value.reduce((s, r) => s + (r.assigned ?? 0), 0));
+const budgetTotalSpent = computed(() => budgetRows.value.reduce((s, r) => s + (r.spent ?? 0), 0));
+const budgetPulsePct = computed(() =>
+  budgetTotalAssigned.value > 0 ? (budgetTotalSpent.value / budgetTotalAssigned.value) * 100 : 0
+);
+
+// Top 2 donut segments combined % for AnInsight
+const donutTopPct = computed(() =>
+  donutSegments.value.slice(0, 2).reduce((s, seg) => s + seg.pct, 0)
+);
+
+// MoM expense delta
+const prevMonthGastos = ref<number | null>(null);
+const momExpenseDelta = computed<number | null>(() => {
+  if (prevMonthGastos.value === null || prevMonthGastos.value === 0) return null;
+  return ((summary.value.gastosBase - prevMonthGastos.value) / prevMonthGastos.value) * 100;
+});
+
 const activeFilterChips = computed(() => {
   const chips: Array<{ key: string; label: string }> = [];
   if (search.value.trim()) chips.push({ key: 'search', label: `Buscar: ${search.value.trim()}` });
@@ -1359,11 +1425,38 @@ async function loadTransactions(): Promise<void> {
   rows.value = (list as Array<Record<string, unknown>>).map((tx) => enrichTransaction(tx, categoryToJarMap));
 }
 
+async function loadPrevMonthGastos(): Promise<void> {
+  if (!isLiteLayout.value) return;
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  try {
+    const res = await api.get('/transactions', {
+      params: {
+        period: 'month',
+        year: String(prev.getFullYear()),
+        month: String(prev.getMonth() + 1),
+        per_page: '500',
+      },
+    });
+    const data = res.data?.data;
+    const list: Record<string, unknown>[] = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+        ? (data.data as Record<string, unknown>[])
+        : [];
+    prevMonthGastos.value = list.reduce((sum, tx) => {
+      const amt = Number(tx['amount'] ?? 0);
+      return amt < 0 ? sum + Math.abs(amt) : sum;
+    }, 0);
+  } catch {
+    prevMonthGastos.value = null;
+  }
+}
+
 async function loadData(): Promise<void> {
   loading.value = true;
   try {
-    await loadJars();
-    await loadTransactions();
+    await Promise.all([loadJars(), loadTransactions(), loadPrevMonthGastos()]);
   } finally {
     loading.value = false;
   }
@@ -1460,6 +1553,78 @@ onMounted(() => {
 .analysis-delta--warn {
   background: var(--expense-soft, #fee2e2);
   color: var(--expense-fg, #ef4444);
+}
+
+/* Budget pulse */
+.an-budget-pulse {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+  padding: 18px 20px;
+}
+.an-budget-pulse__hint {
+  color: var(--fg-2);
+  font-size: 12.5px;
+  margin: 3px 0 16px;
+}
+.an-budget-pulse__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2, #f1f5f9);
+}
+.an-budget-pulse__circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.an-budget-pulse__pct {
+  font-family: var(--font-money, 'DM Sans', sans-serif);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--brand-primary, #0f172a);
+  background: var(--surface-2, #f1f5f9);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+.an-budget-pulse__text {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* AnInsight card */
+.an-insight-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: color-mix(in srgb, #7c3aed 8%, #fff);
+  border: 1px solid color-mix(in srgb, #7c3aed 20%, transparent);
+}
+.an-insight-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #7c3aed 16%, transparent);
+  color: #7c3aed;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+.an-insight-text {
+  font-size: 13px;
+  line-height: 1.55;
+  align-self: center;
 }
 
 .hero-card {

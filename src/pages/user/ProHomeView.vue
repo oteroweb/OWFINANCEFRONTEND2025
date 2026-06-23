@@ -134,17 +134,19 @@
         </div>
       </div>
 
-      <!-- AI advisor prompt strip -->
-      <button class="ai-strip" @click="openAssistant">
-        <div class="ai-strip__avatar">
-          <q-icon name="auto_awesome" size="22px" color="#fff" />
+      <!-- AI advisor strip -->
+      <div class="pro-advisor-strip">
+        <div class="pro-advisor-strip__icon">
+          <q-icon name="auto_awesome" size="22px" />
         </div>
-        <div class="ai-strip__body">
-          <div class="ai-strip__title">Asesor Financiero IA</div>
-          <div class="ai-strip__hint">{{ aiHint }}</div>
+        <div class="pro-advisor-strip__text">
+          <div class="pro-advisor-strip__title">Asesor Financiero IA</div>
+          <div class="pro-advisor-strip__hint">{{ aiHint }}</div>
         </div>
-        <q-icon name="chevron_right" size="20px" color="var(--fg-3)" />
-      </button>
+        <button class="pro-advisor-strip__cta" @click="goToAsesor">
+          Hablar con mi asesor
+        </button>
+      </div>
     </div>
 
     <!-- Accounts Panel -->
@@ -385,8 +387,8 @@ function classifyTx(tx: Record<string, unknown>, amount: number): 'income' | 'ex
   return amount >= 0 ? 'income' : 'expense';
 }
 
-function openAssistant() {
-  // TODO: implement assistant modal
+function goToAsesor() {
+  void router.push('/user/asesor');
 }
 
 async function loadBalanceSummary() {
@@ -814,24 +816,21 @@ onMounted(() => {
   }
 }
 
-.ai-strip {
-  border: 0;
-  cursor: pointer;
-  text-align: left;
+.pro-advisor-strip {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 20px 24px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
-  border: 1px solid rgba(124, 58, 237, 0.15);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(14, 165, 233, 0.08));
+  border: 1px solid rgba(124, 58, 237, 0.2);
   transition: background 160ms ease;
 
   &:hover {
-    background: linear-gradient(90deg, rgba(124, 58, 237, 0.14) 0%, rgba(14, 165, 233, 0.14) 100%);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(14, 165, 233, 0.12));
   }
 
-  &__avatar {
+  &__icon {
     width: 44px;
     height: 44px;
     border-radius: 22px;
@@ -840,10 +839,12 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    color: #fff;
   }
 
-  &__body {
+  &__text {
     flex: 1;
+    min-width: 0;
   }
 
   &__title {
@@ -851,12 +852,36 @@ onMounted(() => {
     font-weight: 600;
     font-size: 15px;
     color: var(--fg-1);
+    margin-bottom: 2px;
   }
 
   &__hint {
     font-family: var(--font-body);
     font-size: 13px;
     color: var(--fg-2);
+  }
+
+  &__cta {
+    border: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 9px 18px;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(135deg, #7C3AED, #0EA5E9);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: opacity 160ms ease;
+
+    &:hover {
+      opacity: 0.88;
+    }
+
+    &:active {
+      opacity: 0.75;
+    }
   }
 }
 

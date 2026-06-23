@@ -1336,7 +1336,7 @@ const auth = useAuthStore();
 const periodStore = usePeriodStore();
 const route = useRoute();
 const router = useRouter();
-const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.user?.layout_mode));
+const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.settings?.layout_mode ?? auth.user?.layout_mode));
 const fallbackLayoutModeOption: LayoutModeOption = {
   label: 'Pro',
   value: 'pro',

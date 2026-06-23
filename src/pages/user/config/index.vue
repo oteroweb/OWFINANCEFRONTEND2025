@@ -772,7 +772,7 @@ const ui = useUiStore();
 const showOnboarding = ref(false);
 const tab = ref<'profile' | 'finance' | 'categories' | 'accounts' | 'taxes'>('profile');
 
-const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.user?.layout_mode));
+const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.settings?.layout_mode ?? auth.user?.layout_mode));
 const isLiteLayout = computed(() => activeLayoutMode.value === 'lite');
 const isDark = computed(() => $q.dark.isActive);
 
@@ -827,13 +827,17 @@ type ConfigNavItem = {
   action?: () => void;
 };
 
-const configNav: ConfigNavItem[] = [
+const ALL_CONFIG_NAV: ConfigNavItem[] = [
   { name: 'profile', label: 'Perfil', hint: 'Nombre, correo y contraseña', icon: 'person', route: '/user/profile' },
   { name: 'finance', label: 'Mi perfil financiero', hint: 'Ingresos, metas y asesor IA', icon: 'insights', route: '/user/financial-profile' },
   { name: 'accounts', label: 'Cuentas vinculadas', hint: 'Bancos, tarjetas y medios de pago', icon: 'account_balance_wallet', route: '/user/accounts' },
   { name: 'categories', label: 'Categorías', hint: 'Organiza tus categorías de gasto', icon: 'category' },
   { name: 'taxes', label: 'Impuestos', hint: 'Configuración de impuestos', icon: 'percent' },
 ];
+// Lite: single generic account — no account management needed
+const configNav = computed<ConfigNavItem[]>(() =>
+  isLiteLayout.value ? ALL_CONFIG_NAV.filter(i => i.name !== 'accounts') : ALL_CONFIG_NAV
+);
 
 function handleNavItem(item: ConfigNavItem) {
   if (item.route) { void router.push(item.route); return; }
