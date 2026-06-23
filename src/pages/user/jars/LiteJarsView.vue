@@ -54,40 +54,46 @@
         </div>
       </div>
 
-      <!-- Jar list (spec: vertical rows) -->
-      <div v-else class="jars-list">
+      <!-- Jars grid (spec: JarsFullGrid 3-col card tiles) -->
+      <div v-else class="jars-grid">
         <div
           v-for="jar in activeJars"
           :key="jar.id"
-          class="jar-row"
+          class="jar-tile"
           @click="openDetail(jar)"
         >
-          <!-- Color icon -->
-          <div class="jar-row__icon" :style="{ background: jar.color || 'var(--info)' }">
-            <q-icon name="savings" size="18px" color="white" />
-          </div>
-
-          <!-- Info -->
-          <div class="jar-row__info">
-            <div class="jar-row__name">{{ jar.name }}</div>
-            <div class="jar-row__bar">
-              <div class="jar-row__bar-fill"
-                :style="{ width: `${Math.min(100, jar.progress)}%`, background: jar.color || 'var(--info)' }" />
+          <!-- Icon + Name row -->
+          <div class="jar-tile__head">
+            <div class="jar-tile__icon" :style="{ background: jarSoftColor(jar), color: jar.color || 'var(--info)' }">
+              <q-icon name="savings" size="18px" />
             </div>
-          </div>
-
-          <!-- Right column: percent + balance + attention indicator -->
-          <div class="jar-row__right">
-            <span class="jar-row__percent">{{ jar.percent }}%</span>
-            <span class="jar-row__balance">
-              {{ isHidden ? '••••' : formatMoney(jar.balance) }}
-            </span>
-            <span v-if="jar.balance < 0 || jar.progress > 100" class="jar-row__attention" title="Requiere atención">
+            <div class="jar-tile__name-wrap">
+              <div class="jar-tile__name">{{ jar.name }}</div>
+              <div class="jar-tile__sub">{{ jar.percent }}% asignado</div>
+            </div>
+            <span v-if="jar.balance < 0 || jar.progress > 100" class="jar-tile__warn" title="Requiere atención">
               <q-icon name="warning" size="14px" />
             </span>
           </div>
 
-          <q-icon v-if="jar.balance >= 0 && jar.progress <= 100" name="chevron_right" size="20px" color="grey-4" />
+          <!-- Balance -->
+          <div class="jar-tile__amount">
+            {{ isHidden ? '$ ••••••' : formatMoney(jar.balance) }}
+          </div>
+
+          <!-- Progress bar -->
+          <div class="jar-tile__bar">
+            <div class="jar-tile__bar-fill"
+              :style="{ width: `${Math.min(100, jar.progress)}%`, background: jar.color || 'var(--info)' }" />
+          </div>
+
+          <!-- Footer info -->
+          <div class="jar-tile__footer">
+            <span>{{ Math.round(jar.progress) }}% de {{ formatMoney(jar.allocated) }}</span>
+            <span v-if="jar.progress >= 100" style="color: var(--income-fg)">Lleno</span>
+            <span v-else-if="jar.balance < 0" style="color: var(--expense-fg)">Sobrepasado</span>
+            <span v-else>En uso</span>
+          </div>
         </div>
       </div>
 
@@ -356,6 +362,11 @@ function formatMoney(n: number): string {
   return `$ ${Math.abs(n).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function jarSoftColor(jar: JarItem): string {
+  const c = jar.color || '#3B82F6';
+  return c + '22'; // ~13% opacity hex
+}
+
 // ── Data loading ──────────────────────────────────────────────────────────
 async function loadJars() {
   jarsLoading.value = true;
@@ -494,37 +505,47 @@ onMounted(() => { void loadJars(); });
   }
 }
 
-// ── Jar rows ──
-.jars-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+// ── Jar grid (JarsFullGrid spec: 3-col cards) ──
+.jars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
 }
 
-.jar-row {
+.jar-tile {
   background: var(--surface-1, #fff);
   border-radius: var(--radius-lg, 16px);
-  padding: 14px 16px;
+  padding: 18px 20px;
   box-shadow: var(--shadow-card, 0 1px 4px rgba(0,0,0,.08));
   display: flex;
-  align-items: center;
-  gap: 13px;
+  flex-direction: column;
+  gap: 12px;
   cursor: pointer;
   transition: box-shadow 150ms;
-  &:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  &:hover { box-shadow: 0 3px 12px rgba(0,0,0,.13); }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
   &__icon {
-    width: 38px; height: 38px; border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+    border-radius: var(--radius-pill, 999px);
+    display: inline-flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
 
-  &__info {
+  &__name-wrap {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 1px;
   }
 
   &__name {
@@ -537,48 +558,46 @@ onMounted(() => { void loadJars(); });
     white-space: nowrap;
   }
 
+  &__sub {
+    font-family: var(--font-body, sans-serif);
+    font-size: 11px;
+    color: var(--fg-2, #64748b);
+  }
+
+  &__warn {
+    color: var(--expense-fg, #ef4444);
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  &__amount {
+    font-family: var(--font-money, monospace);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--fg-1, #0f172a);
+    font-variant-numeric: tabular-nums;
+  }
+
   &__bar {
     height: 4px;
-    border-radius: 3px;
+    border-radius: 999px;
     background: var(--surface-2, #f1f4f6);
     overflow: hidden;
   }
 
   &__bar-fill {
     height: 100%;
-    border-radius: 3px;
+    border-radius: 999px;
     transition: width 500ms ease-out;
   }
 
-  &__right {
+  &__footer {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  &__attention {
-    color: var(--expense-fg, #ef4444);
-    display: inline-flex;
-    align-items: center;
-  }
-
-  &__percent {
+    justify-content: space-between;
+    font-family: var(--font-body, sans-serif);
     font-size: 11px;
-    font-weight: 700;
     color: var(--fg-2, #64748b);
-    background: var(--surface-2, #f1f4f6);
-    padding: 2px 8px;
-    border-radius: 999px;
-  }
-
-  &__balance {
-    font-family: var(--font-money, monospace);
-    font-size: 14.5px;
-    font-weight: 700;
-    color: var(--fg-1, #0f172a);
-    font-variant-numeric: tabular-nums;
   }
 }
 
