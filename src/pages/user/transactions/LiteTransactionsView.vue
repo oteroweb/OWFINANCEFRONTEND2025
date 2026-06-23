@@ -37,64 +37,82 @@
               <span v-if="activeCount > 0" class="filter-badge">{{ activeCount }}</span>
             </button>
 
-            <div v-if="panelOpen" class="filter-panel">
+            <!-- Desktop dropdown -->
+            <div v-if="panelOpen" class="filter-panel filter-panel--desktop">
               <div class="filter-panel__header">
                 <span class="filter-panel__title">Filtro inteligente</span>
                 <button v-if="activeCount > 0" class="filter-panel__clear" @click="clearAll">Limpiar todo</button>
               </div>
-
               <div class="filter-panel__field">
                 <span class="filter-panel__label">Tipo</span>
                 <div class="type-toggle">
-                  <button
-                    v-for="t in typeOptions"
-                    :key="t.id"
-                    :class="{ active: type === t.id }"
-                    @click="type = t.id"
-                  >{{ t.label }}</button>
+                  <button v-for="t in typeOptions" :key="t.id" :class="{ active: type === t.id }" @click="type = t.id">{{ t.label }}</button>
                 </div>
               </div>
-
               <div class="filter-panel__field">
                 <span class="filter-panel__label">Cántaro</span>
                 <TxDropdown icon="savings" label="Todos los cántaros" :value="jar" :options="jarOptions" full @change="(v: string) => jar = v" />
               </div>
-
               <div class="filter-panel__field">
                 <span class="filter-panel__label">Categoría</span>
                 <TxDropdown icon="sell" label="Todas las categorías" :value="category" :options="categoryOptions" full @change="(v: string) => category = v" />
               </div>
-
               <div class="filter-panel__field">
                 <span class="filter-panel__label">Día</span>
                 <TxDropdown icon="event" label="Cualquier día" :value="day" :options="dayOptions" full @change="(v: string) => day = v" />
               </div>
-
               <div class="filter-panel__field">
                 <span class="filter-panel__label">Monto</span>
                 <div class="amount-inputs">
-                  <div class="amount-input">
-                    <span>≥ $</span>
-                    <input v-model="minAmount" type="number" placeholder="0" />
-                  </div>
-                  <div class="amount-input">
-                    <span>≤ $</span>
-                    <input v-model="maxAmount" type="number" placeholder="∞" />
-                  </div>
+                  <div class="amount-input"><span>≥ $</span><input v-model="minAmount" type="number" placeholder="0" /></div>
+                  <div class="amount-input"><span>≤ $</span><input v-model="maxAmount" type="number" placeholder="∞" /></div>
                 </div>
                 <div class="amount-presets">
-                  <button
-                    v-for="p in amountPresets"
-                    :key="p.id"
-                    :class="{ active: minAmount === p.min && maxAmount === p.max }"
-                    @click="applyPreset(p)"
-                  >
-                    {{ p.label }}
-                  </button>
+                  <button v-for="p in amountPresets" :key="p.id" :class="{ active: minAmount === p.min && maxAmount === p.max }" @click="applyPreset(p)">{{ p.label }}</button>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Mobile filter bottom-sheet -->
+          <q-dialog v-model="panelOpen" position="bottom" class="filter-sheet-dialog">
+            <div class="filter-sheet">
+              <div class="filter-sheet__handle" />
+              <div class="filter-panel__header" style="padding: 0 0 12px">
+                <span class="filter-panel__title">Filtro inteligente</span>
+                <button v-if="activeCount > 0" class="filter-panel__clear" @click="clearAll">Limpiar todo</button>
+              </div>
+              <div class="filter-panel__field">
+                <span class="filter-panel__label">Tipo</span>
+                <div class="type-toggle">
+                  <button v-for="t in typeOptions" :key="t.id" :class="{ active: type === t.id }" @click="type = t.id">{{ t.label }}</button>
+                </div>
+              </div>
+              <div class="filter-panel__field">
+                <span class="filter-panel__label">Cántaro</span>
+                <TxDropdown icon="savings" label="Todos los cántaros" :value="jar" :options="jarOptions" full @change="(v: string) => jar = v" />
+              </div>
+              <div class="filter-panel__field">
+                <span class="filter-panel__label">Categoría</span>
+                <TxDropdown icon="sell" label="Todas las categorías" :value="category" :options="categoryOptions" full @change="(v: string) => category = v" />
+              </div>
+              <div class="filter-panel__field">
+                <span class="filter-panel__label">Día</span>
+                <TxDropdown icon="event" label="Cualquier día" :value="day" :options="dayOptions" full @change="(v: string) => day = v" />
+              </div>
+              <div class="filter-panel__field">
+                <span class="filter-panel__label">Monto</span>
+                <div class="amount-inputs">
+                  <div class="amount-input"><span>≥ $</span><input v-model="minAmount" type="number" placeholder="0" /></div>
+                  <div class="amount-input"><span>≤ $</span><input v-model="maxAmount" type="number" placeholder="∞" /></div>
+                </div>
+                <div class="amount-presets">
+                  <button v-for="p in amountPresets" :key="p.id" :class="{ active: minAmount === p.min && maxAmount === p.max }" @click="applyPreset(p)">{{ p.label }}</button>
+                </div>
+              </div>
+              <q-btn unelevated color="primary" label="Aplicar filtros" style="width:100%;margin-top:8px" @click="panelOpen = false" />
+            </div>
+          </q-dialog>
         </div>
 
         <!-- Chips activos -->
@@ -937,10 +955,37 @@ onUnmounted(() => {
     display: none;
   }
 
-  .filter-panel {
-    right: auto;
-    left: 0;
-    width: calc(100vw - 32px);
+  // Desktop dropdown hidden on mobile — bottom-sheet used instead
+  .filter-panel--desktop {
+    display: none;
+  }
+}
+
+// Desktop: bottom-sheet dialog hidden (uses dropdown)
+@media (min-width: 769px) {
+  .filter-sheet-dialog {
+    display: none !important;
+  }
+}
+
+// ── Mobile filter bottom-sheet ─────────────────────────────────────
+.filter-sheet {
+  background: var(--surface-1);
+  border-radius: 22px 22px 0 0;
+  padding: 16px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: min(100vw, 520px);
+  max-height: 85vh;
+  overflow-y: auto;
+
+  &__handle {
+    width: 40px; height: 4px;
+    background: var(--surface-3);
+    border-radius: 999px;
+    margin: 0 auto 16px;
+    flex-shrink: 0;
   }
 }
 
