@@ -135,6 +135,66 @@
                 @change="v => autoSelect('emotional_keyword', v)" />
             </template>
 
+            <!-- Recommend (AI plan based on main_goal) -->
+            <template v-if="step.id === 'recommend'">
+              <div class="ob__recommend">
+                <!-- AI reason banner -->
+                <div class="ob__rec-banner">
+                  <div class="ob__rec-banner-icon">
+                    <q-icon name="auto_awesome" size="20px" />
+                  </div>
+                  <div>
+                    <div class="ob__rec-banner-title">Plan recomendado: <strong>{{ recommendedPlan?.name }}</strong></div>
+                    <div class="ob__rec-banner-reason">{{ recommendedPlan?.reason }}</div>
+                  </div>
+                </div>
+
+                <!-- Template cards: recommended first, then rest -->
+                <div v-if="templatesLoading" class="ob__jars-loading">
+                  <q-spinner color="primary" size="32px" />
+                </div>
+                <div v-else class="ob__rec-templates">
+                  <button
+                    v-for="t in sortedTemplates"
+                    :key="t.slug"
+                    class="ob__rec-tpl"
+                    :class="{
+                      'ob__rec-tpl--active': selectedTemplate === t.slug,
+                      'ob__rec-tpl--ai': t.slug === recommendedPlan?.slug
+                    }"
+                    @click="selectedTemplate = t.slug"
+                  >
+                    <div class="ob__rec-tpl-head">
+                      <span class="ob__rec-tpl-name">{{ t.name }}</span>
+                      <div class="ob__rec-tpl-badges">
+                        <span v-if="t.slug === recommendedPlan?.slug" class="ob__rec-badge ob__rec-badge--ai">
+                          <q-icon name="auto_awesome" size="12px" /> IA
+                        </span>
+                        <q-icon
+                          :name="selectedTemplate === t.slug ? 'check_circle' : 'radio_button_unchecked'"
+                          size="20px"
+                          :color="selectedTemplate === t.slug ? 'primary' : 'grey-4'"
+                        />
+                      </div>
+                    </div>
+                    <!-- Mini bar -->
+                    <div class="ob__rec-minibar">
+                      <div v-for="(j, ji) in (t.jars || []).slice(0, 8)" :key="ji"
+                        class="ob__rec-minibar-seg"
+                        :style="{ flex: j.percent, background: j.color }" />
+                    </div>
+                    <div class="ob__tpl-jars" style="margin-top:6px">
+                      <span v-for="j in (t.jars || []).slice(0, 5)" :key="j.name" class="ob__tpl-jar"
+                        :style="{ background: j.color + '22', color: j.color }">
+                        {{ j.name }} · {{ j.percent }}%
+                      </span>
+                      <span v-if="(t.jars || []).length > 5" class="ob__tpl-jar ob__tpl-jar--more">+{{ (t.jars || []).length - 5 }} más</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </template>
+
             <!-- Jars -->
             <template v-if="step.id === 'jars'">
               <div v-if="templatesLoading" class="ob__jars-loading">
@@ -237,9 +297,10 @@ const STEPS = [
   { id: 'intro',     title: '',                                sub: '',                                           skippable: false },
   { id: 'about',     title: 'Cuéntanos sobre ti',              sub: 'El asesor IA usará esto para personalizarte.', skippable: true  },
   { id: 'situation', title: 'Tu situación actual',             sub: 'Honestidad = mejores consejos.',             skippable: true  },
-  { id: 'goals',     title: 'Tus metas y sueños',             sub: 'Lo que quieres lograr guía todo el plan.',   skippable: true  },
-  { id: 'jars',      title: 'Dale propósito a tus cántaros',  sub: 'El asesor sabrá para qué es cada uno.',      skippable: true  },
-  { id: 'done',      title: '',                                sub: '',                                           skippable: false },
+  { id: 'goals',     title: 'Tus metas y sueños',             sub: 'Lo que quieres lograr guía todo el plan.',          skippable: true  },
+  { id: 'recommend', title: 'Tu plan recomendado',            sub: 'Basado en tu meta, aquí está el esquema ideal para ti.', skippable: true  },
+  { id: 'jars',      title: 'Personaliza tus cántaros',       sub: 'Ajusta nombres y porcentajes a tu gusto.',            skippable: true  },
+  { id: 'done',      title: '',                                sub: '',                                                    skippable: false },
 ];
 
 const PHASES = ['Sobre ti', 'Situación', 'Metas', 'Plan'];
@@ -266,8 +327,37 @@ const phaseIndex = computed(() => Math.max(0, Math.min(currentIndex.value - 1, P
 
 watch(
   () => step.value?.id,
-  (id) => { if (id === 'jars') void loadTemplates(); }
+  (id) => { if (id === 'recommend' || id === 'jars') void loadTemplates(); }
 );
+
+// ─── AI Plan recommendation ──────────────────────────────────────────────
+const GOAL_TO_TEMPLATE: Record<string, { slug: string; reason: string }> = {
+  debt_free:      { slug: 'conservador', reason: 'Con deudas activas, el esquema conservador prioriza el pago y el fondo de emergencia antes de gastar.' },
+  emergency_fund: { slug: 'moderado',   reason: 'El esquema moderado equilibra ahorro de emergencia con gastos esenciales sin sacrificar tu calidad de vida.' },
+  saving_goal:    { slug: 'moderado',   reason: 'Para una meta de ahorro concreta, el esquema moderado mantiene un flujo constante hacia tu cántaro de ahorro.' },
+  invest:         { slug: 'avanzado',   reason: 'Para empezar a invertir, el esquema avanzado genera un superávit mensual que puedes mover a inversiones.' },
+  survive:        { slug: 'basico',     reason: 'El esquema básico cubre lo esencial sin complicaciones — perfecto para estabilizar primero.' },
+};
+
+const recommendedPlan = computed(() => {
+  const goal = form.value.main_goal;
+  if (!goal) return null;
+  const map = GOAL_TO_TEMPLATE[goal];
+  if (!map) return null;
+  const tpl = templates.value.find(t => t.slug === map.slug) ?? templates.value[0];
+  if (!tpl) return null;
+  return { slug: tpl.slug, name: tpl.name, reason: map.reason };
+});
+
+// Sort: AI-recommended first, then others
+const sortedTemplates = computed(() => {
+  const recSlug = recommendedPlan.value?.slug;
+  return [...templates.value].sort((a, b) => {
+    if (a.slug === recSlug) return -1;
+    if (b.slug === recSlug) return 1;
+    return 0;
+  });
+});
 
 // ─── Form ────────────────────────────────────────────────────────────
 const form = ref({
@@ -873,6 +963,128 @@ const ChipField = defineComponent({
   color: var(--fg-3);
   text-align: center;
   margin: 4px 0 0;
+}
+
+/* ── Recommend stage ─────────────────────────────────────────────── */
+.ob__recommend {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ob__rec-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, rgba(45,77,166,.07) 0%, rgba(14,165,233,.07) 100%);
+  border: 1px solid rgba(45,77,166,.15);
+}
+
+.ob__rec-banner-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--brand-primary);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.ob__rec-banner-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-1);
+  margin-bottom: 4px;
+}
+
+.ob__rec-banner-reason {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--fg-2);
+  line-height: 1.5;
+}
+
+.ob__rec-templates {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ob__rec-tpl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-1);
+  text-align: left;
+  cursor: pointer;
+  transition: all 150ms;
+
+  &:hover { border-color: var(--brand-primary); }
+
+  &--active {
+    border-color: var(--brand-primary);
+    background: var(--brand-primary-soft, #EEF2FF);
+  }
+
+  &--ai {
+    border-color: var(--brand-primary);
+  }
+}
+
+.ob__rec-tpl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ob__rec-tpl-name {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-1);
+}
+
+.ob__rec-tpl-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ob__rec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+
+  &--ai {
+    background: var(--brand-primary);
+    color: #fff;
+  }
+}
+
+.ob__rec-minibar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-2);
+  gap: 1px;
+}
+
+.ob__rec-minibar-seg {
+  min-width: 4px;
+  height: 100%;
+  border-radius: 999px;
 }
 
 /* ── Footer ───────────────────────────────────────────────────────── */
