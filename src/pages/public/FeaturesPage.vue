@@ -211,52 +211,63 @@
     <!-- COMPARATIVA LITE VS PRO -->
     <section class="section" id="comparativa" style="scroll-margin-top: 84px">
       <div class="wrap">
-        <div class="section-head reveal" style="margin-bottom: 48px">
-          <p class="eyebrow">Comparativa</p>
-          <h2 class="display-sm" style="margin-top: 16px">Lite vs Pro. Mismo producto, más capas.</h2>
+        <div class="section-head reveal" style="margin-bottom: 36px; max-width: 760px">
+          <p class="eyebrow">Lite vs Pro</p>
+          <h2 class="display-sm" style="margin-top: 16px">Mismo producto, mismos datos.<br />Dos niveles de control.</h2>
+          <p class="lede"><b style="color: var(--fg-1)">Pro = Lite + capas</b> de cuentas, transacciones avanzadas y analítica.
+            Lite es un subconjunto, no un producto distinto.</p>
         </div>
         <div class="cmp reveal">
           <table>
             <thead>
               <tr>
-                <th>Característica</th>
-                <th class="mode"><span class="m-tag"><span class="material-icons">view_agenda</span>Lite</span></th>
-                <th class="mode"><span class="m-tag"><span class="material-icons">dashboard</span>Pro</span></th>
+                <th>Capacidad</th>
+                <th class="mode"><span class="m-tag" style="color: var(--brand-primary)"><span class="material-icons" style="font-size: 18px">view_agenda</span>Lite</span></th>
+                <th class="mode"><span class="m-tag" style="color: var(--info-fg, #0ea5e9)"><span class="material-icons" style="font-size: 18px">dashboard</span>Pro</span></th>
               </tr>
             </thead>
             <tbody>
+              <!-- Cántaros -->
               <tr class="grp"><td colspan="3">Cántaros</td></tr>
-              <tr><td class="cap">Reparto automático</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Metas de ahorro</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Transferencias entre cántaros</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
+              <tr><td class="cap">Ver cántaros con saldo</td><td class="mark"><span class="material-icons yes">check_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Crear / editar (% o fijo)</td><td class="mark"><span class="material-icons yes">check_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Plantilla 55/10/10/10/10</td><td class="mark"><span class="material-icons yes">check_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Meta de ahorro</td><td class="mark"><span class="material-icons yes">check_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Transferir entre cántaros</td><td class="mark"><span class="material-icons part">remove_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Apalancamiento entre cántaros</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
 
+              <!-- Cuentas -->
+              <tr class="grp"><td colspan="3">Cuentas</td></tr>
+              <tr><td class="cap">Trackeo de cuentas</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Multimoneda (USD / EUR / VES)</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Cuentas compartidas</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Impuestos por cuenta (IGTF)</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+
+              <!-- Transacciones -->
               <tr class="grp"><td colspan="3">Transacciones</td></tr>
-              <tr><td class="cap">Registro por texto</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Registro por voz</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Foto de recibo (OCR)</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Automático / recurrentes</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Carga masiva</td><td class="mark part"><span class="material-icons">remove</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Ítems por línea</td><td class="mark no"><span class="material-icons">close</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
+              <tr><td class="cap">Registrar ingreso y gasto</td><td class="mark"><span class="material-icons yes">check_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Texto · voz · foto · auto · masiva</td><td class="mark"><span class="material-icons yes">check_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Transferencia cross-currency</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Ítems por línea + cantidad</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Pago múltiple (split)</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
 
-              <tr class="grp"><td colspan="3">Cuentas &amp; Monedas</td></tr>
-              <tr><td class="cap">Multi-moneda (USD/EUR/VES)</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Múltiples cuentas (banco, tarjeta, efectivo)</td><td class="mark no"><span class="material-icons">close</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Transferencias cross-currency</td><td class="mark no"><span class="material-icons">close</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Impuestos (IGTF)</td><td class="mark no"><span class="material-icons">close</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-
-              <tr class="grp"><td colspan="3">Análisis</td></tr>
-              <tr><td class="cap">Distribución por cántaro</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Presupuesto vs. real</td><td class="mark yes"><span class="material-icons">check</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Drill-down por categoría / cuenta</td><td class="mark no"><span class="material-icons">close</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
-              <tr><td class="cap">Insights con IA</td><td class="mark no"><span class="material-icons">close</span></td><td class="mark yes"><span class="material-icons">check</span></td></tr>
+              <!-- Analítica -->
+              <tr class="grp"><td colspan="3">Analítica</td></tr>
+              <tr><td class="cap">Home resumido</td><td class="mark"><span class="material-icons yes">check_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Análisis de gastos</td><td class="mark"><span class="material-icons part">remove_circle</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Drill-down + presupuesto vs. real</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
+              <tr><td class="cap">Selector multimoneda + tasa</td><td class="mark"><span class="material-icons no">remove</span></td><td class="mark"><span class="material-icons yes">check_circle</span></td></tr>
             </tbody>
           </table>
         </div>
-        <div class="cmp-legend">
-          <span><span class="material-icons yes">check</span>Disponible</span>
-          <span><span class="material-icons part">remove</span>Simplificado</span>
-          <span><span class="material-icons no">close</span>No disponible</span>
+        <div class="cmp-legend reveal">
+          <span class="yes"><span class="material-icons">check_circle</span>Incluido</span>
+          <span class="part"><span class="material-icons">remove_circle</span>Parcial</span>
+          <span class="no"><span class="material-icons">remove</span>No disponible</span>
         </div>
+        <p style="text-align: center; margin-top: 24px">
+          <router-link class="link-cyan" to="/matrix">Ver la matriz técnica completa<span class="material-icons">arrow_forward</span></router-link>
+        </p>
       </div>
     </section>
 
