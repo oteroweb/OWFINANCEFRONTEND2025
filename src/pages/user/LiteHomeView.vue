@@ -693,6 +693,15 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0; // prevent grid blowout on mobile (content wider than 1fr cell)
+    overflow: hidden;
+
+    .t-amount-lg {
+      font-size: clamp(16px, 4vw, 28px); // shrink on narrow viewports
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
   &__section {

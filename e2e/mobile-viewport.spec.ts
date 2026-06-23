@@ -16,8 +16,8 @@ test.describe('Mobile viewport 390px (OWF-115)', () => {
 
   // ── Home ──────────────────────────────────────────────────────────────
   test('Home — renders without horizontal overflow at 390px', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/home');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/home');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL(/\/user\/home/);
 
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
@@ -25,46 +25,49 @@ test.describe('Mobile viewport 390px (OWF-115)', () => {
   });
 
   test('Home — bottom nav visible on mobile', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/home');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/home');
+    await page.waitForLoadState('domcontentloaded');
 
-    const bottomNav = page.locator('.bottom-nav, .q-tabs, nav[class*="mobile"], [data-testid="bottom-nav"]').first();
+    // LiteFloatingBottomNav renders as <nav class="nav-pill">
+    const bottomNav = page.locator('.nav-pill').first();
     await expect(bottomNav).toBeVisible({ timeout: 8000 });
   });
 
   test('Home — greeting or summary card visible', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/home');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/home');
+    await page.waitForLoadState('domcontentloaded');
 
-    const heading = page.locator('h1, h2, .greeting, .home-header').first();
+    // LiteHomeView greeting or the hero balance section
+    const heading = page.locator('.lite-home__greeting, .lite-home__hero, .t-hero-amount').first();
     await expect(heading).toBeVisible({ timeout: 8000 });
   });
 
   // ── Transactions ──────────────────────────────────────────────────────
   test('Tx — renders without horizontal overflow at 390px', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/transactions');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/transactions');
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
     expect(bodyWidth).toBeLessThanOrEqual(400);
   });
 
   test('Tx — filter button visible on mobile', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/transactions');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/transactions');
+    await page.waitForLoadState('domcontentloaded');
 
-    const filterBtn = page.locator('.filter-btn, button').filter({ hasText: /filtro/i }).first();
+    // LiteTransactionsView has <button class="filter-btn"> with text "Filtros"
+    const filterBtn = page.locator('.filter-btn').first();
     await expect(filterBtn).toBeVisible({ timeout: 8000 });
   });
 
   test('Tx — filter opens as bottom-sheet on mobile', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/transactions');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/transactions');
+    await page.waitForLoadState('domcontentloaded');
 
     const filterBtn = page.locator('.filter-btn').first();
     if (await filterBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await filterBtn.click();
-      // Should open a q-dialog bottom-sheet, NOT a CSS dropdown
+      // Should open a q-dialog bottom-sheet (filter-sheet-dialog), NOT a CSS dropdown
       const sheet = page.locator('.filter-sheet, [class*="q-dialog"], [role="dialog"]').first();
       await expect(sheet).toBeVisible({ timeout: 3000 });
       // Desktop dropdown must NOT be visible on mobile
@@ -75,16 +78,16 @@ test.describe('Mobile viewport 390px (OWF-115)', () => {
 
   // ── Jars ─────────────────────────────────────────────────────────────
   test('Jars — renders without horizontal overflow at 390px', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/jars');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/jars');
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
     expect(bodyWidth).toBeLessThanOrEqual(400);
   });
 
   test('Jars — grid collapses to 1 column on mobile', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/jars');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/jars');
+    await page.waitForLoadState('domcontentloaded');
 
     // On 390px, grid should be 1-col (each tile spans full width ~390px)
     const tile = page.locator('.jar-tile, .jars-grid > *').first();
@@ -98,8 +101,8 @@ test.describe('Mobile viewport 390px (OWF-115)', () => {
   });
 
   test('Jars — jar cards visible with amount and name', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/jars');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:3000/user/jars');
+    await page.waitForLoadState('domcontentloaded');
 
     const jarCards = page.locator('.jar-tile, .jar-card');
     const count = await jarCards.count();

@@ -15,7 +15,7 @@ test.describe('Interaction tests (OWF-114)', () => {
   // ── PeriodNavigator ──────────────────────────────────────────────────
   test.describe('PeriodNavigator', () => {
     test('prev/next month buttons change displayed month', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       // Get current month label
@@ -33,7 +33,7 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('next button advances month forward', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       const nextBtn = page.locator('button[aria-label*="siguiente"], .period-next, [data-testid="period-next"]').first();
@@ -57,7 +57,7 @@ test.describe('Interaction tests (OWF-114)', () => {
   // ── FilterPanel ──────────────────────────────────────────────────────
   test.describe('FilterPanel', () => {
     test('opens filter panel on button click', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       const filterBtn = page.locator('.filter-btn, button').filter({ hasText: /filtro/i }).first();
@@ -69,7 +69,7 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('type chip selection changes filtered results', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       // Click type chip "Gastos"
@@ -87,7 +87,7 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('clear filters button resets filters', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       const clearBtn = page.locator('button').filter({ hasText: /limpiar/i }).first();
@@ -102,7 +102,7 @@ test.describe('Interaction tests (OWF-114)', () => {
   // ── SmartTxModal ─────────────────────────────────────────────────────
   test.describe('SmartTxModal — 4 modes', () => {
     test('opens modal on FAB click', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       const fab = page.locator('.tx-fab, [data-testid="tx-fab"], button[aria-label*="nueva"], button[aria-label*="registrar"]').first();
@@ -114,7 +114,7 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('mode: expense — can fill amount and description', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       const fab = page.locator('.tx-fab, button').filter({ hasText: /nueva|registrar|\+/i }).first();
@@ -131,7 +131,7 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('mode: income — type toggle switches to income', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       const fab = page.locator('.tx-fab, button').filter({ hasText: /nueva|registrar|\+/i }).first();
@@ -147,7 +147,7 @@ test.describe('Interaction tests (OWF-114)', () => {
     });
 
     test('mode: transfer — transfer option visible', async ({ page }) => {
-      await page.goto('http://localhost:3000/app/user/transactions');
+      await page.goto('http://localhost:3000/user/transactions');
       await page.waitForLoadState('networkidle');
 
       const fab = page.locator('.tx-fab, button').filter({ hasText: /nueva|registrar|\+/i }).first();

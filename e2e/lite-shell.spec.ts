@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Lite Desktop Shell', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the app
-    await page.goto('http://localhost:3000/app/');
+    await page.goto('http://localhost:3000/');
   });
 
   test('login page loads', async ({ page }) => {

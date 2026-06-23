@@ -14,7 +14,7 @@ test.describe('Profile smoke (V-07, V-08, V-23)', () => {
 
   // V-07: Profile / cuenta
   test('V-07 — Profile page loads and shows user data', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/profile');
+    await page.goto('http://localhost:3000/user/profile');
     await expect(page).toHaveURL(/\/user\/profile/);
     // At least one input with email/name should be visible
     const inputs = page.locator('input');
@@ -23,14 +23,14 @@ test.describe('Profile smoke (V-07, V-08, V-23)', () => {
 
   // V-08: Financial profile — card layout
   test('V-08 — Financial profile page loads with cards', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/financial-profile');
+    await page.goto('http://localhost:3000/user/financial-profile');
     await expect(page).toHaveURL(/\/user\/financial-profile/);
     // Heading or card structure visible
     await expect(page.locator('.fp-page__card, .fp-card, h1, h2').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('V-08 — Financial profile has 4 cards (perfil, situación, metas, cántaros)', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/financial-profile');
+    await page.goto('http://localhost:3000/user/financial-profile');
     await page.waitForLoadState('networkidle');
     // Expect at least 4 card sections
     const cards = page.locator('.fp-page__card');
@@ -38,7 +38,7 @@ test.describe('Profile smoke (V-07, V-08, V-23)', () => {
   });
 
   test('V-08 — Jar template selector visible in card 4', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/financial-profile');
+    await page.goto('http://localhost:3000/user/financial-profile');
     await page.waitForLoadState('networkidle');
     // Template cards should render
     const tplCards = page.locator('.fp-page__tpl-card');
@@ -48,14 +48,14 @@ test.describe('Profile smoke (V-07, V-08, V-23)', () => {
 
   // V-23: Onboarding flow
   test('V-23 — Onboarding renders intro step', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/onboarding');
+    await page.goto('http://localhost:3000/user/onboarding');
     await expect(page).toHaveURL(/\/user\/onboarding/);
     // Step indicator or title should be visible
     await expect(page.locator('.ob__step-title, .ob__title, h1, h2').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('V-23 — Onboarding can navigate to next step', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/onboarding');
+    await page.goto('http://localhost:3000/user/onboarding');
     await page.waitForLoadState('networkidle');
     const nextBtn = page.locator('button').filter({ hasText: /siguiente|continuar|next/i }).first();
     if (await nextBtn.isVisible()) {
@@ -66,7 +66,7 @@ test.describe('Profile smoke (V-07, V-08, V-23)', () => {
   });
 
   test('V-23 — Onboarding recommend step renders when goals step completed', async ({ page }) => {
-    await page.goto('http://localhost:3000/app/user/onboarding');
+    await page.goto('http://localhost:3000/user/onboarding');
     await page.waitForLoadState('networkidle');
     // Navigate through steps: intro → about → situation → goals → recommend
     // Try clicking next buttons multiple times
