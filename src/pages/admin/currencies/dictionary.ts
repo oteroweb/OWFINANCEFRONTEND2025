@@ -49,12 +49,12 @@ export const dictionary = {
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
   { id: 1, vmodel: 'symbol', vmodel_api: 'symbol', type: 'input', label: 'Símbolo', placeholder: 'Símbolo', value: '' },
   { id: 2, vmodel: 'code', vmodel_api: 'code', type: 'input', label: 'Código', placeholder: 'Código', value: '' },
-  { id: 3, vmodel: 'align', vmodel_api: '', type: 'select', label: 'Alineación', select_label: 'label', placeholder: '', value: '', items: [
+  { id: 3, vmodel: 'align', vmodel_api: 'align', type: 'select', label: 'Alineación', select_label: 'label', placeholder: '', value: '', items: [
         { value: 'left', label: 'Izquierda' },
         { value: 'right', label: 'Derecha' }
       ]
     },
-    { id: 3, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ],
 
   // Edición de moneda
@@ -70,6 +70,6 @@ export const dictionary = {
         { value: 'right', label: 'Derecha' }
       ]
     },
-    { id: 3, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ]
 } as const;

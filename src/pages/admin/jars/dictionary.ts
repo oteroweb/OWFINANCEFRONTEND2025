@@ -34,7 +34,6 @@ export const dictionary = {
     { name: 'Tipo', key: 'type' },
     { name: 'Fecha', key: 'date' },
     { name: 'Activo', key: 'active', type: 'boolean' },
-    { name: 'Is Active', key: 'is_active', type: 'boolean' },
     { name: 'Eliminado', key: 'deleted_at' },
     { name: 'Acciones', key: 'actions' }
   ],
@@ -54,8 +53,7 @@ export const dictionary = {
     { id: 1, vmodel: 'percent', vmodel_api: 'percent', type: 'input', label: 'Porcentaje', placeholder: '0.00', value: '' },
     { id: 2, vmodel: 'type', vmodel_api: 'type', type: 'input', label: 'Tipo', placeholder: 'Tipo', value: '' },
     { id: 3, vmodel: 'date', vmodel_api: 'date', type: 'date', label: 'Fecha', placeholder: 'YYYY-MM-DD', value: '' },
-    { id: 4, vmodel: 'is_active', vmodel_api: 'is_active', type: 'checkbox', label: 'Is Active', value: false },
-    { id: 5, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ],
 
   // Edición de jarra
@@ -67,7 +65,6 @@ export const dictionary = {
     { id: 1, vmodel: 'percent', vmodel_api: 'percent', type: 'input', label: 'Porcentaje', placeholder: '0.00', value: '' },
     { id: 2, vmodel: 'type', vmodel_api: 'type', type: 'input', label: 'Tipo', placeholder: 'Tipo', value: '' },
     { id: 3, vmodel: 'date', vmodel_api: 'date', type: 'date', label: 'Fecha', placeholder: 'YYYY-MM-DD', value: '' },
-    { id: 4, vmodel: 'is_active', vmodel_api: 'is_active', type: 'checkbox', label: 'Is Active', value: false },
-    { id: 5, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ]
 } as const;

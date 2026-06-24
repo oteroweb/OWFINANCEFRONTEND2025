@@ -13,13 +13,9 @@
     </div>
   </q-page>
 </template>
-
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { api } from 'boot/axios'
-
-defineOptions({ name: 'AdminDashboard' });
-
 const loading = ref(true)
 const metrics = ref<{key:string;label:string;value:string|number}[]>([])
 onMounted(async () => {

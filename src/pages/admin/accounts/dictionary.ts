@@ -58,7 +58,8 @@ export const dictionary = {
     { id: 1, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 2, vmodel: 'initial', vmodel_api: 'initial', type: 'number', label: 'Inicial', placeholder: '0.00', value: '' },
     { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_types', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 4, vmodel: 'user_id', vmodel_api: 'user_id', type: 'number', label: 'ID Usuario', placeholder: '0', value: '' },
+    { id: 5, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ],
 
   // Edición de cuenta
@@ -70,6 +71,7 @@ export const dictionary = {
     { id: 1, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 2, vmodel: 'initial', vmodel_api: 'initial', type: 'number', label: 'Inicial', placeholder: '0.00', value: '' },
     { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_types', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 4, vmodel: 'user_id', vmodel_api: 'user_id', type: 'number', label: 'ID Usuario', placeholder: '0', value: '' },
+    { id: 5, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ]
 } as const;

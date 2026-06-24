@@ -31,9 +31,6 @@
         <q-item clickable v-ripple to="/admin/clients">
           <q-item-section>Clientes</q-item-section>
         </q-item>
-        <q-item clickable v-ripple to="/admin/users">
-          <q-item-section>Usuarios</q-item-section>
-        </q-item>
         <q-item clickable v-ripple to="/admin/taxes">
           <q-item-section>Impuestos</q-item-section>
         </q-item>
@@ -54,6 +51,24 @@
         </q-item>
         <q-item clickable v-ripple to="/admin/providers">
           <q-item-section>Proveedores</q-item-section>
+        </q-item>
+        <q-item clickable v-ripple to="/admin/transaction_types">
+          <q-item-section avatar>
+            <q-icon name="swap_horiz" />
+          </q-item-section>
+          <q-item-section>Tipos de Tx</q-item-section>
+        </q-item>
+        <q-item clickable v-ripple to="/admin/roles">
+          <q-item-section avatar>
+            <q-icon name="manage_accounts" />
+          </q-item-section>
+          <q-item-section>Roles</q-item-section>
+        </q-item>
+        <q-item clickable v-ripple to="/admin/system">
+          <q-item-section avatar>
+            <q-icon name="monitor_heart" />
+          </q-item-section>
+          <q-item-section>Sistema</q-item-section>
         </q-item>
       </q-list>
     </q-drawer>
