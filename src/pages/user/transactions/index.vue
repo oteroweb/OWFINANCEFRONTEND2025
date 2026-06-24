@@ -11,6 +11,9 @@
         <h1 class="pro-tx__title">{{ periodStore.label }}</h1>
       </div>
 
+      <!-- PeriodNavigator -->
+      <PeriodNavigator />
+
       <!-- Smart filter card -->
       <q-card flat class="glass-panel pro-tx__filter-card">
         <q-card-section class="pro-tx__filter-section">
@@ -281,202 +284,123 @@
         </q-card-section>
       </q-card>
 
-      <!-- ExchangeRatesWidget panel (Pro only) -->
-      <q-card flat class="glass-panel pro-tx__rates-card">
-        <q-card-section class="q-pb-sm">
-          <div class="pro-tx__rates-header">
-            <div>
-              <div class="pro-tx__rates-title">Tipos de cambio</div>
-              <div class="pro-tx__rates-sub">Tasas actuales del usuario · 1 USD =</div>
-            </div>
-            <button class="pro-tx__rates-toggle" @click="ratesExpanded = !ratesExpanded">
-              <q-icon :name="ratesExpanded ? 'expand_less' : 'expand_more'" size="20px" />
-            </button>
-          </div>
-        </q-card-section>
-        <q-card-section v-if="ratesExpanded" class="q-pt-none">
-          <ExchangeRatesWidget :rates="proRates" @change="onProRatesChange" />
-        </q-card-section>
-      </q-card>
+      <!-- ── Two-column body: date-grouped feed (left) + AccountsPanel (right) ── -->
+      <div class="pro-tx__body">
 
-      <!-- Table card -->
-      <q-card flat class="glass-panel transactions-lite__table-card">
-        <q-card-section class="row items-center justify-between q-pb-sm">
-          <div>
-            <div class="text-subtitle1 text-weight-bold">Lista de movimientos</div>
-            <div class="text-caption text-grey-7">
-              {{ tablePanelDescription }}
-            </div>
+        <!-- LEFT: date-grouped transaction feed -->
+        <div class="pro-tx-feed">
+          <div v-if="loading" class="pro-tx-feed__loading">
+            <q-spinner color="primary" size="24px" />
           </div>
-          <q-chip dense color="grey-2" text-color="dark" class="text-weight-medium">
-            {{ rows.length }} en pantalla
-          </q-chip>
-        </q-card-section>
+          <div v-else-if="proFilteredRows.length === 0" class="pro-tx-feed__empty">
+            <q-icon name="search_off" size="36px" style="color: var(--fg-3)" />
+            <div style="color: var(--fg-2); margin-top: 10px; font-size: 14px;">Ningún movimiento coincide con estos filtros.</div>
+          </div>
+          <template v-else>
+            <div v-for="[dateKey, txGroup] in groupedTransactions" :key="dateKey" class="pro-tx-feed__group">
+              <!-- Date header -->
+              <div class="pro-tx-feed__date-header">{{ formatGroupHeader(dateKey) }}</div>
 
-        <!-- shared table body -->
-        <q-card-section class="q-pt-none">
-          <q-table
-            :columns="columns"
-            :rows="rows"
-            :visible-columns="effectiveVisibleColumnNames"
-            :loading="loading"
-            row-key="id"
-            selection="multiple"
-            v-model:selected="selectedRows"
-            :dense="false"
-            flat
-            bordered
-            class="shadow-1"
-            v-model:pagination="pagination"
-            @request="onRequest"
-          >
-            <template
-              v-if="showRunningBalanceColumn && (pagination.descending ? singleAccountBalance != null : preListBalance != null)"
-              v-slot:top-row="{ cols }"
-            >
-              <tr :class="pagination.descending ? 'current-balance-row' : 'initial-balance-row'">
-                <td
-                  v-for="col in cols"
-                  :key="col.name"
-                  :class="col.align === 'right' ? 'text-right' : 'text-left'"
-                  style="padding: 4px 8px"
-                >
-                  <template v-if="col.name === 'name'">
-                    <span class="text-caption text-grey-7" style="font-style: italic">
-                      <q-icon :name="pagination.descending ? 'account_balance' : 'flag'" size="13px" class="q-mr-xs" />
-                      {{ pagination.descending ? 'Saldo actual' : 'Saldo anterior' }}
-                    </span>
-                  </template>
-                  <template v-else-if="col.name === 'running_balance'">
-                    <template v-if="pagination.descending && singleAccountBalance != null">
-                      <span class="text-weight-bold" :class="singleAccountBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
-                        {{ formatWithCodeSuffix(singleAccountCurrencyCode, singleAccountBalance) }}
-                      </span>
-                    </template>
-                    <template v-else-if="!pagination.descending && preListBalance != null">
-                      <span class="text-weight-bold" :class="preListBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
-                        {{ formatWithCodeSuffix(singleAccountCurrencyCode, preListBalance) }}
-                      </span>
-                    </template>
-                  </template>
-                  <template v-else>
-                    <span />
-                  </template>
-                </td>
-              </tr>
-            </template>
-            <template
-              v-if="showRunningBalanceColumn && (pagination.descending ? preListBalance != null : singleAccountBalance != null)"
-              v-slot:bottom-row="{ cols }"
-            >
-              <tr :class="pagination.descending ? 'initial-balance-row' : 'current-balance-row'">
-                <td
-                  v-for="col in cols"
-                  :key="col.name"
-                  :class="col.align === 'right' ? 'text-right' : 'text-left'"
-                  style="padding: 4px 8px"
-                >
-                  <template v-if="col.name === 'name'">
-                    <span class="text-caption text-grey-7" style="font-style: italic">
-                      <q-icon :name="pagination.descending ? 'flag' : 'account_balance'" size="13px" class="q-mr-xs" />
-                      {{ pagination.descending ? 'Saldo anterior' : 'Saldo actual' }}
-                    </span>
-                  </template>
-                  <template v-else-if="col.name === 'running_balance'">
-                    <template v-if="pagination.descending && preListBalance != null">
-                      <span class="text-weight-bold" :class="preListBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
-                        {{ formatWithCodeSuffix(singleAccountCurrencyCode, preListBalance) }}
-                      </span>
-                    </template>
-                    <template v-else-if="!pagination.descending && singleAccountBalance != null">
-                      <span class="text-weight-bold" :class="singleAccountBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
-                        {{ formatWithCodeSuffix(singleAccountCurrencyCode, singleAccountBalance) }}
-                      </span>
-                    </template>
-                  </template>
-                  <template v-else>
-                    <span />
-                  </template>
-                </td>
-              </tr>
-            </template>
-            <template v-slot:body-cell-amount="props">
-              <q-td :props="props" align="right">
-                <div class="amount-main">{{ formatAmountInAccountCurrency(props.row) }}</div>
-                <div v-if="showUsdUnderAmounts" class="amount-sub">
-                  {{ formatAmountConversionLine(props.row) }}
+              <!-- Transaction rows -->
+              <div
+                v-for="row in txGroup"
+                :key="String((row as AnyRecord).id)"
+                class="pro-tx-feed__row"
+              >
+                <!-- Colored icon -->
+                <div class="pro-tx-feed__icon" :class="txIconClass(row)">
+                  <q-icon :name="txIconName(row)" size="18px" />
                 </div>
-              </q-td>
-            </template>
-            <template v-slot:body-cell-category_summary="props">
-              <q-td :props="props">
-                {{ categoryLabelForRow(props.row) }}
-              </q-td>
-            </template>
-            <template v-slot:body-cell-running_balance="props">
-              <q-td :props="props" align="right">
-                <div class="balance-stack">
-                  <div>
-                    <span :class="balanceCellClass(props.row)">{{
-                      formatRunningBalanceForRow(props.row)
-                    }}</span>
-                  </div>
-                  <div v-if="showUsdInRunningBalance" class="amount-sub">
-                    {{ formatRunningBalanceConversionLine(props.row) }}
-                  </div>
+
+                <!-- Name + date/time -->
+                <div class="pro-tx-feed__meta">
+                  <span class="pro-tx-feed__name">{{ txLabel(row) }}</span>
+                  <span class="pro-tx-feed__time">{{ txDateTime(row) }}</span>
                 </div>
-              </q-td>
-            </template>
-            <template v-slot:body-cell-actions="props">
-              <q-td align="right">
-                <q-btn flat round icon="edit" color="primary" @click="edit(props.row)" />
-                <q-btn flat round icon="delete" color="negative" @click="remove(props.row)" />
-              </q-td>
-            </template>
-            <template
-              v-for="col in manyToManyColumns"
-              :key="col.key"
-              v-slot:[`body-cell-${col.key}`]="props"
-            >
-              <q-td>
-                <div>
-                  <template v-if="col.ownerKey && col.pivotKey">
-                    <span
-                      v-for="(item, idx) in getOwnedItems(props.row, col)"
-                      :key="getItemKey(item, idx)"
-                    >
-                      {{ getItemLabel(item, col.labelKey) }}
-                      <q-badge color="primary" class="q-ml-xs">Owner</q-badge>
-                      <span v-if="idx < getOwnedItems(props.row, col).length - 1">, </span>
-                    </span>
-                  </template>
-                  <template v-else>
-                    <span
-                      v-for="(item, idx) in props.row[col.key] || []"
-                      :key="getItemKey(item, idx)"
-                    >
-                      {{ getItemLabel(item, col.labelKey) }}
-                      <span v-if="idx < props.row[col.key]?.length - 1">, </span>
-                    </span>
-                  </template>
+
+                <!-- Chips: jar + category -->
+                <div class="pro-tx-feed__chips">
+                  <span v-if="txJarName(row)" class="pro-tx-feed__jar-chip">
+                    <span class="pro-tx-feed__jar-dot" :style="{ background: txJarColor(row) }" />
+                    {{ txJarName(row) }}
+                  </span>
+                  <span class="pro-tx-feed__cat-chip">{{ categoryLabelForRow(row) }}</span>
                 </div>
-              </q-td>
-            </template>
-            <template v-slot:[`body-cell-account.name`]="props">
-              <q-td :props="props">
-                <div class="cell-stack">
-                  <template v-if="props.row && props.row.account && props.row.account.name">
-                    <div>{{ props.row.account.name }}</div>
-                  </template>
-                  <template v-else>
-                    <div v-for="(n, idx) in paymentAccountNames(props.row)" :key="idx">{{ n }}</div>
-                  </template>
+
+                <!-- Amount -->
+                <div class="pro-tx-feed__amount" :class="txAmountClass(row)">
+                  {{ formatAmountInAccountCurrency(row) }}
                 </div>
-              </q-td>
-            </template>
-          </q-table>
-        </q-card-section>
-      </q-card>
+
+                <!-- Row actions -->
+                <div class="pro-tx-feed__actions">
+                  <q-btn flat round icon="edit" size="xs" color="grey-6" @click="edit(row as Record<string, unknown>)" />
+                  <q-btn flat round icon="delete" size="xs" color="grey-5" @click="remove(row as Record<string, unknown>)" />
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- RIGHT: AccountsPanel (reuses ap-panel styles from ProHomeView) -->
+        <aside class="pro-tx__accounts-panel ap-panel">
+          <div class="ap-panel__tabs">
+            <button class="ap-panel__tab" :class="{ 'ap-panel__tab--active': apTxSection === 'accounts' }" @click="apTxSection = 'accounts'">Cuentas</button>
+            <button class="ap-panel__tab" :class="{ 'ap-panel__tab--active': apTxSection === 'debts' }" @click="apTxSection = 'debts'">Deudas</button>
+          </div>
+
+          <!-- Accounts section -->
+          <template v-if="apTxSection === 'accounts'">
+            <div class="ap-panel__total">
+              <span class="t-eyebrow" style="margin-bottom:4px;display:block">Patrimonio neto · USD</span>
+              <span class="ap-panel__total-amount">{{ formatMoney(apTxNetTotal) }}</span>
+            </div>
+            <div class="ap-panel__divider" />
+            <div v-if="apTxLoading" class="ap-panel__loading">
+              <q-spinner color="primary" size="20px" />
+            </div>
+            <div v-else class="ap-panel__list">
+              <div v-for="acc in apTxAccountsList" :key="acc.id" class="ap-row">
+                <div class="ap-row__badge" :style="{ background: acc.color }">{{ acc.short }}</div>
+                <div class="ap-row__info">
+                  <span class="ap-row__name">{{ acc.name }}</span>
+                  <span class="ap-row__sub">{{ acc.type }}</span>
+                </div>
+                <div class="ap-row__right">
+                  <span class="ap-row__balance">{{ formatMoney(acc.balance) }}</span>
+                  <span class="ap-row__currency">{{ acc.currency }}</span>
+                </div>
+              </div>
+              <button class="ap-panel__add" @click="$router.push('/user/accounts')">
+                <q-icon name="add" size="16px" /> + Agregar cuenta
+              </button>
+            </div>
+          </template>
+
+          <!-- Debts section -->
+          <template v-else>
+            <div class="ap-panel__total">
+              <span class="t-eyebrow" style="margin-bottom:4px;display:block">Deuda total · USD</span>
+              <span class="ap-panel__total-amount" style="color: var(--expense-fg)">{{ formatMoney(apTxDebtsTotal) }}</span>
+            </div>
+            <div class="ap-panel__divider" />
+            <div class="ap-panel__list">
+              <div v-for="debt in apTxDebtsList" :key="debt.id" class="ap-row">
+                <div class="ap-row__debt-icon"><q-icon name="credit_card" size="16px" /></div>
+                <div class="ap-row__info">
+                  <span class="ap-row__name">{{ debt.name }}</span>
+                  <span class="ap-row__sub" style="color: var(--expense-fg)">Próx. {{ formatMoney(debt.next_payment) }}</span>
+                </div>
+                <div class="ap-row__right">
+                  <span class="ap-row__balance" style="color: var(--expense-fg)">{{ formatMoney(debt.balance) }}</span>
+                </div>
+              </div>
+              <div v-if="apTxDebtsList.length === 0" class="ap-panel__empty">Sin deudas registradas</div>
+            </div>
+          </template>
+        </aside>
+
+      </div><!-- end two-column body -->
     </template><!-- end pro template -->
 
     <!-- ══ LEGACY layout: keeps original structure ═══════════════════════ -->
@@ -1100,7 +1024,7 @@ const selectOptionsAll = reactive<Record<string, Array<Record<string, unknown>>>
 const selectOptionsFiltered = reactive<Record<string, Array<Record<string, unknown>>>>({});
 // Imports MUST precede any statements (ESM rule); previously defineOptions was before imports causing vue-tsc errors.
 import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useQuasar, QInput, QCheckbox } from 'quasar';
 import { api } from 'boot/axios';
 import { useAuthStore } from 'stores/auth';
@@ -1109,6 +1033,7 @@ import { AccountsSidebarWidget, TransactionFormDialog } from 'components';
 import TransactionBulkImportDialog from 'components/TransactionBulkImportDialog.vue';
 import { useTransactionsStore } from 'stores/transactions';
 import LiteTransactionsView from './LiteTransactionsView.vue';
+import PeriodNavigator from 'components/PeriodNavigator.vue';
 import { usePeriodStore } from 'stores/period';
 import { useUiStore } from 'stores/ui';
 import {
@@ -1121,6 +1046,7 @@ defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
 const route = useRoute();
+const $router = useRouter();
 const authStore = useAuthStore();
 const defaultCurrencyCode = computed(() => authStore.defaultCurrencyCode);
 const txStore = useTransactionsStore();
@@ -2536,6 +2462,9 @@ onMounted(async () => {
   // Cargar tasas del usuario para ExchangeRatesWidget (Pro mode)
   loadProRatesFromUser();
 
+  // Cargar cuentas y deudas para AccountsPanel (Pro mode)
+  void loadApTxPanel();
+
   // Cerrar Pro filter panel al hacer click fuera
   const onFilterPanelClickOutside = (e: MouseEvent) => {
     if (filterPanelRef.value && !filterPanelRef.value.contains(e.target as Node)) {
@@ -3574,6 +3503,180 @@ function loadProRatesFromUser(): void {
   proRates.value = out;
 }
 
+// ===== AccountsPanel for Transactions (Pro mode) =====
+const apTxSection = ref<'accounts' | 'debts'>('accounts');
+const apTxLoading = ref(false);
+
+interface ApTxAccount { id: number; name: string; short: string; type: string; currency: string; balance: number; color: string }
+interface ApTxDebt { id: number; name: string; balance: number; next_payment: number }
+
+const apTxAccountsList = ref<ApTxAccount[]>([]);
+const apTxDebtsList = ref<ApTxDebt[]>([]);
+const apTxNetTotal = computed(() => apTxAccountsList.value.reduce((s, a) => s + a.balance, 0));
+const apTxDebtsTotal = computed(() => apTxDebtsList.value.reduce((s, d) => s + d.balance, 0));
+
+async function loadApTxPanel(): Promise<void> {
+  apTxLoading.value = true;
+  try {
+    const [accRes, debtRes] = await Promise.allSettled([
+      api.get('/accounts'),
+      api.get('/debts', { params: { per_page: 50 } }),
+    ]);
+    if (accRes.status === 'fulfilled') {
+      const raw = accRes.value.data?.data;
+      const list: Record<string, unknown>[] = Array.isArray(raw) ? raw : Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as Record<string, unknown>).data as Record<string, unknown>[] : [];
+      apTxAccountsList.value = list.map(a => ({
+        id: Number(a['id']),
+        name: (a['name'] as string) || 'Cuenta',
+        short: ((a['name'] as string) || 'CTA').slice(0, 3).toUpperCase(),
+        type: (a['account_type'] as string) || 'Cuenta',
+        currency: typeof a['currency'] === 'object' && a['currency'] ? String((a['currency'] as Record<string, unknown>)['code'] ?? 'USD') : (a['currency'] as string) || 'USD',
+        balance: Number(a['balance'] ?? 0),
+        color: (a['color'] as string) || 'var(--info)',
+      }));
+    }
+    if (debtRes.status === 'fulfilled') {
+      const raw = debtRes.value.data?.data;
+      const list: Record<string, unknown>[] = Array.isArray(raw) ? raw : Array.isArray((raw as Record<string, unknown>)?.data) ? (raw as Record<string, unknown>).data as Record<string, unknown>[] : [];
+      apTxDebtsList.value = list.map(d => ({
+        id: Number(d['id']),
+        name: (d['name'] as string) || 'Deuda',
+        balance: Number(d['balance'] ?? d['total_amount'] ?? 0),
+        next_payment: Number(d['next_payment'] ?? d['monthly_payment'] ?? 0),
+      }));
+    }
+  } catch { /* silent */ } finally {
+    apTxLoading.value = false;
+  }
+}
+
+// ===== Date-grouped transaction feed helpers =====
+
+// Returns "YYYY-MM-DD" date key from a transaction row
+function txDateKey(row: Row): string {
+  const raw = (row as AnyRecord)['date'];
+  if (!raw) return '';
+  const s = typeof raw === 'string' ? raw : String(raw);
+  // Handle ISO datetime strings ("2026-06-26T09:02:00") or date-only "2026-06-26"
+  return s.slice(0, 10);
+}
+
+const groupedTransactions = computed<[string, Row[]][]>(() => {
+  const groups: Record<string, Row[]> = {};
+  for (const row of proFilteredRows.value) {
+    const key = txDateKey(row);
+    if (!key) continue;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(row);
+  }
+  // Sort descending (newest first)
+  return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
+});
+
+const DAY_ABBR_ES = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+const MONTH_ABBR_ES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+
+function formatGroupHeader(dateStr: string): string {
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+  const d = new Date(dateStr + 'T00:00:00');
+  const dayAbbr = DAY_ABBR_ES[d.getDay()] ?? '';
+  const dayNum = d.getDate();
+  const monAbbr = MONTH_ABBR_ES[d.getMonth()] ?? '';
+
+  if (dateStr === todayKey) return `HOY · ${dayAbbr} ${dayNum} ${monAbbr}`;
+  if (dateStr === yKey) return `AYER · ${dayAbbr} ${dayNum} ${monAbbr}`;
+  return `${dayAbbr} ${dayNum} ${monAbbr}`;
+}
+
+function txLabel(row: Row): string {
+  const r = row as AnyRecord;
+  const name = r['name'] ?? r['description'] ?? r['concept'] ?? r['label'] ?? '';
+  return typeof name === 'string' ? name : String(name);
+}
+
+function txDateTime(row: Row): string {
+  const r = row as AnyRecord;
+  const raw = r['date'];
+  if (!raw) return '';
+  const s = typeof raw === 'string' ? raw : String(raw);
+  const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
+  if (!Number.isFinite(d.getTime())) return '';
+  const today = new Date();
+  const isToday = d.toDateString() === today.toDateString();
+  const dayAbbr = DAY_ABBR_ES[d.getDay()] ?? '';
+  const dayNum = d.getDate();
+  const monAbbr = MONTH_ABBR_ES[d.getMonth()] ?? '';
+  const time = d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (isToday) return `Hoy · ${dayNum} ${monAbbr} · ${time}`;
+  return `${dayAbbr} ${dayNum} ${monAbbr} · ${time}`;
+}
+
+function txType(row: Row): 'income' | 'expense' | 'transfer' {
+  if (isTransferRow(row)) return 'transfer';
+  const amt = parseNumber((row as AnyRecord)['amount']);
+  const tt = (row as AnyRecord)['transaction_type'] as AnyRecord | undefined;
+  const name = typeof tt?.['name'] === 'string' ? (tt['name'] as string).toLowerCase() : '';
+  const slug = typeof tt?.['slug'] === 'string' ? (tt['slug'] as string).toLowerCase() : '';
+  const combined = `${name} ${slug}`;
+  if (combined.includes('income') || combined.includes('ingreso')) return 'income';
+  if (combined.includes('expense') || combined.includes('gasto')) return 'expense';
+  return amt >= 0 ? 'income' : 'expense';
+}
+
+function txIconName(row: Row): string {
+  switch (txType(row)) {
+    case 'income':   return 'arrow_downward';
+    case 'expense':  return 'arrow_outward';
+    case 'transfer': return 'swap_horiz';
+  }
+}
+
+function txIconClass(row: Row): string {
+  switch (txType(row)) {
+    case 'income':   return 'pro-tx-feed__icon--income';
+    case 'expense':  return 'pro-tx-feed__icon--expense';
+    case 'transfer': return 'pro-tx-feed__icon--transfer';
+  }
+}
+
+function txAmountClass(row: Row): string {
+  switch (txType(row)) {
+    case 'income':   return 'pro-tx-feed__amount--income';
+    case 'expense':  return 'pro-tx-feed__amount--expense';
+    case 'transfer': return 'pro-tx-feed__amount--transfer';
+  }
+}
+
+function txJarName(row: Row): string {
+  const r = row as AnyRecord;
+  // Try jar.name, then jar_name
+  const jar = r['jar'];
+  if (jar && typeof jar === 'object') {
+    const n = (jar as AnyRecord)['name'];
+    if (typeof n === 'string' && n) return n;
+  }
+  const jarName = r['jar_name'];
+  if (typeof jarName === 'string' && jarName) return jarName;
+  return '';
+}
+
+function txJarColor(row: Row): string {
+  const r = row as AnyRecord;
+  const jar = r['jar'];
+  if (jar && typeof jar === 'object') {
+    const c = (jar as AnyRecord)['color'];
+    if (typeof c === 'string' && c) return c;
+  }
+  const jarColor = r['jar_color'];
+  if (typeof jarColor === 'string' && jarColor) return jarColor;
+  return 'var(--brand-primary)';
+}
+
 async function onProRatesChange(newRates: RateMap): Promise<void> {
   // Optimistically update local state
   proRates.value = newRates;
@@ -4445,35 +4548,368 @@ function exportCSV(): void {
   color: var(--expense-fg, #b91c1c);
 }
 
-/* ExchangeRatesWidget card */
-.pro-tx__rates-card {
-  border-radius: var(--radius-lg) !important;
+/* ── Two-column body layout ── */
+.pro-tx__body {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
 }
 
-.pro-tx__rates-header {
+@media (max-width: 1023px) {
+  .pro-tx__body {
+    grid-template-columns: 1fr;
+  }
+  .pro-tx__accounts-panel {
+    display: none;
+  }
+}
+
+/* ── Date-grouped feed ── */
+.pro-tx-feed {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0;
 }
 
-.pro-tx__rates-title {
-  font-size: 15px;
+.pro-tx-feed__loading,
+.pro-tx-feed__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+}
+
+.pro-tx-feed__group {
+  margin-bottom: 4px;
+}
+
+.pro-tx-feed__date-header {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  padding: 14px 16px 6px;
+}
+
+.pro-tx-feed__row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-hairline);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.pro-tx-feed__row:first-of-type {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.pro-tx-feed__row:last-of-type {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border-bottom: none;
+}
+
+.pro-tx-feed__row:only-of-type {
+  border-radius: var(--radius-lg);
+  border-bottom: none;
+}
+
+.pro-tx-feed__row:hover {
+  background: var(--surface-2);
+}
+
+/* Colored icon circle */
+.pro-tx-feed__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.pro-tx-feed__icon--income {
+  background: color-mix(in srgb, var(--income, #15803d) 14%, transparent);
+  color: var(--income-fg, #15803d);
+}
+
+.pro-tx-feed__icon--expense {
+  background: color-mix(in srgb, var(--expense, #b91c1c) 14%, transparent);
+  color: var(--expense-fg, #b91c1c);
+}
+
+.pro-tx-feed__icon--transfer {
+  background: color-mix(in srgb, var(--info, #0369a1) 14%, transparent);
+  color: var(--info, #0369a1);
+}
+
+/* Name + datetime */
+.pro-tx-feed__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pro-tx-feed__name {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pro-tx-feed__time {
+  font-size: 11.5px;
+  color: var(--fg-3);
+}
+
+/* Jar + category chips */
+.pro-tx-feed__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pro-tx-feed__jar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-1);
+}
+
+.pro-tx-feed__jar-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--brand-primary);
+}
+
+.pro-tx-feed__cat-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+
+/* Amount */
+.pro-tx-feed__amount {
+  font-family: var(--font-money, var(--font-body));
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.pro-tx-feed__amount--income  { color: var(--income-fg, #15803d); }
+.pro-tx-feed__amount--expense { color: var(--expense-fg, #b91c1c); }
+.pro-tx-feed__amount--transfer { color: var(--fg-1); }
+
+/* Row actions */
+.pro-tx-feed__actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.pro-tx-feed__row:hover .pro-tx-feed__actions {
+  opacity: 1;
+}
+
+/* ── AccountsPanel (reuses ap-panel styles; add missing ones here) ── */
+.pro-tx__accounts-panel {
+  position: sticky;
+  top: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  overflow: hidden;
+}
+
+/* ap-panel styles shared with ProHomeView (scoped to this file) */
+.ap-panel {
+  padding: 0;
+}
+
+.ap-panel__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.ap-panel__tab {
+  flex: 1;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-2);
+  transition: color 0.12s, border-color 0.12s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.ap-panel__tab--active {
+  color: var(--brand-primary);
+  border-bottom-color: var(--brand-primary);
+}
+
+.ap-panel__total {
+  padding: 16px 16px 12px;
+}
+
+.ap-panel__total-amount {
+  font-family: var(--font-money, var(--font-body));
+  font-size: 22px;
   font-weight: 700;
   color: var(--fg-1);
 }
 
-.pro-tx__rates-sub {
-  font-size: 12px;
-  color: var(--fg-2);
-  margin-top: 2px;
+.ap-panel__divider {
+  height: 1px;
+  background: var(--border-hairline);
+  margin: 0 16px;
 }
 
-.pro-tx__rates-toggle {
-  border: 0;
+.ap-panel__loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ap-panel__list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.ap-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  transition: background 0.1s;
+}
+
+.ap-row:hover {
+  background: var(--surface-2);
+}
+
+.ap-row__badge {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--info);
+}
+
+.ap-row__debt-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--expense-fg, #b91c1c) 12%, var(--surface-1));
+  color: var(--expense-fg, #b91c1c);
+}
+
+.ap-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ap-row__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ap-row__sub {
+  font-size: 11px;
+  color: var(--fg-3);
+}
+
+.ap-row__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.ap-row__balance {
+  font-family: var(--font-money, var(--font-body));
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-1);
+}
+
+.ap-row__currency {
+  font-size: 10.5px;
+  color: var(--fg-3);
+}
+
+.ap-panel__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 16px 12px;
+  padding: 7px 14px;
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-pill);
   background: transparent;
   cursor: pointer;
-  color: var(--fg-2);
-  border-radius: var(--radius-md);
-  padding: 4px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brand-primary);
+  transition: background 0.12s;
+}
+
+.ap-panel__add:hover {
+  background: color-mix(in srgb, var(--brand-primary) 8%, var(--surface-1));
+}
+
+.ap-panel__empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--fg-3);
 }
 </style>
