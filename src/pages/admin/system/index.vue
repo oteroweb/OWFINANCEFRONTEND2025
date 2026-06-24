@@ -14,8 +14,8 @@
   </q-page>
 </template>
 <script setup lang="ts">
-// eslint-disable-next-line vue/multi-word-component-names
 import { ref, onMounted } from 'vue'
+defineOptions({ name: 'AdminSystem' })
 import { api } from 'boot/axios'
 const loading = ref(true)
 const metrics = ref<{key:string;label:string;value:string|number}[]>([])
