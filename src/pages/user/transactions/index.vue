@@ -3530,7 +3530,7 @@ async function loadApTxPanel(): Promise<void> {
         id: Number(a['id']),
         name: (a['name'] as string) || 'Cuenta',
         short: ((a['name'] as string) || 'CTA').slice(0, 3).toUpperCase(),
-        type: (a['account_type'] as string) || 'Cuenta',
+        type: (typeof a['account_type'] === 'object' && a['account_type'] ? (a['account_type'] as Record<string,unknown>)['name'] as string : a['account_type'] as string) || 'Cuenta',
         currency: typeof a['currency'] === 'object' && a['currency'] ? ((a['currency'] as Record<string, unknown>)['code'] as string) ?? 'USD' : (a['currency'] as string) || 'USD',
         balance: Number(a['balance'] ?? 0),
         color: (a['color'] as string) || 'var(--info)',
