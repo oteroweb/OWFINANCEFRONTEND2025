@@ -1,6 +1,486 @@
 <template>
   <LiteTransactionsView v-if="isLiteLayout" />
   <q-page v-else :class="transactionsPageClasses">
+
+    <!-- ══ PRO layout: spec-faithful single-column ══════════════════════ -->
+    <template v-if="isPro">
+
+      <!-- Header: eyebrow + title -->
+      <div class="pro-tx__header">
+        <div class="pro-tx__eyebrow">Transacciones</div>
+        <h1 class="pro-tx__title">{{ periodStore.label }}</h1>
+      </div>
+
+      <!-- Smart filter card -->
+      <q-card flat class="glass-panel pro-tx__filter-card">
+        <q-card-section class="pro-tx__filter-section">
+
+          <!-- Row 1: AccountFilter pill + search bar + Filtros button -->
+          <div class="pro-tx__filter-row">
+
+            <!-- AccountFilter pill (Pro only) -->
+            <div ref="acctFilterRef" class="tx-acct-filter">
+              <button
+                :class="['tx-acct-filter__pill', acctFilterActive ? 'tx-acct-filter__pill--active' : '']"
+                @click.stop="acctFilterOpen = !acctFilterOpen"
+              >
+                <q-icon name="account_balance" size="16px" />
+                <span>{{ acctFilterLabel }}</span>
+                <q-icon :name="acctFilterOpen ? 'expand_less' : 'expand_more'" size="16px" />
+              </button>
+
+              <div v-if="acctFilterOpen" class="tx-acct-dropdown" @click.stop>
+                <!-- "All accounts" row -->
+                <button
+                  :class="['tx-acct-row', !acctFilterActive ? 'tx-acct-row--selected' : '']"
+                  @click="clearAccountFilter(); acctFilterOpen = false"
+                >
+                  <span class="tx-acct-row__dot tx-acct-row__dot--all" />
+                  <span class="tx-acct-row__name">Todas las cuentas</span>
+                  <q-icon v-if="!acctFilterActive" name="check" size="16px" class="tx-acct-row__check" />
+                </button>
+
+                <div class="tx-acct-dropdown__divider" />
+
+                <!-- Grouped by folder (spec: AccountFilter pill popover grouped by folder) -->
+                <template v-for="folder in accountFolders" :key="folder.id ?? '__ungrouped__'">
+                  <!-- Folder label (only shown when there is more than one group) -->
+                  <div
+                    v-if="accountFolders.length > 1"
+                    class="tx-acct-folder-label"
+                  >
+                    <q-icon name="folder_open" size="13px" />
+                    {{ folder.name }}
+                  </div>
+                  <button
+                    v-for="acct in folder.accounts"
+                    :key="acct.id"
+                    :class="['tx-acct-row', selectedAccountNums.includes(acct.id) ? 'tx-acct-row--selected' : '']"
+                    @click="toggleAccountFilter(acct.id)"
+                  >
+                    <span
+                      class="tx-acct-row__dot"
+                      :style="acct.color ? { background: acct.color } : {}"
+                    />
+                    <span class="tx-acct-row__name">{{ acct.name }}</span>
+                    <q-icon
+                      v-if="selectedAccountNums.includes(acct.id)"
+                      name="check"
+                      size="16px"
+                      class="tx-acct-row__check"
+                    />
+                  </button>
+                </template>
+
+                <div v-if="!availableAccounts.length" class="tx-acct-dropdown__empty">
+                  Cargando cuentas...
+                </div>
+              </div>
+            </div>
+
+            <!-- Search bar -->
+            <div class="pro-tx__search">
+              <q-icon name="search" size="18px" color="grey-6" />
+              <input
+                v-model="filters.search"
+                class="pro-tx__search-input"
+                :placeholder="'Buscar en concepto, cuenta o tipo…'"
+              />
+              <q-icon
+                v-if="filters.search"
+                name="close"
+                size="17px"
+                class="pro-tx__search-clear"
+                @click="filters.search = ''"
+              />
+            </div>
+
+            <!-- Filtros popover button -->
+            <div ref="filterPanelRef" class="pro-tx__filtros-wrap">
+              <button
+                class="pro-tx__filtros-btn"
+                :class="{ 'pro-tx__filtros-btn--active': proActiveCount > 0 }"
+                @click.stop="filterPanelOpen = !filterPanelOpen"
+              >
+                <q-icon name="tune" size="18px" />
+                Filtros
+                <span v-if="proActiveCount > 0" class="pro-tx__filtros-badge">{{ proActiveCount }}</span>
+              </button>
+
+              <!-- Popover panel -->
+              <div v-if="filterPanelOpen" class="pro-tx__filtros-panel" @click.stop>
+                <div class="pro-tx__filtros-panel-header">
+                  <span class="pro-tx__filtros-panel-title">Filtro inteligente</span>
+                  <button v-if="proActiveCount > 0" class="pro-tx__filtros-clear-all" @click="clearProFilters">
+                    Limpiar todo
+                  </button>
+                </div>
+
+                <!-- Tipo -->
+                <div class="pro-tx__panel-field">
+                  <span class="pro-tx__panel-label">Tipo</span>
+                  <div class="pro-tx__type-toggle">
+                    <button
+                      v-for="t in proTypeOptions"
+                      :key="t.id"
+                      class="pro-tx__type-btn"
+                      :class="{ 'pro-tx__type-btn--active': proType === t.id }"
+                      @click="setProType(t.id)"
+                    >{{ t.label }}</button>
+                  </div>
+                </div>
+
+                <!-- Categoría (from existing advanced filters) -->
+                <div class="pro-tx__panel-field">
+                  <span class="pro-tx__panel-label">Categoría</span>
+                  <div class="pro-tx__panel-cats">
+                    <button
+                      class="pro-tx__cat-btn"
+                      :class="{ 'pro-tx__cat-btn--active': !proSelectedCatId }"
+                      @click="clearCategoryTagFilter"
+                    >Todas</button>
+                    <button
+                      v-for="tag in categorySpendTags"
+                      :key="tag.key"
+                      class="pro-tx__cat-btn"
+                      :class="{ 'pro-tx__cat-btn--active': proSelectedCatId === tag.id }"
+                      @click="applyCategoryTagFilter(tag.id)"
+                    >{{ tag.name }}</button>
+                  </div>
+                </div>
+
+                <!-- Monto presets -->
+                <div class="pro-tx__panel-field">
+                  <span class="pro-tx__panel-label">Monto</span>
+                  <div class="pro-tx__amt-inputs">
+                    <div class="pro-tx__amt-input-wrap">
+                      <span class="pro-tx__amt-prefix">≥ $</span>
+                      <input
+                        type="number"
+                        class="pro-tx__amt-input"
+                        :value="proAmtMin"
+                        placeholder="0"
+                        @input="proAmtMin = ($event.target as HTMLInputElement).value"
+                      />
+                    </div>
+                    <div class="pro-tx__amt-input-wrap">
+                      <span class="pro-tx__amt-prefix">≤ $</span>
+                      <input
+                        type="number"
+                        class="pro-tx__amt-input"
+                        :value="proAmtMax"
+                        placeholder="∞"
+                        @input="proAmtMax = ($event.target as HTMLInputElement).value"
+                      />
+                    </div>
+                  </div>
+                  <div class="pro-tx__amt-presets">
+                    <button
+                      v-for="p in TX_AMOUNT_PRESETS"
+                      :key="p.id"
+                      class="pro-tx__amt-preset"
+                      :class="{ 'pro-tx__amt-preset--active': proAmtMin === p.min && proAmtMax === p.max }"
+                      @click="proAmtMin = p.min; proAmtMax = p.max"
+                    >{{ p.label }}</button>
+                  </div>
+                </div>
+
+                <!-- Columnas visibles -->
+                <div class="pro-tx__panel-field">
+                  <span class="pro-tx__panel-label">Columnas visibles</span>
+                  <q-select
+                    v-model="visibleColumnNames"
+                    :options="columnVisibilityOptions"
+                    option-label="label"
+                    option-value="value"
+                    emit-value
+                    map-options
+                    multiple
+                    use-chips
+                    dense
+                    outlined
+                    label="Columnas"
+                    class="full-width"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <button class="pro-tx__action-btn" :disabled="!rows.length" @click="exportCSV">
+              <q-icon name="download" size="16px" />
+            </button>
+            <button
+              class="pro-tx__action-btn pro-tx__action-btn--danger"
+              :disabled="selectedRows.length === 0"
+              @click="removeSelectedRows"
+            >
+              <q-icon name="delete_sweep" size="16px" />
+            </button>
+          </div>
+
+          <!-- Active chips row -->
+          <div v-if="proActiveChips.length > 0" class="pro-tx__chips-row">
+            <span
+              v-for="c in proActiveChips"
+              :key="c.key"
+              class="pro-tx__chip"
+              @click="removeFilterChip(c.key)"
+            >
+              <q-icon v-if="c.icon" :name="c.icon" size="14px" />
+              <span
+                v-if="c.dot"
+                class="pro-tx__chip-dot"
+                :style="{ background: c.dot }"
+              />
+              {{ c.label }}
+              <q-icon name="close" size="15px" class="pro-tx__chip-close" />
+            </span>
+          </div>
+
+          <!-- Bottom bar: count + net total + clear -->
+          <div class="pro-tx__filter-footer">
+            <span class="pro-tx__count-label">
+              <strong>{{ proFilteredRows.length }}</strong>
+              {{ proFilteredRows.length === 1 ? 'movimiento' : 'movimientos' }}
+              <template v-if="proActiveCount > 0">
+                &nbsp;·&nbsp;neto&nbsp;
+                <span
+                  class="pro-tx__net"
+                  :class="proNetTotal >= 0 ? 'pro-tx__net--pos' : 'pro-tx__net--neg'"
+                >{{ formatMoney(proNetTotal) }}</span>
+              </template>
+            </span>
+            <div class="pro-tx__footer-actions">
+              <button
+                v-if="singleAccountSelected"
+                class="pro-tx__footer-btn"
+                @click="openAdjustTop"
+              >
+                <q-icon name="tune" size="15px" />
+                Ajustar saldo
+              </button>
+              <button
+                v-if="singleAccountSelected"
+                class="pro-tx__footer-btn"
+                @click="recalcSingleAccountTop"
+              >
+                <q-icon name="autorenew" size="15px" />
+                Recalcular
+              </button>
+              <button
+                v-if="proActiveCount > 0"
+                class="pro-tx__footer-btn pro-tx__footer-btn--clear"
+                @click="clearProFilters"
+              >
+                <q-icon name="filter_alt_off" size="15px" />
+                Limpiar ({{ proActiveCount }})
+              </button>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- ExchangeRatesWidget panel (Pro only) -->
+      <q-card flat class="glass-panel pro-tx__rates-card">
+        <q-card-section class="q-pb-sm">
+          <div class="pro-tx__rates-header">
+            <div>
+              <div class="pro-tx__rates-title">Tipos de cambio</div>
+              <div class="pro-tx__rates-sub">Tasas actuales del usuario · 1 USD =</div>
+            </div>
+            <button class="pro-tx__rates-toggle" @click="ratesExpanded = !ratesExpanded">
+              <q-icon :name="ratesExpanded ? 'expand_less' : 'expand_more'" size="20px" />
+            </button>
+          </div>
+        </q-card-section>
+        <q-card-section v-if="ratesExpanded" class="q-pt-none">
+          <ExchangeRatesWidget :rates="proRates" @change="onProRatesChange" />
+        </q-card-section>
+      </q-card>
+
+      <!-- Table card -->
+      <q-card flat class="glass-panel transactions-lite__table-card">
+        <q-card-section class="row items-center justify-between q-pb-sm">
+          <div>
+            <div class="text-subtitle1 text-weight-bold">Lista de movimientos</div>
+            <div class="text-caption text-grey-7">
+              {{ tablePanelDescription }}
+            </div>
+          </div>
+          <q-chip dense color="grey-2" text-color="dark" class="text-weight-medium">
+            {{ rows.length }} en pantalla
+          </q-chip>
+        </q-card-section>
+
+        <!-- shared table body -->
+        <q-card-section class="q-pt-none">
+          <q-table
+            :columns="columns"
+            :rows="rows"
+            :visible-columns="effectiveVisibleColumnNames"
+            :loading="loading"
+            row-key="id"
+            selection="multiple"
+            v-model:selected="selectedRows"
+            :dense="false"
+            flat
+            bordered
+            class="shadow-1"
+            v-model:pagination="pagination"
+            @request="onRequest"
+          >
+            <template
+              v-if="showRunningBalanceColumn && (pagination.descending ? singleAccountBalance != null : preListBalance != null)"
+              v-slot:top-row="{ cols }"
+            >
+              <tr :class="pagination.descending ? 'current-balance-row' : 'initial-balance-row'">
+                <td
+                  v-for="col in cols"
+                  :key="col.name"
+                  :class="col.align === 'right' ? 'text-right' : 'text-left'"
+                  style="padding: 4px 8px"
+                >
+                  <template v-if="col.name === 'name'">
+                    <span class="text-caption text-grey-7" style="font-style: italic">
+                      <q-icon :name="pagination.descending ? 'account_balance' : 'flag'" size="13px" class="q-mr-xs" />
+                      {{ pagination.descending ? 'Saldo actual' : 'Saldo anterior' }}
+                    </span>
+                  </template>
+                  <template v-else-if="col.name === 'running_balance'">
+                    <template v-if="pagination.descending && singleAccountBalance != null">
+                      <span class="text-weight-bold" :class="singleAccountBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
+                        {{ formatWithCodeSuffix(singleAccountCurrencyCode, singleAccountBalance) }}
+                      </span>
+                    </template>
+                    <template v-else-if="!pagination.descending && preListBalance != null">
+                      <span class="text-weight-bold" :class="preListBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
+                        {{ formatWithCodeSuffix(singleAccountCurrencyCode, preListBalance) }}
+                      </span>
+                    </template>
+                  </template>
+                  <template v-else>
+                    <span />
+                  </template>
+                </td>
+              </tr>
+            </template>
+            <template
+              v-if="showRunningBalanceColumn && (pagination.descending ? preListBalance != null : singleAccountBalance != null)"
+              v-slot:bottom-row="{ cols }"
+            >
+              <tr :class="pagination.descending ? 'initial-balance-row' : 'current-balance-row'">
+                <td
+                  v-for="col in cols"
+                  :key="col.name"
+                  :class="col.align === 'right' ? 'text-right' : 'text-left'"
+                  style="padding: 4px 8px"
+                >
+                  <template v-if="col.name === 'name'">
+                    <span class="text-caption text-grey-7" style="font-style: italic">
+                      <q-icon :name="pagination.descending ? 'flag' : 'account_balance'" size="13px" class="q-mr-xs" />
+                      {{ pagination.descending ? 'Saldo anterior' : 'Saldo actual' }}
+                    </span>
+                  </template>
+                  <template v-else-if="col.name === 'running_balance'">
+                    <template v-if="pagination.descending && preListBalance != null">
+                      <span class="text-weight-bold" :class="preListBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
+                        {{ formatWithCodeSuffix(singleAccountCurrencyCode, preListBalance) }}
+                      </span>
+                    </template>
+                    <template v-else-if="!pagination.descending && singleAccountBalance != null">
+                      <span class="text-weight-bold" :class="singleAccountBalance >= 0 ? 'text-teal-8' : 'text-red-8'">
+                        {{ formatWithCodeSuffix(singleAccountCurrencyCode, singleAccountBalance) }}
+                      </span>
+                    </template>
+                  </template>
+                  <template v-else>
+                    <span />
+                  </template>
+                </td>
+              </tr>
+            </template>
+            <template v-slot:body-cell-amount="props">
+              <q-td :props="props" align="right">
+                <div class="amount-main">{{ formatAmountInAccountCurrency(props.row) }}</div>
+                <div v-if="showUsdUnderAmounts" class="amount-sub">
+                  {{ formatAmountConversionLine(props.row) }}
+                </div>
+              </q-td>
+            </template>
+            <template v-slot:body-cell-category_summary="props">
+              <q-td :props="props">
+                {{ categoryLabelForRow(props.row) }}
+              </q-td>
+            </template>
+            <template v-slot:body-cell-running_balance="props">
+              <q-td :props="props" align="right">
+                <div class="balance-stack">
+                  <div>
+                    <span :class="balanceCellClass(props.row)">{{
+                      formatRunningBalanceForRow(props.row)
+                    }}</span>
+                  </div>
+                  <div v-if="showUsdInRunningBalance" class="amount-sub">
+                    {{ formatRunningBalanceConversionLine(props.row) }}
+                  </div>
+                </div>
+              </q-td>
+            </template>
+            <template v-slot:body-cell-actions="props">
+              <q-td align="right">
+                <q-btn flat round icon="edit" color="primary" @click="edit(props.row)" />
+                <q-btn flat round icon="delete" color="negative" @click="remove(props.row)" />
+              </q-td>
+            </template>
+            <template
+              v-for="col in manyToManyColumns"
+              :key="col.key"
+              v-slot:[`body-cell-${col.key}`]="props"
+            >
+              <q-td>
+                <div>
+                  <template v-if="col.ownerKey && col.pivotKey">
+                    <span
+                      v-for="(item, idx) in getOwnedItems(props.row, col)"
+                      :key="getItemKey(item, idx)"
+                    >
+                      {{ getItemLabel(item, col.labelKey) }}
+                      <q-badge color="primary" class="q-ml-xs">Owner</q-badge>
+                      <span v-if="idx < getOwnedItems(props.row, col).length - 1">, </span>
+                    </span>
+                  </template>
+                  <template v-else>
+                    <span
+                      v-for="(item, idx) in props.row[col.key] || []"
+                      :key="getItemKey(item, idx)"
+                    >
+                      {{ getItemLabel(item, col.labelKey) }}
+                      <span v-if="idx < props.row[col.key]?.length - 1">, </span>
+                    </span>
+                  </template>
+                </div>
+              </q-td>
+            </template>
+            <template v-slot:[`body-cell-account.name`]="props">
+              <q-td :props="props">
+                <div class="cell-stack">
+                  <template v-if="props.row && props.row.account && props.row.account.name">
+                    <div>{{ props.row.account.name }}</div>
+                  </template>
+                  <template v-else>
+                    <div v-for="(n, idx) in paymentAccountNames(props.row)" :key="idx">{{ n }}</div>
+                  </template>
+                </div>
+              </q-td>
+            </template>
+          </q-table>
+        </q-card-section>
+      </q-card>
+    </template><!-- end pro template -->
+
+    <!-- ══ LEGACY layout: keeps original structure ═══════════════════════ -->
+    <template v-else>
     <div class="row q-col-gutter-lg items-start">
       <div :class="sidebarColumnClasses">
         <q-card flat class="glass-panel transactions-lite__sidebar-card">
@@ -149,55 +629,6 @@
               </q-card-section>
 
               <q-card-section class="q-pt-none">
-                <!-- AccountFilter: solo en modo Pro (no lite, no legacy) -->
-                <div v-if="isPro" ref="acctFilterRef" class="tx-acct-filter q-mb-md">
-                  <button
-                    :class="['tx-acct-filter__pill', acctFilterActive ? 'tx-acct-filter__pill--active' : '']"
-                    @click.stop="acctFilterOpen = !acctFilterOpen"
-                  >
-                    <q-icon name="account_balance" size="16px" />
-                    <span>{{ acctFilterLabel }}</span>
-                    <q-icon :name="acctFilterOpen ? 'expand_less' : 'expand_more'" size="16px" />
-                  </button>
-
-                  <div v-if="acctFilterOpen" class="tx-acct-dropdown" @click.stop>
-                    <!-- Opción "Todas" -->
-                    <button
-                      :class="['tx-acct-row', !acctFilterActive ? 'tx-acct-row--selected' : '']"
-                      @click="clearAccountFilter(); acctFilterOpen = false"
-                    >
-                      <span class="tx-acct-row__dot tx-acct-row__dot--all" />
-                      <span class="tx-acct-row__name">Todas las cuentas</span>
-                      <q-icon v-if="!acctFilterActive" name="check" size="16px" class="tx-acct-row__check" />
-                    </button>
-
-                    <div class="tx-acct-dropdown__divider" />
-
-                    <button
-                      v-for="acct in availableAccounts"
-                      :key="acct.id"
-                      :class="['tx-acct-row', selectedAccountNums.includes(acct.id) ? 'tx-acct-row--selected' : '']"
-                      @click="toggleAccountFilter(acct.id)"
-                    >
-                      <span
-                        class="tx-acct-row__dot"
-                        :style="acct.color ? { background: acct.color } : {}"
-                      />
-                      <span class="tx-acct-row__name">{{ acct.name }}</span>
-                      <q-icon
-                        v-if="selectedAccountNums.includes(acct.id)"
-                        name="check"
-                        size="16px"
-                        class="tx-acct-row__check"
-                      />
-                    </button>
-
-                    <div v-if="!availableAccounts.length" class="tx-acct-dropdown__empty">
-                      Cargando cuentas...
-                    </div>
-                  </div>
-                </div>
-
                 <div class="row q-col-gutter-md items-start">
                   <div class="col-12 col-md-7">
                     <div class="text-caption q-mb-xs">{{ dictionary.finderLabel }}</div>
@@ -608,7 +1039,9 @@
         </q-card>
       </div>
     </div>
+    </template><!-- end legacy template -->
 
+    <!-- Dialogs shared by all layouts (Pro + Legacy) -->
     <!-- Diálogos: usar genérico solo para EDITAR; para NUEVA transacción se usa TransactionCreateDialog (en UserLayout) -->
     <TransactionFormDialog
       v-model="ui.showDialogEditTransaction"
@@ -2100,6 +2533,20 @@ onMounted(async () => {
   void fetchAvailableAccounts();
   document.addEventListener('click', onAcctFilterClickOutside);
 
+  // Cargar tasas del usuario para ExchangeRatesWidget (Pro mode)
+  loadProRatesFromUser();
+
+  // Cerrar Pro filter panel al hacer click fuera
+  const onFilterPanelClickOutside = (e: MouseEvent) => {
+    if (filterPanelRef.value && !filterPanelRef.value.contains(e.target as Node)) {
+      filterPanelOpen.value = false;
+    }
+  };
+  document.addEventListener('click', onFilterPanelClickOutside);
+  onBeforeUnmount(() => {
+    document.removeEventListener('click', onFilterPanelClickOutside);
+  });
+
   // Escuchar cambios en transacciones para refrescar la tabla SIEMPRE;
   // si hay una sola cuenta seleccionada, además refrescamos el saldo/bandera.
   const handler = () => {
@@ -2825,6 +3272,11 @@ watch(
 );
 
 function removeFilterChip(key: string): void {
+  // Pro filter chips (prefixed with 'pro-')
+  if (key.startsWith('pro-')) {
+    removeFilterChipPro(key);
+    return;
+  }
   if (key === '__search') {
     filters.search = '';
   } else if (key.startsWith('__acct_')) {
@@ -2975,6 +3427,210 @@ function removeSelectedRows() {
     })();
   });
 }
+
+// ===== Pro-mode filter state (spec: TransactionsRoute.jsx) =====
+const TX_AMOUNT_PRESETS = [
+  { id: 'any',    label: 'Cualquiera', min: '',    max: '' },
+  { id: 'lt50',   label: '< $50',      min: '',    max: '50' },
+  { id: '50-200', label: '$50 – $200', min: '50',  max: '200' },
+  { id: 'gt200',  label: '> $200',     min: '200', max: '' },
+];
+
+const filterPanelOpen = ref(false);
+const filterPanelRef  = ref<HTMLElement | null>(null);
+const proType         = ref<string>('all');
+function setProType(v: string): void { proType.value = v; }
+const proAmtMin       = ref<string>('');
+const proAmtMax       = ref<string>('');
+// proSelectedCatId mirrors selectedCategoryFilterId so the Pro panel and the legacy chips stay in sync
+const proSelectedCatId = computed<number | null>(() => selectedCategoryFilterId.value);
+
+const proTypeOptions = [
+  { id: 'all',     label: 'Todas' },
+  { id: 'income',  label: 'Ingresos' },
+  { id: 'expense', label: 'Gastos' },
+];
+
+// Rows visible to the Pro filter (type + amount + category overlaid on server rows)
+const proFilteredRows = computed<Row[]>(() => {
+  return rows.value.filter((r) => {
+    const amt = parseNumber((r as AnyRecord)['amount']);
+    if (proType.value === 'income'  && !(amt > 0)) return false;
+    if (proType.value === 'expense' && !(amt < 0)) return false;
+    const abs = Math.abs(amt);
+    if (proAmtMin.value !== '' && abs < parseFloat(proAmtMin.value)) return false;
+    if (proAmtMax.value !== '' && abs > parseFloat(proAmtMax.value)) return false;
+    if (selectedCategoryFilterId.value !== null) {
+      const cats = rowCategoryCandidates(r);
+      if (!cats.find((c) => c.id === selectedCategoryFilterId.value)) return false;
+    }
+    return true;
+  });
+});
+
+const proNetTotal = computed(() =>
+  proFilteredRows.value.reduce((s, r) => s + parseNumber((r as AnyRecord)['amount']), 0)
+);
+
+// Active chip count for Pro filter badge
+const proActiveCount = computed(() => {
+  let n = 0;
+  if (proType.value !== 'all') n++;
+  if (proAmtMin.value !== '' || proAmtMax.value !== '') n++;
+  if (proSelectedCatId.value !== null) n++;
+  if (acctFilterActive.value) n++;
+  if (filters.search) n++;
+  return n;
+});
+
+type ProChip = { key: string; icon?: string; dot?: string | null; label: string };
+
+const proActiveChips = computed<ProChip[]>(() => {
+  const chips: ProChip[] = [];
+  if (proType.value !== 'all') {
+    chips.push({ key: 'pro-type', icon: 'swap_vert', label: proTypeOptions.find((t) => t.id === proType.value)?.label ?? proType.value });
+  }
+  if (proAmtMin.value !== '' || proAmtMax.value !== '') {
+    const label = `${proAmtMin.value !== '' ? '≥ $' + proAmtMin.value : ''}${proAmtMin.value !== '' && proAmtMax.value !== '' ? ' · ' : ''}${proAmtMax.value !== '' ? '≤ $' + proAmtMax.value : ''}`;
+    chips.push({ key: 'pro-amt', icon: 'payments', label });
+  }
+  if (selectedCategoryFilterId.value !== null) {
+    const tag = categorySpendTags.value.find((t) => t.id === selectedCategoryFilterId.value);
+    chips.push({ key: 'pro-cat', icon: 'sell', label: tag?.name ?? `Cat #${selectedCategoryFilterId.value}` });
+  }
+  // Account chips
+  for (const rawId of txStore.selectedAccountIds) {
+    const numId = Number(rawId);
+    const acct = availableAccounts.value.find((a) => a.id === numId);
+    const acctColor = acct?.color ?? null;
+    const acctChip: ProChip = { key: `pro-acct-${numId}`, label: acct?.name ?? `#${numId}` };
+    if (acctColor) acctChip.dot = acctColor;
+    chips.push(acctChip);
+  }
+  if (filters.search) {
+    chips.push({ key: 'pro-search', icon: 'search', label: `"${filters.search}"` });
+  }
+  return chips;
+});
+
+function clearProFilters(): void {
+  proType.value = 'all';
+  proAmtMin.value = '';
+  proAmtMax.value = '';
+  clearCategoryTagFilter();
+  filters.search = '';
+  txStore.setSelectedAccountIds([]);
+  pagination.value.page = 1;
+  void runFetch(true);
+}
+
+function removeFilterChipPro(key: string): void {
+  if (key === 'pro-type') { proType.value = 'all'; }
+  else if (key === 'pro-amt') { proAmtMin.value = ''; proAmtMax.value = ''; }
+  else if (key === 'pro-cat') { clearCategoryTagFilter(); }
+  else if (key === 'pro-search') { filters.search = ''; }
+  else if (key.startsWith('pro-acct-')) {
+    const numId = Number(key.replace('pro-acct-', ''));
+    if (Number.isFinite(numId)) toggleAccountFilter(numId);
+  }
+  pagination.value.page = 1;
+  void runFetch(true);
+}
+
+// ===== ExchangeRatesWidget (Pro only) — state =====
+// Rates shape: { [code: string]: { current: number | '' } }
+type RateMap = Record<string, { current: number | '' } | number | ''>;
+
+const ratesExpanded = ref(false);
+
+// Load from authStore.user on mount; shape-tolerant
+const proRates = ref<RateMap>({});
+
+function loadProRatesFromUser(): void {
+  const u = (authStore as unknown as Record<string, unknown>)['user'] as Record<string, unknown> | undefined;
+  if (!u) return;
+  const out: RateMap = {};
+  const pushList = (arr: unknown) => {
+    if (!Array.isArray(arr)) return;
+    for (const it of arr) {
+      if (!it || typeof it !== 'object') continue;
+      const obj = it as Record<string, unknown>;
+      const cur = obj['currency'] as Record<string, unknown> | undefined;
+      const codeRaw = cur && typeof cur === 'object' ? cur['code'] : obj['code'];
+      const code = typeof codeRaw === 'string' && codeRaw ? codeRaw.toUpperCase() : null;
+      const rate = Number(obj['current_rate']);
+      if (!code) continue;
+      const existing = out[code];
+      if (existing && typeof existing === 'object') {
+        (existing as { current: number | '' }).current = Number.isFinite(rate) && rate > 0 ? rate : '';
+      } else {
+        out[code] = { current: Number.isFinite(rate) && rate > 0 ? rate : '' };
+      }
+    }
+  };
+  pushList(u['current_currency_rates']);
+  pushList(u['rates']);
+  pushList(u['currency_rates']);
+  proRates.value = out;
+}
+
+async function onProRatesChange(newRates: RateMap): Promise<void> {
+  // Optimistically update local state
+  proRates.value = newRates;
+  // Persist each changed rate via PUT /user_currencies/:id
+  const uid = authStore.user && typeof (authStore.user as Record<string, unknown>)['id'] === 'number'
+    ? (authStore.user as Record<string, unknown>)['id'] as number
+    : null;
+  if (!uid) return;
+  for (const [code, val] of Object.entries(newRates)) {
+    const rateNum = typeof val === 'object' && val !== null
+      ? Number((val as { current: number | '' }).current)
+      : Number(val);
+    if (!Number.isFinite(rateNum) || rateNum <= 0) continue;
+    try {
+      // Find user_currency id for this code
+      const u = (authStore as unknown as Record<string, unknown>)['user'] as Record<string, unknown> | undefined;
+      const lists = ['current_currency_rates', 'rates', 'currency_rates'];
+      let ucId: number | null = null;
+      for (const key of lists) {
+        const arr = u && Array.isArray(u[key]) ? u[key] as Array<Record<string, unknown>> : [];
+        for (const it of arr) {
+          const cur = it['currency'] as Record<string, unknown> | undefined;
+          const codeRaw = cur && typeof cur === 'object' ? cur['code'] : it['code'];
+          if (typeof codeRaw === 'string' && codeRaw.toUpperCase() === code) {
+            const n = Number(it['id']);
+            if (Number.isFinite(n)) { ucId = n; break; }
+          }
+        }
+        if (ucId) break;
+      }
+      if (ucId) {
+        await api.put(`/user_currencies/${ucId}`, { current_rate: rateNum });
+      }
+    } catch {
+      // silently ignore — the local value stays updated
+    }
+  }
+}
+
+// ===== AccountFilter folder grouping (spec: AccountFilter pill popover) =====
+type AccountFolder = { id: string | null; name: string; accounts: AvailableAccount[] };
+
+const accountFolders = computed<AccountFolder[]>(() => {
+  // Group accounts by folder if the API returns a folder/group; fallback to flat list
+  const folderMap = new Map<string, AvailableAccount[]>();
+  for (const a of availableAccounts.value) {
+    const fRaw = (a as unknown as Record<string, unknown>)['folder'] as string | null | undefined;
+    const folderName = typeof fRaw === 'string' && fRaw.trim() ? fRaw.trim() : '__ungrouped__';
+    if (!folderMap.has(folderName)) folderMap.set(folderName, []);
+    folderMap.get(folderName)!.push(a);
+  }
+  const out: AccountFolder[] = [];
+  for (const [name, accounts] of folderMap.entries()) {
+    out.push({ id: name === '__ungrouped__' ? null : name, name: name === '__ungrouped__' ? 'Cuentas' : name, accounts });
+  }
+  return out;
+});
 
 function exportCSV(): void {
   if (!rows.value?.length) return;
@@ -3412,5 +4068,412 @@ function exportCSV(): void {
 .tx-acct-row__check {
   color: var(--info);
   flex-shrink: 0;
+}
+
+/* ── AccountFilter folder grouping ── */
+.tx-acct-folder-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  user-select: none;
+}
+
+/* ── Pro filter panel ── */
+.pro-tx__filter-card {
+  border-radius: var(--radius-lg) !important;
+}
+
+.pro-tx__filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.pro-tx__header {
+  padding: 4px 0 8px;
+}
+
+.pro-tx__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-primary, var(--ow-color-primary-strong));
+}
+
+.pro-tx__title {
+  margin: 6px 0 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--fg-1);
+}
+
+.pro-tx__filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pro-tx__search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+  padding: 9px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+}
+
+.pro-tx__search-input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--fg-1);
+}
+
+.pro-tx__search-clear {
+  cursor: pointer;
+  color: var(--fg-3);
+}
+
+.pro-tx__filtros-wrap {
+  position: relative;
+}
+
+.pro-tx__filtros-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  border: 0;
+  background: var(--surface-2);
+  color: var(--fg-1);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pro-tx__filtros-btn--active {
+  background: var(--brand-primary);
+  color: var(--fg-on-brand, #fff);
+}
+
+.pro-tx__filtros-badge {
+  background: rgba(255,255,255,.25);
+  border-radius: var(--radius-pill);
+  min-width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  padding: 0 5px;
+}
+
+.pro-tx__filtros-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 70;
+  width: 340px;
+  max-width: 88vw;
+  background: var(--surface-1);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 24px 60px rgba(15,23,42,.22);
+  border: 1px solid var(--border-hairline);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pro-tx__filtros-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pro-tx__filtros-panel-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--fg-1);
+}
+
+.pro-tx__filtros-clear-all {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--brand-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.pro-tx__panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.pro-tx__panel-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.pro-tx__type-toggle {
+  display: inline-flex;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+  width: 100%;
+}
+
+.pro-tx__type-btn {
+  flex: 1;
+  border: 0;
+  cursor: pointer;
+  padding: 7px 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.pro-tx__type-btn--active {
+  background: var(--brand-primary);
+  color: var(--fg-on-brand, #fff);
+  font-weight: 600;
+}
+
+.pro-tx__panel-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pro-tx__cat-btn {
+  border: 0;
+  cursor: pointer;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pro-tx__cat-btn--active {
+  background: color-mix(in srgb, var(--brand-primary) 14%, var(--surface-1));
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.pro-tx__amt-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.pro-tx__amt-input-wrap {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+
+.pro-tx__amt-prefix {
+  font-size: 13px;
+  color: var(--fg-3);
+}
+
+.pro-tx__amt-input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--fg-1);
+}
+
+.pro-tx__amt-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.pro-tx__amt-preset {
+  border: 0;
+  cursor: pointer;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pro-tx__amt-preset--active {
+  background: color-mix(in srgb, var(--brand-primary) 14%, var(--surface-1));
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.pro-tx__chips-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pro-tx__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 11px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand-primary) 10%, var(--surface-1));
+  color: var(--brand-primary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pro-tx__chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.pro-tx__chip-close {
+  opacity: 0.7;
+}
+
+.pro-tx__filter-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border-hairline);
+  padding-top: 12px;
+}
+
+.pro-tx__count-label {
+  font-size: 12.5px;
+  color: var(--fg-2);
+}
+
+.pro-tx__net {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pro-tx__net--pos { color: var(--income-fg, #15803d); }
+.pro-tx__net--neg { color: var(--expense-fg, #b91c1c); }
+
+.pro-tx__footer-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pro-tx__footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.pro-tx__footer-btn--clear {
+  color: var(--brand-primary);
+}
+
+.pro-tx__action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.pro-tx__action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pro-tx__action-btn--danger {
+  color: var(--expense-fg, #b91c1c);
+}
+
+/* ExchangeRatesWidget card */
+.pro-tx__rates-card {
+  border-radius: var(--radius-lg) !important;
+}
+
+.pro-tx__rates-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pro-tx__rates-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg-1);
+}
+
+.pro-tx__rates-sub {
+  font-size: 12px;
+  color: var(--fg-2);
+  margin-top: 2px;
+}
+
+.pro-tx__rates-toggle {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--fg-2);
+  border-radius: var(--radius-md);
+  padding: 4px;
 }
 </style>
