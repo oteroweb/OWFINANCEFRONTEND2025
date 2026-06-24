@@ -41,9 +41,26 @@
     #root { height: 100%; }
     @media (max-height: 940px) { .phone-outer { transform: scale(0.86); transform-origin: center; } }
     @media (max-height: 800px) { .phone-outer { transform: scale(0.74); transform-origin: center; } }
+    .demo-nav {
+      position: fixed; top: 18px; left: 18px; z-index: 500;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .demo-nav a {
+      display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+      font-family: var(--font-body); font-size: 12.5px; font-weight: 600;
+      color: rgba(255,255,255,0.82); background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12); padding: 8px 13px; border-radius: 999px;
+      backdrop-filter: blur(8px); transition: background 160ms;
+    }
+    .demo-nav a:hover { background: rgba(255,255,255,0.14); }
+    .demo-nav .material-icons { font-size: 16px; }
   </style>
 </head>
 <body>
+  <nav class="demo-nav">
+    <a href="../onboarding/Ciclo OW.html"><span class="material-icons">arrow_back</span>Ciclo OW</a>
+    <a href="../OW Finance - Guía de Integración.html"><span class="material-icons">menu_book</span>Guía</a>
+  </nav>
   <div class="phone-outer">
     <div class="phone-body"></div>
     <div class="phone-screen">
@@ -67,7 +84,7 @@
     const { useState } = React;
 
     const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-      "detailPattern": "Sheet",
+      "detailPattern": "Acordeón",
       "theme": "Oscuro",
       "income": 1200,
       "showUsage": true

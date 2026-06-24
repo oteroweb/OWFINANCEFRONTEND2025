@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Brand" name="Estrategia de gamificación" subtitle="Mascota + mecánicas · 3 direcciones calibradas a la calma de marca" viewport="1240x2600" -->
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OW Finance · Estrategia de gamificación</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="colors_and_type.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-canvas); color: var(--fg-1); font-family: var(--font-body); }
+    .material-icons { font-family: 'Material Icons'; font-weight: normal; font-style: normal; line-height: 1; display: inline-block; }
+
+    #demo-bar { position: sticky; top: 0; z-index: 200; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 11px 26px; background: var(--surface-1); border-bottom: 1px solid var(--border-hairline); box-shadow: var(--shadow-card); }
+    #demo-bar .brand { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-weight: 700; font-size: 13.5px; }
+    #demo-bar .brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brand-primary); }
+    #demo-bar .spacer { flex: 1; }
+    .toplink { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-size: 12.5px; font-weight: 600; color: var(--brand-primary-fg-soft); padding: 7px 12px; border-radius: var(--radius-pill); }
+    .toplink:hover { background: var(--surface-2); }
+    .icon-toggle { width: 38px; height: 38px; border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); background: var(--surface-1); cursor: pointer; display: inline-grid; place-items: center; color: var(--fg-1); }
+    .icon-toggle:hover { background: var(--surface-2); }
+
+    .wrap { max-width: 1140px; margin: 0 auto; padding: 40px 26px 100px; }
+    .eyebrow { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--brand-primary-fg-soft); }
+    .title { font-family: var(--font-display); font-weight: 700; font-size: 40px; letter-spacing: -.02em; line-height: 1.08; margin: 10px 0 0; }
+    .lede { font-size: 16px; line-height: 1.55; color: var(--fg-2); max-width: 740px; margin: 14px 0 0; }
+    .lede b { color: var(--fg-1); }
+
+    .sec { margin-top: 56px; }
+    .sec > h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -.01em; margin: 0 0 6px; }
+    .sec > .sub { font-size: 14px; color: var(--fg-2); margin: 0 0 22px; max-width: 760px; line-height: 1.55; }
+
+    /* tension / context two-up */
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .ctx { background: var(--surface-1); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 24px; }
+    .ctx h3 { font-family: var(--font-display); font-weight: 600; font-size: 16px; margin: 0 0 12px; display: flex; align-items: center; gap: 9px; }
+    .ctx h3 .material-icons { font-size: 19px; }
+    .ctx.have h3 .material-icons { color: var(--income-fg); }
+    .ctx.tens h3 .material-icons { color: var(--warning-fg); }
+    .ctx ul { margin: 0; padding-left: 18px; }
+    .ctx li { font-size: 13.5px; line-height: 1.65; color: var(--fg-2); }
+    .ctx li b { color: var(--fg-1); font-weight: 600; }
+
+    /* principles */
+    .princ { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .pcard { background: var(--surface-1); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: 18px; }
+    .pcard .pi { width: 34px; height: 34px; border-radius: 10px; background: var(--brand-primary-soft); color: var(--brand-primary-fg-soft); display: grid; place-items: center; margin-bottom: 12px; }
+    .pcard .pi .material-icons { font-size: 19px; }
+    .pcard h4 { font-family: var(--font-display); font-size: 14px; font-weight: 600; margin: 0 0 5px; }
+    .pcard p { font-size: 12.5px; color: var(--fg-2); margin: 0; line-height: 1.5; }
+
+    /* mascot cards */
+    .mascots { display: flex; flex-direction: column; gap: 20px; }
+    .mascot { background: var(--surface-1); border-radius: var(--radius-xl); box-shadow: var(--shadow-float); overflow: hidden; display: grid; grid-template-columns: 320px 1fr; }
+    .mascot .stage { padding: 36px 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; border-right: 1px solid var(--border-hairline); position: relative; }
+    .mascot .stage .tagn { position: absolute; top: 18px; left: 18px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--fg-3); }
+    .mascot .body { padding: 30px 32px; }
+    .mascot .mname { font-family: var(--font-display); font-weight: 700; font-size: 23px; letter-spacing: -.01em; margin: 0; display: flex; align-items: baseline; gap: 10px; }
+    .mascot .mname .role { font-size: 12.5px; font-weight: 600; color: var(--fg-3); letter-spacing: 0; }
+    .mascot .pitch { font-size: 14.5px; color: var(--fg-2); line-height: 1.55; margin: 10px 0 20px; }
+    .mascot .pitch b { color: var(--fg-1); }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 26px; }
+    .attr h5 { font-family: var(--font-body); font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--fg-3); margin: 0 0 8px; }
+    .attr p { font-size: 13px; color: var(--fg-2); line-height: 1.55; margin: 0; }
+    .voicelines { display: flex; flex-direction: column; gap: 7px; }
+    .vl { font-size: 13px; color: var(--fg-1); background: var(--surface-2); border-radius: 12px; padding: 9px 13px; line-height: 1.4; }
+    .vl .who { color: var(--fg-3); font-weight: 600; }
+    .where-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .wchip { font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: var(--radius-pill); background: var(--brand-primary-soft); color: var(--brand-primary-fg-soft); }
+    .fitbar { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+    .fitbar .lab { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--fg-3); }
+    .fittrack { flex: 1; height: 7px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+    .fittrack > i { display: block; height: 100%; border-radius: 999px; background: var(--brand-primary); }
+
+    /* expressions row */
+    .exprow { display: flex; gap: 14px; align-items: flex-end; }
+    .exp { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .exp .lbl { font-size: 10.5px; font-weight: 600; color: var(--fg-3); }
+
+    /* ---- emblem A: cántaro (Tina) ---- */
+    .jar { position: relative; width: 116px; height: 132px; }
+    .jar .vessel { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100px; height: 104px; border-radius: 30px 30px 44px 44px / 22px 22px 52px 52px; background: linear-gradient(180deg, var(--navy-500), var(--navy-700)); overflow: hidden; }
+    .jar .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 58%; background: rgba(255,255,255,0.22); }
+    .jar .neck { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 70px; height: 20px; border-radius: 999px; background: var(--navy-800); }
+    .jar .eye { position: absolute; top: 52px; width: 11px; height: 11px; border-radius: 50%; background: #fff; }
+    .jar .eye.l { left: 32px; } .jar .eye.r { right: 32px; }
+    .jar .mouth { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); width: 22px; height: 11px; border: 2.5px solid #fff; border-top: 0; border-radius: 0 0 22px 22px; }
+
+    /* ---- emblem B: gota (Gota) ---- */
+    .drop { position: relative; width: 110px; height: 124px; }
+    .drop .shape { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%) rotate(45deg); width: 92px; height: 92px; border-radius: 50% 50% 50% 8px; background: linear-gradient(135deg, var(--cyan-500), var(--navy-700)); box-shadow: var(--shadow-float); }
+    .drop .eye { position: absolute; bottom: 44px; width: 9px; height: 9px; border-radius: 50%; background: #fff; }
+    .drop .eye.l { left: 38px; } .drop .eye.r { right: 38px; }
+
+    /* ---- emblem C: asesor ---- */
+    .adv { position: relative; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(120% 120% at 30% 25%, var(--navy-500), var(--navy-800)); box-shadow: var(--shadow-float); }
+    .adv .ring { position: absolute; inset: -7px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--cyan-500) 55%, transparent); }
+    .adv .eye { position: absolute; top: 50px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+    .adv .eye.l { left: 38px; } .adv .eye.r { right: 38px; }
+    .adv .mouth { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); width: 26px; height: 13px; border: 2.5px solid #fff; border-top: 0; border-radius: 0 0 26px 26px; }
+    .adv .spark { position: absolute; top: 14px; right: 16px; color: var(--cyan-500); }
+
+    .mini { transform: scale(0.42); transform-origin: bottom center; }
+    .mini-adv { transform: scale(0.42); transform-origin: center; }
+
+    /* mechanics */
+    .mechs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .mech { background: var(--surface-1); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 22px; }
+    .mech .top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .mech .mi { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: 0 0 auto; }
+    .mech .mi .material-icons { font-size: 21px; }
+    .mech h4 { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin: 0; }
+    .mech .exists { font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--income-fg); background: var(--income-soft); padding: 3px 8px; border-radius: 999px; margin-left: auto; }
+    .mech p { font-size: 13px; color: var(--fg-2); line-height: 1.55; margin: 0 0 12px; }
+    .mech .ex { font-size: 12.5px; color: var(--fg-1); background: var(--surface-2); border-radius: 10px; padding: 9px 12px; line-height: 1.4; }
+    .mech .ex .q { color: var(--fg-3); font-weight: 600; }
+
+    /* spectrum */
+    .spectrum { background: var(--surface-1); border-radius: var(--radius-xl); box-shadow: var(--shadow-float); padding: 30px 34px; }
+    .spectrum .ends { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--fg-2); margin-bottom: 12px; }
+    .spectrum .track { position: relative; height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--navy-700), var(--cyan-500) 55%, var(--warning)); }
+    .spectrum .pin { position: absolute; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+    .spectrum .pin .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--surface-1); border: 3px solid var(--brand-primary); box-shadow: var(--shadow-card); }
+    .spectrum .pin .pl { position: absolute; top: 22px; white-space: nowrap; font-size: 11.5px; font-weight: 700; }
+    .spectrum .scale { margin-top: 56px; display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--fg-2); }
+    .spectrum .scale b { color: var(--fg-1); }
+
+    /* recommendation */
+    .reco { background: linear-gradient(135deg, var(--navy-700), var(--navy-900)); color: #fff; border-radius: var(--radius-xl); padding: 36px; box-shadow: var(--shadow-float); }
+    [data-theme="dark"] .reco { background: linear-gradient(135deg, var(--navy-600), var(--navy-900)); }
+    .reco .eyebrow { color: rgba(255,255,255,0.7); }
+    .reco h2 { font-family: var(--font-display); font-weight: 700; font-size: 26px; margin: 10px 0 14px; letter-spacing: -.01em; }
+    .reco p { font-size: 15px; line-height: 1.6; color: rgba(255,255,255,0.88); max-width: 760px; margin: 0 0 22px; }
+    .reco p b { color: #fff; }
+    .reco .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .reco .step { background: rgba(255,255,255,0.10); border-radius: var(--radius-md); padding: 18px; }
+    .reco .step .sn { font-family: var(--font-money); font-weight: 700; font-size: 13px; color: var(--cyan-500); }
+    .reco .step h4 { font-family: var(--font-display); font-size: 15px; font-weight: 600; margin: 6px 0 5px; }
+    .reco .step p { font-size: 12.5px; color: rgba(255,255,255,0.8); margin: 0; }
+
+    @media (max-width: 920px) {
+      .two, .grid2 { grid-template-columns: 1fr; }
+      .princ, .mechs, .reco .steps { grid-template-columns: 1fr 1fr; }
+      .mascot { grid-template-columns: 1fr; }
+      .mascot .stage { border-right: 0; border-bottom: 1px solid var(--border-hairline); }
+    }
+  </style>
+</head>
+<body>
+  <div id="demo-bar">
+    <span class="brand"><span class="dot"></span>OW Finance · <span style="color:var(--fg-3);font-weight:600">Gamificación</span></span>
+    <span class="spacer"></span>
+    <a class="toplink" href="OW Finance - Auditoría de Vistas.html"><span class="material-icons" style="font-size:17px">fact_check</span>Auditoría de vistas</a>
+    <button class="icon-toggle" id="theme-btn" aria-label="Tema"><span class="material-icons">dark_mode</span></button>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Propuesta · gamificación con identidad</div>
+      <h1 class="title">Una mascota que ahorra contigo</h1>
+      <p class="lede">El reto: sumar juego y vínculo emocional <b>sin traicionar la calma</b> que define el producto. El README es claro — esto es dinero: nada de «🎉», nada de hype. Aquí proponemos un personaje y una capa de mecánicas que <b>refuerzan la confianza</b> en lugar de gritar. Tres direcciones, ordenadas de más sobria a más cálida.</p>
+    </header>
+
+    <!-- CONTEXT -->
+    <section class="sec">
+      <h2>De dónde partimos</h2>
+      <p class="sub">Ya existe una base de gamificación; el trabajo es darle cara y extenderla con criterio, no inventar desde cero.</p>
+      <div class="two">
+        <div class="ctx have">
+          <h3><span class="material-icons">check_circle</span>Lo que ya tenemos</h3>
+          <ul>
+            <li><b>Niveles de perfil</b> (Básico · Completo · Avanzado) con anillo de completitud y % en el onboarding.</li>
+            <li><b>Insignias por sección</b> (Quién eres · Tu situación · Tus metas · Tus cántaros).</li>
+            <li><b>Voz IA</b> para dictar campos — el germen de un asistente con personalidad.</li>
+            <li><b>Cántaros (jars)</b>: la metáfora central del producto, lista para volverse personaje.</li>
+          </ul>
+        </div>
+        <div class="ctx tens">
+          <h3><span class="material-icons">balance</span>La tensión a resolver</h3>
+          <ul>
+            <li>La marca pide <b>calma tipo reloj suizo</b>; la gamificación clásica empuja a lo estridente.</li>
+            <li>Hoy el juego <b>vive solo en el onboarding</b> y desaparece en el uso diario.</li>
+            <li>No hay <b>cara ni voz consistente</b> que acompañe al usuario más allá del registro.</li>
+            <li>El refuerzo debe celebrar <b>el hábito</b> (registrar, apartar), no el gasto.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRINCIPLES -->
+    <section class="sec">
+      <h2>Principios (las reglas del juego)</h2>
+      <p class="sub">Cualquier dirección que elijamos respeta estos cuatro límites — son la diferencia entre gamificación de marca premium y slop motivacional.</p>
+      <div class="princ">
+        <div class="pcard"><div class="pi"><span class="material-icons">volume_off</span></div><h4>Calma primero</h4><p>El personaje susurra, no grita. Aparece cuando aporta; se calla cuando estorba.</p></div>
+        <div class="pcard"><div class="pi"><span class="material-icons">trending_up</span></div><h4>Celebra el hábito</h4><p>Premia registrar y apartar — la constancia, no el saldo. Nunca felicita por gastar.</p></div>
+        <div class="pcard"><div class="pi"><span class="material-icons">record_voice_over</span></div><h4>Segunda persona</h4><p>«Apartaste para tu meta de marzo». Voz tranquila, factual, en tu idioma. Cero regaño.</p></div>
+        <div class="pcard"><div class="pi"><span class="material-icons">auto_awesome</span></div><h4>Sin confeti</h4><p>El logro se siente en el detalle: un anillo que se cierra, un cántaro que se llena. No fuegos artificiales.</p></div>
+      </div>
+    </section>
+
+    <!-- MASCOTS -->
+    <section class="sec">
+      <h2>Tres direcciones de mascota</h2>
+      <p class="sub">Cada emblema es un <b>concepto-norte</b> construido con formas básicas; la ilustración final se encarga a un ilustrador a partir de la dirección que elijas. Lo que importa aquí es el rol, la voz y dónde vive.</p>
+
+      <div class="mascots">
+
+        <!-- A: TINA -->
+        <div class="mascot">
+          <div class="stage">
+            <span class="tagn">DIRECCIÓN A</span>
+            <div class="jar">
+              <div class="neck"></div>
+              <div class="vessel"><div class="fill"></div></div>
+              <div class="eye l"></div><div class="eye r"></div>
+              <div class="mouth"></div>
+            </div>
+            <div class="exprow">
+              <div class="exp"><div style="width:48px;height:54px"><div class="jar mini"><div class="neck"></div><div class="vessel"><div class="fill" style="height:30%"></div></div><div class="eye l"></div><div class="eye r"></div><div class="mouth"></div></div></div><span class="lbl">Vacía</span></div>
+              <div class="exp"><div style="width:48px;height:54px"><div class="jar mini"><div class="neck"></div><div class="vessel"><div class="fill" style="height:85%"></div></div><div class="eye l"></div><div class="eye r"></div><div class="mouth"></div></div></div><span class="lbl">Llena</span></div>
+            </div>
+          </div>
+          <div class="body">
+            <h3 class="mname">Tina <span class="role">· el cántaro</span></h3>
+            <p class="pitch">La metáfora del producto <b>convertida en personaje</b>. Un cántaro de barro que se llena a medida que ahorras y sonríe cuando alcanzas una meta. La más cálida y memorable; conecta de inmediato con «cántaros».</p>
+            <div class="grid2">
+              <div class="attr"><h5>Personalidad</h5><p>Paciente, hogareña, agradecida. Te acompaña sin juzgar. Es de la tierra — raíz latinoamericana sin caer en folclor.</p></div>
+              <div class="attr"><h5>Voz · ejemplos</h5><div class="voicelines">
+                <div class="vl"><span class="who">Tina:</span> «Me llenaste hasta la mitad este mes. Vamos bien.»</div>
+                <div class="vl"><span class="who">Tina:</span> «Tu meta de marzo ya casi rebosa.»</div>
+              </div></div>
+              <div class="attr"><h5>Dónde vive</h5><div class="where-chips"><span class="wchip">Cántaros</span><span class="wchip">Metas</span><span class="wchip">Rachas de ahorro</span><span class="wchip">Cierre de meta</span></div></div>
+              <div class="attr"><h5>Encaje con la calma de marca</h5><div class="fitbar"><span class="lab">Calma</span><div class="fittrack"><i style="width:68%"></i></div><span class="lab">Juego</span></div><p style="margin-top:8px">Riesgo: si se sobreusa puede infantilizar. Mantenerla dentro del contexto de ahorro.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- B: GOTA -->
+        <div class="mascot">
+          <div class="stage">
+            <span class="tagn">DIRECCIÓN B</span>
+            <div class="drop">
+              <div class="shape"></div>
+              <div class="eye l"></div><div class="eye r"></div>
+            </div>
+            <div class="exprow">
+              <div class="exp"><div style="width:46px;height:52px;position:relative"><div class="drop mini"><div class="shape"></div><div class="eye l"></div><div class="eye r"></div></div></div><span class="lbl">Presencia</span></div>
+              <div class="exp"><div style="width:46px;height:52px;position:relative"><div class="drop mini"><div class="shape" style="background:linear-gradient(135deg,var(--emerald-500),var(--navy-700))"></div><div class="eye l"></div><div class="eye r"></div></div></div><span class="lbl">En racha</span></div>
+            </div>
+          </div>
+          <div class="body">
+            <h3 class="mname">Gota <span class="role">· la presencia abstracta</span></h3>
+            <p class="pitch">No es un personaje, es una <b>presencia</b>. Una gota geométrica en navy que reacciona con micro-estados — color, llenado, un parpadeo. La opción más fiel al «reloj suizo»: se siente sin nunca robar protagonismo.</p>
+            <div class="grid2">
+              <div class="attr"><h5>Personalidad</h5><p>Silenciosa, precisa, confiable. Comunica con forma y color, casi nunca con palabras. Madura y atemporal.</p></div>
+              <div class="attr"><h5>Voz · ejemplos</h5><div class="voicelines">
+                <div class="vl"><span class="who">Gota:</span> «3 días seguidos registrando.»</div>
+                <div class="vl"><span class="who">Gota:</span> «Tu disponible está sano.»</div>
+              </div></div>
+              <div class="attr"><h5>Dónde vive</h5><div class="where-chips"><span class="wchip">En todo, sutil</span><span class="wchip">Anillo de progreso</span><span class="wchip">Estado del saldo</span><span class="wchip">Rachas</span></div></div>
+              <div class="attr"><h5>Encaje con la calma de marca</h5><div class="fitbar"><span class="lab">Calma</span><div class="fittrack"><i style="width:32%"></i></div><span class="lab">Juego</span></div><p style="margin-top:8px">Riesgo: menos memorable / menos «abrazable». Gana en elegancia, pierde en cariño.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- C: ASESOR -->
+        <div class="mascot">
+          <div class="stage">
+            <span class="tagn">DIRECCIÓN C</span>
+            <div class="adv">
+              <div class="ring"></div>
+              <span class="spark material-icons" style="font-size:18px">auto_awesome</span>
+              <div class="eye l"></div><div class="eye r"></div>
+              <div class="mouth"></div>
+            </div>
+            <div class="exprow">
+              <div class="exp"><div style="width:50px;height:50px;position:relative"><div class="adv mini-adv"><div class="ring"></div><div class="eye l"></div><div class="eye r"></div><div class="mouth"></div></div></div><span class="lbl">Guía</span></div>
+              <div class="exp"><div style="width:50px;height:50px;position:relative"><div class="adv mini-adv"><div class="ring" style="border-color:var(--emerald-500)"></div><div class="eye l"></div><div class="eye r"></div><div class="mouth"></div></div></div><span class="lbl">Escuchando</span></div>
+            </div>
+          </div>
+          <div class="body">
+            <h3 class="mname">El Asesor <span class="role">· guía con presencia</span></h3>
+            <p class="pitch">Le damos <b>cara y voz al asesor IA que ya existe</b>. Un avatar mínimo en navy con un anillo cian que se activa al escuchar. Lidera por consejo, no por puntos: convierte la gamificación en <b>acompañamiento</b>.</p>
+            <div class="grid2">
+              <div class="attr"><h5>Personalidad</h5><p>Mentor calmado, experto y discreto. Habla en segunda persona, nunca regaña, siempre propone el siguiente paso pequeño.</p></div>
+              <div class="attr"><h5>Voz · ejemplos</h5><div class="voicelines">
+                <div class="vl"><span class="who">Asesor:</span> «Vas en nivel Completo. Un dato más y afinamos tu plan.»</div>
+                <div class="vl"><span class="who">Asesor:</span> «Esta semana gastaste menos en transporte. ¿Lo apartamos?»</div>
+              </div></div>
+              <div class="attr"><h5>Dónde vive</h5><div class="where-chips"><span class="wchip">Onboarding</span><span class="wchip">Consejos en Home</span><span class="wchip">Análisis</span><span class="wchip">Voz IA</span></div></div>
+              <div class="attr"><h5>Encaje con la calma de marca</h5><div class="fitbar"><span class="lab">Calma</span><div class="fittrack"><i style="width:48%"></i></div><span class="lab">Juego</span></div><p style="margin-top:8px">Riesgo: requiere buena copy/IA detrás o se siente vacío. El más exigente de producir bien.</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- MECHANICS -->
+    <section class="sec">
+      <h2>Capa de mecánicas</h2>
+      <p class="sub">Independiente de la mascota: estas son las piezas de juego, todas calibradas a la calma. Lo verde ya existe en el onboarding y solo hay que extenderlo.</p>
+      <div class="mechs">
+
+        <div class="mech">
+          <div class="top"><div class="mi" style="background:var(--warning-soft);color:var(--warning-fg)"><span class="material-icons">local_fire_department</span></div><h4>Rachas</h4></div>
+          <p>Días seguidos registrando movimientos. El refuerzo es la constancia, no el monto.</p>
+          <div class="ex"><span class="q">Sutil:</span> «5 días seguidos al día con tus cuentas.»</div>
+        </div>
+
+        <div class="mech">
+          <div class="top"><div class="mi" style="background:var(--brand-primary-soft);color:var(--brand-primary-fg-soft)"><span class="material-icons">military_tech</span></div><h4>Niveles de perfil</h4><span class="exists">Existe</span></div>
+          <p>Básico → Completo → Avanzado. Cada nivel desbloquea mejor asesoría. Llevarlo del onboarding al perfil permanente.</p>
+          <div class="ex"><span class="q">Hoy:</span> anillo de completitud + insignias por sección.</div>
+        </div>
+
+        <div class="mech">
+          <div class="top"><div class="mi" style="background:var(--info-soft);color:var(--info-fg)"><span class="material-icons">workspace_premium</span></div><h4>Insignias</h4><span class="exists">Existe</span></div>
+          <p>Logros discretos por sección y por hito de ahorro. Coleccionables, nunca ruidosos.</p>
+          <div class="ex"><span class="q">Nuevo:</span> «Primer cántaro lleno», «Mes sin descubierto».</div>
+        </div>
+
+        <div class="mech">
+          <div class="top"><div class="mi" style="background:var(--income-soft);color:var(--income-fg)"><span class="material-icons">savings</span></div><h4>Metas con cierre</h4></div>
+          <p>Al cumplir una meta, el cántaro se llena y se sella. Celebración sobria, de un solo gesto.</p>
+          <div class="ex"><span class="q">Cierre:</span> el cántaro rebosa una vez; luego vuelve a la calma.</div>
+        </div>
+
+        <div class="mech">
+          <div class="top"><div class="mi" style="background:var(--brand-primary-soft);color:var(--brand-primary-fg-soft)"><span class="material-icons">flag</span></div><h4>Retos suaves</h4></div>
+          <p>Propuestas opcionales, una a la vez. Nunca presión, siempre con opción de descartar.</p>
+          <div class="ex"><span class="q">Reto:</span> «¿Apartas $20 para tu fondo esta semana?»</div>
+        </div>
+
+        <div class="mech">
+          <div class="top"><div class="mi" style="background:color-mix(in srgb,var(--violet-500) 16%,transparent);color:var(--violet-500)"><span class="material-icons">tips_and_updates</span></div><h4>Consejos del personaje</h4></div>
+          <p>La mascota observa patrones y propone el siguiente paso pequeño. Conecta con la voz IA ya existente.</p>
+          <div class="ex"><span class="q">Consejo:</span> «Gastaste menos en transporte. ¿Lo apartamos?»</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SPECTRUM -->
+    <section class="sec">
+      <h2>Dónde cae cada dirección</h2>
+      <p class="sub">El README marca el tono: muy cerca del extremo «calma». Por eso la recomendación combina lo sobrio como base y reserva lo cálido para donde se gana.</p>
+      <div class="spectrum">
+        <div class="ends"><span>← Calma · reloj suizo</span><span>Lúdico · estridente →</span></div>
+        <div class="track">
+          <span class="pin" style="left:32%"><span class="dot"></span><span class="pl">Gota</span></span>
+          <span class="pin" style="left:48%"><span class="dot"></span><span class="pl">Asesor</span></span>
+          <span class="pin" style="left:68%"><span class="dot"></span><span class="pl">Tina</span></span>
+        </div>
+        <div class="scale"><span class="material-icons" style="color:var(--brand-primary)">straighten</span><span>Tono objetivo del proyecto: <b>3 / 10</b> — sobrio con calidez puntual. Las tres direcciones caben; el truco es <b>en qué contexto</b> aparece cada una.</span></div>
+      </div>
+    </section>
+
+    <!-- RECOMMENDATION -->
+    <section class="sec">
+      <div class="reco">
+        <div class="eyebrow">Recomendación</div>
+        <h2>Sistema sobrio + corazón cálido</h2>
+        <p>No elegir una sola: <b>componerlas por capas.</b> <b>Gota</b> como presencia siempre-presente y calmada del sistema; <b>el Asesor</b> como voz que guía (extendiendo la IA que ya existe); y <b>Tina</b> reservada al mundo de los cántaros, donde el cariño está justificado y refuerza la metáfora del producto. Así ganamos vínculo sin romper la calma.</p>
+        <div class="steps">
+          <div class="step"><div class="sn">PASO 1</div><h4>Validar dirección</h4><p>Elige si vamos por capas o por una sola mascota. Defino la guía de personaje (rasgos, voz, do/don't).</p></div>
+          <div class="step"><div class="sn">PASO 2</div><h4>Prototipo vivo</h4><p>Mascota animada en 2-3 estados clave (racha, meta cumplida, consejo) sobre pantallas reales del UI kit.</p></div>
+          <div class="step"><div class="sn">PASO 3</div><h4>Arte final</h4><p>Brief al ilustrador a partir del concepto-norte. El emblema de aquí es la base, no el entregable final.</p></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var btn = document.getElementById('theme-btn');
+      function set(t){ root.setAttribute('data-theme', t); btn.querySelector('.material-icons').textContent = t === 'dark' ? 'light_mode' : 'dark_mode'; }
+      btn.addEventListener('click', function(){ set(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+    })();
+  </script>
+</body>
+</html>
