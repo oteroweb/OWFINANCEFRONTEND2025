@@ -3470,6 +3470,7 @@ function removeFilterChipPro(key: string): void {
 // Rates shape: { [code: string]: { current: number | '' } }
 type RateMap = Record<string, { current: number | '' } | number | ''>;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ratesExpanded = ref(false);
 
 // Load from authStore.user on mount; shape-tolerant
@@ -3530,7 +3531,7 @@ async function loadApTxPanel(): Promise<void> {
         name: (a['name'] as string) || 'Cuenta',
         short: ((a['name'] as string) || 'CTA').slice(0, 3).toUpperCase(),
         type: (a['account_type'] as string) || 'Cuenta',
-        currency: typeof a['currency'] === 'object' && a['currency'] ? String((a['currency'] as Record<string, unknown>)['code'] ?? 'USD') : (a['currency'] as string) || 'USD',
+        currency: typeof a['currency'] === 'object' && a['currency'] ? ((a['currency'] as Record<string, unknown>)['code'] as string) ?? 'USD' : (a['currency'] as string) || 'USD',
         balance: Number(a['balance'] ?? 0),
         color: (a['color'] as string) || 'var(--info)',
       }));
@@ -3556,7 +3557,7 @@ async function loadApTxPanel(): Promise<void> {
 function txDateKey(row: Row): string {
   const raw = (row as AnyRecord)['date'];
   if (!raw) return '';
-  const s = typeof raw === 'string' ? raw : String(raw);
+  const s = typeof raw === 'string' ? raw : String(raw as string | number);
   // Handle ISO datetime strings ("2026-06-26T09:02:00") or date-only "2026-06-26"
   return s.slice(0, 10);
 }
@@ -3596,14 +3597,14 @@ function formatGroupHeader(dateStr: string): string {
 function txLabel(row: Row): string {
   const r = row as AnyRecord;
   const name = r['name'] ?? r['description'] ?? r['concept'] ?? r['label'] ?? '';
-  return typeof name === 'string' ? name : String(name);
+  return typeof name === 'string' ? name : String(name as string | number);
 }
 
 function txDateTime(row: Row): string {
   const r = row as AnyRecord;
   const raw = r['date'];
   if (!raw) return '';
-  const s = typeof raw === 'string' ? raw : String(raw);
+  const s = typeof raw === 'string' ? raw : String(raw as string | number);
   const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
   if (!Number.isFinite(d.getTime())) return '';
   const today = new Date();
@@ -3620,8 +3621,8 @@ function txType(row: Row): 'income' | 'expense' | 'transfer' {
   if (isTransferRow(row)) return 'transfer';
   const amt = parseNumber((row as AnyRecord)['amount']);
   const tt = (row as AnyRecord)['transaction_type'] as AnyRecord | undefined;
-  const name = typeof tt?.['name'] === 'string' ? (tt['name'] as string).toLowerCase() : '';
-  const slug = typeof tt?.['slug'] === 'string' ? (tt['slug'] as string).toLowerCase() : '';
+  const name = typeof tt?.['name'] === 'string' ? (tt['name']).toLowerCase() : '';
+  const slug = typeof tt?.['slug'] === 'string' ? (tt['slug']).toLowerCase() : '';
   const combined = `${name} ${slug}`;
   if (combined.includes('income') || combined.includes('ingreso')) return 'income';
   if (combined.includes('expense') || combined.includes('gasto')) return 'expense';
@@ -3677,6 +3678,7 @@ function txJarColor(row: Row): string {
   return 'var(--brand-primary)';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function onProRatesChange(newRates: RateMap): Promise<void> {
   // Optimistically update local state
   proRates.value = newRates;
