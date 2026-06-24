@@ -61,17 +61,18 @@
                     :class="['tx-acct-row', selectedAccountNums.includes(acct.id) ? 'tx-acct-row--selected' : '']"
                     @click="toggleAccountFilter(acct.id)"
                   >
+                    <span class="tx-acct-row__checkbox">
+                      <q-icon
+                        :name="selectedAccountNums.includes(acct.id) ? 'check_box' : 'check_box_outline_blank'"
+                        size="18px"
+                        :color="selectedAccountNums.includes(acct.id) ? 'primary' : 'grey-5'"
+                      />
+                    </span>
                     <span
                       class="tx-acct-row__dot"
                       :style="acct.color ? { background: acct.color } : {}"
                     />
                     <span class="tx-acct-row__name">{{ acct.name }}</span>
-                    <q-icon
-                      v-if="selectedAccountNums.includes(acct.id)"
-                      name="check"
-                      size="16px"
-                      class="tx-acct-row__check"
-                    />
                   </button>
                 </template>
 
@@ -4173,6 +4174,12 @@ function exportCSV(): void {
 .tx-acct-row__check {
   color: var(--info);
   flex-shrink: 0;
+}
+.tx-acct-row__checkbox {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
 }
 
 /* ── AccountFilter folder grouping ── */
