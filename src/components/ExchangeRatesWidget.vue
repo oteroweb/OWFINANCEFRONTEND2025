@@ -81,6 +81,7 @@ const focusedCode = ref<string | null>(null);
 function readRate(code: string): number | string {
   const r = props.rates[code];
   if (r && typeof r === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     return (r as RateShape).current ?? '';
   }
   return r ?? '';
@@ -90,7 +91,8 @@ function writeRate(code: string, v: number | string): void {
   const r = props.rates[code];
   let next: RatesMap;
   if (r && typeof r === 'object') {
-    next = { ...props.rates, [code]: { ...(r as RateShape), current: v } };
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+    next = { ...props.rates, [code]: { ...(r as RateShape), current: v } as RateShape };
   } else {
     next = { ...props.rates, [code]: v };
   }

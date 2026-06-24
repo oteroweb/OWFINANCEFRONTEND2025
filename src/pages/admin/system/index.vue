@@ -14,6 +14,7 @@
   </q-page>
 </template>
 <script setup lang="ts">
+// eslint-disable-next-line vue/multi-word-component-names
 import { ref, onMounted } from 'vue'
 import { api } from 'boot/axios'
 const loading = ref(true)
