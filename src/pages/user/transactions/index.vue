@@ -21,66 +21,14 @@
           <!-- Row 1: AccountFilter pill + search bar + Filtros button -->
           <div class="pro-tx__filter-row">
 
-            <!-- AccountFilter pill (Pro only) -->
-            <div ref="acctFilterRef" class="tx-acct-filter">
-              <button
-                :class="['tx-acct-filter__pill', acctFilterActive ? 'tx-acct-filter__pill--active' : '']"
-                @click.stop="acctFilterOpen = !acctFilterOpen"
-              >
-                <q-icon name="account_balance" size="16px" />
-                <span>{{ acctFilterLabel }}</span>
-                <q-icon :name="acctFilterOpen ? 'expand_less' : 'expand_more'" size="16px" />
-              </button>
-
-              <div v-if="acctFilterOpen" class="tx-acct-dropdown" @click.stop>
-                <!-- "All accounts" row -->
-                <button
-                  :class="['tx-acct-row', !acctFilterActive ? 'tx-acct-row--selected' : '']"
-                  @click="clearAccountFilter(); acctFilterOpen = false"
-                >
-                  <span class="tx-acct-row__dot tx-acct-row__dot--all" />
-                  <span class="tx-acct-row__name">Todas las cuentas</span>
-                  <q-icon v-if="!acctFilterActive" name="check" size="16px" class="tx-acct-row__check" />
-                </button>
-
-                <div class="tx-acct-dropdown__divider" />
-
-                <!-- Grouped by folder (spec: AccountFilter pill popover grouped by folder) -->
-                <template v-for="folder in accountFolders" :key="folder.id ?? '__ungrouped__'">
-                  <!-- Folder label (only shown when there is more than one group) -->
-                  <div
-                    v-if="accountFolders.length > 1"
-                    class="tx-acct-folder-label"
-                  >
-                    <q-icon name="folder_open" size="13px" />
-                    {{ folder.name }}
-                  </div>
-                  <button
-                    v-for="acct in folder.accounts"
-                    :key="acct.id"
-                    :class="['tx-acct-row', selectedAccountNums.includes(acct.id) ? 'tx-acct-row--selected' : '']"
-                    @click="toggleAccountFilter(acct.id)"
-                  >
-                    <span class="tx-acct-row__checkbox">
-                      <q-icon
-                        :name="selectedAccountNums.includes(acct.id) ? 'check_box' : 'check_box_outline_blank'"
-                        size="18px"
-                        :color="selectedAccountNums.includes(acct.id) ? 'primary' : 'grey-5'"
-                      />
-                    </span>
-                    <span
-                      class="tx-acct-row__dot"
-                      :style="acct.color ? { background: acct.color } : {}"
-                    />
-                    <span class="tx-acct-row__name">{{ acct.name }}</span>
-                  </button>
-                </template>
-
-                <div v-if="!availableAccounts.length" class="tx-acct-dropdown__empty">
-                  Cargando cuentas...
-                </div>
-              </div>
-            </div>
+            <!-- AccountFilter pill (Pro only) — full-featured multi-select widget -->
+            <AccountFilterWidget
+              :selected="selectedAccountNums"
+              :accounts="availableAccounts"
+              :groups="accountFolders"
+              :rates="userRates"
+              @update:selected="ids => txStore.setSelectedAccountIds(ids)"
+            />
 
             <!-- Search bar -->
             <div class="pro-tx__search">
@@ -1031,6 +979,7 @@ import { api } from 'boot/axios';
 import { useAuthStore } from 'stores/auth';
 import { dictionary as dictionaryDef } from './dictionary';
 import { AccountsSidebarWidget, TransactionFormDialog } from 'components';
+import AccountFilterWidget from 'components/AccountFilterWidget.vue';
 import TransactionBulkImportDialog from 'components/TransactionBulkImportDialog.vue';
 import { useTransactionsStore } from 'stores/transactions';
 import LiteTransactionsView from './LiteTransactionsView.vue';
@@ -1163,30 +1112,17 @@ type AvailableAccount = {
   name: string;
   color: string | null;
   txCount: number;
+  // Fields for AccountFilterWidget
+  currency: string;
+  balance: number;
+  folder: string | null;
+  last4: string | null;
+  account_type: string | null;
 };
 const availableAccounts = ref<AvailableAccount[]>([]);
-const acctFilterOpen = ref(false);
-const acctFilterRef = ref<HTMLElement | null>(null);
 
-function toggleAccountFilter(id: number): void {
-  const current = txStore.selectedAccountIds.map(Number).filter(Number.isFinite);
-  const idx = current.indexOf(id);
-  if (idx >= 0) {
-    txStore.setSelectedAccountIds(current.filter((x) => x !== id));
-  } else {
-    txStore.setSelectedAccountIds([...current, id]);
-  }
-}
-
-function clearAccountFilter(): void {
-  txStore.setSelectedAccountIds([]);
-}
-
-function onAcctFilterClickOutside(e: MouseEvent): void {
-  if (acctFilterRef.value && !acctFilterRef.value.contains(e.target as Node)) {
-    acctFilterOpen.value = false;
-  }
-}
+// Removed: acctFilterOpen, acctFilterRef, toggleAccountFilter, clearAccountFilter,
+// onAcctFilterClickOutside — all handled inside AccountFilterWidget now.
 
 async function fetchAvailableAccounts(): Promise<void> {
   try {
@@ -1206,23 +1142,57 @@ async function fetchAvailableAccounts(): Promise<void> {
         typeof a['color'] === 'string' && a['color']
           ? a['color']
           : null;
-      return { id, name, color, txCount: 0 };
+      const currency = typeof a['currency_code'] === 'string' && a['currency_code']
+        ? a['currency_code']
+        : typeof (a['currency'] as Record<string, unknown> | null | undefined)?.['code'] === 'string'
+          ? (a['currency'] as Record<string, unknown>)['code'] as string
+          : 'USD';
+      const balance = typeof a['balance'] === 'number' ? a['balance']
+        : typeof a['balance'] === 'string' ? parseFloat(a['balance']) || 0
+        : 0;
+      const folder = typeof a['folder'] === 'string' && a['folder'] ? a['folder'] : null;
+      const last4 = typeof a['last4'] === 'string' && a['last4'] ? a['last4'] : null;
+      const typeRaw = a['account_type'];
+      const account_type = typeof typeRaw === 'string' ? typeRaw
+        : typeRaw && typeof typeRaw === 'object' && 'name' in (typeRaw as Record<string, unknown>)
+          ? ((typeRaw as Record<string, unknown>)['name'] as string)
+          : null;
+      return { id, name, color, txCount: 0, currency, balance, folder, last4, account_type };
     }).filter((a) => Number.isFinite(a.id));
   } catch {
     // silently ignore — widget degrades gracefully
   }
 }
 
+// userRates: currency code → units per USD (e.g. VES: 36.5, USD: 1)
+const userRates = computed<Record<string, number>>(() => {
+  const out: Record<string, number> = { USD: 1 };
+  const u = (authStore as unknown as Record<string, unknown>)['user'] as
+    | Record<string, unknown>
+    | undefined;
+  if (!u) return out;
+  const tryList = (arr: unknown): void => {
+    if (!Array.isArray(arr)) return;
+    for (const it of arr) {
+      if (!it || typeof it !== 'object') continue;
+      const obj = it as Record<string, unknown>;
+      const cur = obj['currency'] as Record<string, unknown> | undefined;
+      const code = typeof cur?.['code'] === 'string' ? cur['code'].toUpperCase()
+        : typeof obj['code'] === 'string' ? obj['code'].toUpperCase()
+        : null;
+      const rate = Number(obj['current_rate']);
+      if (code && Number.isFinite(rate) && rate > 0) out[code] = rate;
+    }
+  };
+  tryList(u['current_currency_rates']);
+  tryList(u['rates']);
+  tryList(u['currency_rates']);
+  return out;
+});
+
 const selectedAccountNums = computed<number[]>(() =>
   txStore.selectedAccountIds.map(Number).filter(Number.isFinite)
 );
-
-const acctFilterLabel = computed(() => {
-  const n = selectedAccountNums.value.length;
-  if (n === 0) return 'Cuentas';
-  if (n === 1) return 'Cuentas · 1';
-  return `Cuentas · ${n}`;
-});
 
 const acctFilterActive = computed(() => selectedAccountNums.value.length > 0);
 
@@ -2458,7 +2428,6 @@ onMounted(async () => {
 
   // Cargar cuentas disponibles para AccountFilter (Pro mode)
   void fetchAvailableAccounts();
-  document.addEventListener('click', onAcctFilterClickOutside);
 
   // Cargar tasas del usuario para ExchangeRatesWidget (Pro mode)
   loadProRatesFromUser();
@@ -2495,7 +2464,6 @@ onMounted(async () => {
   onBeforeUnmount(() => {
     window.removeEventListener('ow:transactions:changed', handler);
     window.removeEventListener('ow:accounts:selected', accountsSelectedHandler);
-    document.removeEventListener('click', onAcctFilterClickOutside);
   });
 });
 
@@ -3211,7 +3179,10 @@ function removeFilterChip(key: string): void {
     filters.search = '';
   } else if (key.startsWith('__acct_')) {
     const numId = Number(key.replace('__acct_', ''));
-    if (Number.isFinite(numId)) toggleAccountFilter(numId);
+    if (Number.isFinite(numId)) {
+      const cur = txStore.selectedAccountIds.map(Number).filter(Number.isFinite);
+      txStore.setSelectedAccountIds(cur.filter((x) => x !== numId));
+    }
   } else if (key === '__period') {
     periodStore.setType('all');
   } else {
@@ -3461,7 +3432,10 @@ function removeFilterChipPro(key: string): void {
   else if (key === 'pro-search') { filters.search = ''; }
   else if (key.startsWith('pro-acct-')) {
     const numId = Number(key.replace('pro-acct-', ''));
-    if (Number.isFinite(numId)) toggleAccountFilter(numId);
+    if (Number.isFinite(numId)) {
+      const cur = txStore.selectedAccountIds.map(Number).filter(Number.isFinite);
+      txStore.setSelectedAccountIds(cur.filter((x) => x !== numId));
+    }
   }
   pagination.value.page = 1;
   void runFetch(true);
@@ -4065,136 +4039,7 @@ function exportCSV(): void {
 }
 
 /* ── AccountFilter (Pro mode) ── */
-.tx-acct-filter {
-  position: relative;
-  display: inline-block;
-}
-
-.tx-acct-filter__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: var(--radius-pill);
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  background: var(--surface-2);
-  color: var(--fg-1);
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.tx-acct-filter__pill--active {
-  background: color-mix(in srgb, var(--info) 14%, var(--surface-1));
-  color: var(--info);
-  font-weight: 600;
-}
-
-.tx-acct-filter__pill:hover {
-  filter: brightness(0.96);
-}
-
-.tx-acct-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 70;
-  min-width: 240px;
-  max-height: 320px;
-  overflow-y: auto;
-  background: var(--surface-1);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-hairline);
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
-  padding: 6px;
-}
-
-.tx-acct-dropdown__divider {
-  height: 1px;
-  background: var(--border-hairline);
-  margin: 4px 6px;
-}
-
-.tx-acct-dropdown__empty {
-  padding: 12px 14px;
-  font-size: 12px;
-  color: var(--fg-3);
-  text-align: center;
-}
-
-.tx-acct-row {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--fg-1);
-  background: transparent;
-  transition: background 0.1s ease;
-}
-
-.tx-acct-row:hover {
-  background: var(--surface-2);
-}
-
-.tx-acct-row--selected {
-  background: var(--surface-2);
-  font-weight: 600;
-}
-
-.tx-acct-row__dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--fg-3);
-}
-
-.tx-acct-row__dot--all {
-  background: var(--info);
-}
-
-.tx-acct-row__name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tx-acct-row__check {
-  color: var(--info);
-  flex-shrink: 0;
-}
-.tx-acct-row__checkbox {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  margin-right: 4px;
-}
-
-/* ── AccountFilter folder grouping ── */
-.tx-acct-folder-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 10px 3px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--fg-3);
-  user-select: none;
-}
+/* tx-acct-filter CSS removed — replaced by AccountFilterWidget component */
 
 /* ── Pro filter panel ── */
 .pro-tx__filter-card {
