@@ -226,13 +226,45 @@ See [`ICONOGRAPHY.md`](./ICONOGRAPHY.md) for the safe-set policy. Short version:
 
 ---
 
-## 6. Index
+## 6. Components (importable)
+
+The reusable presentational primitives live in `components/<group>/`, one
+component per file (`<Name>.jsx` with `export function <Name>` + sibling
+`<Name>.d.ts` props contract). They are bundled into `_ds_bundle.js` and exposed
+on the `window.OWFinanceDesignSystem_5fd9e1` namespace.
+
+Consume them by loading React, then the bundle:
+
+```html
+<script src="…/react.development.js"></script>
+<script src="…/react-dom.development.js"></script>
+<script src="…/_ds_bundle.js"></script>
+<script type="text/babel">
+  const { PillButton, Money } = window.OWFinanceDesignSystem_5fd9e1;
+</script>
+```
+
+| Group | Components |
+| --- | --- |
+| `components/buttons/` | `PillButton` (primary/secondary/ghost/danger, sm/md, icon), `IconButton` (square, active state) |
+| `components/chips/` | `Chip` (default/currency/brand/income/expense/warning/info), `CurrencyChip` (selectable, live dot) |
+| `components/primitives/` | `Money` (formatted, signed, privacy-mask), `Eyebrow` (all-caps meta), `Card` (standard/hero elevation), `Avatar` (initial badge) |
+
+> The `ui_kits/lite-desktop/` and `ui_kits/mobile/` source files are the
+> full-screen **demo** recreations. They load via in-browser Babel globals
+> (`Object.assign(window, …)`), so they are not formal exports — the canonical
+> importable versions of shared atoms are the `components/` files above.
+
+---
+
+## 7. Index
 
 ```
 README.md                    ← you are here
 ICONOGRAPHY.md               ← icon policy & safe names
 SKILL.md                     ← agent-skill manifest
 colors_and_type.css          ← all tokens, light + dark, type roles
+components/                   ← importable React primitives (buttons, chips, primitives)
 fonts/                       ← Satoshi (Fontshare), DM Sans, Manrope, Inter
 assets/
   logos/                     ← OW Finance logos (placeholders + svg marks)
@@ -270,7 +302,7 @@ ui_kits/
 
 ---
 
-## 7. Iterate with us
+## 8. Iterate with us
 
 This system is intentionally tight and opinionated to keep Lite **Lite**. If you find:
 

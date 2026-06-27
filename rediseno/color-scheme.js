@@ -106,6 +106,7 @@ export const owColorScheme = {
   document.addEventListener('DOMContentLoaded', () => {
     // build role cards
     const rolesWrap = document.getElementById('roles');
+    if (!rolesWrap) return; // not the color-scheme tool page — no-op in any consumer
     rolesWrap.innerHTML = ROLES.map((r, i) => `
       <div class="role-card" data-key="${r.key}">
         <div class="rc-top">

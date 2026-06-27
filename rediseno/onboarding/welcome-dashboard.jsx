@@ -369,4 +369,7 @@ function WmRoot() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<WmRoot />);
+/* Auto-mount only on this file's own standalone demo page (guarded so the
+   bundle never hijacks a consumer's #root). */
+const __wmEl = document.getElementById('wm-root');
+if (__wmEl) ReactDOM.createRoot(__wmEl).render(<WmRoot />);

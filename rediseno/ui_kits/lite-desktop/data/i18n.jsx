@@ -94,6 +94,11 @@ const I18N_EN = {
   'Con deuda': 'With debt', 'combinado': 'combined', 'Listo': 'Done',
   'Ajustar saldo': 'Adjust balance', 'Recalcular saldo': 'Recalculate balance',
   'Recalculando…': 'Recalculating…', 'ajustado': 'adjusted',
+  'Seleccionar varias': 'Select multiple', 'Seleccionar todo': 'Select all', 'seleccionadas': 'selected',
+  'Recalcular': 'Recalculate', 'cuentas actualizadas': 'accounts updated',
+  'Saldo ajustado': 'Balance adjusted', 'Saldo actualizado': 'Balance updated',
+  'Selecciona una sola cuenta para ajustar': 'Select a single account to adjust',
+  'Guardar': 'Save', 'Cancelar': 'Cancel', 'Opciones de cuenta': 'Account options',
   'Mis cuentas': 'My accounts', 'Venezolanas': 'Venezuelan', 'Tarjetas y deudas': 'Cards & debts',
 
   /* ── Config ── */
@@ -105,6 +110,11 @@ const I18N_EN = {
   'Resumen semanal': 'Weekly digest', 'Alertas de dinero ocioso': 'Idle money alerts',
   'Alerta de sobrepresupuesto': 'Over-budget alert', 'Cerrar sesión': 'Sign out',
   'Tasas de cambio': 'Exchange rates',
+  'Oficial (BCV)': 'Official (BCV)', 'Tasa actual': 'Current rate', 'aplica': 'applied',
+  'por encima del BCV': 'above BCV', 'por debajo del BCV': 'below BCV',
+  'Ver historial': 'View history', 'Historial de tasas': 'Rate history',
+  'Fecha': 'Date', 'BCV': 'BCV', 'Actual': 'Current',
+  '· BCV oficial + tasa del momento · se aplican en todo Pro': '· Official BCV + spot rate · applied across Pro',
   '· Ingresa manualmente · se aplican en todo Pro': '· Enter manually · applied across Pro',
   '3 tarjetas · 2 bancos': '3 cards · 2 banks', 'Inicio': 'Home',
   'Tu tasa de ahorro es 42%. Hay $540 inactivos que podrías mover al jar de emergencia.': 'Your savings rate is 42%. There is $540 idle you could move to the emergency jar.',

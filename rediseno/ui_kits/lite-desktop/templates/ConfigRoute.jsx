@@ -56,7 +56,7 @@ function ConfigRoute({ rates = {}, onRatesChange, onGo, onStartOnboarding }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <Eyebrow>{t("Tasas de cambio")}</Eyebrow>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--fg-2)', fontStyle: 'italic' }}>{t("· Ingresa manualmente · se aplican en todo Pro")}</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--fg-2)', fontStyle: 'italic' }}>{t("· BCV oficial + tasa del momento · se aplican en todo Pro")}</span>
           </div>
           <Card padding={0}>
             <ExchangeRatesWidget rates={rates} onChange={onRatesChange} />

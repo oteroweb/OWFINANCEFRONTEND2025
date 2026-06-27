@@ -279,6 +279,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     // theme toggle
     const tbtn = document.getElementById('theme-btn');
+    if (!tbtn) return; // not the period-selector demo page — no-op in any consumer
     tbtn.addEventListener('click', () => {
       const html = document.documentElement;
       const dark = html.getAttribute('data-theme') === 'dark';

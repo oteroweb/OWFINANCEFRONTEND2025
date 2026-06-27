@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"OWFinanceDesignSystem_5fd9e1","components":[],"sourceHashes":{"cantaros-mobile/atoms.jsx":"33c397067107","cantaros-mobile/categories.jsx":"7e02272eb796","cantaros-mobile/data.jsx":"ae66b19d7bad","cantaros-mobile/detail.jsx":"cdcd6ac7f442","cantaros-mobile/screen.jsx":"2ac5ed578694","cantaros-mobile/tweaks-panel.jsx":"6591467622ed","color-scheme.js":"3826de35bf09","marketing.js":"36bbac9b2d80","onboarding/auth.jsx":"5a9d5645064a","onboarding/flow-data.jsx":"12b314de4853","onboarding/flow-desktop.jsx":"70a0407ae2de","onboarding/flow.jsx":"8ef62e3c2391","onboarding/gamification.jsx":"776a66fb1228","onboarding/onb-atoms.jsx":"c8f8c2eb35c2","onboarding/profile-panel.jsx":"69f128c3abf7","onboarding/welcome-dashboard.jsx":"7367e470c73b","onboarding/welcome-modal.jsx":"ef9f508ea9a8","period-selector.js":"c2a20d7eedfd","ui_kits/lite-desktop/atoms/Buttons.jsx":"c3e71689c42d","ui_kits/lite-desktop/atoms/Chips.jsx":"a65662ac37ef","ui_kits/lite-desktop/atoms/Primitives.jsx":"e7aac8cbb6a3","ui_kits/lite-desktop/data/analisis-data.jsx":"e23f915aba6d","ui_kits/lite-desktop/data/finance-data.jsx":"9e55498219c8","ui_kits/lite-desktop/data/i18n.jsx":"18323dc652db","ui_kits/lite-desktop/data/profile-data.jsx":"597c7186c8f3","ui_kits/lite-desktop/data/sample-data.jsx":"e733d349e52e","ui_kits/lite-desktop/molecules/ChipGroup.jsx":"6ff71ea675aa","ui_kits/lite-desktop/molecules/FormControls.jsx":"b9ef67ebbd31","ui_kits/lite-desktop/molecules/SectionHeader.jsx":"c678a94f59f6","ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx":"4fbe1bc97d0b","ui_kits/lite-desktop/organisms/AccountFilter.jsx":"d818f684b95b","ui_kits/lite-desktop/organisms/AccountsPanel.jsx":"056fe9295aa8","ui_kits/lite-desktop/organisms/AnalisisParts.jsx":"37d94b451029","ui_kits/lite-desktop/organisms/BulkImportPanel.jsx":"65d4fd8387e2","ui_kits/lite-desktop/organisms/DebtsPreview.jsx":"b4733871862e","ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx":"cfecb8dac9d5","ui_kits/lite-desktop/organisms/DreamsPreview.jsx":"5462b9553bdd","ui_kits/lite-desktop/organisms/EntryGate.jsx":"1241adaea1c0","ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx":"a07bd95d9511","ui_kits/lite-desktop/organisms/ExpandedMenu.jsx":"0c3e79aec576","ui_kits/lite-desktop/organisms/HeroBalance.jsx":"5cecf9195e72","ui_kits/lite-desktop/organisms/JarsConfig.jsx":"485cb17c69ed","ui_kits/lite-desktop/organisms/JarsPreview.jsx":"5c5508796730","ui_kits/lite-desktop/organisms/LiteHeader.jsx":"6e4a5afe2210","ui_kits/lite-desktop/organisms/LiteNavPill.jsx":"f054260b22fc","ui_kits/lite-desktop/organisms/MobileTabBar.jsx":"1fbb5dbe5887","ui_kits/lite-desktop/organisms/MonthNavigator.jsx":"513eb7e07020","ui_kits/lite-desktop/organisms/NotificationsPanel.jsx":"38325011a256","ui_kits/lite-desktop/organisms/OnboardingFlow.jsx":"1dcdc6d4617c","ui_kits/lite-desktop/organisms/RecentTransactions.jsx":"e92eaeefbcf5","ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx":"90e5576352f1","ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx":"ddfc5df722f7","ui_kits/lite-desktop/organisms/TransactionForm.jsx":"0c08e3146319","ui_kits/lite-desktop/shells/LiteShell.jsx":"a390819044d6","ui_kits/lite-desktop/shells/ProShell.jsx":"67d2053a07ab","ui_kits/lite-desktop/templates/AnalisisRoute.jsx":"592e90af5138","ui_kits/lite-desktop/templates/ConfigRoute.jsx":"3a55abc1a780","ui_kits/lite-desktop/templates/DebtsRoute.jsx":"92530729a003","ui_kits/lite-desktop/templates/DreamsRoute.jsx":"b614f96aa92e","ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx":"7a9c2f2ef8f2","ui_kits/lite-desktop/templates/HomeRoute.jsx":"cb2aebdcad3c","ui_kits/lite-desktop/templates/JarsRoute.jsx":"53325c31755b","ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx":"53219c9595fb","ui_kits/lite-desktop/templates/ProHomeRoute.jsx":"80ccaf7f02fc","ui_kits/lite-desktop/templates/ProfileRoute.jsx":"87b7e118a222","ui_kits/lite-desktop/templates/TransactionsRoute.jsx":"6826709b3aee","ui_kits/lite-desktop/tweaks-panel.jsx":"6591467622ed","ui_kits/mobile/Shell.jsx":"48ffe926c013","ui_kits/mobile/components/Atoms.jsx":"f89904173ab3","ui_kits/mobile/components/BalanceCard.jsx":"01b71c947363","ui_kits/mobile/components/BottomSheet.jsx":"6356b7e22efd","ui_kits/mobile/components/ChatComponents.jsx":"753c82f5ef5f","ui_kits/mobile/components/DebtComponents.jsx":"d97be1dc6da0","ui_kits/mobile/components/DreamComponents.jsx":"0a03e5018be8","ui_kits/mobile/components/EntryGateMobile.jsx":"a71a2ffcff53","ui_kits/mobile/components/JarComponents.jsx":"f023ec4718e6","ui_kits/mobile/components/MonthNavigatorMobile.jsx":"98c8dfe1d41e","ui_kits/mobile/components/Navigation.jsx":"668e1954c585","ui_kits/mobile/components/OnboardingMobile.jsx":"b2119402d9b2","ui_kits/mobile/components/ProfileComponents.jsx":"017ea1f55228","ui_kits/mobile/components/QuickActionSheet.jsx":"899bed51132c","ui_kits/mobile/components/SmartTransactionSheet.jsx":"87d9ec1c246e","ui_kits/mobile/components/TransactionComponents.jsx":"0f6c229e479f","ui_kits/mobile/components/TransactionDetailSheet.jsx":"b24a4b486cd5","ui_kits/mobile/components/TransactionFilters.jsx":"c2e2df3c685e","ui_kits/mobile/components/TransactionFormSheet.jsx":"102aa4c04d01","ui_kits/mobile/data.jsx":"2673360bfb71","ui_kits/mobile/profile-data.jsx":"597c7186c8f3","ui_kits/mobile/screens/AIAdvisorScreen.jsx":"c8481db07461","ui_kits/mobile/screens/DebtsScreen.jsx":"0c314f06d687","ui_kits/mobile/screens/DreamsScreen.jsx":"2e7a2a5c2f88","ui_kits/mobile/screens/FinancialProfileScreen.jsx":"a459a34c5105","ui_kits/mobile/screens/HomeScreenLite.jsx":"697b1d4f35e4","ui_kits/mobile/screens/HomeScreenPro.jsx":"a28b6371e4e1","ui_kits/mobile/screens/JarsScreen.jsx":"c4d236dbde24","ui_kits/mobile/screens/ProfileScreen.jsx":"c5bf2f4025af","ui_kits/mobile/screens/SettingsScreen.jsx":"338a248ecbbe","ui_kits/mobile/screens/TransactionsScreen.jsx":"913bcb11abac","ui_kits/mobile/tokens.js":"66ccee7c23e3"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"OWFinanceDesignSystem_5fd9e1","components":[{"name":"IconButton","sourcePath":"components/buttons/IconButton.jsx"},{"name":"PillButton","sourcePath":"components/buttons/PillButton.jsx"},{"name":"Chip","sourcePath":"components/chips/Chip.jsx"},{"name":"CurrencyChip","sourcePath":"components/chips/CurrencyChip.jsx"},{"name":"Avatar","sourcePath":"components/primitives/Avatar.jsx"},{"name":"Card","sourcePath":"components/primitives/Card.jsx"},{"name":"Eyebrow","sourcePath":"components/primitives/Eyebrow.jsx"},{"name":"Money","sourcePath":"components/primitives/Money.jsx"}],"sourceHashes":{"cantaros-mobile/atoms.jsx":"33c397067107","cantaros-mobile/categories.jsx":"7e02272eb796","cantaros-mobile/data.jsx":"ae66b19d7bad","cantaros-mobile/detail.jsx":"cdcd6ac7f442","cantaros-mobile/screen.jsx":"2ac5ed578694","cantaros-mobile/tweaks-panel.jsx":"6591467622ed","color-scheme.js":"ce602ba10e3f","components/buttons/IconButton.jsx":"318502b60ad6","components/buttons/PillButton.jsx":"8bc8c6d0ddbd","components/chips/Chip.jsx":"dd91549ca864","components/chips/CurrencyChip.jsx":"279396f07797","components/primitives/Avatar.jsx":"f246e5f4147c","components/primitives/Card.jsx":"55712669b8ae","components/primitives/Eyebrow.jsx":"e2e7368473e5","components/primitives/Money.jsx":"d293e7f8b2cd","marketing.js":"36bbac9b2d80","onboarding/auth.jsx":"5a9d5645064a","onboarding/flow-data.jsx":"12b314de4853","onboarding/flow-desktop.jsx":"70a0407ae2de","onboarding/flow.jsx":"8ef62e3c2391","onboarding/gamification.jsx":"776a66fb1228","onboarding/onb-atoms.jsx":"c8f8c2eb35c2","onboarding/profile-panel.jsx":"69f128c3abf7","onboarding/welcome-dashboard.jsx":"2e28c675f82d","onboarding/welcome-modal.jsx":"ef9f508ea9a8","period-selector.js":"cb172ef88d57","redesign/TxLedger.jsx":"ad297b8e5685","redesign/TxPoolsHeader.jsx":"bcbab66630f1","redesign/app.jsx":"3a3e4769b61b","redesign/data.jsx":"00d3bb08d92a","ui_kits/lite-desktop/atoms/Buttons.jsx":"c3e71689c42d","ui_kits/lite-desktop/atoms/Chips.jsx":"a65662ac37ef","ui_kits/lite-desktop/atoms/Primitives.jsx":"e7aac8cbb6a3","ui_kits/lite-desktop/data/analisis-data.jsx":"e23f915aba6d","ui_kits/lite-desktop/data/finance-data.jsx":"9e55498219c8","ui_kits/lite-desktop/data/i18n.jsx":"096823815739","ui_kits/lite-desktop/data/profile-data.jsx":"597c7186c8f3","ui_kits/lite-desktop/data/sample-data.jsx":"e733d349e52e","ui_kits/lite-desktop/molecules/ChipGroup.jsx":"6ff71ea675aa","ui_kits/lite-desktop/molecules/FormControls.jsx":"b9ef67ebbd31","ui_kits/lite-desktop/molecules/SectionHeader.jsx":"c678a94f59f6","ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx":"4fbe1bc97d0b","ui_kits/lite-desktop/organisms/AccountFilter.jsx":"d818f684b95b","ui_kits/lite-desktop/organisms/AccountsPanel.jsx":"65e31353d59a","ui_kits/lite-desktop/organisms/AnalisisParts.jsx":"37d94b451029","ui_kits/lite-desktop/organisms/BulkImportPanel.jsx":"65d4fd8387e2","ui_kits/lite-desktop/organisms/DebtsPreview.jsx":"b4733871862e","ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx":"cfecb8dac9d5","ui_kits/lite-desktop/organisms/DreamsPreview.jsx":"5462b9553bdd","ui_kits/lite-desktop/organisms/EntryGate.jsx":"1241adaea1c0","ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx":"37f45d6c4723","ui_kits/lite-desktop/organisms/ExpandedMenu.jsx":"0c3e79aec576","ui_kits/lite-desktop/organisms/HeroBalance.jsx":"5cecf9195e72","ui_kits/lite-desktop/organisms/JarsConfig.jsx":"485cb17c69ed","ui_kits/lite-desktop/organisms/JarsPreview.jsx":"5c5508796730","ui_kits/lite-desktop/organisms/LiteHeader.jsx":"6e4a5afe2210","ui_kits/lite-desktop/organisms/LiteNavPill.jsx":"f054260b22fc","ui_kits/lite-desktop/organisms/MobileTabBar.jsx":"1fbb5dbe5887","ui_kits/lite-desktop/organisms/MonthNavigator.jsx":"513eb7e07020","ui_kits/lite-desktop/organisms/NotificationsPanel.jsx":"38325011a256","ui_kits/lite-desktop/organisms/OnboardingFlow.jsx":"1dcdc6d4617c","ui_kits/lite-desktop/organisms/RecentTransactions.jsx":"e92eaeefbcf5","ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx":"90e5576352f1","ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx":"ddfc5df722f7","ui_kits/lite-desktop/organisms/TransactionForm.jsx":"0c08e3146319","ui_kits/lite-desktop/shells/LiteShell.jsx":"a390819044d6","ui_kits/lite-desktop/shells/ProShell.jsx":"67d2053a07ab","ui_kits/lite-desktop/templates/AnalisisRoute.jsx":"592e90af5138","ui_kits/lite-desktop/templates/ConfigRoute.jsx":"0c1d574b38f7","ui_kits/lite-desktop/templates/DebtsRoute.jsx":"92530729a003","ui_kits/lite-desktop/templates/DreamsRoute.jsx":"b614f96aa92e","ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx":"7a9c2f2ef8f2","ui_kits/lite-desktop/templates/HomeRoute.jsx":"cb2aebdcad3c","ui_kits/lite-desktop/templates/JarsRoute.jsx":"53325c31755b","ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx":"53219c9595fb","ui_kits/lite-desktop/templates/ProHomeRoute.jsx":"80ccaf7f02fc","ui_kits/lite-desktop/templates/ProfileRoute.jsx":"87b7e118a222","ui_kits/lite-desktop/templates/TransactionsRoute.jsx":"6826709b3aee","ui_kits/lite-desktop/tweaks-panel.jsx":"6591467622ed","ui_kits/mobile/Shell.jsx":"48ffe926c013","ui_kits/mobile/components/Atoms.jsx":"f89904173ab3","ui_kits/mobile/components/BalanceCard.jsx":"01b71c947363","ui_kits/mobile/components/BottomSheet.jsx":"6356b7e22efd","ui_kits/mobile/components/ChatComponents.jsx":"753c82f5ef5f","ui_kits/mobile/components/DebtComponents.jsx":"d97be1dc6da0","ui_kits/mobile/components/DreamComponents.jsx":"0a03e5018be8","ui_kits/mobile/components/EntryGateMobile.jsx":"a71a2ffcff53","ui_kits/mobile/components/JarComponents.jsx":"f023ec4718e6","ui_kits/mobile/components/MonthNavigatorMobile.jsx":"98c8dfe1d41e","ui_kits/mobile/components/Navigation.jsx":"668e1954c585","ui_kits/mobile/components/OnboardingMobile.jsx":"b2119402d9b2","ui_kits/mobile/components/ProfileComponents.jsx":"017ea1f55228","ui_kits/mobile/components/QuickActionSheet.jsx":"899bed51132c","ui_kits/mobile/components/SmartTransactionSheet.jsx":"87d9ec1c246e","ui_kits/mobile/components/TransactionComponents.jsx":"0f6c229e479f","ui_kits/mobile/components/TransactionDetailSheet.jsx":"b24a4b486cd5","ui_kits/mobile/components/TransactionFilters.jsx":"c2e2df3c685e","ui_kits/mobile/components/TransactionFormSheet.jsx":"102aa4c04d01","ui_kits/mobile/data.jsx":"2673360bfb71","ui_kits/mobile/profile-data.jsx":"597c7186c8f3","ui_kits/mobile/screens/AIAdvisorScreen.jsx":"c8481db07461","ui_kits/mobile/screens/DebtsScreen.jsx":"0c314f06d687","ui_kits/mobile/screens/DreamsScreen.jsx":"2e7a2a5c2f88","ui_kits/mobile/screens/FinancialProfileScreen.jsx":"a459a34c5105","ui_kits/mobile/screens/HomeScreenLite.jsx":"697b1d4f35e4","ui_kits/mobile/screens/HomeScreenPro.jsx":"a28b6371e4e1","ui_kits/mobile/screens/JarsScreen.jsx":"c4d236dbde24","ui_kits/mobile/screens/ProfileScreen.jsx":"c5bf2f4025af","ui_kits/mobile/screens/SettingsScreen.jsx":"338a248ecbbe","ui_kits/mobile/screens/TransactionsScreen.jsx":"913bcb11abac","ui_kits/mobile/tokens.js":"66ccee7c23e3"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -3402,6 +3402,7 @@ export const owColorScheme = {
   document.addEventListener('DOMContentLoaded', () => {
     // build role cards
     const rolesWrap = document.getElementById('roles');
+    if (!rolesWrap) return; // not the color-scheme tool page — no-op in any consumer
     rolesWrap.innerHTML = ROLES.map((r, i) => `
       <div class="role-card" data-key="${r.key}">
         <div class="rc-top">
@@ -3492,6 +3493,327 @@ export const owColorScheme = {
   }
 })();
 })(); } catch (e) { __ds_ns.__errors.push({ path: "color-scheme.js", error: String((e && e.message) || e) }); }
+
+// components/buttons/IconButton.jsx
+try { (() => {
+/* IconButton — square icon-only button with optional active state. */
+/* global React */
+
+function IconButton({
+  icon,
+  onClick,
+  ariaLabel,
+  active = false,
+  size = 40
+}) {
+  const [h, setH] = React.useState(false);
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    "aria-label": ariaLabel,
+    onMouseEnter: () => setH(true),
+    onMouseLeave: () => setH(false),
+    style: {
+      width: size,
+      height: size,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      border: 0,
+      cursor: 'pointer',
+      borderRadius: 'var(--radius-pill)',
+      background: active ? 'var(--brand-primary-soft)' : h ? 'var(--surface-2)' : 'var(--surface-1)',
+      color: active ? 'var(--brand-primary-fg-soft)' : 'var(--fg-1)',
+      boxShadow: active ? 'none' : 'var(--shadow-card)',
+      transition: 'background var(--dur-base) var(--ease-out)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20
+    }
+  }, icon));
+}
+Object.assign(__ds_scope, { IconButton });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/buttons/IconButton.jsx", error: String((e && e.message) || e) }); }
+
+// components/buttons/PillButton.jsx
+try { (() => {
+/* PillButton — primary pill-shaped action button (brand / secondary / ghost / danger). */
+/* global React */
+
+function PillButton({
+  children,
+  icon,
+  variant = 'primary',
+  size = 'md',
+  onClick,
+  ariaLabel,
+  type = 'button'
+}) {
+  const pad = size === 'sm' ? '8px 14px' : '12px 22px';
+  const fontSize = size === 'sm' ? 13 : 14;
+  const palette = {
+    primary: {
+      bg: 'var(--brand-primary)',
+      color: 'var(--fg-on-brand)',
+      hover: 'var(--brand-primary-hover)',
+      shadow: 'none'
+    },
+    secondary: {
+      bg: 'var(--surface-1)',
+      color: 'var(--fg-1)',
+      hover: 'var(--surface-2)',
+      shadow: 'var(--shadow-card)'
+    },
+    ghost: {
+      bg: 'transparent',
+      color: 'var(--fg-1)',
+      hover: 'var(--surface-2)',
+      shadow: 'none'
+    },
+    danger: {
+      bg: 'var(--expense-soft)',
+      color: 'var(--expense-fg)',
+      hover: 'var(--expense-soft)',
+      shadow: 'none'
+    }
+  }[variant] || {};
+  const [h, setH] = React.useState(false);
+  return /*#__PURE__*/React.createElement("button", {
+    type: type,
+    onClick: onClick,
+    "aria-label": ariaLabel,
+    onMouseEnter: () => setH(true),
+    onMouseLeave: () => setH(false),
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 8,
+      fontFamily: 'var(--font-body)',
+      fontWeight: 600,
+      fontSize,
+      border: 0,
+      borderRadius: 'var(--radius-pill)',
+      cursor: 'pointer',
+      padding: pad,
+      background: h ? palette.hover : palette.bg,
+      color: palette.color,
+      boxShadow: palette.shadow,
+      transition: 'background var(--dur-base) var(--ease-out)'
+    }
+  }, icon && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18
+    }
+  }, icon), children);
+}
+Object.assign(__ds_scope, { PillButton });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/buttons/PillButton.jsx", error: String((e && e.message) || e) }); }
+
+// components/chips/Chip.jsx
+try { (() => {
+/* Chip — compact status / category pill with semantic variants. */
+/* global React */
+
+function Chip({
+  children,
+  variant = 'default',
+  icon
+}) {
+  const palette = {
+    default: {
+      bg: 'var(--surface-2)',
+      color: 'var(--fg-1)'
+    },
+    currency: {
+      bg: 'var(--surface-1)',
+      color: 'var(--fg-1)',
+      shadow: 'var(--shadow-card)',
+      weight: 600,
+      letter: '0.06em'
+    },
+    brand: {
+      bg: 'var(--brand-primary-soft)',
+      color: 'var(--brand-primary-fg-soft)',
+      weight: 600
+    },
+    income: {
+      bg: 'var(--income-soft)',
+      color: 'var(--income-fg)'
+    },
+    expense: {
+      bg: 'var(--expense-soft)',
+      color: 'var(--expense-fg)'
+    },
+    warning: {
+      bg: 'var(--warning-soft)',
+      color: 'var(--warning-fg)'
+    },
+    info: {
+      bg: 'var(--info-soft)',
+      color: 'var(--info-fg)'
+    }
+  }[variant] || {};
+  return /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      fontFamily: 'var(--font-body)',
+      fontWeight: palette.weight || 500,
+      fontSize: 12,
+      letterSpacing: palette.letter || 'normal',
+      padding: '6px 12px',
+      borderRadius: 'var(--radius-pill)',
+      background: palette.bg,
+      color: palette.color,
+      boxShadow: palette.shadow || 'none'
+    }
+  }, icon && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 14
+    }
+  }, icon), children);
+}
+Object.assign(__ds_scope, { Chip });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/chips/Chip.jsx", error: String((e && e.message) || e) }); }
+
+// components/chips/CurrencyChip.jsx
+try { (() => {
+/* CurrencyChip — selectable currency token with live/inactive dot. */
+/* global React */
+
+function CurrencyChip({
+  code = 'USD',
+  active = true
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 8,
+      fontFamily: 'var(--font-body)',
+      fontWeight: 600,
+      fontSize: 12,
+      letterSpacing: '0.06em',
+      padding: '8px 14px',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      color: 'var(--fg-1)',
+      boxShadow: 'var(--shadow-card)',
+      cursor: 'pointer'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 6,
+      height: 6,
+      borderRadius: 999,
+      background: active ? 'var(--income)' : 'var(--fg-3)'
+    }
+  }), code);
+}
+Object.assign(__ds_scope, { CurrencyChip });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/chips/CurrencyChip.jsx", error: String((e && e.message) || e) }); }
+
+// components/primitives/Avatar.jsx
+try { (() => {
+/* Avatar — circular brand-colored initial badge. */
+/* global React */
+
+function Avatar({
+  initial,
+  size = 40
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: size,
+      height: size,
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--brand-primary)',
+      color: 'var(--fg-on-brand)',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'var(--font-display)',
+      fontWeight: 600,
+      fontSize: size * 0.42
+    }
+  }, initial);
+}
+Object.assign(__ds_scope, { Avatar });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Avatar.jsx", error: String((e && e.message) || e) }); }
+
+// components/primitives/Card.jsx
+try { (() => {
+/* Card — elevated surface container (standard or hero elevation). */
+/* global React */
+
+function Card({
+  children,
+  hero = false,
+  padding = 24,
+  style = {}
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'var(--surface-1)',
+      borderRadius: hero ? 'var(--radius-xl)' : 'var(--radius-lg)',
+      padding: hero ? 32 : padding,
+      boxShadow: hero ? 'var(--shadow-float)' : 'var(--shadow-card)',
+      ...style
+    }
+  }, children);
+}
+Object.assign(__ds_scope, { Card });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Card.jsx", error: String((e && e.message) || e) }); }
+
+// components/primitives/Eyebrow.jsx
+try { (() => {
+/* Eyebrow — tiny all-caps meta label above a value or heading. */
+/* global React */
+
+function Eyebrow({
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "t-eyebrow"
+  }, children);
+}
+Object.assign(__ds_scope, { Eyebrow });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Eyebrow.jsx", error: String((e && e.message) || e) }); }
+
+// components/primitives/Money.jsx
+try { (() => {
+/* Money — formatted currency amount with optional sign and privacy mask. */
+/* global React */
+
+function Money({
+  value,
+  currency = '$',
+  className = 't-amount-md',
+  sign = false,
+  hidden = false,
+  color
+}) {
+  const isNeg = value < 0;
+  const abs = Math.abs(value);
+  const formatted = abs.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  const display = hidden ? '••••••' : formatted;
+  const prefix = sign ? isNeg ? '− ' : '+ ' : isNeg ? '− ' : '';
+  return /*#__PURE__*/React.createElement("span", {
+    className: className,
+    style: {
+      color: color || 'inherit'
+    }
+  }, prefix, currency, " ", display);
+}
+Object.assign(__ds_scope, { Money });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Money.jsx", error: String((e && e.message) || e) }); }
 
 // marketing.js
 try { (() => {
@@ -10289,7 +10611,11 @@ function WmRoot() {
     }
   }, view)));
 }
-ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(WmRoot, null));
+
+/* Auto-mount only on this file's own standalone demo page (guarded so the
+   bundle never hijacks a consumer's #root). */
+const __wmEl = document.getElementById('wm-root');
+if (__wmEl) ReactDOM.createRoot(__wmEl).render(/*#__PURE__*/React.createElement(WmRoot, null));
 })(); } catch (e) { __ds_ns.__errors.push({ path: "onboarding/welcome-dashboard.jsx", error: String((e && e.message) || e) }); }
 
 // onboarding/welcome-modal.jsx
@@ -11832,6 +12158,7 @@ try { (() => {
   document.addEventListener('DOMContentLoaded', () => {
     // theme toggle
     const tbtn = document.getElementById('theme-btn');
+    if (!tbtn) return; // not the period-selector demo page — no-op in any consumer
     tbtn.addEventListener('click', () => {
       const html = document.documentElement;
       const dark = html.getAttribute('data-theme') === 'dark';
@@ -11980,6 +12307,1121 @@ try { (() => {
   });
 })();
 })(); } catch (e) { __ds_ns.__errors.push({ path: "period-selector.js", error: String((e && e.message) || e) }); }
+
+// redesign/TxLedger.jsx
+try { (() => {
+/* global React, window */
+/* ─── Ledger con selección múltiple ───────────────────────────────────
+ *  · Hover sobre una fila → aparece el checkbox de selección.
+ *  · Doble clic en la fila → entra en "modo seleccionar varios".
+ *  · En modo selección, clic en filas suma sus montos (barra inferior).
+ *  · Doble clic sobre la categoría → la fija como filtro (junto al mes).
+ * ──────────────────────────────────────────────────────────────────── */
+
+function Checkbox({
+  checked,
+  dim
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 20,
+      height: 20,
+      borderRadius: 6,
+      flexShrink: 0,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      border: checked ? '2px solid var(--info)' : '2px solid var(--fg-3)',
+      background: checked ? 'var(--info)' : 'var(--surface-1)',
+      opacity: dim ? 0.6 : 1,
+      transition: 'background 120ms, border-color 120ms'
+    }
+  }, checked && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15,
+      color: '#fff'
+    }
+  }, "check"));
+}
+function LedgerRow({
+  tx,
+  selectMode,
+  selected,
+  hidden,
+  onEnterSelect,
+  onToggle,
+  onOpen,
+  onFilterCat
+}) {
+  const [hov, setHov] = React.useState(false);
+  const clickTimer = React.useRef(null);
+  const isIncome = tx.amount > 0;
+  const showBox = selectMode || hov;
+  const handleClick = () => {
+    if (selectMode) {
+      onToggle(tx.id);
+      return;
+    }
+    // fuera de modo selección: clic simple abre detalle (con retardo para no chocar con doble clic)
+    clearTimeout(clickTimer.current);
+    clickTimer.current = setTimeout(() => onOpen(tx), 220);
+  };
+  const handleDouble = () => {
+    clearTimeout(clickTimer.current);
+    onEnterSelect(tx.id); // entra en modo selección y marca esta fila
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    onClick: handleClick,
+    onDoubleClick: handleDouble,
+    onMouseEnter: () => setHov(true),
+    onMouseLeave: () => setHov(false),
+    role: "button",
+    tabIndex: 0,
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '26px 34px 1fr auto auto',
+      gap: 13,
+      alignItems: 'center',
+      cursor: selectMode ? 'pointer' : 'default',
+      padding: '11px 18px',
+      borderTop: '1px solid var(--border-hairline)',
+      background: selected ? 'color-mix(in srgb, var(--info) 9%, var(--surface-1))' : hov ? 'var(--surface-2)' : 'transparent',
+      transition: 'background 130ms'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    onClick: e => {
+      if (!selectMode) {
+        e.stopPropagation();
+        onEnterSelect(tx.id);
+      }
+    },
+    title: selectMode ? 'Seleccionar' : 'Seleccionar varios',
+    style: {
+      display: 'inline-flex',
+      justifyContent: 'center',
+      cursor: 'pointer'
+    }
+  }, showBox ? /*#__PURE__*/React.createElement(Checkbox, {
+    checked: selected,
+    dim: !selected && !selectMode
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 20,
+      height: 20
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: 'var(--radius-pill)',
+      background: isIncome ? 'var(--income-soft)' : 'var(--expense-soft)',
+      color: isIncome ? 'var(--income-fg)' : 'var(--expense-fg)',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18
+    }
+  }, isIncome ? 'arrow_downward' : 'arrow_outward')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontWeight: 500,
+      fontSize: 13.5,
+      color: 'var(--fg-1)',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap'
+    }
+  }, tx.label), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11.5,
+      color: 'var(--fg-3)'
+    }
+  }, tx.meta)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      justifyContent: 'flex-end'
+    }
+  }, tx.jar && /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      fontWeight: 600,
+      padding: '4px 10px 4px 8px',
+      borderRadius: 'var(--radius-pill)',
+      background: 'color-mix(in srgb, ' + tx.jarColor + ' 12%, var(--surface-1))',
+      color: 'color-mix(in srgb, ' + tx.jarColor + ' 70%, var(--fg-1))'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 7,
+      height: 7,
+      borderRadius: '50%',
+      background: tx.jarColor
+    }
+  }), tx.jar), /*#__PURE__*/React.createElement("span", {
+    onClick: e => e.stopPropagation(),
+    onDoubleClick: e => {
+      e.stopPropagation();
+      onFilterCat(tx.category);
+    },
+    title: "Doble clic para filtrar por esta categor\xEDa",
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 5,
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      fontWeight: 600,
+      padding: '4px 10px',
+      borderRadius: 'var(--radius-pill)',
+      cursor: 'pointer',
+      background: 'var(--surface-2)',
+      color: 'var(--fg-2)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 13,
+      opacity: .7
+    }
+  }, tx.catIcon), tx.category)), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontVariantNumeric: 'tabular-nums',
+      fontSize: 14,
+      fontWeight: 600,
+      textAlign: 'right',
+      whiteSpace: 'nowrap',
+      color: isIncome ? 'var(--income-fg)' : 'var(--expense-fg)'
+    }
+  }, hidden ? '••••' : window.fmtMoney(tx.amount)));
+}
+function TxLedger({
+  transactions,
+  selectMode,
+  selected,
+  hidden,
+  onEnterSelect,
+  onToggle,
+  onOpen,
+  onFilterCat
+}) {
+  const grouped = transactions.reduce((acc, tx) => {
+    (acc[tx.day] = acc[tx.day] || []).push(tx);
+    return acc;
+  }, {});
+  const days = Object.keys(grouped);
+  if (transactions.length === 0) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: 'var(--surface-1)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-hairline)',
+        padding: '48px 20px',
+        textAlign: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 34,
+        color: 'var(--fg-3)'
+      }
+    }, "search_off"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 14,
+        color: 'var(--fg-2)',
+        marginTop: 8
+      }
+    }, "Ning\xFAn movimiento coincide con estos filtros."));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'var(--surface-1)',
+      borderRadius: 'var(--radius-lg)',
+      border: '1px solid var(--border-hairline)',
+      boxShadow: 'var(--shadow-card)',
+      overflow: 'hidden'
+    }
+  }, days.map((d, i) => {
+    const dayTotal = grouped[d].reduce((s, t) => s + t.amount, 0);
+    return /*#__PURE__*/React.createElement("div", {
+      key: d
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 18px 7px',
+        borderTop: i === 0 ? 'none' : '1px solid var(--border-hairline)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 10.5,
+        fontWeight: 700,
+        letterSpacing: '.08em',
+        textTransform: 'uppercase',
+        color: 'var(--fg-3)'
+      }
+    }, d), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-money)',
+        fontSize: 11.5,
+        fontWeight: 600,
+        color: dayTotal >= 0 ? 'var(--income-fg)' : 'var(--fg-3)'
+      }
+    }, hidden ? '••' : window.fmtMoney(dayTotal))), grouped[d].map(tx => /*#__PURE__*/React.createElement(LedgerRow, {
+      key: tx.id,
+      tx: tx,
+      selectMode: selectMode,
+      selected: selected.has(tx.id),
+      hidden: hidden,
+      onEnterSelect: onEnterSelect,
+      onToggle: onToggle,
+      onOpen: onOpen,
+      onFilterCat: onFilterCat
+    })));
+  }));
+}
+Object.assign(window, {
+  TxLedger,
+  LedgerRow,
+  Checkbox
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "redesign/TxLedger.jsx", error: String((e && e.message) || e) }); }
+
+// redesign/TxPoolsHeader.jsx
+try { (() => {
+/* global React, window */
+/* ─── Fila superior · tres pools armónicos ────────────────────────────
+ *  [ Filtros activos ]   [ Categorías ]   [ Cántaros ]
+ *  · Filtros: mes (fijo) + tipo + categorías + cántaros elegidos.
+ *  · Categorías / Cántaros: clic = filtrar (toggle). Se sincronizan con
+ *    el pool de filtros y con el doble clic sobre la lista.
+ * ──────────────────────────────────────────────────────────────────── */
+const ACCENT = 'var(--info)';
+function PoolShell({
+  icon,
+  title,
+  hint,
+  count,
+  children,
+  footer
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: 'var(--surface-1)',
+      borderRadius: 'var(--radius-lg)',
+      border: '1px solid var(--border-hairline)',
+      boxShadow: 'var(--shadow-card)',
+      padding: 14,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 17,
+      color: ACCENT
+    }
+  }, icon), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 13,
+      color: 'var(--fg-1)'
+    }
+  }, title), count != null && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontSize: 11,
+      fontWeight: 700,
+      color: 'var(--fg-3)',
+      background: 'var(--surface-2)',
+      borderRadius: 999,
+      padding: '1px 7px'
+    }
+  }, count), /*#__PURE__*/React.createElement("span", {
+    style: {
+      marginLeft: 'auto',
+      fontFamily: 'var(--font-body)',
+      fontSize: 10.5,
+      color: 'var(--fg-3)'
+    }
+  }, hint)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 7,
+      alignContent: 'flex-start',
+      minHeight: 34
+    }
+  }, children), footer);
+}
+
+/* chip seleccionable (categoría / cántaro) */
+function PickChip({
+  label,
+  icon,
+  dot,
+  active,
+  count,
+  onToggle
+}) {
+  const [hov, setHov] = React.useState(false);
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onToggle,
+    onMouseEnter: () => setHov(true),
+    onMouseLeave: () => setHov(false),
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      cursor: 'pointer',
+      padding: '6px 11px',
+      borderRadius: 'var(--radius-pill)',
+      border: '1px solid',
+      borderColor: active ? 'transparent' : 'var(--border-hairline)',
+      background: active ? 'color-mix(in srgb, var(--info) 14%, var(--surface-1))' : hov ? 'var(--surface-2)' : 'var(--surface-1)',
+      color: active ? 'var(--info-fg)' : 'var(--fg-2)',
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      fontWeight: active ? 700 : 500,
+      transition: 'background 130ms, color 130ms'
+    }
+  }, dot ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 8,
+      height: 8,
+      borderRadius: '50%',
+      background: dot,
+      flexShrink: 0
+    }
+  }) : icon ? /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15,
+      color: active ? 'var(--info)' : 'var(--fg-3)'
+    }
+  }, icon) : null, /*#__PURE__*/React.createElement("span", null, label), count != null && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontSize: 10.5,
+      opacity: .65
+    }
+  }, count), active && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 14
+    }
+  }, "check"));
+}
+
+/* chip de filtro activo (removible) */
+function ActiveChip({
+  label,
+  icon,
+  dot,
+  locked,
+  onClear
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      padding: locked ? '6px 11px' : '6px 7px 6px 11px',
+      borderRadius: 'var(--radius-pill)',
+      background: locked ? 'var(--info)' : 'color-mix(in srgb, var(--info) 12%, var(--surface-1))',
+      color: locked ? '#fff' : 'var(--info-fg)',
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      fontWeight: 600
+    }
+  }, dot ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 7,
+      height: 7,
+      borderRadius: '50%',
+      background: dot
+    }
+  }) : icon ? /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 14
+    }
+  }, icon) : null, label, locked ? /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 13,
+      opacity: .8
+    }
+  }, "lock") : /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    onClick: onClear,
+    style: {
+      fontSize: 15,
+      cursor: 'pointer',
+      opacity: .7
+    }
+  }, "close"));
+}
+function TxPoolsHeader({
+  monthLabel,
+  type,
+  setType,
+  cats,
+  jars,
+  selCats,
+  selJars,
+  toggleCat,
+  toggleJar,
+  clearFilters,
+  hasFilters
+}) {
+  const typeMeta = {
+    all: null,
+    income: {
+      label: 'Ingresos',
+      icon: 'arrow_downward'
+    },
+    expense: {
+      label: 'Gastos',
+      icon: 'arrow_outward'
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+      gap: 14
+    }
+  }, /*#__PURE__*/React.createElement(PoolShell, {
+    icon: "filter_alt",
+    title: "Filtros activos",
+    hint: hasFilters ? '' : 'sólo el mes',
+    footer: /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        borderTop: '1px solid var(--border-hairline)',
+        paddingTop: 10
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'inline-flex',
+        background: 'var(--surface-2)',
+        borderRadius: 'var(--radius-pill)',
+        padding: 3,
+        gap: 2
+      }
+    }, [['all', 'Todas'], ['income', 'Ingresos'], ['expense', 'Gastos']].map(([id, lbl]) => {
+      const on = type === id;
+      return /*#__PURE__*/React.createElement("button", {
+        key: id,
+        onClick: () => setType(id),
+        style: {
+          border: 0,
+          cursor: 'pointer',
+          padding: '5px 12px',
+          borderRadius: 'var(--radius-pill)',
+          background: on ? 'var(--info)' : 'transparent',
+          color: on ? '#fff' : 'var(--fg-2)',
+          fontFamily: 'var(--font-body)',
+          fontSize: 11.5,
+          fontWeight: on ? 700 : 500
+        }
+      }, lbl);
+    })), hasFilters && /*#__PURE__*/React.createElement("button", {
+      onClick: clearFilters,
+      style: {
+        marginLeft: 'auto',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        border: 0,
+        cursor: 'pointer',
+        padding: '6px 11px',
+        borderRadius: 'var(--radius-pill)',
+        background: 'var(--surface-2)',
+        color: 'var(--fg-2)',
+        fontFamily: 'var(--font-body)',
+        fontSize: 11.5,
+        fontWeight: 600
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 15
+      }
+    }, "filter_alt_off"), "Limpiar"))
+  }, /*#__PURE__*/React.createElement(ActiveChip, {
+    label: monthLabel,
+    icon: "calendar_view_month",
+    locked: true
+  }), typeMeta[type] && /*#__PURE__*/React.createElement(ActiveChip, {
+    label: typeMeta[type].label,
+    icon: typeMeta[type].icon,
+    onClear: () => setType('all')
+  }), selCats.map(c => /*#__PURE__*/React.createElement(ActiveChip, {
+    key: 'c' + c,
+    label: c,
+    icon: window.CAT_ICON[c] || 'label',
+    onClear: () => toggleCat(c)
+  })), selJars.map(j => /*#__PURE__*/React.createElement(ActiveChip, {
+    key: 'j' + j,
+    label: j,
+    dot: window.JAR_META[j].color,
+    onClear: () => toggleJar(j)
+  }))), /*#__PURE__*/React.createElement(PoolShell, {
+    icon: "sell",
+    title: "Categor\xEDas",
+    hint: "clic para filtrar",
+    count: cats.length
+  }, cats.map(([name, n]) => /*#__PURE__*/React.createElement(PickChip, {
+    key: name,
+    label: name,
+    icon: window.CAT_ICON[name] || 'label',
+    count: n,
+    active: selCats.includes(name),
+    onToggle: () => toggleCat(name)
+  }))), /*#__PURE__*/React.createElement(PoolShell, {
+    icon: "savings",
+    title: "C\xE1ntaros",
+    hint: "clic para filtrar",
+    count: jars.length
+  }, jars.map(([name, n]) => /*#__PURE__*/React.createElement(PickChip, {
+    key: name,
+    label: name,
+    dot: window.JAR_META[name] ? window.JAR_META[name].color : 'var(--fg-3)',
+    count: n,
+    active: selJars.includes(name),
+    onToggle: () => toggleJar(name)
+  }))));
+}
+Object.assign(window, {
+  TxPoolsHeader,
+  PoolShell,
+  PickChip,
+  ActiveChip,
+  ACCENT
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "redesign/TxPoolsHeader.jsx", error: String((e && e.message) || e) }); }
+
+// redesign/app.jsx
+try { (() => {
+/* global React, ReactDOM, window */
+/* ─── App · Transacciones Pro (redesign / staging) ───────────────────── */
+const {
+  useState,
+  useMemo
+} = React;
+const MONTH_LABEL = 'Mayo 2026';
+function App() {
+  const TX = window.TX;
+  const [type, setType] = useState('all');
+  const [selCats, setSelCats] = useState([]);
+  const [selJars, setSelJars] = useState([]);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
+  const [hidden] = useState(false);
+  const [toast, setToast] = useState(null);
+  const flash = msg => {
+    setToast(msg);
+    clearTimeout(window.__t);
+    window.__t = setTimeout(() => setToast(null), 2200);
+  };
+
+  // catálogos con conteo
+  const cats = useMemo(() => {
+    const m = {};
+    TX.forEach(t => {
+      m[t.category] = (m[t.category] || 0) + 1;
+    });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+  }, [TX]);
+  const jars = useMemo(() => {
+    const m = {};
+    TX.forEach(t => {
+      if (t.jar) m[t.jar] = (m[t.jar] || 0) + 1;
+    });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+  }, [TX]);
+  const toggleCat = c => setSelCats(s => s.includes(c) ? s.filter(x => x !== c) : [...s, c]);
+  const toggleJar = j => setSelJars(s => s.includes(j) ? s.filter(x => x !== j) : [...s, j]);
+  const clearFilters = () => {
+    setType('all');
+    setSelCats([]);
+    setSelJars([]);
+  };
+  const hasFilters = type !== 'all' || selCats.length > 0 || selJars.length > 0;
+  const filtered = useMemo(() => TX.filter(t => {
+    if (type === 'income' && !(t.amount > 0)) return false;
+    if (type === 'expense' && !(t.amount < 0)) return false;
+    if (selCats.length && !selCats.includes(t.category)) return false;
+    if (selJars.length && !(t.jar && selJars.includes(t.jar))) return false;
+    return true;
+  }), [TX, type, selCats, selJars]);
+
+  // selección múltiple
+  const enterSelect = id => {
+    setSelectMode(true);
+    setSelected(new Set([id]));
+  };
+  const toggleSel = id => setSelected(s => {
+    const n = new Set(s);
+    n.has(id) ? n.delete(id) : n.add(id);
+    return n;
+  });
+  const exitSelect = () => {
+    setSelectMode(false);
+    setSelected(new Set());
+  };
+  const selectAllVisible = () => setSelected(new Set(filtered.map(t => t.id)));
+  const onFilterCat = c => {
+    if (!selCats.includes(c)) {
+      toggleCat(c);
+      flash('Categoría «' + c + '» añadida al filtro');
+    }
+  };
+  const onOpen = tx => flash('Abrir detalle · ' + tx.label);
+  const selSum = filtered.filter(t => selected.has(t.id)).reduce((s, t) => s + t.amount, 0);
+  const selCount = [...selected].filter(id => filtered.some(t => t.id === id)).length;
+  const total = filtered.reduce((s, t) => s + t.amount, 0);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 1180,
+      margin: '0 auto',
+      padding: '26px 28px 120px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      gap: 16,
+      marginBottom: 20,
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: '.1em',
+      textTransform: 'uppercase',
+      color: 'var(--info)'
+    }
+  }, "Transacciones \xB7 Pro"), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      margin: '6px 0 0',
+      fontFamily: 'var(--font-display)',
+      fontWeight: 700,
+      fontSize: 30,
+      letterSpacing: '-0.02em',
+      color: 'var(--fg-1)'
+    }
+  }, MONTH_LABEL)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      color: 'var(--fg-2)'
+    }
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: 'var(--fg-1)'
+    }
+  }, filtered.length), " movimientos \xB7 neto", ' ', /*#__PURE__*/React.createElement("b", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      color: total >= 0 ? 'var(--income-fg)' : 'var(--expense-fg)'
+    }
+  }, window.fmtMoney(total))), !selectMode && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSelectMode(true),
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      border: '1px solid var(--border-hairline)',
+      cursor: 'pointer',
+      padding: '8px 14px',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      color: 'var(--fg-1)',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      fontWeight: 600
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 17
+    }
+  }, "checklist"), "Seleccionar"))), /*#__PURE__*/React.createElement(TxPoolsHeader, {
+    monthLabel: MONTH_LABEL,
+    type: type,
+    setType: setType,
+    cats: cats,
+    jars: jars,
+    selCats: selCats,
+    selJars: selJars,
+    toggleCat: toggleCat,
+    toggleJar: toggleJar,
+    clearFilters: clearFilters,
+    hasFilters: hasFilters
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 20
+    }
+  }, /*#__PURE__*/React.createElement(TxLedger, {
+    transactions: filtered,
+    selectMode: selectMode,
+    selected: selected,
+    hidden: hidden,
+    onEnterSelect: enterSelect,
+    onToggle: toggleSel,
+    onOpen: onOpen,
+    onFilterCat: onFilterCat
+  })), selectMode && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'fixed',
+      left: '50%',
+      bottom: 22,
+      transform: 'translateX(-50%)',
+      zIndex: 200,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 16,
+      padding: '12px 16px 12px 20px',
+      background: 'var(--fg-1)',
+      color: 'var(--surface-1)',
+      borderRadius: 'var(--radius-pill)',
+      boxShadow: '0 18px 50px rgba(15,23,42,.34)',
+      maxWidth: '94vw'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20,
+      opacity: .8
+    }
+  }, "checklist"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      fontWeight: 600
+    }
+  }, selCount, " ", selCount === 1 ? 'seleccionada' : 'seleccionadas')), /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 1,
+      height: 24,
+      background: 'rgba(255,255,255,.2)'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      lineHeight: 1.15
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10,
+      opacity: .6,
+      textTransform: 'uppercase',
+      letterSpacing: '.08em'
+    }
+  }, "Suma"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontVariantNumeric: 'tabular-nums',
+      fontSize: 19,
+      fontWeight: 700,
+      color: selSum >= 0 ? 'var(--income-fg)' : 'var(--expense-fg)'
+    }
+  }, selCount === 0 ? '—' : window.fmtMoney(selSum))), /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 1,
+      height: 24,
+      background: 'rgba(255,255,255,.2)'
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: selectAllVisible,
+    style: pillBtn('rgba(255,255,255,.12)', 'var(--surface-1)')
+  }, "Todas"), /*#__PURE__*/React.createElement("button", {
+    onClick: exitSelect,
+    style: pillBtn('var(--info)', '#fff')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 16
+    }
+  }, "check"), "Listo")), toast && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'fixed',
+      left: '50%',
+      top: 64,
+      transform: 'translateX(-50%)',
+      zIndex: 300,
+      padding: '10px 18px',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--fg-1)',
+      color: 'var(--surface-1)',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      fontWeight: 600,
+      boxShadow: '0 12px 34px rgba(15,23,42,.3)'
+    }
+  }, toast));
+}
+function pillBtn(bg, fg) {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    border: 0,
+    cursor: 'pointer',
+    padding: '8px 14px',
+    borderRadius: 'var(--radius-pill)',
+    background: bg,
+    color: fg,
+    fontFamily: 'var(--font-body)',
+    fontSize: 12.5,
+    fontWeight: 700
+  };
+}
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+})(); } catch (e) { __ds_ns.__errors.push({ path: "redesign/app.jsx", error: String((e && e.message) || e) }); }
+
+// redesign/data.jsx
+try { (() => {
+/* global window */
+/* ─── Datos de demo (redesign Transacciones Pro) ──────────────────────
+ * Mismo modelo que ui_kits/.../sample-data.jsx pero con id estable por fila
+ * para soportar la selección múltiple. accent Pro = var(--info).
+ * ──────────────────────────────────────────────────────────────────── */
+
+const JAR_META = {
+  'Necesidades básicas': {
+    color: '#1E3A8A',
+    icon: 'home'
+  },
+  'Diversión': {
+    color: '#F59E0B',
+    icon: 'celebration'
+  },
+  'Ahorro': {
+    color: '#10B981',
+    icon: 'savings'
+  },
+  'Educación': {
+    color: '#0EA5E9',
+    icon: 'school'
+  },
+  'Reservas': {
+    color: '#8B5CF6',
+    icon: 'shield'
+  }
+};
+const CAT_ICON = {
+  'Ingresos': 'payments',
+  'Supermercado': 'shopping_cart',
+  'Transporte': 'directions_bus',
+  'Entretenimiento': 'movie',
+  'Deuda': 'credit_card',
+  'Sueño': 'auto_awesome',
+  'Cántaro': 'savings',
+  'Salud': 'medical_services',
+  'Vivienda': 'home_work',
+  'Restaurantes': 'restaurant',
+  'Servicios': 'bolt'
+};
+const TX = [{
+  id: 't1',
+  label: 'Sueldo · ACME Corp',
+  meta: 'Hoy · 26 May · 9:02',
+  amount: 3200.00,
+  day: 'Hoy · lun 26 May',
+  category: 'Ingresos',
+  jar: null
+}, {
+  id: 't2',
+  label: 'Whole Foods Market',
+  meta: 'Hoy · 26 May · 14:42',
+  amount: -84.12,
+  day: 'Hoy · lun 26 May',
+  category: 'Supermercado',
+  jar: 'Necesidades básicas'
+}, {
+  id: 't3',
+  label: 'Uber · al aeropuerto',
+  meta: 'Hoy · 26 May · 6:18',
+  amount: -32.60,
+  day: 'Hoy · lun 26 May',
+  category: 'Transporte',
+  jar: 'Necesidades básicas'
+}, {
+  id: 't4',
+  label: 'Café Arábica',
+  meta: 'Hoy · 26 May · 8:10',
+  amount: -4.80,
+  day: 'Hoy · lun 26 May',
+  category: 'Restaurantes',
+  jar: 'Diversión'
+}, {
+  id: 't5',
+  label: 'Netflix',
+  meta: 'dom 25 May',
+  amount: -16.99,
+  day: 'dom 25 May',
+  category: 'Entretenimiento',
+  jar: 'Diversión'
+}, {
+  id: 't6',
+  label: 'Cashea · Cuota 3/6 iPhone',
+  meta: 'dom 25 May',
+  amount: -148.50,
+  day: 'dom 25 May',
+  category: 'Deuda',
+  jar: 'Necesidades básicas'
+}, {
+  id: 't7',
+  label: 'Aporte → Sueño Casa propia',
+  meta: 'dom 25 May',
+  amount: -500.00,
+  day: 'dom 25 May',
+  category: 'Sueño',
+  jar: 'Ahorro'
+}, {
+  id: 't8',
+  label: 'Aporte → Cántaro Ahorro',
+  meta: 'dom 25 May',
+  amount: -200.00,
+  day: 'dom 25 May',
+  category: 'Cántaro',
+  jar: 'Ahorro'
+}, {
+  id: 't9',
+  label: 'Spotify Familiar',
+  meta: 'dom 25 May',
+  amount: -10.99,
+  day: 'dom 25 May',
+  category: 'Entretenimiento',
+  jar: 'Diversión'
+}, {
+  id: 't10',
+  label: 'Freelance · factura 042',
+  meta: 'sáb 24 May',
+  amount: 720.00,
+  day: 'sáb 24 May',
+  category: 'Ingresos',
+  jar: null
+}, {
+  id: 't11',
+  label: 'Farmatodo · mensual',
+  meta: 'sáb 24 May',
+  amount: -116.00,
+  day: 'sáb 24 May',
+  category: 'Salud',
+  jar: 'Necesidades básicas'
+}, {
+  id: 't12',
+  label: 'CANTV · internet',
+  meta: 'sáb 24 May',
+  amount: -35.00,
+  day: 'sáb 24 May',
+  category: 'Servicios',
+  jar: 'Necesidades básicas'
+}, {
+  id: 't13',
+  label: 'La Estancia · cena',
+  meta: 'sáb 24 May',
+  amount: -62.40,
+  day: 'sáb 24 May',
+  category: 'Restaurantes',
+  jar: 'Diversión'
+}, {
+  id: 't14',
+  label: 'Alquiler · mayo',
+  meta: 'vie 23 May',
+  amount: -1450.00,
+  day: 'vie 23 May',
+  category: 'Vivienda',
+  jar: 'Necesidades básicas'
+}, {
+  id: 't15',
+  label: 'Mercado · verduras',
+  meta: 'vie 23 May',
+  amount: -41.30,
+  day: 'vie 23 May',
+  category: 'Supermercado',
+  jar: 'Necesidades básicas'
+}, {
+  id: 't16',
+  label: 'Metro · recarga',
+  meta: 'vie 23 May',
+  amount: -8.00,
+  day: 'vie 23 May',
+  category: 'Transporte',
+  jar: 'Necesidades básicas'
+}].map(tx => ({
+  ...tx,
+  jarColor: tx.jar ? JAR_META[tx.jar].color : null,
+  catIcon: CAT_ICON[tx.category] || 'label'
+}));
+const fmtMoney = v => {
+  const sign = v > 0 ? '+' : v < 0 ? '−' : '';
+  return sign + '$' + Math.abs(v).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+Object.assign(window, {
+  TX,
+  JAR_META,
+  CAT_ICON,
+  fmtMoney
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "redesign/data.jsx", error: String((e && e.message) || e) }); }
 
 // ui_kits/lite-desktop/atoms/Buttons.jsx
 try { (() => {
@@ -13095,6 +14537,17 @@ const I18N_EN = {
   'Recalcular saldo': 'Recalculate balance',
   'Recalculando…': 'Recalculating…',
   'ajustado': 'adjusted',
+  'Seleccionar varias': 'Select multiple',
+  'Seleccionar todo': 'Select all',
+  'seleccionadas': 'selected',
+  'Recalcular': 'Recalculate',
+  'cuentas actualizadas': 'accounts updated',
+  'Saldo ajustado': 'Balance adjusted',
+  'Saldo actualizado': 'Balance updated',
+  'Selecciona una sola cuenta para ajustar': 'Select a single account to adjust',
+  'Guardar': 'Save',
+  'Cancelar': 'Cancel',
+  'Opciones de cuenta': 'Account options',
   'Mis cuentas': 'My accounts',
   'Venezolanas': 'Venezuelan',
   'Tarjetas y deudas': 'Cards & debts',
@@ -13114,6 +14567,17 @@ const I18N_EN = {
   'Alerta de sobrepresupuesto': 'Over-budget alert',
   'Cerrar sesión': 'Sign out',
   'Tasas de cambio': 'Exchange rates',
+  'Oficial (BCV)': 'Official (BCV)',
+  'Tasa actual': 'Current rate',
+  'aplica': 'applied',
+  'por encima del BCV': 'above BCV',
+  'por debajo del BCV': 'below BCV',
+  'Ver historial': 'View history',
+  'Historial de tasas': 'Rate history',
+  'Fecha': 'Date',
+  'BCV': 'BCV',
+  'Actual': 'Current',
+  '· BCV oficial + tasa del momento · se aplican en todo Pro': '· Official BCV + spot rate · applied across Pro',
   '· Ingresa manualmente · se aplican en todo Pro': '· Enter manually · applied across Pro',
   '3 tarjetas · 2 bancos': '3 cards · 2 banks',
   'Inicio': 'Home',
@@ -16053,6 +17517,48 @@ const {
   useState: useAPState
 } = React;
 
+/* one-time keyframes for the recalc spinner (guarded id, independent of AccountFilter) */
+if (typeof document !== 'undefined' && !document.getElementById('ap-spin-style')) {
+  const s = document.createElement('style');
+  s.id = 'ap-spin-style';
+  s.textContent = '@keyframes ap-spin { to { transform: rotate(360deg); } } .ap-spin { animation: ap-spin .8s linear infinite; }';
+  document.head.appendChild(s);
+}
+
+/* Checkbox visual for multi-select (on / partial / off) */
+function APCheck({
+  on,
+  partial = false,
+  accent = 'var(--info)'
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 19,
+      height: 19,
+      flexShrink: 0,
+      borderRadius: 6,
+      display: 'grid',
+      placeItems: 'center',
+      border: on || partial ? '1.5px solid ' + accent : '1.5px solid var(--border-strong, var(--fg-3))',
+      backgroundColor: on || partial ? accent : 'transparent',
+      transition: 'border-color 120ms'
+    }
+  }, on && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15,
+      color: '#fff'
+    }
+  }, "check"), partial && !on && /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 9,
+      height: 2,
+      borderRadius: 2,
+      background: '#fff'
+    }
+  }));
+}
+
 /* Accounts aligned with data/finance-data.jsx (SAMPLE_ACCOUNTS) */
 const ACCOUNTS_DATA = [{
   id: 1,
@@ -16145,12 +17651,27 @@ const AP_RATES = {
   VES: 40.50,
   COP: 4100
 };
+const AP_ACCENT = 'var(--info)'; // Pro primary (cyan)
+
 function AccountsPanel({
   hidden = false,
   rates = AP_RATES,
-  mobile = false
+  mobile = false,
+  accent = AP_ACCENT
 }) {
   const [section, setSection] = useAPState('accounts'); // 'accounts' | 'debts'
+
+  // ── Multi-select + per-account actions state ──────────────────
+  const [selectMode, setSelectMode] = useAPState(false);
+  const [selected, setSelected] = useAPState(() => new Set());
+  const [overrides, setOverrides] = useAPState({}); // { acctId: newBalance } from "Ajustar saldo"
+  const [menuId, setMenuId] = useAPState(null); // open row kebab
+  const [editId, setEditId] = useAPState(null); // row in inline "Ajustar saldo"
+  const [editVal, setEditVal] = useAPState('');
+  const [recalcSet, setRecalcSet] = useAPState(() => new Set()); // ids currently "Recalculando…"
+  const [toast, setToast] = useAPState(null); // transient confirmation text
+
+  const balanceOf = a => a.id in overrides ? overrides[a.id] : a.balance;
 
   // Robust to flat ({VES: 40.5}) or nested ({VES: {current: 40.5}}) rate maps
   const rateOf = currency => {
@@ -16159,8 +17680,79 @@ function AccountsPanel({
     return f || AP_RATES[currency] || 1;
   };
   const toUSD = (amount, currency) => amount / rateOf(currency);
-  const totalUSD = ACCOUNTS_DATA.reduce((s, a) => s + toUSD(a.balance, a.currency), 0);
+  const totalUSD = ACCOUNTS_DATA.reduce((s, a) => s + toUSD(balanceOf(a), a.currency), 0);
   const totalDebt = DEBTS_DATA.reduce((s, d) => s + d.balance, 0);
+  const flashToast = msg => {
+    setToast(msg);
+    setTimeout(() => setToast(t0 => t0 === msg ? null : t0), 2200);
+  };
+
+  // ── Actions ───────────────────────────────────────────────────
+  const enterSelect = () => {
+    setSelectMode(true);
+    setMenuId(null);
+    setEditId(null);
+  };
+  const exitSelect = () => {
+    setSelectMode(false);
+    setSelected(new Set());
+  };
+  const toggleSel = id => setSelected(prev => {
+    const n = new Set(prev);
+    n.has(id) ? n.delete(id) : n.add(id);
+    return n;
+  });
+  const allSelected = selected.size === ACCOUNTS_DATA.length && ACCOUNTS_DATA.length > 0;
+  const someSelected = selected.size > 0 && !allSelected;
+  const selectAll = () => setSelected(new Set(ACCOUNTS_DATA.map(a => a.id)));
+  const deselectAll = () => setSelected(new Set());
+  const openEdit = a => {
+    setMenuId(null);
+    setEditId(a.id);
+    setEditVal(String(balanceOf(a)));
+  };
+  const saveEdit = a => {
+    const v = parseFloat(editVal);
+    if (!isNaN(v)) {
+      setOverrides(o => ({
+        ...o,
+        [a.id]: v
+      }));
+      flashToast(t('Saldo ajustado'));
+    }
+    setEditId(null);
+  };
+  const recalcIds = ids => {
+    if (!ids.length) return;
+    setMenuId(null);
+    setRecalcSet(prev => {
+      const n = new Set(prev);
+      ids.forEach(i => n.add(i));
+      return n;
+    });
+    setTimeout(() => {
+      setRecalcSet(prev => {
+        const n = new Set(prev);
+        ids.forEach(i => n.delete(i));
+        return n;
+      });
+      flashToast(ids.length === 1 ? t('Saldo actualizado') : ids.length + ' ' + t('cuentas actualizadas'));
+    }, 1000);
+  };
+
+  // Bulk: "Ajustar saldo" only makes sense for one account → open its inline editor
+  const bulkAdjust = () => {
+    if (selected.size !== 1) {
+      flashToast(t('Selecciona una sola cuenta para ajustar'));
+      return;
+    }
+    const id = [...selected][0];
+    const a = ACCOUNTS_DATA.find(x => x.id === id);
+    if (a) {
+      setEditId(a.id);
+      setEditVal(String(balanceOf(a)));
+    }
+  };
   return /*#__PURE__*/React.createElement("aside", {
     style: mobile ? {
       width: '100%',
@@ -16174,16 +17766,154 @@ function AccountsPanel({
       borderLeft: '1px solid var(--border-hairline)',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      position: 'relative'
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, toast && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: mobile ? 'auto' : 14,
+      top: mobile ? 4 : 'auto',
+      display: 'flex',
+      justifyContent: 'center',
+      zIndex: 120,
+      pointerEvents: 'none'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 7,
+      padding: '8px 14px',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--fg-1)',
+      color: 'var(--surface-1)',
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      fontWeight: 600,
+      boxShadow: '0 10px 30px rgba(15,23,42,.28)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 16
+    }
+  }, "check_circle"), toast)), /*#__PURE__*/React.createElement("div", {
     style: {
       padding: mobile ? '0 0 12px' : '18px 18px 12px',
-      flexShrink: 0
+      flexShrink: 0,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }
+  }, selectMode && section === 'accounts' ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
+      alignItems: 'center',
+      gap: 11
+    }
+  }, /*#__PURE__*/React.createElement(APCheck, {
+    on: allSelected,
+    partial: someSelected,
+    accent: accent
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      fontWeight: 700,
+      color: 'var(--fg-1)'
+    }
+  }, selected.size > 0 ? selected.size + ' ' + t('seleccionadas') : t('Seleccionar cuentas')), /*#__PURE__*/React.createElement("button", {
+    onClick: exitSelect,
+    "aria-label": t('Cancelar'),
+    title: t('Cancelar'),
+    style: {
+      width: 34,
+      height: 34,
+      flexShrink: 0,
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      color: 'var(--fg-2)',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center'
+    },
+    onMouseEnter: e => e.currentTarget.style.background = 'var(--surface-2)',
+    onMouseLeave: e => e.currentTarget.style.background = 'var(--surface-1)'
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19
+    }
+  }, "close"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8
+    }
+  }, [{
+    ic: 'done_all',
+    label: t('Seleccionar todo'),
+    fn: selectAll,
+    off: allSelected
+  }, {
+    ic: 'remove_done',
+    label: t('Deseleccionar'),
+    fn: deselectAll,
+    off: selected.size === 0
+  }].map(({
+    ic,
+    label,
+    fn,
+    off
+  }) => /*#__PURE__*/React.createElement("button", {
+    key: label,
+    onClick: off ? undefined : fn,
+    disabled: off,
+    "aria-label": label,
+    style: {
+      flex: 1,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      padding: '7px 6px',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      color: off ? 'var(--fg-3)' : 'var(--fg-1)',
+      cursor: off ? 'default' : 'pointer',
+      opacity: off ? 0.55 : 1,
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      fontWeight: 600,
+      transition: 'all 150ms'
+    },
+    onMouseEnter: e => {
+      if (!off) e.currentTarget.style.background = 'var(--surface-2)';
+    },
+    onMouseLeave: e => {
+      e.currentTarget.style.background = 'var(--surface-1)';
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 16
+    }
+  }, ic), label)))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flex: 1,
       background: 'var(--surface-2)',
       borderRadius: 'var(--radius-pill)',
       padding: 3,
@@ -16191,7 +17921,10 @@ function AccountsPanel({
     }
   }, [['accounts', t('Cuentas')], ['debts', t('Deudas')]].map(([s, label]) => /*#__PURE__*/React.createElement("button", {
     key: s,
-    onClick: () => setSection(s),
+    onClick: () => {
+      setSection(s);
+      if (s === 'debts') exitSelect();
+    },
     style: {
       flex: 1,
       border: 0,
@@ -16206,7 +17939,31 @@ function AccountsPanel({
       boxShadow: section === s ? 'var(--shadow-card)' : 'none',
       transition: 'all 150ms'
     }
-  }, label)))), section === 'accounts' && /*#__PURE__*/React.createElement("div", {
+  }, label))), section === 'accounts' && /*#__PURE__*/React.createElement("button", {
+    onClick: enterSelect,
+    "aria-label": t('Seleccionar varias'),
+    title: t('Seleccionar varias'),
+    style: {
+      width: 34,
+      height: 34,
+      flexShrink: 0,
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      color: 'var(--fg-2)',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center',
+      transition: 'all 150ms'
+    },
+    onMouseEnter: e => e.currentTarget.style.background = 'var(--surface-2)',
+    onMouseLeave: e => e.currentTarget.style.background = 'var(--surface-1)'
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19
+    }
+  }, "checklist")))), section === 'accounts' && /*#__PURE__*/React.createElement("div", {
     style: mobile ? {} : {
       flex: 1,
       overflowY: 'auto',
@@ -16236,9 +17993,25 @@ function AccountsPanel({
     key: acc.id,
     account: acc,
     hidden: hidden,
-    usdValue: toUSD(acc.balance, acc.currency),
-    mobile: mobile
-  })), /*#__PURE__*/React.createElement("button", {
+    usdValue: toUSD(balanceOf(acc), acc.currency),
+    balance: balanceOf(acc),
+    mobile: mobile,
+    accent: accent,
+    selectMode: selectMode,
+    selected: selected.has(acc.id),
+    onToggleSel: () => toggleSel(acc.id),
+    edited: acc.id in overrides,
+    editing: editId === acc.id,
+    editVal: editVal,
+    setEditVal: setEditVal,
+    onSaveEdit: () => saveEdit(acc),
+    onCancelEdit: () => setEditId(null),
+    recalcing: recalcSet.has(acc.id),
+    menuOpen: menuId === acc.id,
+    onToggleMenu: () => setMenuId(m => m === acc.id ? null : acc.id),
+    onAdjust: () => openEdit(acc),
+    onRecalc: () => recalcIds([acc.id])
+  })), !selectMode && /*#__PURE__*/React.createElement("button", {
     style: {
       width: '100%',
       border: 0,
@@ -16260,7 +18033,66 @@ function AccountsPanel({
     style: {
       fontSize: 18
     }
-  }, "add_circle_outline"), t('Agregar cuenta'))), section === 'debts' && /*#__PURE__*/React.createElement("div", {
+  }, "add_circle_outline"), t('Agregar cuenta')), selectMode && selected.size > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: mobile ? 'static' : 'sticky',
+      bottom: 0,
+      marginTop: 4,
+      padding: mobile ? '12px 2px' : '12px 18px',
+      background: 'var(--surface-1)',
+      borderTop: '1px solid var(--border-hairline)',
+      display: 'flex',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: bulkAdjust,
+    style: {
+      flex: 1,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      color: selected.size === 1 ? 'var(--fg-1)' : 'var(--fg-3)',
+      cursor: 'pointer',
+      padding: '9px 12px',
+      fontFamily: 'var(--font-body)',
+      fontSize: 12.5,
+      fontWeight: 600
+    },
+    onMouseEnter: e => e.currentTarget.style.background = 'var(--surface-2)',
+    onMouseLeave: e => e.currentTarget.style.background = 'var(--surface-1)'
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 17
+    }
+  }, "tune"), t('Ajustar saldo')), /*#__PURE__*/React.createElement("button", {
+    onClick: () => recalcIds([...selected]),
+    style: {
+      flex: 1,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      border: 0,
+      borderRadius: 'var(--radius-pill)',
+      background: accent,
+      color: '#fff',
+      cursor: 'pointer',
+      padding: '9px 12px',
+      fontFamily: 'var(--font-body)',
+      fontSize: 12.5,
+      fontWeight: 600
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 17
+    }
+  }, "autorenew"), t('Recalcular')))), section === 'debts' && /*#__PURE__*/React.createElement("div", {
     style: mobile ? {} : {
       flex: 1,
       overflowY: 'auto',
@@ -16321,26 +18153,56 @@ function AccountRow({
   account: a,
   hidden,
   usdValue,
-  mobile = false
+  balance,
+  mobile = false,
+  accent = AP_ACCENT,
+  selectMode = false,
+  selected = false,
+  onToggleSel,
+  edited = false,
+  editing = false,
+  editVal = '',
+  setEditVal,
+  onSaveEdit,
+  onCancelEdit,
+  recalcing = false,
+  menuOpen = false,
+  onToggleMenu,
+  onAdjust,
+  onRecalc
 }) {
+  const bal = balance != null ? balance : a.balance;
   const fmt = (n, cur) => {
     if (cur === 'VES' || cur === 'COP') return `${cur} ${(n / 1000).toFixed(0)}k`;
     return `${cur} ${n.toLocaleString('en-US', {
       minimumFractionDigits: 2
     })}`;
   };
+  const rowClick = () => {
+    if (selectMode) onToggleSel && onToggleSel();
+  };
   return /*#__PURE__*/React.createElement("div", {
+    onClick: rowClick,
     style: {
+      position: 'relative',
       display: 'flex',
       alignItems: 'center',
       gap: 10,
       padding: mobile ? '11px 2px' : '11px 18px',
-      cursor: 'pointer',
-      transition: 'background 150ms'
+      cursor: selectMode ? 'pointer' : 'default',
+      transition: 'background 150ms',
+      background: selected ? 'color-mix(in srgb, ' + accent + ' 8%, var(--surface-1))' : 'transparent'
     },
-    onMouseEnter: e => e.currentTarget.style.background = 'var(--surface-2)',
-    onMouseLeave: e => e.currentTarget.style.background = 'transparent'
-  }, /*#__PURE__*/React.createElement("div", {
+    onMouseEnter: e => {
+      if (!selected) e.currentTarget.style.background = 'var(--surface-2)';
+    },
+    onMouseLeave: e => {
+      if (!selected) e.currentTarget.style.background = 'transparent';
+    }
+  }, selectMode && /*#__PURE__*/React.createElement(APCheck, {
+    on: selected,
+    accent: accent
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       width: 36,
       height: 36,
@@ -16377,14 +18239,120 @@ function AccountRow({
       fontSize: 11,
       color: 'var(--fg-2)'
     }
-  }, t(a.sub))), /*#__PURE__*/React.createElement("div", {
+  }, t(a.sub), edited ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: accent,
+      fontWeight: 600
+    }
+  }, ' · ' + t('ajustado')) : null)), editing ?
+  /*#__PURE__*/
+  /* Inline "Ajustar saldo" editor */
+  React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 5,
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 3,
+      padding: '5px 8px',
+      background: 'var(--surface-2)',
+      borderRadius: 'var(--radius-md)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontSize: 11.5,
+      color: 'var(--fg-3)'
+    }
+  }, a.currency === 'VES' ? 'Bs.' : a.currency === 'EUR' ? '€' : '$'), /*#__PURE__*/React.createElement("input", {
+    autoFocus: true,
+    type: "number",
+    value: editVal,
+    onChange: e => setEditVal(e.target.value),
+    onKeyDown: e => {
+      if (e.key === 'Enter') onSaveEdit();
+      if (e.key === 'Escape') onCancelEdit();
+    },
+    style: {
+      border: 0,
+      outline: 'none',
+      background: 'transparent',
+      width: 66,
+      fontFamily: 'var(--font-money)',
+      fontSize: 12.5,
+      color: 'var(--fg-1)',
+      fontVariantNumeric: 'tabular-nums'
+    }
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: onSaveEdit,
+    "aria-label": t('Guardar'),
+    style: {
+      width: 28,
+      height: 28,
+      border: 0,
+      borderRadius: 'var(--radius-pill)',
+      background: accent,
+      color: '#fff',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center',
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 16
+    }
+  }, "check")), /*#__PURE__*/React.createElement("button", {
+    onClick: onCancelEdit,
+    "aria-label": t('Cancelar'),
+    style: {
+      width: 28,
+      height: 28,
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--surface-1)',
+      color: 'var(--fg-2)',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center',
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15
+    }
+  }, "close"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'flex-end',
-      flexShrink: 0
+      flexShrink: 0,
+      minWidth: 56
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, recalcing ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 4,
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      fontWeight: 600,
+      color: accent
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons ap-spin",
+    style: {
+      fontSize: 14
+    }
+  }, "autorenew"), t('Recalculando…')) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: 'var(--font-money)',
       fontSize: 13,
@@ -16392,14 +18360,82 @@ function AccountRow({
       color: 'var(--fg-1)',
       fontVariantNumeric: 'tabular-nums'
     }
-  }, hidden ? '••••' : fmt(a.balance, a.currency)), a.currency !== 'USD' && /*#__PURE__*/React.createElement("div", {
+  }, hidden ? '••••' : fmt(bal, a.currency)), a.currency !== 'USD' && /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: 'var(--font-body)',
       fontSize: 10,
       color: 'var(--fg-3)',
       fontVariantNumeric: 'tabular-nums'
     }
-  }, hidden ? '' : `≈ $ ${usdValue.toFixed(2)}`)));
+  }, hidden ? '' : `≈ $ ${usdValue.toFixed(2)}`))), !selectMode && /*#__PURE__*/React.createElement("button", {
+    onClick: e => {
+      e.stopPropagation();
+      onToggleMenu && onToggleMenu();
+    },
+    "aria-label": t('Opciones de cuenta'),
+    style: {
+      width: 26,
+      height: 26,
+      border: 0,
+      borderRadius: 'var(--radius-pill)',
+      background: menuOpen ? 'var(--surface-3, var(--surface-2))' : 'transparent',
+      color: 'var(--fg-3)',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center',
+      flexShrink: 0
+    },
+    onMouseEnter: e => e.currentTarget.style.background = 'var(--surface-3, var(--surface-2))',
+    onMouseLeave: e => {
+      if (!menuOpen) e.currentTarget.style.background = 'transparent';
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 17
+    }
+  }, "more_vert")), menuOpen && !selectMode && /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: {
+      position: 'absolute',
+      top: 'calc(100% - 6px)',
+      right: mobile ? 2 : 14,
+      zIndex: 90,
+      minWidth: 176,
+      background: 'var(--surface-1)',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-md)',
+      boxShadow: '0 16px 40px rgba(15,23,42,.20)',
+      padding: 5
+    }
+  }, [['tune', t('Ajustar saldo'), onAdjust], ['autorenew', t('Recalcular saldo'), onRecalc]].map(([ic, label, fn]) => /*#__PURE__*/React.createElement("button", {
+    key: label,
+    onClick: fn,
+    onMouseEnter: e => e.currentTarget.style.background = 'var(--surface-2)',
+    onMouseLeave: e => e.currentTarget.style.background = 'transparent',
+    style: {
+      display: 'flex',
+      width: '100%',
+      alignItems: 'center',
+      gap: 10,
+      padding: '9px 11px',
+      border: 0,
+      background: 'transparent',
+      borderRadius: 'var(--radius-sm)',
+      cursor: 'pointer',
+      textAlign: 'left',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      fontWeight: 500,
+      color: 'var(--fg-1)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 17,
+      color: 'var(--fg-3)'
+    }
+  }, ic), label)))));
 }
 function DebtRow({
   debt: d,
@@ -19459,7 +21495,11 @@ Object.assign(window, {
 try { (() => {
 /* ─── Exchange Rates Widget ──────────────────────────────────────────────
  * Manual rate setter for multi-currency Pro accounts.
- * Rates are stored in parent state and passed to AccountsPanel for conversion.
+ * Two rates per currency:
+ *   · official  → tasa oficial (BCV) — referencia
+ *   · current   → tasa del momento / provisional — la que se APLICA en todo Pro
+ * Plus a per-currency history (sparkline + list) that records changes.
+ * Rates flow up via onChange; conversions everywhere read `.current`.
  * ──────────────────────────────────────────────────────────────────────── */
 /* global React */
 const {
@@ -19469,54 +21509,105 @@ const RATE_DEFS = [{
   code: 'EUR',
   name: 'Euro',
   flag: 'EU',
-  base: 'USD → EUR',
-  hint: '1 USD ='
+  dp: 4
 }, {
   code: 'VES',
   name: 'Bolívar venezolano',
   flag: 'VE',
-  base: 'USD → VES',
-  hint: '1 USD ='
+  dp: 2
 }, {
   code: 'COP',
   name: 'Peso colombiano',
   flag: 'CO',
-  base: 'USD → COP',
-  hint: '1 USD ='
+  dp: 2
 }, {
   code: 'CLP',
   name: 'Peso chileno',
   flag: 'CL',
-  base: 'USD → CLP',
-  hint: '1 USD ='
+  dp: 2
 }, {
   code: 'PEN',
   name: 'Sol peruano',
   flag: 'PE',
-  base: 'USD → PEN',
-  hint: '1 USD ='
+  dp: 4
 }];
+const ER_MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+function erFmtDate(d) {
+  return d.getDate() + ' ' + ER_MONTHS[d.getMonth()];
+}
+function erRound(n, dp) {
+  return n == null ? null : +Number(n).toFixed(dp);
+}
+
+/* Plausible recent history ending at the live values (prototype seed) */
+function erSeedHistory(current, official, dp) {
+  const base = current || official;
+  if (!base) return [];
+  const offsetDays = [18, 13, 9, 5, 2, 0];
+  const drift = [-0.058, -0.041, -0.027, -0.016, -0.006, 0];
+  const now = new Date();
+  return offsetDays.map((days, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - days);
+    return {
+      label: days === 0 ? 'Hoy' : erFmtDate(d),
+      current: current ? erRound(current * (1 + drift[i]), dp) : null,
+      official: official ? erRound(official * (1 + drift[i] * 0.72), dp) : null
+    };
+  });
+}
 function ExchangeRatesWidget({
   rates,
   onChange
 }) {
   // Tolerant to flat ({VES: 40.5}) or nested ({VES: {current, official}}) shapes.
-  const readRate = code => {
+  const readField = (code, field) => {
     const r = rates[code];
-    return r && typeof r === 'object' ? r.current ?? '' : r ?? '';
+    if (r && typeof r === 'object') return r[field] ?? '';
+    return field === 'current' ? r ?? '' : '';
   };
-  const writeRate = (code, v) => {
-    const r = rates[code];
-    if (r && typeof r === 'object') return onChange({
-      ...rates,
-      [code]: {
-        ...r,
-        current: v
-      }
+
+  // Local history store, seeded once from incoming rates.
+  const [history, setHistory] = useERState(() => {
+    const h = {};
+    RATE_DEFS.forEach(def => {
+      const r = rates[def.code];
+      const cur = r && typeof r === 'object' ? r.current : r;
+      const off = r && typeof r === 'object' ? r.official : null;
+      h[def.code] = erSeedHistory(cur || '', off || '', def.dp);
     });
-    return onChange({
+    return h;
+  });
+  const [openCode, setOpenCode] = useERState(null);
+  const writeField = (code, field, v) => {
+    const r = rates[code];
+    const next = r && typeof r === 'object' ? {
+      ...r,
+      [field]: v
+    } : {
+      current: field === 'current' ? v : r ?? '',
+      official: field === 'official' ? v : ''
+    };
+    onChange({
       ...rates,
-      [code]: v
+      [code]: next
+    });
+    // Update / create today's history entry live.
+    setHistory(prev => {
+      const list = (prev[code] || []).slice();
+      const today = list.length && list[list.length - 1].label === 'Hoy' ? {
+        ...list[list.length - 1]
+      } : {
+        label: 'Hoy',
+        current: null,
+        official: null
+      };
+      today[field] = v === '' ? null : v;
+      if (list.length && list[list.length - 1].label === 'Hoy') list[list.length - 1] = today;else list.push(today);
+      return {
+        ...prev,
+        [code]: list
+      };
     });
   };
   return /*#__PURE__*/React.createElement("div", {
@@ -19528,25 +21619,40 @@ function ExchangeRatesWidget({
   }, RATE_DEFS.map((def, i) => /*#__PURE__*/React.createElement(RateRow, {
     key: def.code,
     def: def,
-    value: readRate(def.code),
-    onChange: v => writeRate(def.code, v),
+    current: readField(def.code, 'current'),
+    official: readField(def.code, 'official'),
+    history: history[def.code] || [],
+    open: openCode === def.code,
+    onToggle: () => setOpenCode(c => c === def.code ? null : def.code),
+    onChange: (field, v) => writeField(def.code, field, v),
     first: i === 0
   })));
 }
 function RateRow({
   def,
-  value,
+  current,
+  official,
+  history,
+  open,
+  onToggle,
   onChange,
   first
 }) {
-  const [focused, setFocused] = useERState(false);
+  const [focus, setFocus] = useERState(null); // 'current' | 'official' | null
+  const hasRate = current !== '' || official !== '';
+  const spread = current !== '' && official !== '' && official > 0 ? (Number(current) - Number(official)) / Number(official) * 100 : null;
+  const spreadUp = spread != null && spread >= 0;
   return /*#__PURE__*/React.createElement("div", {
+    style: {
+      borderTop: first ? 'none' : '1px solid var(--border-hairline)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
       gap: 14,
-      padding: '13px 18px',
-      borderTop: first ? 'none' : '1px solid var(--border-hairline)'
+      padding: '14px 18px',
+      flexWrap: 'wrap'
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -19566,7 +21672,9 @@ function RateRow({
     }
   }, def.flag), /*#__PURE__*/React.createElement("div", {
     style: {
-      flex: 1,
+      width: 140,
+      minWidth: 110,
+      flex: '0 0 auto',
       display: 'flex',
       flexDirection: 'column'
     }
@@ -19574,7 +21682,7 @@ function RateRow({
     style: {
       fontFamily: 'var(--font-body)',
       fontSize: 14,
-      fontWeight: 500,
+      fontWeight: 600,
       color: 'var(--fg-1)'
     }
   }, def.code), /*#__PURE__*/React.createElement("span", {
@@ -19583,33 +21691,274 @@ function RateRow({
       fontSize: 11,
       color: 'var(--fg-2)'
     }
-  }, def.name)), /*#__PURE__*/React.createElement("span", {
+  }, def.name)), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontFamily: 'var(--font-body)',
-      fontSize: 12,
-      color: 'var(--fg-2)',
+      display: 'flex',
+      gap: 10,
+      flex: 1,
+      minWidth: 280,
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement(RateField, {
+    label: t('Oficial (BCV)'),
+    code: def.code,
+    value: official,
+    focused: focus === 'official',
+    onFocus: () => setFocus('official'),
+    onBlur: () => setFocus(null),
+    onChange: v => onChange('official', v),
+    accent: "var(--fg-3)"
+  }), /*#__PURE__*/React.createElement(RateField, {
+    label: t('Tasa actual'),
+    code: def.code,
+    value: current,
+    badge: t('aplica'),
+    focused: focus === 'current',
+    onFocus: () => setFocus('current'),
+    onBlur: () => setFocus(null),
+    onChange: v => onChange('current', v),
+    accent: "var(--brand-primary)"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
       flexShrink: 0
     }
-  }, "1 USD ="), /*#__PURE__*/React.createElement("div", {
+  }, spread != null && /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 3,
+      fontFamily: 'var(--font-money)',
+      fontSize: 11.5,
+      fontWeight: 700,
+      padding: '4px 9px',
+      borderRadius: 'var(--radius-pill)',
+      whiteSpace: 'nowrap',
+      background: spreadUp ? 'var(--warning-soft)' : 'var(--income-soft)',
+      color: spreadUp ? 'var(--warning-fg)' : 'var(--income-fg)'
+    },
+    title: spreadUp ? t('por encima del BCV') : t('por debajo del BCV')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 14
+    }
+  }, spreadUp ? 'trending_up' : 'trending_down'), (spreadUp ? '+' : '') + spread.toFixed(1) + '%'), hasRate && history.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: onToggle,
+    "aria-label": t('Ver historial'),
+    title: t('Ver historial'),
+    style: {
+      width: 30,
+      height: 30,
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-pill)',
+      background: open ? 'var(--surface-2)' : 'var(--surface-1)',
+      color: 'var(--fg-2)',
+      cursor: 'pointer',
+      display: 'grid',
+      placeItems: 'center',
+      flexShrink: 0
+    },
+    onMouseEnter: e => e.currentTarget.style.background = 'var(--surface-2)',
+    onMouseLeave: e => {
+      if (!open) e.currentTarget.style.background = 'var(--surface-1)';
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18,
+      transition: 'transform 180ms',
+      transform: open ? 'rotate(180deg)' : 'none'
+    }
+  }, "history")))), open && history.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '4px 18px 18px 68px',
+      background: 'var(--surface-2)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      margin: '8px 0 12px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: '.06em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)'
+    }
+  }, t('Historial de tasas')), /*#__PURE__*/React.createElement(Sparkline, {
+    points: history.map(h => h.current).filter(v => v != null)
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '1fr auto auto',
+      gap: '0 18px',
+      alignItems: 'center',
+      paddingBottom: 6,
+      borderBottom: '1px solid var(--border-hairline)',
+      marginBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10.5,
+      fontWeight: 700,
+      letterSpacing: '.04em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)'
+    }
+  }, t('Fecha')), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10.5,
+      fontWeight: 700,
+      letterSpacing: '.04em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)',
+      textAlign: 'right',
+      minWidth: 80
+    }
+  }, t('BCV')), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10.5,
+      fontWeight: 700,
+      letterSpacing: '.04em',
+      textTransform: 'uppercase',
+      color: 'var(--brand-primary-fg-soft, var(--brand-primary))',
+      textAlign: 'right',
+      minWidth: 80
+    }
+  }, t('Actual'))), history.slice().reverse().map((h, idx) => {
+    const isToday = h.label === 'Hoy';
+    return /*#__PURE__*/React.createElement("div", {
+      key: idx,
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr auto auto',
+        gap: '0 18px',
+        alignItems: 'center',
+        padding: '7px 0'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        fontFamily: 'var(--font-body)',
+        fontSize: 12.5,
+        fontWeight: isToday ? 700 : 500,
+        color: isToday ? 'var(--fg-1)' : 'var(--fg-2)'
+      }
+    }, isToday && /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        background: 'var(--brand-primary)'
+      }
+    }), t(h.label)), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-money)',
+        fontSize: 12.5,
+        color: 'var(--fg-3)',
+        textAlign: 'right',
+        minWidth: 80,
+        fontVariantNumeric: 'tabular-nums'
+      }
+    }, h.official != null ? Number(h.official).toLocaleString('en-US', {
+      maximumFractionDigits: def.dp
+    }) : '—'), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-money)',
+        fontSize: 12.5,
+        fontWeight: isToday ? 700 : 600,
+        color: isToday ? 'var(--brand-primary-fg-soft, var(--brand-primary))' : 'var(--fg-1)',
+        textAlign: 'right',
+        minWidth: 80,
+        fontVariantNumeric: 'tabular-nums'
+      }
+    }, h.current != null ? Number(h.current).toLocaleString('en-US', {
+      maximumFractionDigits: def.dp
+    }) : '—'));
+  })));
+}
+function RateField({
+  label,
+  code,
+  value,
+  badge,
+  focused,
+  onFocus,
+  onBlur,
+  onChange,
+  accent
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 4,
+      flex: 1,
+      minWidth: 130
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      fontFamily: 'var(--font-body)',
+      fontSize: 10.5,
+      fontWeight: 700,
+      letterSpacing: '.03em',
+      textTransform: 'uppercase',
+      color: accent
+    }
+  }, label, badge && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 9,
+      fontWeight: 700,
+      letterSpacing: '.02em',
+      textTransform: 'none',
+      padding: '1px 6px',
+      borderRadius: 'var(--radius-pill)',
+      background: 'var(--brand-primary-soft)',
+      color: 'var(--brand-primary-fg-soft, var(--brand-primary))'
+    }
+  }, badge)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
       gap: 6,
       background: focused ? 'var(--surface-1)' : 'var(--surface-2)',
-      border: `1px solid ${focused ? 'var(--brand-primary)' : 'var(--border-hairline)'}`,
+      border: '1px solid ' + (focused ? 'var(--brand-primary)' : 'var(--border-hairline)'),
       borderRadius: 'var(--radius-sm)',
       padding: '7px 12px',
-      transition: 'all 160ms',
-      minWidth: 120
+      transition: 'border-color 160ms'
     }
-  }, /*#__PURE__*/React.createElement("input", {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      color: 'var(--fg-3)',
+      flexShrink: 0
+    }
+  }, "1 $ ="), /*#__PURE__*/React.createElement("input", {
     type: "number",
     min: "0",
     step: "any",
     value: value,
-    onChange: e => onChange(parseFloat(e.target.value) || ''),
-    onFocus: () => setFocused(true),
-    onBlur: () => setFocused(false),
+    onChange: e => onChange(e.target.value === '' ? '' : parseFloat(e.target.value) || ''),
+    onFocus: onFocus,
+    onBlur: onBlur,
+    placeholder: "\u2014",
     style: {
       border: 0,
       background: 'transparent',
@@ -19618,17 +21967,57 @@ function RateRow({
       fontWeight: 600,
       color: 'var(--fg-1)',
       outline: 'none',
-      width: 80,
+      width: '100%',
+      minWidth: 0,
       fontVariantNumeric: 'tabular-nums'
     }
   }), /*#__PURE__*/React.createElement("span", {
     style: {
       fontFamily: 'var(--font-body)',
-      fontSize: 12,
+      fontSize: 11.5,
       fontWeight: 600,
-      color: 'var(--fg-2)'
+      color: 'var(--fg-2)',
+      flexShrink: 0
     }
-  }, def.code)));
+  }, code)));
+}
+
+/* Tiny inline sparkline of recent "current" values */
+function Sparkline({
+  points
+}) {
+  if (!points || points.length < 2) return null;
+  const w = 96,
+    h = 26,
+    pad = 3;
+  const min = Math.min(...points),
+    max = Math.max(...points);
+  const span = max - min || 1;
+  const xs = i => pad + i / (points.length - 1) * (w - pad * 2);
+  const ys = v => h - pad - (v - min) / span * (h - pad * 2);
+  const d = points.map((v, i) => (i === 0 ? 'M' : 'L') + xs(i).toFixed(1) + ' ' + ys(v).toFixed(1)).join(' ');
+  const last = points.length - 1;
+  return /*#__PURE__*/React.createElement("svg", {
+    width: w,
+    height: h,
+    style: {
+      display: 'block',
+      overflow: 'visible'
+    },
+    "data-om-raster": true
+  }, /*#__PURE__*/React.createElement("path", {
+    d: d,
+    fill: "none",
+    stroke: "var(--brand-primary)",
+    strokeWidth: "1.6",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: xs(last),
+    cy: ys(points[last]),
+    r: "2.6",
+    fill: "var(--brand-primary)"
+  }));
 }
 Object.assign(window, {
   ExchangeRatesWidget,
@@ -26716,7 +29105,7 @@ function ConfigRoute({
       color: 'var(--fg-2)',
       fontStyle: 'italic'
     }
-  }, t("· Ingresa manualmente · se aplican en todo Pro"))), /*#__PURE__*/React.createElement(Card, {
+  }, t("· BCV oficial + tasa del momento · se aplican en todo Pro"))), /*#__PURE__*/React.createElement(Card, {
     padding: 0
   }, /*#__PURE__*/React.createElement(ExchangeRatesWidget, {
     rates: rates,
@@ -41420,5 +43809,21 @@ if (typeof window !== 'undefined') {
   });
 }
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/mobile/tokens.js", error: String((e && e.message) || e) }); }
+
+__ds_ns.IconButton = __ds_scope.IconButton;
+
+__ds_ns.PillButton = __ds_scope.PillButton;
+
+__ds_ns.Chip = __ds_scope.Chip;
+
+__ds_ns.CurrencyChip = __ds_scope.CurrencyChip;
+
+__ds_ns.Avatar = __ds_scope.Avatar;
+
+__ds_ns.Card = __ds_scope.Card;
+
+__ds_ns.Eyebrow = __ds_scope.Eyebrow;
+
+__ds_ns.Money = __ds_scope.Money;
 
 })();

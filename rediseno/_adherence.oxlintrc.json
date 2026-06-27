@@ -18,9 +18,13 @@
             "group": [
               "cantaros-mobile/**",
               "color-scheme.js",
+              "components/buttons/**",
+              "components/chips/**",
+              "components/primitives/**",
               "marketing.js",
               "onboarding/**",
               "period-selector.js",
+              "redesign/**",
               "ui_kits/lite-desktop/**",
               "ui_kits/lite-desktop/atoms/**",
               "ui_kits/lite-desktop/data/**",
@@ -50,6 +54,54 @@
       {
         "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Satoshi|DM Sans|Manrope|Inter))/i]",
         "message": "Font not provided by the design system. Available: Satoshi, DM Sans, Manrope, Inter."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Avatar'] > JSXAttribute > JSXIdentifier[name!=/^(?:initial|size|key|ref|className|style|children)$/]",
+        "message": "<Avatar> doesn't accept that prop. Declared props: initial, size."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|hero|padding|style|key|ref|className|style|children)$/]",
+        "message": "<Card> doesn't accept that prop. Declared props: children, hero, padding, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Chip'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|variant|icon|key|ref|className|style|children)$/]",
+        "message": "<Chip> doesn't accept that prop. Declared props: children, variant, icon."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Chip'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:default|currency|brand|income|expense|warning|info)$/]",
+        "message": "<Chip> variant must be one of 'default' | 'currency' | 'brand' | 'income' | 'expense' | 'warning' | 'info'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CurrencyChip'] > JSXAttribute > JSXIdentifier[name!=/^(?:code|active|key|ref|className|style|children)$/]",
+        "message": "<CurrencyChip> doesn't accept that prop. Declared props: code, active."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Eyebrow'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|key|ref|className|style|children)$/]",
+        "message": "<Eyebrow> doesn't accept that prop. Declared props: children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='IconButton'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|onClick|ariaLabel|active|size|key|ref|className|style|children)$/]",
+        "message": "<IconButton> doesn't accept that prop. Declared props: icon, onClick, ariaLabel, active, size."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Money'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|currency|className|sign|hidden|color|key|ref|className|style|children)$/]",
+        "message": "<Money> doesn't accept that prop. Declared props: value, currency, className, sign, hidden, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PillButton'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|icon|variant|size|onClick|ariaLabel|type|key|ref|className|style|children)$/]",
+        "message": "<PillButton> doesn't accept that prop. Declared props: children, icon, variant, size, onClick, ariaLabel, type."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PillButton'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:primary|secondary|ghost|danger)$/]",
+        "message": "<PillButton> variant must be one of 'primary' | 'secondary' | 'ghost' | 'danger'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PillButton'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md)$/]",
+        "message": "<PillButton> size must be one of 'sm' | 'md'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PillButton'] > JSXAttribute[name.name='type'] > Literal[value!=/^(?:button|submit|reset)$/]",
+        "message": "<PillButton> type must be one of 'button' | 'submit' | 'reset'."
       }
     ]
   },
@@ -64,7 +116,32 @@
     }
   ],
   "x-omelette": {
-    "components": {},
+    "components": {
+      "Avatar": {
+        "replaces": []
+      },
+      "Card": {
+        "replaces": []
+      },
+      "Chip": {
+        "replaces": []
+      },
+      "CurrencyChip": {
+        "replaces": []
+      },
+      "Eyebrow": {
+        "replaces": []
+      },
+      "IconButton": {
+        "replaces": []
+      },
+      "Money": {
+        "replaces": []
+      },
+      "PillButton": {
+        "replaces": []
+      }
+    },
     "tokens": [
       "--amber-100",
       "--amber-500",
