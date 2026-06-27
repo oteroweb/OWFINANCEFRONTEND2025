@@ -14,224 +14,135 @@
       <!-- PeriodNavigator -->
       <PeriodNavigator />
 
-      <!-- Smart filter card -->
-      <q-card flat class="glass-panel pro-tx__filter-card">
-        <q-card-section class="pro-tx__filter-section">
+      <!-- ═══ TxPoolsHeader · 3 pools ════════════════════════════════════ -->
 
-          <!-- Row 1: AccountFilter pill + search bar + Filtros button -->
-          <div class="pro-tx__filter-row">
+      <!-- Fila de búsqueda + acciones -->
+      <div class="pro-tx__top-row">
+        <AccountFilterWidget
+          :selected="selectedAccountNums"
+          :accounts="availableAccounts"
+          :groups="accountFolders"
+          :rates="userRates"
+          @update:selected="ids => txStore.setSelectedAccountIds(ids)"
+        />
+        <div class="pro-tx__search">
+          <span class="material-icons" style="font-size:17px;color:var(--fg-3)">search</span>
+          <input v-model="filters.search" class="pro-tx__search-input" placeholder="Buscar…" />
+          <span v-if="filters.search" class="material-icons pro-tx__search-clear" @click="filters.search = ''">close</span>
+        </div>
+        <span class="pro-tx__top-meta">
+          <strong>{{ proFilteredRows.length }}</strong> mov.
+          <template v-if="proNetTotal !== 0">&nbsp;·&nbsp;neto&nbsp;
+            <span :class="proNetTotal >= 0 ? 'pro-tx__net--pos' : 'pro-tx__net--neg'">{{ formatMoney(proNetTotal) }}</span>
+          </template>
+        </span>
+        <button class="pro-tx__action-btn" :disabled="!rows.length" @click="exportCSV">
+          <span class="material-icons" style="font-size:16px">download</span>
+        </button>
+        <button class="pro-tx__action-btn pro-tx__action-btn--danger" :disabled="selectedRows.length === 0" @click="removeSelectedRows">
+          <span class="material-icons" style="font-size:16px">delete_sweep</span>
+        </button>
+      </div>
 
-            <!-- AccountFilter pill (Pro only) — full-featured multi-select widget -->
-            <AccountFilterWidget
-              :selected="selectedAccountNums"
-              :accounts="availableAccounts"
-              :groups="accountFolders"
-              :rates="userRates"
-              @update:selected="ids => txStore.setSelectedAccountIds(ids)"
-            />
+      <!-- 3-pool grid -->
+      <div class="tx-pools">
 
-            <!-- Search bar -->
-            <div class="pro-tx__search">
-              <q-icon name="search" size="18px" color="grey-6" />
-              <input
-                v-model="filters.search"
-                class="pro-tx__search-input"
-                :placeholder="'Buscar en concepto, cuenta o tipo…'"
-              />
-              <q-icon
-                v-if="filters.search"
-                name="close"
-                size="17px"
-                class="pro-tx__search-clear"
-                @click="filters.search = ''"
-              />
-            </div>
-
-            <!-- Filtros popover button -->
-            <div ref="filterPanelRef" class="pro-tx__filtros-wrap">
-              <button
-                class="pro-tx__filtros-btn"
-                :class="{ 'pro-tx__filtros-btn--active': proActiveCount > 0 }"
-                @click.stop="filterPanelOpen = !filterPanelOpen"
-              >
-                <q-icon name="tune" size="18px" />
-                Filtros
-                <span v-if="proActiveCount > 0" class="pro-tx__filtros-badge">{{ proActiveCount }}</span>
-              </button>
-
-              <!-- Popover panel -->
-              <div v-if="filterPanelOpen" class="pro-tx__filtros-panel" @click.stop>
-                <div class="pro-tx__filtros-panel-header">
-                  <span class="pro-tx__filtros-panel-title">Filtro inteligente</span>
-                  <button v-if="proActiveCount > 0" class="pro-tx__filtros-clear-all" @click="clearProFilters">
-                    Limpiar todo
-                  </button>
-                </div>
-
-                <!-- Tipo -->
-                <div class="pro-tx__panel-field">
-                  <span class="pro-tx__panel-label">Tipo</span>
-                  <div class="pro-tx__type-toggle">
-                    <button
-                      v-for="t in proTypeOptions"
-                      :key="t.id"
-                      class="pro-tx__type-btn"
-                      :class="{ 'pro-tx__type-btn--active': proType === t.id }"
-                      @click="setProType(t.id)"
-                    >{{ t.label }}</button>
-                  </div>
-                </div>
-
-                <!-- Categoría (from existing advanced filters) -->
-                <div class="pro-tx__panel-field">
-                  <span class="pro-tx__panel-label">Categoría</span>
-                  <div class="pro-tx__panel-cats">
-                    <button
-                      class="pro-tx__cat-btn"
-                      :class="{ 'pro-tx__cat-btn--active': !proSelectedCatId }"
-                      @click="clearCategoryTagFilter"
-                    >Todas</button>
-                    <button
-                      v-for="tag in categorySpendTags"
-                      :key="tag.key"
-                      class="pro-tx__cat-btn"
-                      :class="{ 'pro-tx__cat-btn--active': proSelectedCatId === tag.id }"
-                      @click="applyCategoryTagFilter(tag.id)"
-                    >{{ tag.name }}</button>
-                  </div>
-                </div>
-
-                <!-- Monto presets -->
-                <div class="pro-tx__panel-field">
-                  <span class="pro-tx__panel-label">Monto</span>
-                  <div class="pro-tx__amt-inputs">
-                    <div class="pro-tx__amt-input-wrap">
-                      <span class="pro-tx__amt-prefix">≥ $</span>
-                      <input
-                        type="number"
-                        class="pro-tx__amt-input"
-                        :value="proAmtMin"
-                        placeholder="0"
-                        @input="proAmtMin = ($event.target as HTMLInputElement).value"
-                      />
-                    </div>
-                    <div class="pro-tx__amt-input-wrap">
-                      <span class="pro-tx__amt-prefix">≤ $</span>
-                      <input
-                        type="number"
-                        class="pro-tx__amt-input"
-                        :value="proAmtMax"
-                        placeholder="∞"
-                        @input="proAmtMax = ($event.target as HTMLInputElement).value"
-                      />
-                    </div>
-                  </div>
-                  <div class="pro-tx__amt-presets">
-                    <button
-                      v-for="p in TX_AMOUNT_PRESETS"
-                      :key="p.id"
-                      class="pro-tx__amt-preset"
-                      :class="{ 'pro-tx__amt-preset--active': proAmtMin === p.min && proAmtMax === p.max }"
-                      @click="proAmtMin = p.min; proAmtMax = p.max"
-                    >{{ p.label }}</button>
-                  </div>
-                </div>
-
-                <!-- Columnas visibles -->
-                <div class="pro-tx__panel-field">
-                  <span class="pro-tx__panel-label">Columnas visibles</span>
-                  <q-select
-                    v-model="visibleColumnNames"
-                    :options="columnVisibilityOptions"
-                    option-label="label"
-                    option-value="value"
-                    emit-value
-                    map-options
-                    multiple
-                    use-chips
-                    dense
-                    outlined
-                    label="Columnas"
-                    class="full-width"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Action buttons -->
-            <button class="pro-tx__action-btn" :disabled="!rows.length" @click="exportCSV">
-              <q-icon name="download" size="16px" />
-            </button>
-            <button
-              class="pro-tx__action-btn pro-tx__action-btn--danger"
-              :disabled="selectedRows.length === 0"
-              @click="removeSelectedRows"
-            >
-              <q-icon name="delete_sweep" size="16px" />
-            </button>
+        <!-- Pool 1 · Filtros activos ──────────────────────────────── -->
+        <div class="tx-pool">
+          <div class="tx-pool__head">
+            <span class="material-icons" style="font-size:17px;color:var(--info)">filter_alt</span>
+            <span class="tx-pool__title">Filtros activos</span>
+            <span class="tx-pool__hint">{{ proPoolHasFilters ? '' : 'sólo el mes' }}</span>
           </div>
-
-          <!-- Active chips row -->
-          <div v-if="proActiveChips.length > 0" class="pro-tx__chips-row">
-            <span
-              v-for="c in proActiveChips"
-              :key="c.key"
-              class="pro-tx__chip"
-              @click="removeFilterChip(c.key)"
-            >
-              <q-icon v-if="c.icon" :name="c.icon" size="14px" />
-              <span
-                v-if="c.dot"
-                class="pro-tx__chip-dot"
-                :style="{ background: c.dot }"
-              />
-              {{ c.label }}
-              <q-icon name="close" size="15px" class="pro-tx__chip-close" />
+          <div class="tx-pool__chips">
+            <!-- Mes (locked) -->
+            <span class="tx-pool__chip tx-pool__chip--locked">
+              <span class="material-icons" style="font-size:13px">calendar_view_month</span>
+              {{ periodStore.label }}
+              <span class="material-icons" style="font-size:12px;opacity:.7">lock</span>
+            </span>
+            <!-- Tipo activo -->
+            <span v-if="proType !== 'all'" class="tx-pool__chip" @click="proType = 'all'">
+              <span class="material-icons" style="font-size:13px">{{ proType === 'income' ? 'arrow_downward' : 'arrow_outward' }}</span>
+              {{ proType === 'income' ? 'Ingresos' : 'Gastos' }}
+              <span class="material-icons" style="font-size:14px;opacity:.7;cursor:pointer">close</span>
+            </span>
+            <!-- Categorías activas -->
+            <span v-for="catId in proSelCats" :key="'c'+catId" class="tx-pool__chip" @click="toggleProCat(catId)">
+              <span class="material-icons" style="font-size:13px">sell</span>
+              {{ categorySpendTags.find(t => t.id === catId)?.name ?? 'Cat #'+catId }}
+              <span class="material-icons" style="font-size:14px;opacity:.7;cursor:pointer">close</span>
+            </span>
+            <!-- Cántaros activos -->
+            <span v-for="jarName in proSelJars" :key="'j'+jarName" class="tx-pool__chip" @click="toggleProJar(jarName)">
+              <span class="tx-pool__chip-dot" :style="{ background: proJarTags.find(j=>j.name===jarName)?.color ?? 'var(--fg-3)' }" />
+              {{ jarName }}
+              <span class="material-icons" style="font-size:14px;opacity:.7;cursor:pointer">close</span>
+            </span>
+            <!-- Búsqueda activa -->
+            <span v-if="filters.search" class="tx-pool__chip" @click="filters.search = ''">
+              <span class="material-icons" style="font-size:13px">search</span>
+              "{{ filters.search }}"
+              <span class="material-icons" style="font-size:14px;opacity:.7;cursor:pointer">close</span>
             </span>
           </div>
-
-          <!-- Bottom bar: count + net total + clear -->
-          <div class="pro-tx__filter-footer">
-            <span class="pro-tx__count-label">
-              <strong>{{ proFilteredRows.length }}</strong>
-              {{ proFilteredRows.length === 1 ? 'movimiento' : 'movimientos' }}
-              <template v-if="proActiveCount > 0">
-                &nbsp;·&nbsp;neto&nbsp;
-                <span
-                  class="pro-tx__net"
-                  :class="proNetTotal >= 0 ? 'pro-tx__net--pos' : 'pro-tx__net--neg'"
-                >{{ formatMoney(proNetTotal) }}</span>
-              </template>
-            </span>
-            <div class="pro-tx__footer-actions">
-              <button
-                v-if="singleAccountSelected"
-                class="pro-tx__footer-btn"
-                @click="openAdjustTop"
-              >
-                <q-icon name="tune" size="15px" />
-                Ajustar saldo
-              </button>
-              <button
-                v-if="singleAccountSelected"
-                class="pro-tx__footer-btn"
-                @click="recalcSingleAccountTop"
-              >
-                <q-icon name="autorenew" size="15px" />
-                Recalcular
-              </button>
-              <button
-                v-if="proActiveCount > 0"
-                class="pro-tx__footer-btn pro-tx__footer-btn--clear"
-                @click="clearProFilters"
-              >
-                <q-icon name="filter_alt_off" size="15px" />
-                Limpiar ({{ proActiveCount }})
-              </button>
+          <!-- Footer: type toggle + clear -->
+          <div class="tx-pool__footer">
+            <div class="tx-pool__type-seg">
+              <button v-for="t in proTypeOptions" :key="t.id"
+                class="tx-pool__type-btn"
+                :class="{ 'tx-pool__type-btn--active': proType === t.id }"
+                @click="proType = t.id">{{ t.label }}</button>
             </div>
+            <button v-if="proPoolHasFilters" class="tx-pool__clear-btn" @click="clearProFilters">
+              <span class="material-icons" style="font-size:14px">filter_alt_off</span>
+              Limpiar
+            </button>
           </div>
-        </q-card-section>
-      </q-card>
+        </div>
+
+        <!-- Pool 2 · Categorías ────────────────────────────────────── -->
+        <div class="tx-pool">
+          <div class="tx-pool__head">
+            <span class="material-icons" style="font-size:17px;color:var(--info)">sell</span>
+            <span class="tx-pool__title">Categorías</span>
+            <span class="tx-pool__count">{{ categorySpendTags.length }}</span>
+            <span class="tx-pool__hint">clic para filtrar</span>
+          </div>
+          <div class="tx-pool__chips">
+            <button v-for="cat in categorySpendTags" :key="cat.key"
+              class="tx-pool__pick"
+              :class="{ 'tx-pool__pick--active': proSelCats.includes(cat.id) }"
+              @click="toggleProCat(cat.id)">
+              <span class="material-icons" style="font-size:14px;color:var(--fg-3)">label</span>
+              {{ cat.name }}
+              <span class="tx-pool__pick-count">{{ cat.total }}</span>
+              <span v-if="proSelCats.includes(cat.id)" class="material-icons" style="font-size:13px">check</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pool 3 · Cántaros ──────────────────────────────────────── -->
+        <div class="tx-pool">
+          <div class="tx-pool__head">
+            <span class="material-icons" style="font-size:17px;color:var(--info)">savings</span>
+            <span class="tx-pool__title">Cántaros</span>
+            <span class="tx-pool__count">{{ proJarTags.length }}</span>
+            <span class="tx-pool__hint">clic para filtrar</span>
+          </div>
+          <div class="tx-pool__chips">
+            <button v-for="jar in proJarTags" :key="jar.name"
+              class="tx-pool__pick"
+              :class="{ 'tx-pool__pick--active': proSelJars.includes(jar.name) }"
+              @click="toggleProJar(jar.name)">
+              <span class="tx-pool__chip-dot" :style="{ background: jar.color }" />
+              {{ jar.name }}
+              <span class="tx-pool__pick-count">{{ jar.count }}</span>
+              <span v-if="proSelJars.includes(jar.name)" class="material-icons" style="font-size:13px">check</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- ── Two-column body: date-grouped feed (left) + AccountsPanel (right) ── -->
       <div class="pro-tx__body" :class="{ 'pro-tx__body--panel-closed': !apPanelOpen }">
@@ -306,7 +217,7 @@
                   </span>
                   <span
                     class="pro-tx-feed__cat-chip"
-                    :class="{ 'pro-tx-feed__cat-chip--active': txCatIdForRow(row) !== null && proSelectedCatId === txCatIdForRow(row) }"
+                    :class="{ 'pro-tx-feed__cat-chip--active': txCatIdForRow(row) !== null && proSelCats.includes(txCatIdForRow(row)!) }"
                     :title="'Doble click para filtrar por categoría'"
                     @dblclick.stop="txFilterByRowCat(row)"
                   >{{ categoryLabelForRow(row) }}</span>
@@ -1384,6 +1295,7 @@ const selectedAccountNums = computed<number[]>(() =>
   txStore.selectedAccountIds.map(Number).filter(Number.isFinite)
 );
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const acctFilterActive = computed(() => selectedAccountNums.value.length > 0);
 
 // Estado filtros
@@ -3536,22 +3448,54 @@ function removeSelectedRows() {
   });
 }
 
-// ===== Pro-mode filter state (spec: TransactionsRoute.jsx) =====
-const TX_AMOUNT_PRESETS = [
-  { id: 'any',    label: 'Cualquiera', min: '',    max: '' },
-  { id: 'lt50',   label: '< $50',      min: '',    max: '50' },
-  { id: '50-200', label: '$50 – $200', min: '50',  max: '200' },
-  { id: 'gt200',  label: '> $200',     min: '200', max: '' },
-];
-
+// ===== Pro-mode filter state (TxPoolsHeader) =====
 const filterPanelOpen = ref(false);
 const filterPanelRef  = ref<HTMLElement | null>(null);
 const proType         = ref<string>('all');
-function setProType(v: string): void { proType.value = v; }
 const proAmtMin       = ref<string>('');
 const proAmtMax       = ref<string>('');
-// proSelectedCatId mirrors selectedCategoryFilterId so the Pro panel and the legacy chips stay in sync
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const proSelectedCatId = computed<number | null>(() => selectedCategoryFilterId.value);
+
+// TxPoolsHeader state — multi-select cats + jars
+const proSelCats = ref<number[]>([]);
+const proSelJars = ref<string[]>([]);
+
+function toggleProCat(id: number): void {
+  const idx = proSelCats.value.indexOf(id);
+  if (idx === -1) proSelCats.value = [...proSelCats.value, id];
+  else proSelCats.value = proSelCats.value.filter((c) => c !== id);
+}
+
+function toggleProJar(name: string): void {
+  const idx = proSelJars.value.indexOf(name);
+  if (idx === -1) proSelJars.value = [...proSelJars.value, name];
+  else proSelJars.value = proSelJars.value.filter((j) => j !== name);
+}
+
+// Jar tags derived from all loaded rows
+const proJarTags = computed(() => {
+  const m: Record<string, { color: string; count: number }> = {};
+  rows.value.forEach((r) => {
+    const name = txJarName(r);
+    if (!name) return;
+    if (!m[name]) m[name] = { color: txJarColor(r), count: 0 };
+    m[name].count++;
+  });
+  return Object.entries(m)
+    .map(([name, v]) => ({ name, color: v.color, count: v.count }))
+    .sort((a, b) => b.count - a.count);
+});
+
+const proPoolHasFilters = computed(() =>
+  proType.value !== 'all' ||
+  proSelCats.value.length > 0 ||
+  proSelJars.value.length > 0 ||
+  proAmtMin.value !== '' ||
+  proAmtMax.value !== '' ||
+  !!filters.search ||
+  selectedAccountNums.value.length > 0
+);
 
 const proTypeOptions = [
   { id: 'all',     label: 'Todas' },
@@ -3559,7 +3503,7 @@ const proTypeOptions = [
   { id: 'expense', label: 'Gastos' },
 ];
 
-// Rows visible to the Pro filter (type + amount + category overlaid on server rows)
+// Rows visible to the Pro filter (type + amount + category + jar overlaid on server rows)
 const proFilteredRows = computed<Row[]>(() => {
   return rows.value.filter((r) => {
     // Client-side account filter (safety net — API also filters via payment_account_ids)
@@ -3593,9 +3537,14 @@ const proFilteredRows = computed<Row[]>(() => {
     const abs = Math.abs(amt);
     if (proAmtMin.value !== '' && abs < parseFloat(proAmtMin.value)) return false;
     if (proAmtMax.value !== '' && abs > parseFloat(proAmtMax.value)) return false;
-    if (selectedCategoryFilterId.value !== null) {
+    // Multi-select category filter (TxPoolsHeader)
+    if (proSelCats.value.length > 0) {
       const cats = rowCategoryCandidates(r);
-      if (!cats.find((c) => c.id === selectedCategoryFilterId.value)) return false;
+      if (!cats.find((c) => proSelCats.value.includes(c.id))) return false;
+    }
+    // Jar filter (TxPoolsHeader)
+    if (proSelJars.value.length > 0) {
+      if (!proSelJars.value.includes(txJarName(r))) return false;
     }
     return true;
   });
@@ -3605,51 +3554,15 @@ const proNetTotal = computed(() =>
   proFilteredRows.value.reduce((s, r) => s + parseNumber((r as AnyRecord)['amount']), 0)
 );
 
-// Active chip count for Pro filter badge
-const proActiveCount = computed(() => {
-  let n = 0;
-  if (proType.value !== 'all') n++;
-  if (proAmtMin.value !== '' || proAmtMax.value !== '') n++;
-  if (proSelectedCatId.value !== null) n++;
-  if (acctFilterActive.value) n++;
-  if (filters.search) n++;
-  return n;
-});
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type ProChip = { key: string; icon?: string; dot?: string | null; label: string };
-
-const proActiveChips = computed<ProChip[]>(() => {
-  const chips: ProChip[] = [];
-  if (proType.value !== 'all') {
-    chips.push({ key: 'pro-type', icon: 'swap_vert', label: proTypeOptions.find((t) => t.id === proType.value)?.label ?? proType.value });
-  }
-  if (proAmtMin.value !== '' || proAmtMax.value !== '') {
-    const label = `${proAmtMin.value !== '' ? '≥ $' + proAmtMin.value : ''}${proAmtMin.value !== '' && proAmtMax.value !== '' ? ' · ' : ''}${proAmtMax.value !== '' ? '≤ $' + proAmtMax.value : ''}`;
-    chips.push({ key: 'pro-amt', icon: 'payments', label });
-  }
-  if (selectedCategoryFilterId.value !== null) {
-    const tag = categorySpendTags.value.find((t) => t.id === selectedCategoryFilterId.value);
-    chips.push({ key: 'pro-cat', icon: 'sell', label: tag?.name ?? `Cat #${selectedCategoryFilterId.value}` });
-  }
-  // Account chips
-  for (const rawId of txStore.selectedAccountIds) {
-    const numId = Number(rawId);
-    const acct = availableAccounts.value.find((a) => a.id === numId);
-    const acctColor = acct?.color ?? null;
-    const acctChip: ProChip = { key: `pro-acct-${numId}`, label: acct?.name ?? `#${numId}` };
-    if (acctColor) acctChip.dot = acctColor;
-    chips.push(acctChip);
-  }
-  if (filters.search) {
-    chips.push({ key: 'pro-search', icon: 'search', label: `"${filters.search}"` });
-  }
-  return chips;
-});
 
 function clearProFilters(): void {
   proType.value = 'all';
   proAmtMin.value = '';
   proAmtMax.value = '';
+  proSelCats.value = [];
+  proSelJars.value = [];
   clearCategoryTagFilter();
   filters.search = '';
   txStore.setSelectedAccountIds([]);
@@ -3775,7 +3688,13 @@ function txCatIdForRow(row: Row): number | null {
 
 function txFilterByRowCat(row: Row): void {
   const catId = txCatIdForRow(row);
-  if (catId !== null) applyCategoryTagFilter(catId);
+  if (catId === null) return;
+  // In Pro mode use multi-select pools; in Lite use legacy single-select
+  if (!isLiteLayout.value) {
+    toggleProCat(catId);
+  } else {
+    applyCategoryTagFilter(catId);
+  }
 }
 // ────────────────────────────────────────────────────────────────────────
 
@@ -4349,7 +4268,202 @@ function exportCSV(): void {
 /* ── AccountFilter (Pro mode) ── */
 /* tx-acct-filter CSS removed — replaced by AccountFilterWidget component */
 
-/* ── Pro filter panel ── */
+/* ── TxPoolsHeader top-row ── */
+.pro-tx__top-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.pro-tx__top-meta {
+  font-size: 12.5px;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+.pro-tx__net--pos { color: var(--success); font-weight: 600; }
+.pro-tx__net--neg { color: var(--danger);  font-weight: 600; }
+
+/* ── 3-pool grid ── */
+.tx-pools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tx-pool {
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.tx-pool__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.tx-pool__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+.tx-pool__count {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  padding: 1px 7px;
+  color: var(--fg-3);
+}
+
+.tx-pool__hint {
+  font-size: 11px;
+  color: var(--fg-4, var(--fg-3));
+  margin-left: auto;
+}
+
+.tx-pool__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 26px;
+}
+
+/* Active chips (pool 1) */
+.tx-pool__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  font-size: 12px;
+  color: var(--fg-1);
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s;
+  &:hover { background: var(--surface-3, var(--surface-2)); }
+}
+
+.tx-pool__chip--locked {
+  cursor: default;
+  background: color-mix(in srgb, var(--brand-primary) 10%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+  color: var(--brand-primary);
+  &:hover { background: color-mix(in srgb, var(--brand-primary) 10%, var(--surface-1)); }
+}
+
+.tx-pool__chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* PickChip buttons (pool 2 & 3) */
+.tx-pool__pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+  &:hover {
+    background: color-mix(in srgb, var(--brand-primary) 8%, var(--surface-2));
+    border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+  }
+}
+
+.tx-pool__pick--active {
+  background: color-mix(in srgb, var(--brand-primary) 14%, var(--surface-1));
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.tx-pool__pick-count {
+  font-size: 11px;
+  opacity: .65;
+}
+
+/* Pool 1 footer */
+.tx-pool__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border-hairline);
+  padding-top: 10px;
+  margin-top: auto;
+}
+
+.tx-pool__type-seg {
+  display: inline-flex;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+  flex: 1;
+}
+
+.tx-pool__type-btn {
+  flex: 1;
+  border: 0;
+  cursor: pointer;
+  padding: 6px 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background .12s, color .12s;
+}
+
+.tx-pool__type-btn--active {
+  background: var(--brand-primary);
+  color: var(--fg-on-brand, #fff);
+  font-weight: 700;
+}
+
+.tx-pool__clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--danger);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  &:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); }
+}
+
+/* ── Pro filter panel (legacy, still used by old Filtros popover if any) ── */
 .pro-tx__filter-card {
   border-radius: var(--radius-lg) !important;
 }
