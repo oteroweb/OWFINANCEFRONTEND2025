@@ -1135,28 +1135,54 @@ async function fetchAvailableAccounts(): Promise<void> {
       : Array.isArray((raw as Record<string, unknown>)?.['data'])
       ? ((raw as Record<string, unknown>)['data'] as Array<Record<string, unknown>>)
       : [];
+
+    // Build a color lookup from authStore accounts (color lives in the auth response, not /accounts)
+    const authAccounts = (authStore.user as Record<string, unknown> | undefined)?.['accounts'];
+    const colorMap = new Map<number, string>();
+    if (Array.isArray(authAccounts)) {
+      for (const aa of authAccounts as Array<Record<string, unknown>>) {
+        const aId = Number(aa['id']);
+        const aColor = typeof aa['color'] === 'string' ? aa['color'] : null;
+        if (Number.isFinite(aId) && aColor) colorMap.set(aId, aColor);
+      }
+    }
+
     availableAccounts.value = list.map((a) => {
       const id = Number(a['id']);
       const name = typeof a['name'] === 'string' ? a['name'] : `Cuenta #${id}`;
-      const color =
-        typeof a['color'] === 'string' && a['color']
-          ? a['color']
-          : null;
+
+      // Color comes from authStore, not from /accounts API (no color column on accounts table)
+      const color = colorMap.get(id) ?? null;
+
+      // currency.code is the nested relation from the API
       const currency = typeof a['currency_code'] === 'string' && a['currency_code']
         ? a['currency_code']
         : typeof (a['currency'] as Record<string, unknown> | null | undefined)?.['code'] === 'string'
           ? (a['currency'] as Record<string, unknown>)['code'] as string
           : 'USD';
-      const balance = typeof a['balance'] === 'number' ? a['balance']
-        : typeof a['balance'] === 'string' ? parseFloat(a['balance']) || 0
+
+      // balance_cached is authoritative; fall back to balance then balance_calculado
+      const balRaw = a['balance_cached'] ?? a['balance_calculado'] ?? a['balance'];
+      const balance = typeof balRaw === 'number' ? balRaw
+        : typeof balRaw === 'string' ? parseFloat(balRaw) || 0
         : 0;
-      const folder = typeof a['folder'] === 'string' && a['folder'] ? a['folder'] : null;
+
+      // folder comes from account_user pivot (folder_id → name); API may or may not include it
+      const folderObj = a['folder'] ?? a['account_folder'];
+      const folder = typeof folderObj === 'string' && folderObj ? folderObj
+        : folderObj && typeof folderObj === 'object' && 'name' in (folderObj as Record<string, unknown>)
+          ? ((folderObj as Record<string, unknown>)['name'] as string)
+          : null;
+
       const last4 = typeof a['last4'] === 'string' && a['last4'] ? a['last4'] : null;
+
+      // account_type: nested relation object with .name
       const typeRaw = a['account_type'];
       const account_type = typeof typeRaw === 'string' ? typeRaw
         : typeRaw && typeof typeRaw === 'object' && 'name' in (typeRaw as Record<string, unknown>)
           ? ((typeRaw as Record<string, unknown>)['name'] as string)
           : null;
+
       return { id, name, color, txCount: 0, currency, balance, folder, last4, account_type };
     }).filter((a) => Number.isFinite(a.id));
   } catch {
