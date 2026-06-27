@@ -7,6 +7,25 @@
 
     <div class="pro-page__layout" :class="{ 'pro-page__layout--panel': showAccountsPanel }">
     <div class="pro-page__container">
+      <!-- Mobile balance hero card (hidden on desktop) -->
+      <div class="mobile-balance-card">
+        <div class="mobile-balance-card__top">
+          <span class="mobile-balance-card__label">Disponible · USD</span>
+          <span class="mobile-balance-card__badge">PRO</span>
+        </div>
+        <span class="mobile-balance-card__amount">
+          {{ isHidden ? '$ ••••••' : formatMoney(balanceSummary.total_global_balance) }}
+        </span>
+        <div class="mobile-balance-card__stats">
+          <div v-for="stat in mobileBalanceStats" :key="stat.label" class="mobile-balance-card__stat">
+            <span class="mobile-balance-card__stat-label">{{ stat.label }}</span>
+            <span class="mobile-balance-card__stat-value" :style="{ color: stat.color }">
+              {{ isHidden ? '••••' : stat.value }}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- KPI strip -->
       <div class="kpi-grid">
         <div v-for="(kpi, i) in kpis" :key="i" class="kpi-card">
@@ -135,7 +154,7 @@
       </div>
 
       <!-- AI advisor strip -->
-      <div class="pro-advisor-strip">
+      <button class="pro-advisor-strip" @click="goToAsesor">
         <div class="pro-advisor-strip__icon">
           <q-icon name="auto_awesome" size="22px" />
         </div>
@@ -143,10 +162,8 @@
           <div class="pro-advisor-strip__title">Asesor Financiero IA</div>
           <div class="pro-advisor-strip__hint">{{ aiHint }}</div>
         </div>
-        <button class="pro-advisor-strip__cta" @click="goToAsesor">
-          Hablar con mi asesor
-        </button>
-      </div>
+        <q-icon name="chevron_right" size="20px" class="pro-advisor-strip__chevron" />
+      </button>
     </div>
 
     <!-- Accounts Panel -->
@@ -345,6 +362,15 @@ const monthlyIncome = ref(0);
 const monthlyExpense = ref(0);
 const savingsRate = ref('0%');
 const aiHint = ref('Tu tasa de ahorro es saludable. Revisa los movimientos recientes para optimizar.');
+
+const mobileBalanceStats = computed(() => {
+  const net = monthlyIncome.value - monthlyExpense.value;
+  return [
+    { label: 'Ingresos', value: `+${formatMoney(monthlyIncome.value)}`, color: '#6EE7B7' },
+    { label: 'Gastos', value: `−${formatMoney(monthlyExpense.value)}`, color: '#FCA5A5' },
+    { label: 'Neto', value: `${net >= 0 ? '+' : ''}${formatMoney(net)}`, color: '#fff' },
+  ];
+});
 
 interface SpendingItem { name: string; amount: number; pct: number }
 const spendingBreakdown = ref<SpendingItem[]>([]);
@@ -822,12 +848,15 @@ onMounted(() => {
   gap: 16px;
   padding: 20px 24px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(14, 165, 233, 0.08));
-  border: 1px solid rgba(124, 58, 237, 0.2);
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%);
+  border: 1px solid rgba(124, 58, 237, 0.15);
   transition: background 160ms ease;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
 
   &:hover {
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(14, 165, 233, 0.12));
+    background: linear-gradient(90deg, rgba(124, 58, 237, 0.14) 0%, rgba(14, 165, 233, 0.14) 100%);
   }
 
   &__icon {
@@ -861,27 +890,86 @@ onMounted(() => {
     color: var(--fg-2);
   }
 
-  &__cta {
-    border: 0;
-    cursor: pointer;
+  &__chevron {
+    color: var(--fg-3);
     flex-shrink: 0;
-    padding: 9px 18px;
-    border-radius: var(--radius-pill);
-    background: linear-gradient(135deg, #7C3AED, #0EA5E9);
-    color: #fff;
+  }
+}
+
+// ── Mobile balance hero card (hidden on desktop, visible on mobile) ──
+.mobile-balance-card {
+  display: none;
+  margin: 0;
+  background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%);
+  border-radius: var(--radius-xl);
+  padding: 24px 22px 20px;
+  box-shadow: 0 8px 28px rgba(14, 165, 233, 0.35);
+  flex-direction: column;
+  gap: 12px;
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__label {
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
-    white-space: nowrap;
-    transition: opacity 160ms ease;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+  }
 
-    &:hover {
-      opacity: 0.88;
-    }
+  &__badge {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
 
-    &:active {
-      opacity: 0.75;
-    }
+  &__amount {
+    font-family: var(--font-money);
+    font-weight: 700;
+    font-size: 44px;
+    line-height: 1;
+    letter-spacing: -1px;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__stats {
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__stat-label {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__stat-value {
+    font-family: var(--font-money);
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -1114,6 +1202,21 @@ onMounted(() => {
   }
 }
 
+@media (max-width: 768px) {
+  .mobile-balance-card {
+    display: flex;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .mid-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .pro-page__container {
     padding: 16px 16px 24px;
@@ -1121,7 +1224,7 @@ onMounted(() => {
   }
 
   .kpi-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 
