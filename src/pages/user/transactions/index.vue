@@ -234,7 +234,7 @@
       </q-card>
 
       <!-- ── Two-column body: date-grouped feed (left) + AccountsPanel (right) ── -->
-      <div class="pro-tx__body">
+      <div class="pro-tx__body" :class="{ 'pro-tx__body--panel-closed': !apPanelOpen }">
 
         <!-- LEFT: date-grouped transaction feed -->
         <div class="pro-tx-feed">
@@ -328,7 +328,7 @@
         </div>
 
         <!-- RIGHT: AccountsPanel -->
-        <aside class="pro-tx__accounts-panel ap-panel">
+        <aside v-show="apPanelOpen" class="pro-tx__accounts-panel ap-panel">
           <div class="ap-panel__tabs">
             <button class="ap-panel__tab" :class="{ 'ap-panel__tab--active': apTxSection === 'accounts' }" @click="apTxSection = 'accounts'">Cuentas</button>
             <button class="ap-panel__tab" :class="{ 'ap-panel__tab--active': apTxSection === 'debts' }" @click="apTxSection = 'debts'">Deudas</button>
@@ -2569,9 +2569,11 @@ onMounted(async () => {
     void runFetch(true);
   };
   window.addEventListener('ow:accounts:selected', accountsSelectedHandler);
+  window.addEventListener('owf:accounts-panel-toggle', onAccountsPanelToggle);
   onBeforeUnmount(() => {
     window.removeEventListener('ow:transactions:changed', handler);
     window.removeEventListener('ow:accounts:selected', accountsSelectedHandler);
+    window.removeEventListener('owf:accounts-panel-toggle', onAccountsPanelToggle);
   });
 });
 
@@ -3625,6 +3627,15 @@ function loadProRatesFromUser(): void {
 }
 
 // ===== AccountsPanel for Transactions (Pro mode) =====
+const apPanelOpen = ref((() => {
+  try { return localStorage.getItem('owf-ap-panel-open') !== 'false'; } catch { return true; }
+})());
+
+function onAccountsPanelToggle() {
+  apPanelOpen.value = !apPanelOpen.value;
+  try { localStorage.setItem('owf-ap-panel-open', String(apPanelOpen.value)); } catch { /* noop */ }
+}
+
 const apTxSection = ref<'accounts' | 'debts'>('accounts');
 const apTxLoading = ref(false);
 
@@ -4639,6 +4650,12 @@ function exportCSV(): void {
   grid-template-columns: 1fr 300px;
   gap: 20px;
   align-items: start;
+  transition: grid-template-columns 200ms ease;
+
+  &--panel-closed {
+    grid-template-columns: 1fr 0;
+    gap: 0;
+  }
 }
 
 @media (max-width: 1023px) {

@@ -6,10 +6,11 @@
       'shell--pro': isPro,
       'shell--mobile': isMobile,
       'shell--desktop': !isMobile,
+      'shell--nav-collapsed': !navOpen,
     }"
   >
     <!-- ═══ PRO DESKTOP: sidebar izquierdo ═══════════════════════════════ -->
-    <aside v-show="isPro && !isMobile" class="shell__sidebar">
+    <aside v-show="isPro && !isMobile && navOpen" class="shell__sidebar">
       <!-- Logo -->
       <div class="shell__sidebar-logo" @click="router.push('/user/home')">
         <div class="shell__sidebar-logo-mark">OW</div>
@@ -69,7 +70,12 @@
 
         <!-- Pro topbar (Pro desktop) -->
         <header v-if="isPro && !isMobile" class="shell__pro-topbar">
-          <span class="shell__pro-topbar-title">{{ pageTitle }}</span>
+          <div class="shell__pro-topbar-left">
+            <button class="shell__icon-btn" :aria-label="navOpen ? 'Ocultar menú' : 'Mostrar menú'" @click="toggleNav">
+              <span class="material-icons">{{ navOpen ? 'menu_open' : 'menu' }}</span>
+            </button>
+            <span class="shell__pro-topbar-title">{{ pageTitle }}</span>
+          </div>
           <div class="shell__pro-topbar-actions">
             <button class="shell__btn-primary" @click="quickAddOpen = true">
               <span class="material-icons" style="font-size:18px">add</span>
@@ -84,6 +90,10 @@
             </button>
             <button class="shell__icon-btn" aria-label="Notificaciones" @click="showNotifications = !showNotifications">
               <span class="material-icons">notifications</span>
+            </button>
+            <span class="shell__pro-topbar-divider" />
+            <button class="shell__icon-btn" :aria-label="'Panel de cuentas'" @click="toggleAccountsPanel">
+              <span class="material-icons">view_sidebar</span>
             </button>
             <button class="shell__sidebar-user-avatar shell__icon-avatar" @click="menuOpen = !menuOpen">
               {{ initial }}
@@ -176,6 +186,20 @@ const quickAddOpen    = ref(false);
 const showAssistant   = ref(false);
 const showOnboarding  = ref(false);
 const showNotifications = ref(false);
+
+// ── Sidebar toggles ───────────────────────────────────────────────────────
+const navOpen = ref((() => {
+  try { return localStorage.getItem('owf-nav-open') !== 'false'; } catch { return true; }
+})());
+
+function toggleNav() {
+  navOpen.value = !navOpen.value;
+  try { localStorage.setItem('owf-nav-open', String(navOpen.value)); } catch { /* noop */ }
+}
+
+function toggleAccountsPanel() {
+  window.dispatchEvent(new CustomEvent('owf:accounts-panel-toggle'));
+}
 
 // Auto-trigger onboarding si el usuario nunca lo ha visto
 function checkOnboarding() {
@@ -430,6 +454,10 @@ const pageTitle = computed(() => {
   // Pro desktop: offset left para el sidebar fixed
   .shell--pro.shell--desktop & {
     margin-left: 240px;
+    transition: margin-left 200ms ease;
+  }
+  .shell--pro.shell--desktop.shell--nav-collapsed & {
+    margin-left: 0;
   }
 }
 
@@ -451,6 +479,12 @@ const pageTitle = computed(() => {
   background: var(--surface-1);
   border-bottom: 1px solid var(--border-hairline);
   flex-shrink: 0;
+
+  &-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
   &-title {
     font-family: var(--font-display);
@@ -526,6 +560,10 @@ const pageTitle = computed(() => {
 .shell__page-container {
   .shell--pro.shell--desktop & {
     margin-left: 240px;
+    transition: margin-left 200ms ease;
+  }
+  .shell--pro.shell--desktop.shell--nav-collapsed & {
+    margin-left: 0;
   }
 }
 
