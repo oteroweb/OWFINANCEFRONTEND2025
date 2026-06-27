@@ -11,9 +11,9 @@
         <span class="t-eyebrow">Configuración</span>
         <h1 class="t-h1" style="margin: 6px 0 16px;">Preferencias</h1>
       </div>
-      <!-- ── App Prefs: modo + tema ─────────────────────────────── -->
+      <!-- ── App Prefs: modo + idioma + dispositivo + tema ───────── -->
       <div class="apref">
-        <span class="t-eyebrow apref__label">Modo de vista</span>
+        <span class="t-eyebrow apref__label">Aplicación</span>
         <div class="apref__mode-row">
           <button
             class="apref__mode-btn"
@@ -67,6 +67,35 @@
           <div class="apref__row-text">
             <span>Divisa predeterminada</span>
             <span class="apref__row-hint">USD · gestionar en Cuentas</span>
+          </div>
+          <span class="material-icons" style="font-size:18px;color:var(--fg-3)">chevron_right</span>
+        </div>
+
+        <!-- Idioma (spec: Aplicación > Idioma dropdown) -->
+        <div class="apref__row">
+          <span class="material-icons apref__row-icon">language</span>
+          <div class="apref__row-text">
+            <span>Idioma</span>
+            <span class="apref__row-hint">Interfaz y formatos</span>
+          </div>
+          <q-select
+            v-model="appLang"
+            :options="langOptions"
+            emit-value
+            map-options
+            dense
+            outlined
+            style="min-width:120px;font-size:13px"
+            @update:model-value="onLangChange"
+          />
+        </div>
+
+        <!-- Vista previa / Pantalla de inicio (spec: Aplicación > Vista previa) -->
+        <div class="apref__row" style="cursor:pointer" @click="router.push('/user/home')">
+          <span class="material-icons apref__row-icon">home</span>
+          <div class="apref__row-text">
+            <span>Pantalla de inicio</span>
+            <span class="apref__row-hint">Inicio</span>
           </div>
           <span class="material-icons" style="font-size:18px;color:var(--fg-3)">chevron_right</span>
         </div>
@@ -784,6 +813,22 @@ async function switchMode(mode: 'lite' | 'pro') {
 function toggleTheme() {
   $q.dark.toggle();
   try { localStorage.setItem('ow-theme', $q.dark.isActive ? 'dark' : 'light'); } catch { /* noop */ }
+}
+
+// ── Language preference ──────────────────────────────────────────────────
+const langOptions = [
+  { label: 'Español', value: 'es' },
+  { label: 'English', value: 'en' },
+];
+const appLang = ref<string>(
+  (auth.settings?.preferences as Record<string, unknown>)?.lang as string || 'es'
+);
+async function onLangChange(lang: string) {
+  appLang.value = lang;
+  try {
+    const existing = (auth.settings?.preferences as Record<string, unknown>) ?? {};
+    await api.put('/user/settings', { preferences: { ...existing, lang } });
+  } catch { /* silent */ }
 }
 
 // ── Notification preferences ──────────────────────────────────────────────

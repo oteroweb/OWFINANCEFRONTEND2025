@@ -7,6 +7,9 @@
         <h1 class="t-h1" style="margin: 6px 0 0;">Navegador financiero</h1>
       </div>
 
+      <!-- Lite eyebrow (spec AnalisisRoute: 'En qué se fue' uppercase label above hero) -->
+      <div v-if="isLiteLayout" class="an-lite-eyebrow">En qué se fue</div>
+
       <section class="hero-card">
         <div class="hero-copy">
           <div class="row items-center q-col-gutter-sm q-mb-sm">
@@ -1504,6 +1507,16 @@ onMounted(() => {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+}
+
+.an-lite-eyebrow {
+  font-family: var(--font-body, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+  margin-bottom: 4px;
 }
 
 .analysis-lead {
