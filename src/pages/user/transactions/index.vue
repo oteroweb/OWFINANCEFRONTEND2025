@@ -1147,12 +1147,18 @@ async function fetchAvailableAccounts(): Promise<void> {
       }
     }
 
-    availableAccounts.value = list.map((a) => {
+    // If API returned empty, try to populate from authStore user accounts
+    const effectiveList = list.length > 0 ? list : (() => {
+      const ua = authAccounts;
+      return Array.isArray(ua) ? (ua as Array<Record<string, unknown>>) : [];
+    })();
+
+    availableAccounts.value = effectiveList.map((a) => {
       const id = Number(a['id']);
       const name = typeof a['name'] === 'string' ? a['name'] : `Cuenta #${id}`;
 
       // Color comes from authStore, not from /accounts API (no color column on accounts table)
-      const color = colorMap.get(id) ?? null;
+      const color = colorMap.get(id) ?? (typeof a['color'] === 'string' ? a['color'] : null);
 
       // currency.code is the nested relation from the API
       const currency = typeof a['currency_code'] === 'string' && a['currency_code']
@@ -2314,16 +2320,19 @@ function buildQueryParams(): Record<string, unknown> {
       params[f.vmodel_api || f.vmodel] = val;
     }
   }
-  // Multi-cuenta: si hay más de una cuenta seleccionada en el sidebar,
-  // enviar solo payment_account_ids como CSV (p. ej. "1,2,3")
-  if (Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length > 1) {
+  // Siempre usar payment_account_ids para filtrar por cuenta(s).
+  // account_id filtra transactions.account_id (casi siempre NULL en tx modernas);
+  // payment_account_ids filtra payment_transactions.account_id, que es donde vive el dato.
+  if (Array.isArray(txStore.selectedAccountIds) && txStore.selectedAccountIds.length > 0) {
     const ids = txStore.selectedAccountIds.map((v: unknown) => {
       const n = Number(v);
       return Number.isFinite(n) ? String(n) : String(v);
-    });
+    }).filter(Boolean);
     const csv = ids.join(',');
     if (csv) {
       params['payment_account_ids'] = csv;
+      // Evitar que account_id del filtro genérico sobreescriba este valor
+      delete params['account_id'];
     }
   }
   return params;
@@ -3381,6 +3390,31 @@ const proTypeOptions = [
 // Rows visible to the Pro filter (type + amount + category overlaid on server rows)
 const proFilteredRows = computed<Row[]>(() => {
   return rows.value.filter((r) => {
+    // Client-side account filter (safety net — API also filters via payment_account_ids)
+    if (selectedAccountNums.value.length > 0) {
+      const rr = r as AnyRecord;
+      let matched = false;
+      const pts = rr['payment_transactions'];
+      if (Array.isArray(pts) && pts.length > 0) {
+        matched = pts.some((p: unknown) => {
+          if (!p || typeof p !== 'object') return false;
+          const pr = p as AnyRecord;
+          let paId = toNumeric(pr['account_id']);
+          if (paId == null) {
+            const acc = pr['account'];
+            if (acc && typeof acc === 'object') paId = toNumeric((acc as AnyRecord)['id']);
+          }
+          return typeof paId === 'number' && selectedAccountNums.value.includes(paId);
+        });
+      }
+      if (!matched) {
+        // Fallback: direct account_id on transaction (legacy records)
+        const direct = toNumeric(rr['account_id']);
+        if (typeof direct === 'number' && selectedAccountNums.value.includes(direct)) matched = true;
+      }
+      if (!matched) return false;
+    }
+
     const amt = parseNumber((r as AnyRecord)['amount']);
     if (proType.value === 'income'  && !(amt > 0)) return false;
     if (proType.value === 'expense' && !(amt < 0)) return false;

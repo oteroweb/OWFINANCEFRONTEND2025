@@ -343,11 +343,20 @@ interface Segment {
   test: ((a: AfAccount) => boolean) | null;
 }
 
+function isDebtAccount(a: AfAccount): boolean {
+  // Match by negative balance OR by account type name containing credit/deuda keywords
+  if (balanceOf(a) < 0) return true;
+  const t = a.account_type;
+  const tName = typeof t === 'string' ? t : (t && typeof t === 'object' && 'name' in t ? (t as { name: string }).name : '');
+  const lower = tName.toLowerCase();
+  return lower.includes('crédit') || lower.includes('credit') || lower.includes('deuda') || lower.includes('préstamo') || lower.includes('prestamo') || lower.includes('loan');
+}
+
 const segments: Segment[] = [
   { id: 'all',  label: 'Todas',     test: null },
   { id: 'usd',  label: 'Solo USD',  test: (a) => a.currency === 'USD' },
   { id: 'ves',  label: 'Solo VES',  test: (a) => a.currency === 'VES' },
-  { id: 'debt', label: 'Con deuda', test: (a) => balanceOf(a) < 0 },
+  { id: 'debt', label: 'Con deuda', test: isDebtAccount },
 ];
 
 function applySeg(seg: Segment) {
