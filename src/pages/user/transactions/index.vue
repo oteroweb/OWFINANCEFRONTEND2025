@@ -405,11 +405,14 @@
                 v-for="acc in apTxAccountsList"
                 :key="acc.id"
                 :class="['ap-row', isApAcctSelected(acc.id) && 'ap-row--selected']"
-                style="position:relative"
-                @click="apSelectMode ? toggleApAcct(acc.id) : undefined"
+                style="position:relative;cursor:pointer"
+                @click="toggleApAcct(acc.id)"
               >
-                <!-- Checkbox (select mode only) -->
-                <span v-if="apSelectMode" :class="['ap-chk', isApAcctSelected(acc.id) && 'ap-chk--on']">
+                <!-- Checkbox: always visible when selected, always visible in select mode -->
+                <span
+                  v-if="apSelectMode || isApAcctSelected(acc.id)"
+                  :class="['ap-chk', isApAcctSelected(acc.id) && 'ap-chk--on']"
+                >
                   <span v-if="isApAcctSelected(acc.id)" class="material-icons" style="font-size:14px;color:#fff">check</span>
                 </span>
 
@@ -5156,12 +5159,11 @@ function exportCSV(): void {
   gap: 10px;
   padding: 11px 18px;
   transition: background 130ms;
-  cursor: default;
+  cursor: pointer;
 
   &:hover { background: var(--surface-2); }
   &--selected { background: color-mix(in srgb, var(--info) 8%, var(--surface-1)); }
   &--selected:hover { background: color-mix(in srgb, var(--info) 13%, var(--surface-1)); }
-  &--debt { cursor: pointer; }
 }
 
 /* Square checkbox */
