@@ -33,12 +33,15 @@
           · {{ debts.length }} planes · {{ meta.cashea_count }} en Cashea
         </div>
         <div class="debts-summary-card__sub" style="margin-top:4px">
-          Próximas cuotas (30 días): <strong>$ {{ fmtN(meta.total_monthly) }}</strong>
+          Próximas cuotas (30 días): <strong>{{ ui.hideValues ? '$ ••••••' : '$ ' + fmtN(meta.total_monthly) }}</strong>
         </div>
       </div>
       <div class="debts-summary-card__actions">
         <button class="debts-btn debts-btn--ghost" @click="openPayDialog()">
           <q-icon name="payments" size="17px" /> Pagar cuota
+        </button>
+        <button class="debts-btn debts-btn--primary" @click="openForm(null)">
+          <q-icon name="add" size="17px" /> Nuevo plan
         </button>
       </div>
     </div>

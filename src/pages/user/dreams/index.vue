@@ -12,7 +12,7 @@
       <div class="dreams-hero">
         <div class="dreams-hero__left">
           <span class="t-eyebrow">Total acumulado · USD</span>
-          <div class="dreams-hero__amount">{{ fmt(meta?.total_saved ?? 0) }}</div>
+          <div class="dreams-hero__amount">{{ ui.hideValues ? '$ ••••••' : fmt(meta?.total_saved ?? 0) }}</div>
           <p class="t-body-sm" style="color:var(--fg-2);margin:0">
             {{ store.dreams.length }} sueños activos
             <template v-if="meta?.total_target"> · meta combinada
@@ -262,11 +262,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useDreamsStore, type Dream } from 'src/stores/dreams'
+import { useUiStore } from 'stores/ui'
 
 defineOptions({ name: 'DreamsPage' })
 
 const $q = useQuasar()
 const store = useDreamsStore()
+const ui = useUiStore()
 
 const COLORS = ['#2D4DA6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#F97316']
 
