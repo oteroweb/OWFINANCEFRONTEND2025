@@ -30,7 +30,7 @@
         <!-- Card 1: Quién soy -->
         <div class="fp-page__card">
           <div class="fp-page__card-title">
-            <q-icon name="badge" size="20px" />
+            <span class="fp-page__card-icon"><q-icon name="badge" size="18px" /></span>
             Quién soy
           </div>
           <div class="fp-page__chip-group">
@@ -68,7 +68,7 @@
         <!-- Card 2: Situación financiera -->
         <div class="fp-page__card">
           <div class="fp-page__card-title">
-            <q-icon name="account_balance" size="20px" />
+            <span class="fp-page__card-icon"><q-icon name="account_balance" size="18px" /></span>
             Situación financiera
           </div>
           <div class="fp-page__chip-group">
@@ -106,7 +106,7 @@
         <!-- Card 3: Metas y sueños -->
         <div class="fp-page__card">
           <div class="fp-page__card-title">
-            <q-icon name="flag" size="20px" />
+            <span class="fp-page__card-icon"><q-icon name="flag" size="18px" /></span>
             Metas y sueños
           </div>
           <div class="fp-page__chip-group">
@@ -145,7 +145,7 @@
         <!-- Card 4: Mis cántaros -->
         <div class="fp-page__card">
           <div class="fp-page__card-title">
-            <q-icon name="savings" size="20px" />
+            <span class="fp-page__card-icon"><q-icon name="savings" size="18px" /></span>
             Mis cántaros
           </div>
 
@@ -567,7 +567,7 @@ async function save() {
   &__card {
     background: var(--surface-1);
     border: 1px solid var(--border-hairline, rgba(0,0,0,.08));
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-xl, var(--radius-md));
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -577,11 +577,23 @@ async function save() {
   &__card-title {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 15px;
+    font-size: 17px;
     color: var(--fg-1);
+  }
+
+  &__card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--brand-primary-soft, #EEF2FF);
+    color: var(--brand-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   &__chip-group {
@@ -655,6 +667,7 @@ async function save() {
     gap: 10px;
     position: sticky;
     bottom: 16px;
+    filter: drop-shadow(var(--shadow-float, 0 4px 16px rgba(0,0,0,.12)));
   }
 
   &__tpl-loading {

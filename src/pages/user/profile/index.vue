@@ -41,11 +41,17 @@
           <!-- Completitud -->
           <div class="profile-page__completeness">
             <div class="profile-page__completeness-row">
-              <span class="t-body-sm">Completado</span>
-              <span class="profile-page__completeness-pct" :style="{ color: pct === 100 ? 'var(--income-fg)' : 'var(--brand-primary)' }">{{ pct }}%</span>
+              <span class="profile-page__completeness-label">Completado</span>
+              <span
+                class="profile-page__completeness-pct"
+                :style="{ color: pct === 100 ? 'var(--income-fg)' : 'var(--brand-primary)' }"
+              >{{ pct }}%</span>
             </div>
             <div class="profile-page__completeness-bar">
-              <div class="profile-page__completeness-fill" :style="{ width: pct + '%', background: pct === 100 ? 'var(--income)' : 'var(--brand-primary)' }" />
+              <div
+                class="profile-page__completeness-fill"
+                :style="{ width: pct + '%', background: pct === 100 ? 'var(--income)' : 'var(--brand-primary)' }"
+              />
             </div>
           </div>
         </div>
@@ -55,28 +61,32 @@
       <div class="profile-page__card">
         <div class="profile-page__section-title">Datos personales</div>
         <div class="profile-page__fields">
-          <div class="profile-page__field">
-            <label class="profile-page__label">Nombre completo</label>
-            <q-input v-model="form.name" outlined dense placeholder="Tu nombre completo" />
+          <div class="profile-page__fields-row">
+            <div class="profile-page__field">
+              <label class="profile-page__label">Nombre completo</label>
+              <q-input v-model="form.name" outlined dense placeholder="Tu nombre completo" />
+            </div>
+            <div class="profile-page__field">
+              <label class="profile-page__label">Ocupación</label>
+              <q-input v-model="form.occupation" outlined dense placeholder="Ej: Diseñador, Ingeniero…" />
+            </div>
           </div>
-          <div class="profile-page__field">
-            <label class="profile-page__label">Ocupación</label>
-            <q-input v-model="form.occupation" outlined dense placeholder="Ej: Diseñador, Ingeniero…" />
-          </div>
-          <div class="profile-page__field">
-            <label class="profile-page__label">Ingreso mensual</label>
-            <q-input v-model.number="form.monthly_income" type="number" outlined dense prefix="$" min="0" />
-          </div>
-          <div class="profile-page__field">
-            <label class="profile-page__label">Fecha de nacimiento</label>
-            <q-input v-model="form.birthdate" type="date" outlined dense />
+          <div class="profile-page__fields-row">
+            <div class="profile-page__field">
+              <label class="profile-page__label">Fecha de nacimiento</label>
+              <q-input v-model="form.birthdate" type="date" outlined dense />
+            </div>
+            <div class="profile-page__field">
+              <label class="profile-page__label">Ingreso mensual</label>
+              <q-input v-model.number="form.monthly_income" type="number" outlined dense prefix="$" min="0" />
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Contacto & Ubicación card -->
+      <!-- Contacto card -->
       <div class="profile-page__card">
-        <div class="profile-page__section-title">Contacto y ubicación</div>
+        <div class="profile-page__section-title">Contacto</div>
         <div class="profile-page__fields">
           <div class="profile-page__field">
             <label class="profile-page__label">Correo electrónico</label>
@@ -86,18 +96,27 @@
             <label class="profile-page__label">Teléfono</label>
             <q-input v-model="form.phone" outlined dense placeholder="+58 412 000 0000" />
           </div>
-          <div class="profile-page__field">
-            <label class="profile-page__label">Ciudad</label>
-            <q-input v-model="form.city" outlined dense placeholder="Caracas, Bogotá…" />
-          </div>
-          <div class="profile-page__field">
-            <label class="profile-page__label">País</label>
-            <q-select
-              v-model="form.country"
-              :options="countryOptions"
-              emit-value map-options
-              outlined dense
-            />
+        </div>
+      </div>
+
+      <!-- Ubicación card -->
+      <div class="profile-page__card">
+        <div class="profile-page__section-title">Ubicación</div>
+        <div class="profile-page__fields">
+          <div class="profile-page__fields-row">
+            <div class="profile-page__field">
+              <label class="profile-page__label">País</label>
+              <q-select
+                v-model="form.country"
+                :options="countryOptions"
+                emit-value map-options
+                outlined dense
+              />
+            </div>
+            <div class="profile-page__field">
+              <label class="profile-page__label">Ciudad</label>
+              <q-input v-model="form.city" outlined dense placeholder="Caracas, Bogotá…" />
+            </div>
           </div>
         </div>
       </div>
@@ -108,9 +127,18 @@
         <div class="profile-page__fields">
           <div class="profile-page__field">
             <label class="profile-page__label">Nueva contraseña</label>
-            <q-input v-model="form.password" :type="showPwd ? 'text' : 'password'" outlined dense placeholder="Dejar vacío para no cambiar">
+            <q-input
+              v-model="form.password"
+              :type="showPwd ? 'text' : 'password'"
+              outlined dense
+              placeholder="Dejar vacío para no cambiar"
+            >
               <template #append>
-                <q-icon :name="showPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer" @click="showPwd = !showPwd" />
+                <q-icon
+                  :name="showPwd ? 'visibility_off' : 'visibility'"
+                  class="cursor-pointer"
+                  @click="showPwd = !showPwd"
+                />
               </template>
             </q-input>
           </div>
@@ -118,16 +146,10 @@
       </div>
 
       <!-- Financial profile link -->
-      <router-link to="/user/financial-profile" class="profile-page__nav-link">
-        <div class="profile-page__nav-link-content">
-          <q-icon name="account_balance_wallet" size="20px" class="profile-page__nav-link-icon" />
-          <div class="profile-page__nav-link-text">
-            <span class="profile-page__nav-link-title">Mi perfil financiero</span>
-            <span class="profile-page__nav-link-sub">Ingresos, metas y asesor IA</span>
-          </div>
-        </div>
-        <q-icon name="chevron_right" size="20px" class="profile-page__nav-link-chevron" />
-      </router-link>
+      <button type="button" class="profile-page__fp-link" @click="void router.push('/user/financial-profile')">
+        <q-icon name="insights" size="18px" />
+        Ir a mi perfil financiero
+      </button>
 
       <!-- Actions -->
       <div class="profile-page__actions">
@@ -176,7 +198,8 @@ const form = ref({
   password: '',
 });
 
-const completenessFields = ['name', 'email', 'phone', 'monthly_income', 'birthdate'];
+// 8-field completeness bar matching spec (name, email, phone, occupation, city, country, birthdate, monthly_income)
+const completenessFields = ['name', 'email', 'phone', 'occupation', 'city', 'country', 'birthdate', 'monthly_income'] as const;
 const pct = computed(() => {
   const filled = completenessFields.filter(k => {
     const v = form.value[k as keyof typeof form.value];
@@ -269,7 +292,7 @@ async function save() {
   &__card {
     background: var(--surface-1);
     border: 1px solid var(--border-hairline, rgba(0,0,0,.08));
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-xl, var(--radius-md));
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -279,7 +302,7 @@ async function save() {
   &__identity {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
     flex-wrap: wrap;
   }
 
@@ -289,25 +312,25 @@ async function save() {
   }
 
   &__avatar {
-    width: 64px;
-    height: 64px;
+    width: 76px;
+    height: 76px;
     border-radius: 50%;
     background: var(--brand-primary);
-    color: var(--fg-on-brand);
+    color: var(--fg-on-brand, #fff);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 26px;
+    font-weight: 600;
+    font-size: 32px;
   }
 
   &__avatar-cam {
     position: absolute;
     right: -2px;
     bottom: -2px;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     border: 2px solid var(--surface-1);
     background: var(--surface-3);
@@ -322,21 +345,21 @@ async function save() {
 
   &__identity-info {
     flex: 1;
-    min-width: 120px;
+    min-width: 180px;
   }
 
   &__fullname {
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 18px;
+    font-size: 20px;
     color: var(--fg-1);
   }
 
   &__email-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 2px;
+    gap: 7px;
+    margin-top: 3px;
     flex-wrap: wrap;
   }
 
@@ -356,17 +379,24 @@ async function save() {
     color: var(--income-fg, #16a34a);
     background: var(--income-soft, rgba(22,163,74,.1));
     padding: 2px 8px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill, 999px);
   }
 
   &__completeness {
-    min-width: 120px;
+    min-width: 130px;
+    width: 130px;
   }
 
   &__completeness-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
+  }
+
+  &__completeness-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--fg-2);
   }
 
   &__completeness-pct {
@@ -376,31 +406,41 @@ async function save() {
   }
 
   &__completeness-bar {
-    height: 6px;
-    border-radius: 999px;
+    height: 7px;
+    border-radius: var(--radius-pill, 999px);
     background: var(--surface-3);
     overflow: hidden;
   }
 
   &__completeness-fill {
     height: 100%;
-    border-radius: 999px;
-    transition: width 0.3s ease;
+    border-radius: var(--radius-pill, 999px);
+    transition: width var(--dur-base, 0.3s) var(--ease-out, ease);
   }
 
   &__section-title {
     font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--fg-2);
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
+    color: var(--fg-2);
   }
 
   &__fields {
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+
+  &__fields-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+
+    > .profile-page__field {
+      flex: 1 1 200px;
+    }
   }
 
   &__field {
@@ -416,54 +456,19 @@ async function save() {
     color: var(--fg-2);
   }
 
-  &__nav-link {
-    display: flex;
+  &__fp-link {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    background: var(--surface-1);
-    border: 1px solid var(--border-hairline, rgba(0,0,0,.08));
-    border-radius: var(--radius-md);
-    padding: 16px 20px;
-    text-decoration: none;
-    color: inherit;
+    gap: 6px;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    transition: background 0.15s ease;
-    &:hover { background: var(--surface-2); }
-  }
-
-  &__nav-link-content {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  &__nav-link-icon {
     color: var(--brand-primary);
-    flex-shrink: 0;
-  }
-
-  &__nav-link-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  &__nav-link-title {
     font-family: var(--font-body);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--fg-1);
-  }
-
-  &__nav-link-sub {
-    font-family: var(--font-body);
-    font-size: 12px;
-    color: var(--fg-2);
-  }
-
-  &__nav-link-chevron {
-    color: var(--fg-3, var(--fg-2));
-    flex-shrink: 0;
+    padding: 4px 0;
+    align-self: flex-start;
   }
 
   &__actions {
