@@ -23,6 +23,7 @@ export const adminRoutes: RouteRecordRaw[] = [
       { path: 'transaction_types', component: () => import('pages/admin/transaction_types/index.vue'), meta: { requiresAuth: true, role: 'admin' } },
       { path: 'roles', component: () => import('pages/admin/roles/index.vue'), meta: { requiresAuth: true, role: 'admin' } },
       { path: 'system', component: () => import('pages/admin/system/index.vue'), meta: { requiresAuth: true, role: 'admin' } },
+      { path: 'ai', component: () => import('pages/admin/ai_monitor.vue'), meta: { requiresAuth: true, role: 'admin' } },
     ],
   },
 ];

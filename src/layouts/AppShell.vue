@@ -91,6 +91,9 @@
             <button class="shell__icon-btn" aria-label="Notificaciones" @click="showNotifications = !showNotifications">
               <span class="material-icons">notifications</span>
             </button>
+            <button v-if="isAdmin" class="shell__icon-btn shell__icon-btn--admin" aria-label="Panel de administración" @click="router.push('/admin/ai')">
+              <span class="material-icons">admin_panel_settings</span>
+            </button>
             <span class="shell__pro-topbar-divider" />
             <button class="shell__icon-btn" :aria-label="'Panel de cuentas'" @click="toggleAccountsPanel">
               <span class="material-icons">view_sidebar</span>
@@ -233,6 +236,7 @@ const isDark   = computed(() => $q.dark.isActive);
 const userName  = computed(() => auth.user?.name  || 'Usuario');
 const userEmail = computed(() => auth.user?.email || '');
 const initial   = computed(() => userName.value.charAt(0).toUpperCase());
+const isAdmin   = computed(() => auth.role === 'admin');
 
 // ── Navigation ────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -543,6 +547,11 @@ const pageTitle = computed(() => {
   .material-icons { font-size: 20px; }
 
   &:hover { background: var(--surface-2); color: var(--fg-1); }
+
+  &--admin {
+    color: var(--info);
+    &:hover { background: color-mix(in srgb, var(--info) 12%, var(--surface-1)); color: var(--info); }
+  }
 }
 
 .shell__icon-avatar {
