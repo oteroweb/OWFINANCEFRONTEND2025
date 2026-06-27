@@ -188,7 +188,7 @@ const activeLayoutMode = computed<UserLayoutMode>(
 );
 const isDark = computed(() => $q.dark.isActive);
 
-const modeOptions = [
+const modeOptions: { label: string; value: 'lite' | 'pro' }[] = [
   { label: 'Lite', value: 'lite' },
   { label: 'Pro', value: 'pro' },
 ];
