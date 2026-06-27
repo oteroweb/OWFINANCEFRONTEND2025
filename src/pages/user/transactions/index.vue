@@ -325,7 +325,7 @@
                   <span class="ap-row__sub">{{ acc.type }}</span>
                 </div>
                 <div class="ap-row__right">
-                  <span class="ap-row__balance">{{ formatMoney(acc.balance) }}</span>
+                  <span class="ap-row__balance" :class="{ 'af-neg': acc.balance < 0 }">{{ formatNativeMoney(acc.balance, acc.currency) }}</span>
                   <span class="ap-row__currency">{{ acc.currency }}</span>
                 </div>
               </div>
@@ -2687,6 +2687,18 @@ function formatMoney(n: number): string {
     currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: 2,
   }).format(val);
+}
+
+function formatNativeMoney(n: number, currency: string): string {
+  const val = Math.abs(Number(n || 0));
+  const cur = (currency || 'USD').toUpperCase();
+  if (cur === 'VES') {
+    return `Bs. ${val.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (cur === 'EUR') {
+    return `€ ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `$ ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ===== Formato de celdas de Cantidad (principal moneda cuenta, secundario USD si difiere) =====
