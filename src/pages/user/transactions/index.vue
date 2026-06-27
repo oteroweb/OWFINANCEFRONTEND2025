@@ -309,7 +309,16 @@
               <q-spinner color="primary" size="20px" />
             </div>
             <div v-else class="ap-panel__list">
-              <div v-for="acc in apTxAccountsList" :key="acc.id" class="ap-row">
+              <div
+                v-for="acc in apTxAccountsList"
+                :key="acc.id"
+                :class="['ap-row', isApAcctSelected(acc.id) && 'ap-row--selected']"
+                @click="toggleApAcct(acc.id)"
+              >
+                <div class="ap-row__sel-mark">
+                  <span v-if="isApAcctSelected(acc.id)" class="material-icons" style="font-size:16px;color:var(--brand-primary)">check_circle</span>
+                  <span v-else class="material-icons" style="font-size:16px;color:var(--fg-3);opacity:.35">radio_button_unchecked</span>
+                </div>
                 <div class="ap-row__badge" :style="{ background: acc.color }">{{ acc.short }}</div>
                 <div class="ap-row__info">
                   <span class="ap-row__name">{{ acc.name }}</span>
@@ -3551,6 +3560,16 @@ const apTxDebtsList = ref<ApTxDebt[]>([]);
 const apTxNetTotal = computed(() => apTxAccountsList.value.reduce((s, a) => s + a.balance, 0));
 const apTxDebtsTotal = computed(() => apTxDebtsList.value.reduce((s, d) => s + d.balance, 0));
 
+function isApAcctSelected(id: number): boolean {
+  return selectedAccountNums.value.includes(id);
+}
+
+function toggleApAcct(id: number): void {
+  const cur = new Set(txStore.selectedAccountIds.map(Number));
+  if (cur.has(id)) { cur.delete(id); } else { cur.add(id); }
+  txStore.setSelectedAccountIds(Array.from(cur));
+}
+
 async function loadApTxPanel(): Promise<void> {
   apTxLoading.value = true;
   try {
@@ -3567,7 +3586,7 @@ async function loadApTxPanel(): Promise<void> {
         short: ((a['name'] as string) || 'CTA').slice(0, 3).toUpperCase(),
         type: (typeof a['account_type'] === 'object' && a['account_type'] ? (a['account_type'] as Record<string,unknown>)['name'] as string : a['account_type'] as string) || 'Cuenta',
         currency: typeof a['currency'] === 'object' && a['currency'] ? ((a['currency'] as Record<string, unknown>)['code'] as string) ?? 'USD' : (a['currency'] as string) || 'USD',
-        balance: Number(a['balance'] ?? 0),
+        balance: Number(a['balance_cached'] ?? a['balance_calculado'] ?? a['balance'] ?? 0),
         color: (a['color'] as string) || 'var(--info)',
       }));
     }
@@ -4728,10 +4747,27 @@ function exportCSV(): void {
   gap: 10px;
   padding: 8px 16px;
   transition: background 0.1s;
+  cursor: pointer;
+  border-radius: var(--radius-md);
 }
 
 .ap-row:hover {
   background: var(--surface-2);
+}
+
+.ap-row--selected {
+  background: color-mix(in srgb, var(--brand-primary) 8%, var(--surface-1));
+}
+
+.ap-row--selected:hover {
+  background: color-mix(in srgb, var(--brand-primary) 14%, var(--surface-1));
+}
+
+.ap-row__sel-mark {
+  flex-shrink: 0;
+  width: 18px;
+  display: grid;
+  place-items: center;
 }
 
 .ap-row__badge {
