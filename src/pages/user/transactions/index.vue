@@ -245,6 +245,20 @@
             <q-icon name="search_off" size="36px" style="color: var(--fg-3)" />
             <div style="color: var(--fg-2); margin-top: 10px; font-size: 14px;">Ningún movimiento coincide con estos filtros.</div>
           </div>
+          <!-- Multi-select mode bar -->
+          <div v-if="txMultiMode" class="pro-tx-multibar">
+            <span class="pro-tx-multibar__count">
+              {{ txSelected.size }} transacción{{ txSelected.size !== 1 ? 'es' : '' }} seleccionada{{ txSelected.size !== 1 ? 's' : '' }}
+            </span>
+            <span v-if="txSelected.size > 0" class="pro-tx-multibar__sum" :class="txMultiSum >= 0 ? 'pro-tx-multibar__sum--pos' : 'pro-tx-multibar__sum--neg'">
+              {{ txMultiSum >= 0 ? '+' : '−' }} {{ formatMoney(Math.abs(txMultiSum)) }}
+            </span>
+            <button class="pro-tx-multibar__exit" @click="txExitMulti">
+              <span class="material-icons" style="font-size:18px">close</span>
+              Salir
+            </button>
+          </div>
+
           <template v-else>
             <div v-for="[dateKey, txGroup] in groupedTransactions" :key="dateKey" class="pro-tx-feed__group">
               <!-- Date header -->
@@ -254,8 +268,25 @@
               <div
                 v-for="row in txGroup"
                 :key="String((row as AnyRecord).id)"
-                class="pro-tx-feed__row"
+                :class="['pro-tx-feed__row', txSelected.has(String((row as AnyRecord).id)) && 'pro-tx-feed__row--selected', txHovered === String((row as AnyRecord).id) && 'pro-tx-feed__row--hovered']"
+                @mouseenter="txHovered = String((row as AnyRecord).id)"
+                @mouseleave="txHovered = null"
+                @dblclick="txEnterMulti(row)"
+                @click="txMultiMode ? txToggleSelect(row) : null"
               >
+                <!-- Hover/select checkbox (shows on hover or in multi mode) -->
+                <div
+                  class="pro-tx-feed__sel"
+                  :class="{ 'pro-tx-feed__sel--visible': txMultiMode || txHovered === String((row as AnyRecord).id) }"
+                  @click.stop="txToggleSelect(row)"
+                >
+                  <span
+                    :class="['pro-tx-feed__chk', txSelected.has(String((row as AnyRecord).id)) && 'pro-tx-feed__chk--on']"
+                  >
+                    <span v-if="txSelected.has(String((row as AnyRecord).id))" class="material-icons" style="font-size:13px;color:#fff">check</span>
+                  </span>
+                </div>
+
                 <!-- Colored icon -->
                 <div class="pro-tx-feed__icon" :class="txIconClass(row)">
                   <q-icon :name="txIconName(row)" size="18px" />
@@ -267,13 +298,18 @@
                   <span class="pro-tx-feed__time">{{ txDateTime(row) }}</span>
                 </div>
 
-                <!-- Chips: jar + category -->
+                <!-- Chips: jar + category (dblclick on category = filter) -->
                 <div class="pro-tx-feed__chips">
                   <span v-if="txJarName(row)" class="pro-tx-feed__jar-chip">
                     <span class="pro-tx-feed__jar-dot" :style="{ background: txJarColor(row) }" />
                     {{ txJarName(row) }}
                   </span>
-                  <span class="pro-tx-feed__cat-chip">{{ categoryLabelForRow(row) }}</span>
+                  <span
+                    class="pro-tx-feed__cat-chip"
+                    :class="{ 'pro-tx-feed__cat-chip--active': txCatIdForRow(row) !== null && proSelectedCatId === txCatIdForRow(row) }"
+                    :title="'Doble click para filtrar por categoría'"
+                    @dblclick.stop="txFilterByRowCat(row)"
+                  >{{ categoryLabelForRow(row) }}</span>
                 </div>
 
                 <!-- Amount -->
@@ -281,10 +317,10 @@
                   {{ formatAmountInAccountCurrency(row) }}
                 </div>
 
-                <!-- Row actions -->
-                <div class="pro-tx-feed__actions">
-                  <q-btn flat round icon="edit" size="xs" color="grey-6" @click="edit(row as Record<string, unknown>)" />
-                  <q-btn flat round icon="delete" size="xs" color="grey-5" @click="remove(row as Record<string, unknown>)" />
+                <!-- Row actions (hidden in multi mode) -->
+                <div v-if="!txMultiMode" class="pro-tx-feed__actions">
+                  <q-btn flat round icon="edit" size="xs" color="grey-6" @click.stop="edit(row as Record<string, unknown>)" />
+                  <q-btn flat round icon="delete" size="xs" color="grey-5" @click.stop="remove(row as Record<string, unknown>)" />
                 </div>
               </div>
             </div>
@@ -3600,6 +3636,51 @@ const apTxDebtsList = ref<ApTxDebt[]>([]);
 const apTxNetTotal = computed(() => apTxAccountsList.value.reduce((s, a) => s + a.balance, 0));
 const apTxDebtsTotal = computed(() => apTxDebtsList.value.reduce((s, d) => s + d.balance, 0));
 
+// ── Multi-select mode ───────────────────────────────────────────────────
+const txMultiMode = ref(false);
+const txSelected  = ref(new Set<string>());
+const txHovered   = ref<string | null>(null);
+
+const txMultiSum = computed(() => {
+  let s = 0;
+  for (const row of proFilteredRows.value) {
+    const id = String((row as AnyRecord)['id']);
+    if (txSelected.value.has(id)) {
+      s += parseNumber((row as AnyRecord)['amount']);
+    }
+  }
+  return s;
+});
+
+function txEnterMulti(row: Row): void {
+  txMultiMode.value = true;
+  const id = String((row as AnyRecord)['id']);
+  txSelected.value = new Set([id]);
+}
+
+function txExitMulti(): void {
+  txMultiMode.value = false;
+  txSelected.value  = new Set();
+}
+
+function txToggleSelect(row: Row): void {
+  const id  = String((row as AnyRecord)['id']);
+  const set = new Set(txSelected.value);
+  if (set.has(id)) { set.delete(id); } else { set.add(id); }
+  txSelected.value = set;
+}
+
+function txCatIdForRow(row: Row): number | null {
+  const cats = rowCategoryCandidates(row);
+  return cats.length > 0 ? (cats[0]?.id ?? null) : null;
+}
+
+function txFilterByRowCat(row: Row): void {
+  const catId = txCatIdForRow(row);
+  if (catId !== null) applyCategoryTagFilter(catId);
+}
+// ────────────────────────────────────────────────────────────────────────
+
 function isApAcctSelected(id: number): boolean {
   return selectedAccountNums.value.includes(id);
 }
@@ -4603,7 +4684,8 @@ function exportCSV(): void {
 
 .pro-tx-feed__row {
   display: grid;
-  grid-template-columns: 40px 1fr auto auto auto;
+  /* sel-col | icon | meta | chips | amount | actions */
+  grid-template-columns: 0px 40px 1fr auto auto auto;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
@@ -4611,24 +4693,115 @@ function exportCSV(): void {
   border-bottom: 1px solid var(--border-hairline);
   cursor: pointer;
   transition: background 0.12s ease;
+  position: relative;
 }
 
-.pro-tx-feed__row:first-of-type {
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+.pro-tx-feed__row:first-of-type { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.pro-tx-feed__row:last-of-type  { border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-bottom: none; }
+.pro-tx-feed__row:only-of-type  { border-radius: var(--radius-lg); border-bottom: none; }
+
+.pro-tx-feed__row:hover,
+.pro-tx-feed__row--hovered { background: var(--surface-2); }
+
+.pro-tx-feed__row--selected {
+  background: color-mix(in srgb, var(--brand-primary) 7%, var(--surface-1));
+}
+.pro-tx-feed__row--selected:hover {
+  background: color-mix(in srgb, var(--brand-primary) 12%, var(--surface-1));
 }
 
-.pro-tx-feed__row:last-of-type {
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  border-bottom: none;
+/* Sel column — hidden by default, slides in on hover or multi mode */
+.pro-tx-feed__sel {
+  width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  transition: width 0.15s ease;
 }
 
-.pro-tx-feed__row:only-of-type {
+.pro-tx-feed__sel--visible {
+  width: 24px;
+}
+
+.pro-tx-feed__row--hovered .pro-tx-feed__sel,
+.pro-tx-feed__row--selected .pro-tx-feed__sel {
+  width: 24px;
+}
+
+/* Square checkbox */
+.pro-tx-feed__chk {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--fg-3);
+  background: transparent;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.pro-tx-feed__chk--on {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary);
+}
+
+/* Category chip — active state when filtered */
+.pro-tx-feed__cat-chip--active {
+  background: color-mix(in srgb, var(--brand-primary) 15%, var(--surface-1));
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+/* Multi-select bar */
+.pro-tx-multibar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--brand-primary) 8%, var(--surface-1));
   border-radius: var(--radius-lg);
-  border-bottom: none;
+  margin-bottom: 8px;
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent);
 }
 
-.pro-tx-feed__row:hover {
+.pro-tx-multibar__count {
+  font-family: var(--font-body, inherit);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-1);
+  flex: 1;
+}
+
+.pro-tx-multibar__sum {
+  font-family: var(--font-money, var(--font-body));
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pro-tx-multibar__sum--pos { color: var(--income-fg, #15803d); }
+.pro-tx-multibar__sum--neg { color: var(--expense-fg, #b91c1c); }
+
+.pro-tx-multibar__exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--fg-2);
+  font-family: var(--font-body, inherit);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  transition: background 0.1s;
+}
+
+.pro-tx-multibar__exit:hover {
   background: var(--surface-2);
+  color: var(--fg-1);
 }
 
 /* Colored icon circle */
