@@ -291,7 +291,7 @@
           </template>
         </div>
 
-        <!-- RIGHT: AccountsPanel (reuses ap-panel styles from ProHomeView) -->
+        <!-- RIGHT: AccountsPanel -->
         <aside class="pro-tx__accounts-panel ap-panel">
           <div class="ap-panel__tabs">
             <button class="ap-panel__tab" :class="{ 'ap-panel__tab--active': apTxSection === 'accounts' }" @click="apTxSection = 'accounts'">Cuentas</button>
@@ -304,6 +304,23 @@
               <span class="t-eyebrow" style="margin-bottom:4px;display:block">Patrimonio neto · USD</span>
               <span class="ap-panel__total-amount">{{ formatMoney(apTxNetTotal) }}</span>
             </div>
+
+            <!-- Seleccionar todo / Deseleccionar -->
+            <div class="ap-panel__sel-bar">
+              <button class="ap-panel__sel-btn" @click="apSelectAll">
+                <span class="material-icons" style="font-size:16px">done_all</span>
+                Seleccionar todo
+              </button>
+              <button
+                class="ap-panel__sel-btn ap-panel__sel-btn--clear"
+                :disabled="selectedAccountNums.length === 0"
+                @click="txStore.setSelectedAccountIds([])"
+              >
+                <span class="material-icons" style="font-size:16px">remove_done</span>
+                Deseleccionar
+              </button>
+            </div>
+
             <div class="ap-panel__divider" />
             <div v-if="apTxLoading" class="ap-panel__loading">
               <q-spinner color="primary" size="20px" />
@@ -315,18 +332,29 @@
                 :class="['ap-row', isApAcctSelected(acc.id) && 'ap-row--selected']"
                 @click="toggleApAcct(acc.id)"
               >
-                <div class="ap-row__sel-mark">
-                  <span v-if="isApAcctSelected(acc.id)" class="material-icons" style="font-size:16px;color:var(--brand-primary)">check_circle</span>
-                  <span v-else class="material-icons" style="font-size:16px;color:var(--fg-3);opacity:.35">radio_button_unchecked</span>
+                <!-- Square checkbox (spec-faithful) -->
+                <span :class="['ap-chk', isApAcctSelected(acc.id) && 'ap-chk--on']">
+                  <span v-if="isApAcctSelected(acc.id)" class="material-icons" style="font-size:14px;color:#fff">check</span>
+                </span>
+
+                <!-- Badge with type icon -->
+                <div class="ap-row__badge" :style="{ background: acc.color }">
+                  <span class="material-icons" style="font-size:17px;color:#fff">{{ apTypeIcon(acc.type) }}</span>
                 </div>
-                <div class="ap-row__badge" :style="{ background: acc.color }">{{ acc.short }}</div>
+
                 <div class="ap-row__info">
                   <span class="ap-row__name">{{ acc.name }}</span>
                   <span class="ap-row__sub">{{ acc.type }}</span>
                 </div>
+
+                <!-- Balance: native + USD equiv for non-USD -->
                 <div class="ap-row__right">
-                  <span class="ap-row__balance" :class="{ 'af-neg': acc.balance < 0 }">{{ formatNativeMoney(acc.balance, acc.currency) }}</span>
-                  <span class="ap-row__currency">{{ acc.currency }}</span>
+                  <span class="ap-row__balance" :class="{ 'ap-row__balance--neg': acc.balance < 0 }">
+                    {{ acc.currency }} {{ formatNativeMoney(acc.balance, acc.currency) }}
+                  </span>
+                  <span v-if="acc.currency !== 'USD'" class="ap-row__usd">
+                    ≈ {{ formatMoney(apToUSD(acc.balance, acc.currency)) }}
+                  </span>
                 </div>
               </div>
               <button class="ap-panel__add" @click="$router.push('/user/accounts')">
@@ -3582,6 +3610,37 @@ function toggleApAcct(id: number): void {
   txStore.setSelectedAccountIds(Array.from(cur));
 }
 
+function apSelectAll(): void {
+  txStore.setSelectedAccountIds(apTxAccountsList.value.map((a) => a.id));
+}
+
+const AP_TYPE_ICON: Record<string, string> = {
+  'cuenta bancaria': 'account_balance',
+  'bank': 'account_balance',
+  'efectivo': 'payments',
+  'cash': 'payments',
+  'tarjeta de credito': 'credit_card',
+  'tarjeta de crédito': 'credit_card',
+  'card': 'credit_card',
+  'cashea': 'shopping_bag',
+  'deuda': 'credit_card',
+  'prestamo': 'receipt_long',
+  'préstamo': 'receipt_long',
+  'loan': 'receipt_long',
+  'con interes': 'savings',
+  'con interés': 'savings',
+};
+
+function apTypeIcon(type: string): string {
+  if (!type) return 'account_balance';
+  return AP_TYPE_ICON[type.toLowerCase()] ?? 'account_balance';
+}
+
+function apToUSD(amount: number, currency: string): number {
+  const rate = userRates.value[currency] ?? 1;
+  return rate > 0 ? amount / rate : amount;
+}
+
 async function loadApTxPanel(): Promise<void> {
   apTxLoading.value = true;
   try {
@@ -4775,11 +4834,75 @@ function exportCSV(): void {
   background: color-mix(in srgb, var(--brand-primary) 14%, var(--surface-1));
 }
 
-.ap-row__sel-mark {
+/* Square checkbox — spec-faithful TfCheck */
+.ap-chk {
   flex-shrink: 0;
-  width: 18px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--fg-3);
+  background: transparent;
   display: grid;
   place-items: center;
+  transition: border-color 120ms, background 120ms;
+}
+
+.ap-chk--on {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary);
+}
+
+/* Selection bar (select all / deselect) */
+.ap-panel__sel-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px 4px;
+}
+
+.ap-panel__sel-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  font-family: var(--font-body, inherit);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.ap-panel__sel-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand-primary) 12%, var(--surface-1));
+  color: var(--brand-primary);
+}
+
+.ap-panel__sel-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ap-panel__sel-btn--clear:hover:not(:disabled) {
+  color: var(--expense-fg, #b91c1c);
+  background: color-mix(in srgb, var(--expense-fg, #b91c1c) 10%, var(--surface-1));
+}
+
+/* Balance + USD equiv */
+.ap-row__balance--neg {
+  color: var(--expense-fg, #b91c1c);
+}
+
+.ap-row__usd {
+  font-family: var(--font-body, inherit);
+  font-size: 10.5px;
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .ap-row__badge {
@@ -4840,6 +4963,7 @@ function exportCSV(): void {
   font-size: 13px;
   font-weight: 700;
   color: var(--fg-1);
+  font-variant-numeric: tabular-nums;
 }
 
 .ap-row__currency {
