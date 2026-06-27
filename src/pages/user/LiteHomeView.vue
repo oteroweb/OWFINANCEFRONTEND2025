@@ -2,14 +2,18 @@
   <q-page class="lite-home">
     <div class="lite-home__container">
 
-      <!-- Greeting header -->
+      <!-- Greeting header (spec: HomeHeader with visibility toggle + notifications) -->
       <div class="lite-home__greeting">
         <div class="lite-home__greeting-left">
           <span class="t-eyebrow">Hola,</span>
           <span class="lite-home__greeting-name">{{ firstName }}</span>
         </div>
         <div class="lite-home__greeting-actions">
-          <button class="lite-home__icon-btn" :title="isHidden ? 'Mostrar saldos' : 'Ocultar saldos'" @click="ui.toggleHideValues()">
+          <button
+            class="lite-home__icon-btn"
+            :title="isHidden ? 'Mostrar saldos' : 'Ocultar saldos'"
+            @click="ui.toggleHideValues()"
+          >
             <q-icon :name="isHidden ? 'visibility_off' : 'visibility'" size="22px" />
           </button>
           <button class="lite-home__icon-btn" title="Notificaciones" @click="router.push('/user/notifications')">
@@ -18,31 +22,8 @@
         </div>
       </div>
 
-      <!-- Setup banner — sin cuentas -->
-      <div v-if="hasNoAccounts && !balanceLoading" class="lite-home__setup-banner">
-        <q-icon name="account_balance_wallet" size="32px" style="opacity:.6" />
-        <div class="lite-home__setup-text">
-          <span class="t-h2">Configura tu billetera</span>
-          <span class="t-body-sm">Crea tu primera cuenta para empezar a registrar transacciones.</span>
-        </div>
-        <q-btn
-          unelevated
-          color="primary"
-          label="Crear cuenta"
-          @click="router.push('/user/accounts')"
-        />
-      </div>
-
-      <!-- Entry gate — usuario nuevo sin datos -->
-      <div v-else-if="isNewUser" class="entry-gate">
-        <q-icon name="account_balance_wallet" size="48px" style="color: var(--brand-primary); opacity: 0.4;" />
-        <h2>¡Bienvenido a OW Finance!</h2>
-        <p>Registra tu primer movimiento para ver tus finanzas aquí.</p>
-        <button class="lite-home__add-btn" @click="ui.openSmartModal()">+ Registrar movimiento</button>
-      </div>
-
-      <!-- Hero Balance -->
-      <section v-else class="lite-home__hero">
+      <!-- Hero Balance (spec: BalanceCard — amount, delta MoM, asOf) -->
+      <section class="lite-home__hero">
         <div v-if="balanceLoading" class="lite-home__skeleton">
           <div class="lite-home__skeleton-line" style="width: 120px; height: 14px;" />
           <div class="lite-home__skeleton-line" style="width: 280px; height: 56px; margin-top: 12px;" />
@@ -55,7 +36,11 @@
                 <span class="t-hero-amount">
                   {{ isHidden ? '••••••' : formatMoney(balanceSummary.total_global_balance) }}
                 </span>
-                <span v-if="monthlyDelta !== null" class="lite-home__delta" :class="{ 'lite-home__delta--positive': monthlyDelta >= 0 }">
+                <span
+                  v-if="monthlyDelta !== null"
+                  class="lite-home__delta"
+                  :class="{ 'lite-home__delta--positive': monthlyDelta >= 0 }"
+                >
                   <q-icon :name="monthlyDelta >= 0 ? 'arrow_upward' : 'arrow_downward'" size="14px" />
                   {{ monthlyDelta >= 0 ? '+' : '' }}{{ monthlyDelta.toFixed(1) }}% vs. mes ant.
                 </span>
@@ -71,23 +56,26 @@
           <!-- Timestamp asOf -->
           <p v-if="lastUpdated" class="lite-home__as-of">Actualizado · {{ lastUpdated }}</p>
 
-          <!-- KPIs -->
+          <!-- KPIs: ingresos / gastos / neto este mes -->
           <div class="lite-home__kpis">
             <div class="lite-home__kpi">
               <span class="t-eyebrow">Ingresos · este mes</span>
-              <span class="t-amount-lg" :class="{ 'tabular': true }">
+              <span class="t-amount-lg">
                 {{ isHidden ? '••••••' : formatMoney(monthlyIncome) }}
               </span>
             </div>
             <div class="lite-home__kpi">
               <span class="t-eyebrow">Gastos · este mes</span>
               <span class="t-amount-lg" style="color: var(--expense-fg);">
-                {{ isHidden ? '••••••' : formatMoney(-monthlyExpense) }}
+                {{ isHidden ? '••••••' : formatMoney(monthlyExpense) }}
               </span>
             </div>
             <div class="lite-home__kpi">
               <span class="t-eyebrow">Neto · este mes</span>
-              <span class="t-amount-lg" :style="{ color: netAmount >= 0 ? 'var(--income-fg)' : 'var(--expense-fg)' }">
+              <span
+                class="t-amount-lg"
+                :style="{ color: netAmount >= 0 ? 'var(--income-fg)' : 'var(--expense-fg)' }"
+              >
                 {{ isHidden ? '••••••' : formatMoney(netAmount) }}
               </span>
             </div>
@@ -95,7 +83,7 @@
         </template>
       </section>
 
-      <!-- Jars Preview -->
+      <!-- Jars Preview (spec: JarsRow — up to 4 jars, horizontal scroll on mobile) -->
       <section class="lite-home__section">
         <div class="lite-home__section-header">
           <h2 class="t-h2">Cántaros</h2>
@@ -109,36 +97,139 @@
           <p class="t-body">No tienes cántaros activos.</p>
           <button class="lite-home__ghost-btn" @click="router.push('/user/jars')">Crear cántaro</button>
         </div>
-        <div v-else class="lite-home__jars">
-          <div
-            v-for="jar in activeJars.slice(0, 3)"
-            :key="jar.id"
-            class="lite-home__jar"
-            @click="router.push('/user/jars')"
-          >
-            <div class="lite-home__jar-header">
-              <span class="lite-home__jar-dot" :style="{ background: jar.color || '#0ea5e9' }" />
-              <span class="t-label">{{ jar.name }}</span>
+        <template v-else>
+          <!-- Desktop grid -->
+          <div class="lite-home__jars lite-home__jars--desktop">
+            <div
+              v-for="jar in activeJars.slice(0, 4)"
+              :key="jar.id"
+              class="lite-home__jar"
+              @click="router.push('/user/jars')"
+            >
+              <div class="lite-home__jar-header">
+                <span class="lite-home__jar-dot" :style="{ background: jar.color || '#0ea5e9' }" />
+                <span class="t-label">{{ jar.name }}</span>
+              </div>
+              <span class="t-amount-md">{{ isHidden ? '••••••' : formatMoney(jar.balance) }}</span>
+              <div class="lite-home__jar-bar">
+                <div
+                  class="lite-home__jar-progress"
+                  :style="{ width: `${Math.min(100, jar.progress)}%`, background: jar.color || '#0ea5e9' }"
+                />
+              </div>
             </div>
-            <span class="t-amount-md">{{ isHidden ? '••••••' : formatMoney(jar.balance) }}</span>
-            <div class="lite-home__jar-bar">
-              <div
-                class="lite-home__jar-progress"
-                :style="{ width: `${Math.min(100, jar.progress)}%`, background: jar.color || '#0ea5e9' }"
-              />
+          </div>
+          <!-- Mobile horizontal scroll row (spec: JarsRow) -->
+          <div class="lite-home__jars-row lite-home__jars--mobile">
+            <div
+              v-for="jar in activeJars.slice(0, 4)"
+              :key="jar.id"
+              class="lite-home__jar-chip"
+              @click="router.push('/user/jars')"
+            >
+              <div class="lite-home__jar-chip-dot" :style="{ background: jar.color || '#0ea5e9' }" />
+              <span class="lite-home__jar-chip-name">{{ jar.name }}</span>
+              <span class="lite-home__jar-chip-balance">
+                {{ isHidden ? '••••' : formatMoney(jar.balance) }}
+              </span>
+              <div class="lite-home__jar-bar" style="margin-top: 8px;">
+                <div
+                  class="lite-home__jar-progress"
+                  :style="{ width: `${Math.min(100, jar.progress)}%`, background: jar.color || '#0ea5e9' }"
+                />
+              </div>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- Debts Preview (spec: DebtSummaryCard — Deudas ANTES que Sueños) -->
+      <section class="lite-home__section">
+        <div class="lite-home__section-header">
+          <h2 class="t-h2">Deudas</h2>
+          <button class="lite-home__ghost-btn" @click="router.push('/user/debts')">Ver todos</button>
+        </div>
+        <div v-if="debtsLoading" class="lite-home__skeleton" style="height: 80px;" />
+        <div v-else-if="debtsPreview.length === 0" class="lite-home__empty">
+          <q-icon name="credit_card" size="32px" color="grey-5" />
+          <p class="t-body">Sin deudas registradas.</p>
+          <button class="lite-home__ghost-btn" @click="router.push('/user/debts')">Agregar deuda</button>
+        </div>
+        <div v-else class="home-debts">
+          <div
+            v-for="debt in debtsPreview"
+            :key="debt.id"
+            class="home-debt-row"
+            @click="router.push('/user/debts')"
+          >
+            <div class="home-debt-row__icon" :class="`home-debt-row__icon--${debt.provider}`">
+              <q-icon name="credit_card" size="16px" />
+            </div>
+            <div class="home-debt-row__info">
+              <span class="home-debt-row__name">{{ debt.name }}</span>
+              <span class="home-debt-row__provider">{{ debt.provider }}</span>
+            </div>
+            <div class="home-debt-row__right">
+              <span class="home-debt-row__balance" style="color: var(--expense-fg);">
+                {{ isHidden ? '••••••' : formatMoney(debt.balance) }}
+              </span>
+              <span class="home-debt-row__status" :class="`home-debt-row__status--${debt.status}`">
+                {{ debt.status === 'late' ? 'Atrasada' : debt.status === 'due-soon' ? 'Por vencer' : 'Al día' }}
+              </span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Recent Transactions -->
+      <!-- Dreams Preview (spec: DreamSummaryCard — Sueños DESPUÉS de Deudas) -->
       <section class="lite-home__section">
         <div class="lite-home__section-header">
-          <h2 class="t-h2">Movimientos recientes</h2>
+          <h2 class="t-h2">Sueños</h2>
+          <button class="lite-home__ghost-btn" @click="router.push('/user/dreams')">Ver todos</button>
+        </div>
+        <div v-if="dreamsLoading" class="lite-home__skeleton" style="height: 80px;" />
+        <div v-else-if="dreamsPreview.length === 0" class="lite-home__empty">
+          <q-icon name="star_outline" size="32px" color="grey-5" />
+          <p class="t-body">Sin sueños registrados.</p>
+          <button class="lite-home__ghost-btn" @click="router.push('/user/dreams')">Crear sueño</button>
+        </div>
+        <div v-else class="home-dreams">
+          <div
+            v-for="dream in dreamsPreview"
+            :key="dream.id"
+            class="home-dream-card"
+            @click="router.push('/user/dreams')"
+          >
+            <div class="home-dream-card__top">
+              <span class="home-dream-card__name">{{ dream.name }}</span>
+              <span class="home-dream-card__pct">{{ dream.progress }}%</span>
+            </div>
+            <div class="home-dream-card__bar">
+              <div class="home-dream-card__fill" :style="{ width: `${dream.progress}%` }" />
+            </div>
+            <div class="home-dream-card__amounts">
+              <span class="t-body-sm" style="color: var(--income-fg);">
+                {{ isHidden ? '••••••' : formatMoney(dream.current_amount) }}
+              </span>
+              <span class="t-body-sm">/ {{ isHidden ? '••••••' : formatMoney(dream.target_amount) }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Transactions (spec: TransactionList — last section, limit 4 mobile / 5 desktop) -->
+      <section class="lite-home__section">
+        <div class="lite-home__section-header">
+          <h2 class="t-h2">Recientes</h2>
           <button class="lite-home__ghost-btn" @click="router.push('/user/transactions')">Ver todos</button>
         </div>
         <div v-if="transactionsLoading" class="lite-home__skeleton">
-          <div v-for="i in 3" :key="i" class="lite-home__skeleton-line" style="width: 100%; height: 48px; margin-bottom: 8px;" />
+          <div
+            v-for="i in 3"
+            :key="i"
+            class="lite-home__skeleton-line"
+            style="width: 100%; height: 48px; margin-bottom: 8px;"
+          />
         </div>
         <div v-else-if="recentTransactions.length === 0" class="lite-home__empty">
           <q-icon name="receipt_long" size="32px" color="grey-5" />
@@ -146,7 +237,7 @@
         </div>
         <div v-else class="lite-home__transactions">
           <div
-            v-for="tx in recentTransactions.slice(0, 5)"
+            v-for="tx in recentTransactions.slice(0, txLimit)"
             :key="tx.id"
             class="lite-home__tx"
             @click="router.push('/user/transactions')"
@@ -167,68 +258,6 @@
           </div>
         </div>
       </section>
-
-      <!-- Dreams Preview -->
-      <section v-if="dreamsPreview.length || dreamsLoading" class="lite-home__section">
-        <div class="lite-home__section-header">
-          <h2 class="t-h2">Sueños</h2>
-          <button class="lite-home__ghost-btn" @click="router.push('/user/dreams')">Ver todos</button>
-        </div>
-        <div v-if="dreamsLoading" class="lite-home__skeleton" style="height:80px" />
-        <div v-else class="home-dreams">
-          <div
-            v-for="dream in dreamsPreview"
-            :key="dream.id"
-            class="home-dream-card"
-            @click="router.push('/user/dreams')"
-          >
-            <div class="home-dream-card__top">
-              <span class="home-dream-card__name">{{ dream.name }}</span>
-              <span class="home-dream-card__pct">{{ dream.progress }}%</span>
-            </div>
-            <div class="home-dream-card__bar">
-              <div class="home-dream-card__fill" :style="{ width: `${dream.progress}%` }" />
-            </div>
-            <div class="home-dream-card__amounts">
-              <span class="t-body-sm" style="color:var(--income-fg)">{{ isHidden ? '••••••' : formatMoney(dream.current_amount) }}</span>
-              <span class="t-body-sm">/ {{ isHidden ? '••••••' : formatMoney(dream.target_amount) }}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Debts Preview -->
-      <section v-if="debtsPreview.length || debtsLoading" class="lite-home__section">
-        <div class="lite-home__section-header">
-          <h2 class="t-h2">Deudas</h2>
-          <button class="lite-home__ghost-btn" @click="router.push('/user/debts')">Ver todos</button>
-        </div>
-        <div v-if="debtsLoading" class="lite-home__skeleton" style="height:80px" />
-        <div v-else class="home-debts">
-          <div
-            v-for="debt in debtsPreview"
-            :key="debt.id"
-            class="home-debt-row"
-            @click="router.push('/user/debts')"
-          >
-            <div class="home-debt-row__icon" :class="`home-debt-row__icon--${debt.provider}`">
-              <q-icon name="credit_card" size="16px" />
-            </div>
-            <div class="home-debt-row__info">
-              <span class="home-debt-row__name">{{ debt.name }}</span>
-              <span class="home-debt-row__provider">{{ debt.provider }}</span>
-            </div>
-            <div class="home-debt-row__right">
-              <span class="home-debt-row__balance" style="color:var(--expense-fg)">
-                {{ isHidden ? '••••••' : formatMoney(debt.balance) }}
-              </span>
-              <span class="home-debt-row__status" :class="`home-debt-row__status--${debt.status}`">
-                {{ debt.status === 'late' ? 'Atrasada' : debt.status === 'due-soon' ? 'Por vencer' : 'Al día' }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   </q-page>
 </template>
@@ -236,6 +265,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
@@ -243,6 +273,7 @@ import { useAuthStore } from 'stores/auth';
 defineOptions({ name: 'LiteHomeView' });
 
 const router = useRouter();
+const $q = useQuasar();
 const ui = useUiStore();
 const auth = useAuthStore();
 const firstName = computed(() => (auth.user?.name || '').split(' ')[0] || 'tú');
@@ -256,17 +287,12 @@ const currencySymbol = ref('$');
 const monthlyIncome = ref(0);
 const monthlyExpense = ref(0);
 const monthlyDelta = ref<number | null>(null);
-const accountsCount = ref<number | null>(null);
 const lastUpdated = ref<string | null>(null);
 
 const isHidden = computed(() => ui.hideValues);
-const hasNoAccounts = computed(() => accountsCount.value === 0);
-const isNewUser = computed(() =>
-  !balanceLoading.value &&
-  !transactionsLoading.value &&
-  balanceSummary.value.total_global_balance === 0 &&
-  recentTransactions.value.length === 0
-);
+
+// spec: 5 tx on desktop, 4 on mobile
+const txLimit = computed(() => ($q.screen.lt.md ? 4 : 5));
 
 // ─── Jars ───────────────────────────────────────────────────────────
 interface JarItem {
@@ -280,17 +306,29 @@ interface JarItem {
 const activeJars = ref<JarItem[]>([]);
 const jarsLoading = ref(false);
 
-// ─── Dreams preview ──────────────────────────────────────────────────
-interface DreamItem { id: number; name: string; current_amount: number; target_amount: number; progress: number }
+// ─── Dreams preview ─────────────────────────────────────────────────
+interface DreamItem {
+  id: number;
+  name: string;
+  current_amount: number;
+  target_amount: number;
+  progress: number;
+}
 const dreamsPreview = ref<DreamItem[]>([]);
 const dreamsLoading = ref(false);
 
-// ─── Debts preview ────────────────────────────────────────────────────
-interface DebtItem { id: number; name: string; provider: string; balance: number; status: string }
+// ─── Debts preview ──────────────────────────────────────────────────
+interface DebtItem {
+  id: number;
+  name: string;
+  provider: string;
+  balance: number;
+  status: string;
+}
 const debtsPreview = ref<DebtItem[]>([]);
 const debtsLoading = ref(false);
 
-// ─── Transactions ─────────────────────────────────────────────────────
+// ─── Transactions ────────────────────────────────────────────────────
 interface TxItem {
   id: number;
   name: string;
@@ -339,17 +377,12 @@ function classifyTx(tx: Record<string, unknown>, amount: number): 'income' | 'ex
 async function loadBalanceSummary() {
   balanceLoading.value = true;
   try {
-    const [balRes, accRes] = await Promise.all([
-      api.get('/accounts/summary/global-balance'),
-      api.get('/accounts'),
-    ]);
-    const data = balRes.data?.data || {};
+    const res = await api.get('/accounts/summary/global-balance');
+    const data = res.data?.data || {};
     balanceSummary.value = {
       total_all: Number(data.total_all ?? 0),
       total_global_balance: Number(data.total_global_balance ?? 0),
     };
-    const accounts = accRes.data?.data ?? accRes.data ?? [];
-    accountsCount.value = Array.isArray(accounts) ? accounts.length : 0;
   } catch (err) {
     console.warn('[LiteHome] Balance error:', err);
   } finally {
@@ -398,7 +431,7 @@ async function loadMonthSummary() {
     monthlyIncome.value = income;
     monthlyExpense.value = expense;
 
-    // Compute real MoM delta on global balance proxy (income - expense)
+    // Real MoM delta on net (income - expense)
     if (resPrev.status === 'fulfilled') {
       const dataPrev = resPrev.value.data?.data;
       const listPrev: Record<string, unknown>[] = Array.isArray(dataPrev) ? dataPrev : Array.isArray(dataPrev?.data) ? (dataPrev.data as Record<string, unknown>[]) : [];
@@ -414,7 +447,6 @@ async function loadMonthSummary() {
       monthlyDelta.value = null;
     }
 
-    // Stamp last-updated time
     lastUpdated.value = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
   } catch (err) {
     console.warn('[LiteHome] Month summary error:', err);
@@ -549,8 +581,6 @@ onMounted(() => {
     loadDebts(),
   ]);
 });
-
-
 </script>
 
 <style scoped lang="scss">
@@ -663,13 +693,8 @@ onMounted(() => {
     font-weight: 600;
     transition: background var(--dur-base) var(--ease-out);
 
-    &:hover {
-      background: var(--brand-primary-hover);
-    }
-
-    &:active {
-      transform: scale(0.98);
-    }
+    &:hover { background: var(--brand-primary-hover); }
+    &:active { transform: scale(0.98); }
   }
 
   &__as-of {
@@ -693,11 +718,11 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    min-width: 0; // prevent grid blowout on mobile (content wider than 1fr cell)
+    min-width: 0;
     overflow: hidden;
 
     .t-amount-lg {
-      font-size: clamp(16px, 4vw, 28px); // shrink on narrow viewports
+      font-size: clamp(16px, 4vw, 28px);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -728,15 +753,19 @@ onMounted(() => {
     border-radius: var(--radius-sm);
     transition: background var(--dur-base) var(--ease-out);
 
-    &:hover {
-      background: var(--brand-primary-soft);
-    }
+    &:hover { background: var(--brand-primary-soft); }
   }
 
-  &__jars {
+  // Desktop jars grid (hidden on mobile, shown via media query below)
+  &__jars--desktop {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 16px;
+  }
+
+  // Mobile jars row (hidden on desktop, shown on mobile)
+  &__jars--mobile {
+    display: none;
   }
 
   &__jar {
@@ -747,9 +776,7 @@ onMounted(() => {
     cursor: pointer;
     transition: box-shadow var(--dur-base) var(--ease-out);
 
-    &:hover {
-      box-shadow: var(--shadow-hover);
-    }
+    &:hover { box-shadow: var(--shadow-hover); }
   }
 
   &__jar-header {
@@ -780,6 +807,58 @@ onMounted(() => {
     transition: width var(--dur-slow) var(--ease-out);
   }
 
+  // Mobile jar horizontal scroll container
+  &__jars-row {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  &__jar-chip {
+    flex: 0 0 140px;
+    background: var(--surface-1);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: box-shadow var(--dur-base) var(--ease-out);
+
+    &:hover { box-shadow: var(--shadow-hover); }
+  }
+
+  &__jar-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+  }
+
+  &__jar-chip-name {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__jar-chip-balance {
+    font-family: var(--font-money);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--fg-1);
+    font-variant-numeric: tabular-nums;
+  }
+
   &__transactions {
     background: var(--surface-1);
     border-radius: var(--radius-lg);
@@ -797,13 +876,8 @@ onMounted(() => {
     transition: background var(--dur-base) var(--ease-out);
     border-top: 1px solid var(--border-hairline);
 
-    &:first-child {
-      border-top: none;
-    }
-
-    &:hover {
-      background: var(--surface-2);
-    }
+    &:first-child { border-top: none; }
+    &:hover { background: var(--surface-2); }
   }
 
   &__tx-icon {
@@ -826,25 +900,6 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     min-width: 0;
-  }
-
-  &__setup-banner {
-    background: var(--surface-1);
-    border-radius: var(--radius-lg);
-    padding: 24px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    text-align: center;
-    box-shadow: var(--shadow-card);
-    margin-bottom: 0;
-  }
-
-  &__setup-text {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
   }
 
   &__empty {
@@ -879,62 +934,6 @@ onMounted(() => {
   100% { background-position: -200% 0; }
 }
 
-// ── Entry gate (usuario nuevo sin datos) ──
-.entry-gate {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 48px 24px;
-  gap: 12px;
-  background: var(--surface-1);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
-
-  h2 {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--fg-1);
-  }
-
-  p {
-    color: var(--fg-2);
-    margin: 0;
-    max-width: 280px;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-}
-
-@media (max-width: 768px) {
-  .lite-home {
-    &__container {
-      padding: 16px 16px 120px;
-      gap: 24px;
-    }
-
-    &__hero {
-      padding: 20px;
-    }
-
-    &__hero-header {
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    &__kpis {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-
-    &__jars {
-      grid-template-columns: 1fr;
-    }
-  }
-}
-
 // ── Dreams preview ──
 .home-dreams {
   display: flex;
@@ -952,7 +951,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 8px;
   transition: box-shadow 150ms;
-  &:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  &:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }
 
   &__top {
     display: flex;
@@ -970,8 +969,8 @@ onMounted(() => {
   &__pct {
     font-size: 12px;
     font-weight: 700;
-    color: #8B5CF6;
-    background: rgba(139,92,246,.1);
+    color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.1);
     padding: 2px 8px;
     border-radius: 999px;
   }
@@ -986,7 +985,7 @@ onMounted(() => {
   &__fill {
     height: 100%;
     border-radius: 3px;
-    background: linear-gradient(90deg, #8B5CF6, #EC4899);
+    background: linear-gradient(90deg, #8b5cf6, #ec4899);
     transition: width 500ms ease-out;
   }
 
@@ -1014,16 +1013,20 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   transition: box-shadow 150ms;
-  &:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  &:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }
 
   &__icon {
-    width: 34px; height: 34px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    &--cashea { background: rgba(249,115,22,.12); color: #F97316; }
-    &--card   { background: rgba(239,68,68,.12);  color: #EF4444; }
-    &--loan   { background: rgba(139,92,246,.12); color: #8B5CF6; }
-    &--personal { background: rgba(14,165,233,.12); color: #0EA5E9; }
+    &--cashea   { background: rgba(249, 115, 22, 0.12); color: #f97316; }
+    &--card     { background: rgba(239, 68, 68, 0.12);  color: #ef4444; }
+    &--loan     { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+    &--personal { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
   }
 
   &__info {
@@ -1064,10 +1067,43 @@ onMounted(() => {
     font-weight: 600;
     padding: 2px 7px;
     border-radius: 999px;
-    &--on-track { background: var(--income-soft); color: var(--income-fg); }
-    &--due-soon { background: var(--warning-soft); color: var(--warning-fg); }
-    &--late     { background: var(--expense-soft); color: var(--expense-fg); }
-    &--paid     { background: var(--surface-2);    color: var(--fg-3); }
+    &--on-track { background: var(--income-soft);   color: var(--income-fg); }
+    &--due-soon { background: var(--warning-soft);  color: var(--warning-fg); }
+    &--late     { background: var(--expense-soft);  color: var(--expense-fg); }
+    &--paid     { background: var(--surface-2);     color: var(--fg-3); }
+  }
+}
+
+// ── Mobile breakpoint ──
+@media (max-width: 768px) {
+  .lite-home {
+    &__container {
+      padding: 16px 16px 120px;
+      gap: 24px;
+    }
+
+    &__hero {
+      padding: 20px;
+    }
+
+    &__hero-header {
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    &__kpis {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    // Switch jars layout: hide desktop grid, show mobile row
+    &__jars--desktop {
+      display: none;
+    }
+
+    &__jars--mobile {
+      display: flex;
+    }
   }
 }
 </style>
