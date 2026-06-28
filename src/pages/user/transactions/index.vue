@@ -1001,6 +1001,188 @@
       :id="ui.editTransactionId ?? null"
     />
 
+    <!-- OWF-138: Transaction Detail Modal v2 (View / Edit / Delete / Duplicate) -->
+    <q-dialog v-model="txDetailOpen" :maximized="$q.screen.lt.sm" transition-show="jump-up" transition-hide="jump-down">
+      <q-card class="tx-detail-modal" style="width: 100%; max-width: 480px; border-radius: 12px; overflow: hidden;">
+        <!-- Header -->
+        <q-bar class="tx-detail-modal__bar">
+          <div class="text-subtitle2 text-weight-medium">
+            <span v-if="txDetailMode === 'view'">Detalle de transacción</span>
+            <span v-else-if="txDetailMode === 'edit'">Editar transacción</span>
+            <span v-else-if="txDetailMode === 'duplicate'">Duplicar transacción</span>
+            <span v-else-if="txDetailMode === 'delete'">Eliminar transacción</span>
+          </div>
+          <q-space />
+          <q-btn dense flat round icon="close" @click="txDetailOpen = false" />
+        </q-bar>
+
+        <!-- ── VIEW MODE ── -->
+        <template v-if="txDetailMode === 'view' && txDetailRow">
+          <q-card-section class="tx-detail-modal__amount-section">
+            <div
+              class="tx-detail-modal__amount"
+              :class="txDetailIsIncome ? 'tx-detail-modal__amount--income' : 'tx-detail-modal__amount--expense'"
+            >
+              <span class="material-icons tx-detail-modal__amount-icon">
+                {{ txDetailIsIncome ? 'arrow_downward' : 'arrow_outward' }}
+              </span>
+              {{ txDetailFormattedAmount }}
+            </div>
+            <div class="tx-detail-modal__name q-mt-xs">{{ (txDetailRow as AnyRecord)['name'] }}</div>
+          </q-card-section>
+
+          <q-separator />
+
+          <q-card-section class="q-pa-md">
+            <div class="tx-detail-modal__fields">
+              <!-- Fecha -->
+              <div class="tx-detail-modal__field">
+                <span class="material-icons tx-detail-modal__field-icon text-grey-6">calendar_today</span>
+                <div>
+                  <div class="tx-detail-modal__field-label">Fecha</div>
+                  <div class="tx-detail-modal__field-value">{{ txDetailDate }}</div>
+                </div>
+              </div>
+              <!-- Cuenta -->
+              <div v-if="txDetailAccountName" class="tx-detail-modal__field">
+                <span class="material-icons tx-detail-modal__field-icon text-grey-6">account_balance</span>
+                <div>
+                  <div class="tx-detail-modal__field-label">Cuenta</div>
+                  <div class="tx-detail-modal__field-value">{{ txDetailAccountName }}</div>
+                </div>
+              </div>
+              <!-- Categoría / Proveedor -->
+              <div v-if="txDetailProviderName" class="tx-detail-modal__field">
+                <span class="material-icons tx-detail-modal__field-icon text-grey-6">label</span>
+                <div>
+                  <div class="tx-detail-modal__field-label">Categoría</div>
+                  <div class="tx-detail-modal__field-value">{{ txDetailProviderName }}</div>
+                </div>
+              </div>
+              <!-- Tipo de transacción -->
+              <div v-if="txDetailTypeName" class="tx-detail-modal__field">
+                <span class="material-icons tx-detail-modal__field-icon text-grey-6">swap_horiz</span>
+                <div>
+                  <div class="tx-detail-modal__field-label">Tipo</div>
+                  <div class="tx-detail-modal__field-value">{{ txDetailTypeName }}</div>
+                </div>
+              </div>
+              <!-- Cántaro -->
+              <div v-if="txDetailJarName" class="tx-detail-modal__field">
+                <span class="material-icons tx-detail-modal__field-icon text-grey-6">savings</span>
+                <div>
+                  <div class="tx-detail-modal__field-label">Cántaro</div>
+                  <div class="tx-detail-modal__field-value">
+                    <span class="tx-detail-modal__jar-chip"
+                      :style="{ background: 'color-mix(in srgb,' + txDetailJarColor + ' 15%, transparent)', color: 'color-mix(in srgb,' + txDetailJarColor + ' 70%, #222)' }">
+                      <span class="tx-detail-modal__jar-dot" :style="{ background: txDetailJarColor }"></span>
+                      {{ txDetailJarName }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </q-card-section>
+
+          <q-separator />
+          <!-- VIEW Footer: Edit / Duplicate / Delete -->
+          <q-card-actions class="tx-detail-modal__footer" align="right">
+            <q-btn flat icon="edit" label="Editar" color="primary" @click="txDetailMode = 'edit'" />
+            <q-btn flat icon="content_copy" label="Duplicar" color="secondary" @click="txDetailStartDuplicate" />
+            <q-btn flat icon="delete" label="Eliminar" color="negative" @click="txDetailMode = 'delete'" />
+          </q-card-actions>
+        </template>
+
+        <!-- ── EDIT / DUPLICATE MODE ── -->
+        <template v-if="(txDetailMode === 'edit' || txDetailMode === 'duplicate') && txDetailRow">
+          <q-card-section class="q-gutter-sm q-pa-md scroll" style="max-height: 70vh;">
+            <div class="row q-col-gutter-sm">
+              <div class="col-12">
+                <q-option-group
+                  v-model="txDetailForm.transaction_type_id"
+                  :options="txDetailTtOptions"
+                  inline
+                  color="primary"
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-input v-model="txDetailForm.name" label="Nombre" outlined dense />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-input v-model.number="txDetailForm.amount" type="number" label="Monto" outlined dense />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-input v-model="txDetailForm.datetime" type="datetime-local" label="Fecha" outlined dense />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-select
+                  v-model="txDetailForm.account_id"
+                  :options="txDetailAccountOptions"
+                  option-value="id"
+                  :option-label="(opt: AnyRecord) => String(opt['name'] || '')"
+                  label="Cuenta"
+                  outlined dense emit-value map-options
+                  use-input input-debounce="300"
+                  @filter="txDetailFilterAccounts"
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <q-select
+                  v-model="txDetailForm.provider_id"
+                  :options="txDetailProviderOptions"
+                  option-value="id"
+                  :option-label="(opt: AnyRecord) => String(opt['name'] || '')"
+                  label="Categoría / Proveedor"
+                  outlined dense emit-value map-options
+                  use-input input-debounce="300"
+                  @filter="txDetailFilterProviders"
+                />
+              </div>
+              <div class="col-12">
+                <q-toggle v-model="txDetailForm.include_in_balance" label="Incluir en balance de cuentas" dense />
+              </div>
+            </div>
+          </q-card-section>
+          <q-separator />
+          <q-card-actions class="tx-detail-modal__footer" align="right">
+            <q-btn flat label="Cancelar" color="grey" @click="txDetailMode = 'view'" />
+            <q-btn
+              unelevated
+              :label="txDetailMode === 'duplicate' ? 'Crear copia' : 'Guardar'"
+              color="primary"
+              :loading="txDetailSaving"
+              @click="txDetailSave"
+            />
+          </q-card-actions>
+        </template>
+
+        <!-- ── DELETE MODE ── -->
+        <template v-if="txDetailMode === 'delete' && txDetailRow">
+          <q-card-section class="q-pa-lg text-center">
+            <q-icon name="warning" color="negative" size="48px" class="q-mb-md" />
+            <div class="text-h6 q-mb-sm">¿Eliminar esta transacción?</div>
+            <div class="text-body2 text-grey-7 q-mb-md">
+              <strong :class="txDetailIsIncome ? 'text-positive' : 'text-negative'">{{ txDetailFormattedAmount }}</strong>
+              &mdash; {{ (txDetailRow as AnyRecord)['name'] }}
+            </div>
+            <div class="text-caption text-grey-6">Esta acción no se puede deshacer.</div>
+          </q-card-section>
+          <q-separator />
+          <q-card-actions class="tx-detail-modal__footer" align="right">
+            <q-btn flat label="Cancelar" color="grey" @click="txDetailMode = 'view'" />
+            <q-btn
+              unelevated
+              label="Eliminar definitivamente"
+              color="negative"
+              :loading="txDetailSaving"
+              @click="txDetailConfirmDelete"
+            />
+          </q-card-actions>
+        </template>
+      </q-card>
+    </q-dialog>
+    <!-- /OWF-138 Transaction Detail Modal v2 -->
+
     <!-- Diálogo de carga masiva -->
     <TransactionBulkImportDialog
       v-if="showBulkImport"
@@ -3383,12 +3565,200 @@ function fieldProps(field: CrudField) {
   base.label = field.label;
   return base;
 }
-function edit(row: Record<string, unknown>) {
-  const idRaw = row && row['id'];
-  const id = Number(idRaw);
-  console.log(id, idRaw);
+// ─── OWF-138: Transaction Detail Modal v2 ────────────────────────────────────
+type TxDetailMode = 'view' | 'edit' | 'delete' | 'duplicate';
+
+const txDetailOpen = ref(false);
+const txDetailMode = ref<TxDetailMode>('view');
+const txDetailRow = ref<AnyRecord | null>(null);
+const txDetailSaving = ref(false);
+
+// Form state for edit/duplicate
+const txDetailForm = ref({
+  id: null as number | null,
+  name: '',
+  amount: null as number | null,
+  datetime: '',
+  account_id: null as number | null,
+  provider_id: null as number | null,
+  transaction_type_id: null as string | null,
+  include_in_balance: true,
+});
+
+// Options for selects inside the modal
+const txDetailAllAccounts = ref<AnyRecord[]>([]);
+const txDetailAllProviders = ref<AnyRecord[]>([]);
+const txDetailAccountOptions = ref<AnyRecord[]>([]);
+const txDetailProviderOptions = ref<AnyRecord[]>([]);
+const txDetailTtOptions = ref<{ label: string; value: string }[]>([]);
+
+function txDetailFilterAccounts(val: string, update: (cb: () => void) => void) {
+  update(() => {
+    const q = val.toLowerCase();
+    txDetailAccountOptions.value = q
+      ? txDetailAllAccounts.value.filter((a) => String(a['name'] || '').toLowerCase().includes(q))
+      : txDetailAllAccounts.value;
+  });
+}
+function txDetailFilterProviders(val: string, update: (cb: () => void) => void) {
+  update(() => {
+    const q = val.toLowerCase();
+    txDetailProviderOptions.value = q
+      ? txDetailAllProviders.value.filter((p) => String(p['name'] || '').toLowerCase().includes(q))
+      : txDetailAllProviders.value;
+  });
+}
+
+async function txDetailLoadOptions() {
+  try {
+    const uid = authStore.user?.id;
+    const [accRes, provRes, ttRes] = await Promise.all([
+      api.get('/accounts', { params: { user_id: uid, per_page: 200 } }),
+      api.get('/providers', { params: { user_id: uid, per_page: 200 } }),
+      api.get('/transaction_types', { params: { per_page: 100 } }),
+    ]);
+    const extractList = (res: unknown): AnyRecord[] => {
+      const r = res as { data: unknown };
+      const d = r.data;
+      if (Array.isArray(d)) return d as AnyRecord[];
+      const dd = (d as AnyRecord)['data'];
+      return Array.isArray(dd) ? (dd as AnyRecord[]) : [];
+    };
+    txDetailAllAccounts.value = extractList(accRes);
+    txDetailAccountOptions.value = txDetailAllAccounts.value;
+    txDetailAllProviders.value = extractList(provRes);
+    txDetailProviderOptions.value = txDetailAllProviders.value;
+    const ttList = extractList(ttRes);
+    txDetailTtOptions.value = ttList.map((t) => ({ label: String(t['name'] || t['id']), value: String(t['id']) }));
+  } catch {
+    // non-blocking — options will be empty but modal still works
+  }
+}
+
+function txDetailFillForm(row: AnyRecord, overrideId?: number | null) {
+  const dateRaw = String(row['date'] || '');
+  const datetime = dateRaw.includes('T') ? dateRaw.slice(0, 16) : dateRaw.replace(' ', 'T').slice(0, 16);
+  txDetailForm.value = {
+    id: overrideId !== undefined ? overrideId : (Number(row['id']) || null),
+    name: String(row['name'] || ''),
+    amount: Number(row['amount']) || null,
+    datetime,
+    account_id: (row['account_id'] as number | null) ?? null,
+    provider_id: (row['provider_id'] as number | null) ?? null,
+    transaction_type_id: String(row['transaction_type_id'] || ''),
+    include_in_balance: row['include_in_balance'] !== 0,
+  };
+}
+
+function txDetailShow(row: AnyRecord) {
+  txDetailRow.value = row;
+  txDetailMode.value = 'view';
+  txDetailOpen.value = true;
+  void txDetailLoadOptions();
+}
+
+function txDetailStartDuplicate() {
+  if (!txDetailRow.value) return;
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const todayDatetime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  txDetailFillForm(txDetailRow.value, null); // null = new tx (no id)
+  txDetailForm.value.datetime = todayDatetime;
+  txDetailMode.value = 'duplicate';
+}
+
+async function txDetailSave() {
+  if (txDetailSaving.value) return;
+  txDetailSaving.value = true;
+  try {
+    const isUpdate = txDetailMode.value === 'edit' && txDetailForm.value.id != null;
+    const dateStr = (txDetailForm.value.datetime || '').replace('T', ' ');
+    const payload: AnyRecord = {
+      name: txDetailForm.value.name,
+      amount: txDetailForm.value.amount ?? 0,
+      date: dateStr,
+      account_id: txDetailForm.value.account_id,
+      provider_id: txDetailForm.value.provider_id ?? 0,
+      transaction_type_id: txDetailForm.value.transaction_type_id,
+      include_in_balance: txDetailForm.value.include_in_balance ? 1 : 0,
+      user_id: authStore.user?.id,
+    };
+    if (isUpdate) {
+      await txStore.updateTransaction({ id: txDetailForm.value.id as number, ...payload });
+      $q.notify({ type: 'positive', message: 'Transacción actualizada' });
+    } else {
+      await txStore.addTransaction(payload);
+      $q.notify({ type: 'positive', message: 'Transacción duplicada y creada' });
+    }
+    window.dispatchEvent(new CustomEvent('ow:transactions:changed', { detail: { reason: isUpdate ? 'update' : 'create' } }));
+    void runFetch(true);
+    if (singleAccountSelected.value) void fetchSingleAccountBalance();
+    txDetailOpen.value = false;
+  } catch (e) {
+    $q.notify({ type: 'negative', message: e instanceof Error ? e.message : 'Error al guardar' });
+  } finally {
+    txDetailSaving.value = false;
+  }
+}
+
+async function txDetailConfirmDelete() {
+  if (!txDetailRow.value) return;
+  const id = Number(txDetailRow.value['id']);
   if (!Number.isFinite(id)) return;
-  ui.openEditTransactionDialog(id);
+  txDetailSaving.value = true;
+  try {
+    await txStore.deleteTransaction(id);
+    $q.notify({ type: 'positive', message: 'Transacción eliminada' });
+    void runFetch(true);
+    if (singleAccountSelected.value) void fetchSingleAccountBalance();
+    txDetailOpen.value = false;
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error eliminando transacción' });
+  } finally {
+    txDetailSaving.value = false;
+  }
+}
+
+// Computed display helpers for VIEW mode
+const txDetailAmount = computed(() => Number((txDetailRow.value as AnyRecord | null)?.[`amount`] ?? 0));
+const txDetailIsIncome = computed(() => txDetailAmount.value >= 0);
+const txDetailFormattedAmount = computed(() => {
+  const abs = Math.abs(txDetailAmount.value);
+  const sign = txDetailIsIncome.value ? '+' : '−';
+  return `${sign}${new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: 2 }).format(abs)}`;
+});
+const txDetailDate = computed(() => {
+  const d = String((txDetailRow.value as AnyRecord | null)?.['date'] ?? '');
+  if (!d) return '';
+  try { return new Date(d.replace(' ', 'T')).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch { return d; }
+});
+const txDetailAccountName = computed(() => {
+  const r = txDetailRow.value as AnyRecord | null;
+  if (!r) return '';
+  const acc = r['account'];
+  if (acc && typeof acc === 'object') return String((acc as AnyRecord)['name'] || '');
+  return '';
+});
+const txDetailProviderName = computed(() => {
+  const r = txDetailRow.value as AnyRecord | null;
+  if (!r) return '';
+  const prov = r['provider'];
+  if (prov && typeof prov === 'object') return String((prov as AnyRecord)['name'] || '');
+  return '';
+});
+const txDetailTypeName = computed(() => {
+  const r = txDetailRow.value as AnyRecord | null;
+  if (!r) return '';
+  const tt = r['transaction_type'];
+  if (tt && typeof tt === 'object') return String((tt as AnyRecord)['name'] || '');
+  return '';
+});
+const txDetailJarName = computed(() => txDetailRow.value ? txJarName(txDetailRow.value as Row) : '');
+const txDetailJarColor = computed(() => txDetailRow.value ? txJarColor(txDetailRow.value as Row) : 'var(--brand-primary)');
+// ─── /OWF-138 ────────────────────────────────────────────────────────────────
+
+function edit(row: Record<string, unknown>) {
+  txDetailShow(row as AnyRecord);
 }
 function remove(row: Record<string, unknown>) {
   const idRaw = row && row['id'];
@@ -5561,4 +5931,107 @@ function exportCSV(): void {
   font-size: 12.5px;
   color: var(--fg-3);
 }
+
+/* ── OWF-138: Transaction Detail Modal v2 ── */
+.tx-detail-modal {
+  border-radius: 12px !important;
+}
+
+.tx-detail-modal__bar {
+  background: var(--q-primary, #1976d2);
+  color: #fff;
+  padding: 10px 16px;
+  min-height: 48px;
+}
+
+.tx-detail-modal__amount-section {
+  padding: 28px 24px 20px;
+  text-align: center;
+  background: color-mix(in srgb, var(--q-primary, #1976d2) 4%, transparent);
+}
+
+.tx-detail-modal__amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.tx-detail-modal__amount--income {
+  color: #1b9645;
+}
+
+.tx-detail-modal__amount--expense {
+  color: #c62828;
+}
+
+.tx-detail-modal__amount-icon {
+  font-size: 2rem;
+  opacity: 0.8;
+}
+
+.tx-detail-modal__name {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.tx-detail-modal__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tx-detail-modal__field {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tx-detail-modal__field-icon {
+  font-size: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.tx-detail-modal__field-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+  margin-bottom: 2px;
+}
+
+.tx-detail-modal__field-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+}
+
+.tx-detail-modal__jar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tx-detail-modal__jar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tx-detail-modal__footer {
+  padding: 12px 16px;
+  gap: 4px;
+}
+/* ── /OWF-138 ── */
 </style>
