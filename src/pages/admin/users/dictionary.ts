@@ -55,10 +55,12 @@ export const dictionary = {
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', placeholder: 'Nombre', value: '' },
     { id: 1, vmodel: 'phone', vmodel_api: 'phone', type: 'input', label: 'Teléfono', placeholder: 'Teléfono', value: '' },
     { id: 2, vmodel: 'email', vmodel_api: 'email', type: 'input', label: 'Email', placeholder: 'Email', value: '' },
-    { id: 3, vmodel: 'balance', vmodel_api: 'balance', type: 'input', label: 'Balance', placeholder: '0.00', value: '' },
-    { id: 4, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 5, vmodel: 'client_id', vmodel_api: 'client_id', vmodel_url: 'clients', type: 'select', label: 'Cliente', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 6, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
+    { id: 3, vmodel: 'password', vmodel_api: 'password', type: 'input', label: 'Contraseña', placeholder: 'Mínimo 8 caracteres', value: '' },
+    { id: 4, vmodel: 'balance', vmodel_api: 'balance', type: 'input', label: 'Balance', placeholder: '0.00', value: '' },
+    { id: 5, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 6, vmodel: 'client_id', vmodel_api: 'client_id', vmodel_url: 'clients', type: 'select', label: 'Cliente', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 7, vmodel: 'role_id', vmodel_api: 'role_id', vmodel_url: 'roles', type: 'select', label: 'Rol', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 8, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false }
   ],
 
   // Edición de usuario

@@ -6,10 +6,10 @@ export const dictionary = {
   finderLabel: 'Buscar Nombre',
 
   // Rutas de la API
-  url_api: 'roles',
+  url_api: 'admin/roles',
   capitalize_api: 'Role',
   capitalize_apis: 'Roles',
-  url_apis: 'roles',
+  url_apis: 'admin/roles',
 
   // Parámetros de paginación
   pagination_params: {

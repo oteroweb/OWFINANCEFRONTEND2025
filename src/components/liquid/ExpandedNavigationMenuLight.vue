@@ -79,6 +79,12 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
+    label: 'Asistente',
+    items: [
+      { icon: 'smart_toy', label: 'Asesor IA', route: '/user/asesor' },
+    ],
+  },
+  {
     label: 'Preferencias',
     items: [
       { icon: 'settings',   label: 'Configuración', route: '/user/config' },

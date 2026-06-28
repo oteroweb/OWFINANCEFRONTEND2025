@@ -143,7 +143,43 @@
         </template>
       </section>
 
-      <!-- Debts Preview (spec: DebtSummaryCard — Deudas ANTES que Sueños) -->
+      <!-- Dreams Preview (spec: DreamSummaryCard — Sueños ANTES que Deudas) -->
+      <section class="lite-home__section">
+        <div class="lite-home__section-header">
+          <h2 class="t-h2">Sueños</h2>
+          <button class="lite-home__ghost-btn" @click="router.push('/user/dreams')">Ver todos</button>
+        </div>
+        <div v-if="dreamsLoading" class="lite-home__skeleton" style="height: 80px;" />
+        <div v-else-if="dreamsPreview.length === 0" class="lite-home__empty">
+          <q-icon name="star_outline" size="32px" color="grey-5" />
+          <p class="t-body">Sin sueños registrados.</p>
+          <button class="lite-home__ghost-btn" @click="router.push('/user/dreams')">Crear sueño</button>
+        </div>
+        <div v-else class="home-dreams">
+          <div
+            v-for="dream in dreamsPreview"
+            :key="dream.id"
+            class="home-dream-card"
+            @click="router.push('/user/dreams')"
+          >
+            <div class="home-dream-card__top">
+              <span class="home-dream-card__name">{{ dream.name }}</span>
+              <span class="home-dream-card__pct">{{ dream.progress }}%</span>
+            </div>
+            <div class="home-dream-card__bar">
+              <div class="home-dream-card__fill" :style="{ width: `${dream.progress}%` }" />
+            </div>
+            <div class="home-dream-card__amounts">
+              <span class="t-body-sm" style="color: var(--income-fg);">
+                {{ isHidden ? '••••••' : formatMoney(dream.current_amount) }}
+              </span>
+              <span class="t-body-sm">/ {{ isHidden ? '••••••' : formatMoney(dream.target_amount) }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Debts Preview (spec: DebtSummaryCard — Deudas DESPUÉS de Sueños) -->
       <section class="lite-home__section">
         <div class="lite-home__section-header">
           <h2 class="t-h2">Deudas</h2>
@@ -176,42 +212,6 @@
               <span class="home-debt-row__status" :class="`home-debt-row__status--${debt.status}`">
                 {{ debt.status === 'late' ? 'Atrasada' : debt.status === 'due-soon' ? 'Por vencer' : 'Al día' }}
               </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Dreams Preview (spec: DreamSummaryCard — Sueños DESPUÉS de Deudas) -->
-      <section class="lite-home__section">
-        <div class="lite-home__section-header">
-          <h2 class="t-h2">Sueños</h2>
-          <button class="lite-home__ghost-btn" @click="router.push('/user/dreams')">Ver todos</button>
-        </div>
-        <div v-if="dreamsLoading" class="lite-home__skeleton" style="height: 80px;" />
-        <div v-else-if="dreamsPreview.length === 0" class="lite-home__empty">
-          <q-icon name="star_outline" size="32px" color="grey-5" />
-          <p class="t-body">Sin sueños registrados.</p>
-          <button class="lite-home__ghost-btn" @click="router.push('/user/dreams')">Crear sueño</button>
-        </div>
-        <div v-else class="home-dreams">
-          <div
-            v-for="dream in dreamsPreview"
-            :key="dream.id"
-            class="home-dream-card"
-            @click="router.push('/user/dreams')"
-          >
-            <div class="home-dream-card__top">
-              <span class="home-dream-card__name">{{ dream.name }}</span>
-              <span class="home-dream-card__pct">{{ dream.progress }}%</span>
-            </div>
-            <div class="home-dream-card__bar">
-              <div class="home-dream-card__fill" :style="{ width: `${dream.progress}%` }" />
-            </div>
-            <div class="home-dream-card__amounts">
-              <span class="t-body-sm" style="color: var(--income-fg);">
-                {{ isHidden ? '••••••' : formatMoney(dream.current_amount) }}
-              </span>
-              <span class="t-body-sm">/ {{ isHidden ? '••••••' : formatMoney(dream.target_amount) }}</span>
             </div>
           </div>
         </div>

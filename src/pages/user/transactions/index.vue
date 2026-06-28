@@ -157,23 +157,14 @@
             <div style="color: var(--fg-2); margin-top: 10px; font-size: 14px;">Ningún movimiento coincide con estos filtros.</div>
           </div>
           <!-- Multi-select mode bar -->
-          <div v-if="txMultiMode" class="pro-tx-multibar">
-            <span class="pro-tx-multibar__count">
-              {{ txSelected.size }} transacción{{ txSelected.size !== 1 ? 'es' : '' }} seleccionada{{ txSelected.size !== 1 ? 's' : '' }}
-            </span>
-            <span v-if="txSelected.size > 0" class="pro-tx-multibar__sum" :class="txMultiSum >= 0 ? 'pro-tx-multibar__sum--pos' : 'pro-tx-multibar__sum--neg'">
-              {{ txMultiSum >= 0 ? '+' : '−' }} {{ formatMoney(Math.abs(txMultiSum)) }}
-            </span>
-            <button class="pro-tx-multibar__exit" @click="txExitMulti">
-              <span class="material-icons" style="font-size:18px">close</span>
-              Salir
-            </button>
-          </div>
-
-          <template v-else>
-            <div v-for="[dateKey, txGroup] in groupedTransactions" :key="dateKey" class="pro-tx-feed__group">
-              <!-- Date header -->
-              <div class="pro-tx-feed__date-header">{{ formatGroupHeader(dateKey) }}</div>
+          <div v-for="[dateKey, txGroup] in groupedTransactions" :key="dateKey" class="pro-tx-feed__group">
+              <!-- Date header with day total -->
+              <div class="pro-tx-feed__date-header">
+                <span>{{ formatGroupHeader(dateKey) }}</span>
+                <span class="pro-tx-feed__day-total" :class="txGroupTotal(txGroup) >= 0 ? 'pro-tx-feed__day-total--pos' : 'pro-tx-feed__day-total--neg'">
+                  {{ txGroupTotal(txGroup) >= 0 ? '+' : '−' }}{{ formatMoney(Math.abs(txGroupTotal(txGroup))) }}
+                </span>
+              </div>
 
               <!-- Transaction rows -->
               <div
@@ -182,14 +173,14 @@
                 :class="['pro-tx-feed__row', txSelected.has(String((row as AnyRecord).id)) && 'pro-tx-feed__row--selected', txHovered === String((row as AnyRecord).id) && 'pro-tx-feed__row--hovered']"
                 @mouseenter="txHovered = String((row as AnyRecord).id)"
                 @mouseleave="txHovered = null"
-                @dblclick="txEnterMulti(row)"
-                @click="txMultiMode ? txToggleSelect(row) : null"
+                @click="txHandleRowClick(row)"
+                @dblclick="txHandleRowDblClick(row)"
               >
                 <!-- Hover/select checkbox (shows on hover or in multi mode) -->
                 <div
                   class="pro-tx-feed__sel"
                   :class="{ 'pro-tx-feed__sel--visible': txMultiMode || txHovered === String((row as AnyRecord).id) }"
-                  @click.stop="txToggleSelect(row)"
+                  @click.stop="txMultiMode ? txToggleSelect(row) : txEnterMulti(row)"
                 >
                   <span
                     :class="['pro-tx-feed__chk', txSelected.has(String((row as AnyRecord).id)) && 'pro-tx-feed__chk--on']"
@@ -235,7 +226,27 @@
                 </div>
               </div>
             </div>
-          </template>
+
+          <!-- Bottom bar: selectMode summary -->
+          <Transition name="tx-multibar">
+            <div v-if="txMultiMode" class="pro-tx-multibar">
+              <span class="pro-tx-multibar__count">
+                {{ txSelected.size }} tx{{ txSelected.size !== 1 ? 's' : '' }}
+              </span>
+              <span v-if="txSelected.size > 0" class="pro-tx-multibar__sum" :class="txMultiSum >= 0 ? 'pro-tx-multibar__sum--pos' : 'pro-tx-multibar__sum--neg'">
+                {{ txMultiSum >= 0 ? '+' : '−' }}{{ formatMoney(Math.abs(txMultiSum)) }}
+              </span>
+              <span class="pro-tx-multibar__spacer" />
+              <button class="pro-tx-multibar__all" @click="txSelectAll">
+                <span class="material-icons" style="font-size:16px">done_all</span>
+                Todas
+              </button>
+              <button class="pro-tx-multibar__exit" @click="txExitMulti">
+                <span class="material-icons" style="font-size:16px">check</span>
+                Listo
+              </button>
+            </div>
+          </Transition>
         </div>
 
         <!-- RIGHT: AccountsPanel -->
@@ -3648,9 +3659,10 @@ const apTxNetTotal = computed(() => apTxAccountsList.value.reduce((s, a) => s + 
 const apTxDebtsTotal = computed(() => apTxDebtsList.value.reduce((s, d) => s + d.balance, 0));
 
 // ── Multi-select mode ───────────────────────────────────────────────────
-const txMultiMode = ref(false);
-const txSelected  = ref(new Set<string>());
-const txHovered   = ref<string | null>(null);
+const txMultiMode    = ref(false);
+const txSelected     = ref(new Set<string>());
+const txHovered      = ref<string | null>(null);
+let   txClickTimer: ReturnType<typeof setTimeout> | null = null;
 
 const txMultiSum = computed(() => {
   let s = 0;
@@ -3664,6 +3676,7 @@ const txMultiSum = computed(() => {
 });
 
 function txEnterMulti(row: Row): void {
+  if (txClickTimer) { clearTimeout(txClickTimer); txClickTimer = null; }
   txMultiMode.value = true;
   const id = String((row as AnyRecord)['id']);
   txSelected.value = new Set([id]);
@@ -3674,11 +3687,33 @@ function txExitMulti(): void {
   txSelected.value  = new Set();
 }
 
+function txHandleRowClick(row: Row): void {
+  if (txMultiMode.value) { txToggleSelect(row); return; }
+  if (txClickTimer) clearTimeout(txClickTimer);
+  txClickTimer = setTimeout(() => {
+    txClickTimer = null;
+    edit(row as Record<string, unknown>);
+  }, 220);
+}
+
+function txHandleRowDblClick(row: Row): void {
+  if (txClickTimer) { clearTimeout(txClickTimer); txClickTimer = null; }
+  txEnterMulti(row);
+}
+
 function txToggleSelect(row: Row): void {
   const id  = String((row as AnyRecord)['id']);
   const set = new Set(txSelected.value);
   if (set.has(id)) { set.delete(id); } else { set.add(id); }
   txSelected.value = set;
+}
+
+function txSelectAll(): void {
+  txSelected.value = new Set(proFilteredRows.value.map(r => String((r as AnyRecord)['id'])));
+}
+
+function txGroupTotal(rows: Row[]): number {
+  return rows.reduce((s, r) => s + parseNumber((r as AnyRecord)['amount']), 0);
 }
 
 function txCatIdForRow(row: Row): number | null {
@@ -4870,6 +4905,9 @@ function exportCSV(): void {
 }
 
 .pro-tx-feed__date-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-family: var(--font-body);
   font-size: 11px;
   font-weight: 700;
@@ -4878,6 +4916,15 @@ function exportCSV(): void {
   color: var(--fg-3);
   padding: 14px 16px 6px;
 }
+.pro-tx-feed__day-total {
+  font-family: var(--font-money, monospace);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.pro-tx-feed__day-total--pos { color: var(--income-fg, #15803d); }
+.pro-tx-feed__day-total--neg { color: var(--fg-3); }
 
 .pro-tx-feed__row {
   display: grid;
@@ -4950,16 +4997,20 @@ function exportCSV(): void {
   font-weight: 600;
 }
 
-/* Multi-select bar */
+/* Multi-select bar (bottom floating) */
 .pro-tx-multibar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 10;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: color-mix(in srgb, var(--brand-primary) 8%, var(--surface-1));
-  border-radius: var(--radius-lg);
-  margin-bottom: 8px;
-  border: 1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent);
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 10px 0 4px;
+  background: var(--surface-1, #fff);
+  border-radius: var(--radius-lg, 12px);
+  border: 1.5px solid color-mix(in srgb, var(--brand-primary) 30%, transparent);
+  box-shadow: 0 4px 18px rgba(0,0,0,.13);
 }
 
 .pro-tx-multibar__count {
@@ -4967,12 +5018,11 @@ function exportCSV(): void {
   font-size: 13px;
   font-weight: 600;
   color: var(--fg-1);
-  flex: 1;
 }
 
 .pro-tx-multibar__sum {
   font-family: var(--font-money, var(--font-body));
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -4980,26 +5030,38 @@ function exportCSV(): void {
 .pro-tx-multibar__sum--pos { color: var(--income-fg, #15803d); }
 .pro-tx-multibar__sum--neg { color: var(--expense-fg, #b91c1c); }
 
+.pro-tx-multibar__spacer { flex: 1; }
+
+.pro-tx-multibar__all,
 .pro-tx-multibar__exit {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   border: 0;
-  background: transparent;
   cursor: pointer;
-  color: var(--fg-2);
   font-family: var(--font-body, inherit);
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: var(--radius-pill);
+  padding: 5px 10px;
+  border-radius: var(--radius-pill, 99px);
   transition: background 0.1s;
 }
 
-.pro-tx-multibar__exit:hover {
+.pro-tx-multibar__all {
   background: var(--surface-2);
-  color: var(--fg-1);
+  color: var(--fg-2);
 }
+.pro-tx-multibar__all:hover { background: var(--surface-3, #e5e7eb); color: var(--fg-1); }
+
+.pro-tx-multibar__exit {
+  background: var(--brand-primary, #5b21b6);
+  color: #fff;
+}
+.pro-tx-multibar__exit:hover { opacity: 0.88; }
+
+/* Slide-up transition */
+.tx-multibar-enter-active, .tx-multibar-leave-active { transition: transform 0.2s, opacity 0.2s; }
+.tx-multibar-enter-from, .tx-multibar-leave-to { transform: translateY(20px); opacity: 0; }
 
 /* Colored icon circle */
 .pro-tx-feed__icon {

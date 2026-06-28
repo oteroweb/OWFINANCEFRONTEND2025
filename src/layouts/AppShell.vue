@@ -246,6 +246,7 @@ const NAV_ITEMS = [
   { id: 'jars',         label: 'Cántaros',       icon: 'savings',      route: '/user/jars' },
   { id: 'dreams',       label: 'Sueños',         icon: 'auto_awesome', route: '/user/dreams' },
   { id: 'debts',        label: 'Deudas',         icon: 'credit_card',  route: '/user/debts' },
+  { id: 'asesor',       label: 'Asesor IA',      icon: 'smart_toy',    route: '/user/asesor' },
   { id: 'config',       label: 'Configuración',  icon: 'settings',     route: '/user/config' },
 ];
 
@@ -256,6 +257,7 @@ const currentTab = computed(() => {
   if (p.includes('/jars'))                               return 'jars';
   if (p.includes('/dreams'))                             return 'dreams';
   if (p.includes('/debts'))                              return 'debts';
+  if (p.includes('/asesor'))                             return 'asesor';
   if (p.includes('/config') || p.includes('/settings')) return 'config';
   return 'home';
 });
