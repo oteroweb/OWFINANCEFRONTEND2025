@@ -3592,11 +3592,14 @@ const txDetailAccountOptions = ref<AnyRecord[]>([]);
 const txDetailProviderOptions = ref<AnyRecord[]>([]);
 const txDetailTtOptions = ref<{ label: string; value: string }[]>([]);
 
+function txDetailStr(v: unknown): string {
+  return typeof v === 'string' ? v : (typeof v === 'number' || typeof v === 'boolean') ? String(v) : '';
+}
 function txDetailFilterAccounts(val: string, update: (cb: () => void) => void) {
   update(() => {
     const q = val.toLowerCase();
     txDetailAccountOptions.value = q
-      ? txDetailAllAccounts.value.filter((a) => String(a['name'] || '').toLowerCase().includes(q))
+      ? txDetailAllAccounts.value.filter((a) => txDetailStr(a['name']).toLowerCase().includes(q))
       : txDetailAllAccounts.value;
   });
 }
@@ -3604,7 +3607,7 @@ function txDetailFilterProviders(val: string, update: (cb: () => void) => void) 
   update(() => {
     const q = val.toLowerCase();
     txDetailProviderOptions.value = q
-      ? txDetailAllProviders.value.filter((p) => String(p['name'] || '').toLowerCase().includes(q))
+      ? txDetailAllProviders.value.filter((p) => txDetailStr(p['name']).toLowerCase().includes(q))
       : txDetailAllProviders.value;
   });
 }
@@ -3629,23 +3632,23 @@ async function txDetailLoadOptions() {
     txDetailAllProviders.value = extractList(provRes);
     txDetailProviderOptions.value = txDetailAllProviders.value;
     const ttList = extractList(ttRes);
-    txDetailTtOptions.value = ttList.map((t) => ({ label: String(t['name'] || t['id']), value: String(t['id']) }));
+    txDetailTtOptions.value = ttList.map((t) => ({ label: txDetailStr(t['name']) || txDetailStr(t['id']), value: txDetailStr(t['id']) }));
   } catch {
     // non-blocking — options will be empty but modal still works
   }
 }
 
 function txDetailFillForm(row: AnyRecord, overrideId?: number | null) {
-  const dateRaw = String(row['date'] || '');
+  const dateRaw = txDetailStr(row['date']);
   const datetime = dateRaw.includes('T') ? dateRaw.slice(0, 16) : dateRaw.replace(' ', 'T').slice(0, 16);
   txDetailForm.value = {
     id: overrideId !== undefined ? overrideId : (Number(row['id']) || null),
-    name: String(row['name'] || ''),
+    name: txDetailStr(row['name']),
     amount: Number(row['amount']) || null,
     datetime,
     account_id: (row['account_id'] as number | null) ?? null,
     provider_id: (row['provider_id'] as number | null) ?? null,
-    transaction_type_id: String(row['transaction_type_id'] || ''),
+    transaction_type_id: txDetailStr(row['transaction_type_id']),
     include_in_balance: row['include_in_balance'] !== 0,
   };
 }
@@ -3729,7 +3732,7 @@ const txDetailFormattedAmount = computed(() => {
   return `${sign}${new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: 2 }).format(abs)}`;
 });
 const txDetailDate = computed(() => {
-  const d = String(txDetailGetRow()?.['date'] ?? '');
+  const d = txDetailStr(txDetailGetRow()?.['date']);
   if (!d) return '';
   try { return new Date(d.replace(' ', 'T')).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch { return d; }
 });
