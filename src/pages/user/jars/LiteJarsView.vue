@@ -1,185 +1,226 @@
 <template>
-  <q-page class="lite-page">
-    <div class="lite-page__container">
-      <!-- Header -->
-      <div class="jars-page-header">
-        <div>
-          <span class="t-eyebrow">Cántaros</span>
-          <h1 class="t-h1" style="margin: 6px 0 0">Tu dinero, repartido</h1>
+  <q-page class="cm-page">
+    <div class="cm-container">
+      <!-- ── Header con totales ── -->
+      <header class="cm-header">
+        <div class="cm-header__titles">
+          <span class="cm-eyebrow">Cántaros</span>
+          <h1 class="cm-header__title">Mis cántaros</h1>
+          <p class="cm-header__sub">Distribuye tu dinero por frascos</p>
         </div>
-        <button class="add-btn" @click="openAddSheet">
-          <q-icon name="add" size="18px" /> Nuevo
+        <button class="cm-add-btn" @click="openAddSheet">
+          <q-icon name="add" size="18px" /> Añadir
         </button>
-      </div>
+      </header>
 
-      <!-- Hero card with distribution strip -->
-      <div class="hero-card">
-        <div class="hero-card__top">
-          <div>
-            <span class="t-eyebrow">Total en cántaros · USD</span>
-            <span class="t-hero-amount" style="display:block;margin-top:4px">
-              {{ isHidden ? '$ ••••••' : formatMoney(totalBalance) }}
-            </span>
-          </div>
-          <div class="hero-card__meta">
-            <span class="hero-card__stat">{{ activeJars.length }} activos</span>
-          </div>
+      <!-- ── Card resumen: total + distribución ── -->
+      <section class="cm-summary">
+        <div class="cm-summary__row">
+          <span class="cm-summary__label">Total en cántaros · USD</span>
+          <span class="cm-summary__total" :class="{ 'is-over': anyOver }">
+            {{ isHidden ? '$ ••••••' : formatMoney(totalBalance) }}
+          </span>
         </div>
 
-        <!-- Distribution strip -->
-        <div v-if="activeJars.length" class="dist-strip">
+        <!-- Barra de distribución -->
+        <div v-if="activeJars.length" class="cm-dist">
           <div
             v-for="jar in activeJars"
             :key="jar.id"
-            class="dist-strip__segment"
-            :style="{ flex: jar.allocated || jar.percent || 1, background: jar.color || 'var(--info)' }"
-            :title="`${jar.name}: ${jar.percent}%`"
+            class="cm-dist__seg"
+            :style="{ flex: Math.max(jar.allocated, 1), background: jar.color || 'var(--info)' }"
+            :title="`${jar.name}: ${formatMoney(jar.allocated)}`"
           />
         </div>
+
+        <div class="cm-summary__stats">
+          <div class="cm-stat">
+            <span class="cm-stat__k">Activos</span>
+            <span class="cm-stat__v">{{ activeJars.length }}</span>
+          </div>
+          <div class="cm-stat">
+            <span class="cm-stat__k">Asignado</span>
+            <span class="cm-stat__v">{{ isHidden ? '••••' : formatMoney(totalAllocated) }}</span>
+          </div>
+          <div class="cm-stat">
+            <span class="cm-stat__k">Uso global</span>
+            <span class="cm-stat__v" :class="{ 'is-over': anyOver }">{{ Math.round(globalUsePct) }}%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Skeleton ── -->
+      <div v-if="jarsLoading" class="cm-list">
+        <div v-for="i in 4" :key="i" class="cm-skeleton" />
       </div>
 
-      <!-- Skeleton -->
-      <div v-if="jarsLoading" class="jars-list">
-        <div v-for="i in 4" :key="i" class="skeleton-row" />
-      </div>
-
-      <!-- Empty state -->
-      <div v-else-if="activeJars.length === 0" class="entry-gate">
-        <q-icon name="water" size="48px" style="color: var(--brand-primary); opacity: 0.4;" />
+      <!-- ── Empty state ── -->
+      <div v-else-if="activeJars.length === 0" class="cm-empty">
+        <q-icon name="water_drop" size="48px" style="color: var(--brand-primary); opacity: 0.4;" />
         <h2>Tus cántaros están vacíos</h2>
-        <p>Registra un ingreso para distribuirlo entre tus cántaros.</p>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-          <button class="add-btn" @click="ui.openSmartModal('write', 'income')">+ Registrar ingreso</button>
-          <button class="ghost-btn" @click="openAddSheet">Crear cántaro</button>
+        <p>Registra un ingreso para distribuirlo, o crea tu primer cántaro.</p>
+        <div class="cm-empty__actions">
+          <button class="cm-add-btn" @click="ui.openNewTransactionDialog('income')">+ Registrar ingreso</button>
+          <button class="cm-ghost-btn" @click="openAddSheet">Crear cántaro</button>
         </div>
       </div>
 
-      <!-- Jars grid (spec: JarsFullGrid 3-col card tiles) -->
-      <div v-else class="jars-grid">
-        <div
+      <!-- ── Lista de cántaros (cards) ── -->
+      <div v-else class="cm-list">
+        <button
           v-for="jar in activeJars"
           :key="jar.id"
-          class="jar-tile"
+          type="button"
+          class="cm-jar"
           @click="openDetail(jar)"
         >
-          <!-- Icon + Name row -->
-          <div class="jar-tile__head">
-            <div class="jar-tile__icon" :style="{ background: jarSoftColor(jar), color: jar.color || 'var(--info)' }">
-              <q-icon name="savings" size="18px" />
-            </div>
-            <div class="jar-tile__name-wrap">
-              <div class="jar-tile__name">{{ jar.name }}</div>
-              <div class="jar-tile__sub">{{ jar.percent }}% asignado</div>
-            </div>
-            <span v-if="jar.balance < 0 || jar.progress > 100" class="jar-tile__warn" title="Requiere atención">
-              <q-icon name="warning" size="14px" />
+          <div class="cm-jar__head">
+            <span class="cm-jar__icon" :style="{ background: jar.color || 'var(--info)' }">
+              <q-icon name="savings" size="18px" color="white" />
             </span>
+            <div class="cm-jar__name-wrap">
+              <span class="cm-jar__name">{{ jar.name }}</span>
+              <div class="cm-jar__tags">
+                <span class="cm-tag">{{ jar.percent }}%</span>
+                <span v-if="jar.balance < 0" class="cm-tag cm-tag--over">
+                  <q-icon name="error" size="12px" /> Excedido
+                </span>
+                <span v-else-if="jar.progress >= 100" class="cm-tag cm-tag--full">Lleno</span>
+              </div>
+            </div>
+            <div class="cm-jar__value">
+              <span class="cm-jar__amount" :class="{ 'is-over': jar.balance < 0 }">
+                {{ isHidden ? '$ ••••' : formatMoney(jar.balance) }}
+              </span>
+              <q-icon name="chevron_right" size="20px" class="cm-jar__chevron" />
+            </div>
           </div>
 
-          <!-- Balance -->
-          <div class="jar-tile__amount">
-            {{ isHidden ? '$ ••••••' : formatMoney(jar.balance) }}
+          <!-- Barra de uso fina -->
+          <div class="cm-jar__bar">
+            <div
+              class="cm-jar__bar-fill"
+              :style="{
+                width: `${Math.min(100, jar.progress)}%`,
+                background: barColor(jar),
+              }"
+            />
           </div>
-
-          <!-- Progress bar -->
-          <div class="jar-tile__bar">
-            <div class="jar-tile__bar-fill"
-              :style="{ width: `${Math.min(100, jar.progress)}%`, background: jar.color || 'var(--info)' }" />
+          <div class="cm-jar__foot">
+            <span :class="{ 'is-over': jar.balance < 0 }">{{ Math.round(jar.progress) }}% utilizado</span>
+            <span>de {{ isHidden ? '••••' : formatMoney(jar.allocated) }}</span>
           </div>
-
-          <!-- Footer info -->
-          <div class="jar-tile__footer">
-            <span>{{ Math.round(jar.progress) }}% de {{ formatMoney(jar.allocated) }}</span>
-            <span v-if="jar.progress >= 100" style="color: var(--income-fg)">Lleno</span>
-            <span v-else-if="jar.balance < 0" style="color: var(--expense-fg)">Sobrepasado</span>
-            <span v-else>En uso</span>
-          </div>
-        </div>
+        </button>
       </div>
 
-      <!-- Jar detail bottom sheet -->
-      <q-dialog v-model="showDetail" position="bottom">
-        <div v-if="detailJar" class="jar-detail-sheet">
-          <div class="jar-detail-sheet__handle" />
+      <!-- espaciador para FAB -->
+      <div style="height: 84px"></div>
 
-          <!-- Hero -->
-          <div class="jar-detail-sheet__hero">
-            <div class="jar-detail-sheet__icon" :style="{ background: detailJar.color || 'var(--info)' }">
+      <!-- ── FAB ── -->
+      <button class="cm-fab" aria-label="Crear cántaro" @click="openAddSheet">
+        <q-icon name="add" size="26px" color="white" />
+      </button>
+
+      <!-- ── Bottom-sheet: detalle ── -->
+      <q-dialog v-model="showDetail" position="bottom">
+        <div v-if="detailJar" class="cm-sheet">
+          <div class="cm-sheet__handle" />
+
+          <header class="cm-sheet__hero">
+            <span class="cm-sheet__icon" :style="{ background: detailJar.color || 'var(--info)' }">
               <q-icon name="savings" size="26px" color="white" />
-            </div>
-            <div class="jar-detail-sheet__name">{{ detailJar.name }}</div>
-            <div class="jar-detail-sheet__balance">
+            </span>
+            <div class="cm-sheet__title">{{ detailJar.name }}</div>
+            <div class="cm-sheet__balance" :class="{ 'is-over': detailJar.balance < 0 }">
               {{ isHidden ? '$ ••••••' : formatMoney(detailJar.balance) }}
             </div>
+            <div class="cm-sheet__balance-sub">disponible</div>
+          </header>
+
+          <!-- Barra de progreso -->
+          <div class="cm-sheet__progress">
+            <div
+              class="cm-sheet__progress-fill"
+              :style="{ width: `${Math.min(100, detailJar.progress)}%`, background: barColor(detailJar) }"
+            />
           </div>
 
           <!-- Stats grid -->
-          <div class="jar-detail-sheet__stats">
-            <div class="jar-stat">
-              <span class="jar-stat__label">Porcentaje</span>
-              <span class="jar-stat__value">{{ detailJar.percent }}%</span>
+          <div class="cm-sheet__stats">
+            <div class="cm-stat2">
+              <span class="cm-stat2__k">Porcentaje</span>
+              <span class="cm-stat2__v">{{ detailJar.percent }}%</span>
             </div>
-            <div class="jar-stat">
-              <span class="jar-stat__label">Asignado</span>
-              <span class="jar-stat__value">{{ formatMoney(detailJar.allocated) }}</span>
+            <div class="cm-stat2">
+              <span class="cm-stat2__k">Asignado</span>
+              <span class="cm-stat2__v">{{ isHidden ? '••••' : formatMoney(detailJar.allocated) }}</span>
             </div>
-            <div class="jar-stat">
-              <span class="jar-stat__label">Disponible</span>
-              <span class="jar-stat__value">{{ formatMoney(detailJar.balance) }}</span>
+            <div class="cm-stat2">
+              <span class="cm-stat2__k">Utilizado</span>
+              <span class="cm-stat2__v">{{ Math.round(detailJar.progress) }}%</span>
             </div>
-            <div class="jar-stat">
-              <span class="jar-stat__label">Uso</span>
-              <span class="jar-stat__value">{{ Math.round(detailJar.progress) }}%</span>
+            <div class="cm-stat2">
+              <span class="cm-stat2__k">Disponible</span>
+              <span class="cm-stat2__v" :class="{ 'is-over': detailJar.balance < 0 }">
+                {{ isHidden ? '••••' : formatMoney(detailJar.balance) }}
+              </span>
             </div>
           </div>
 
-          <!-- Progress bar -->
-          <div class="jar-detail-sheet__progress-wrap">
-            <div class="jar-detail-sheet__progress-fill"
-              :style="{ width: `${Math.min(100, detailJar.progress)}%`, background: detailJar.color || 'var(--info)' }" />
+          <!-- Acciones rápidas -->
+          <div class="cm-sheet__quick">
+            <button class="cm-quick-btn cm-quick-btn--income" @click="quickAction('income')">
+              <q-icon name="south_west" size="18px" /> Agregar
+            </button>
+            <button class="cm-quick-btn cm-quick-btn--expense" @click="quickAction('expense')">
+              <q-icon name="north_east" size="18px" /> Retirar
+            </button>
           </div>
 
-          <!-- Footer actions -->
-          <div class="jar-detail-sheet__footer" style="flex-wrap:wrap;gap:8px;">
-            <button class="jd-btn jd-btn--ghost" style="color:var(--expense-fg,#ef4444)" @click="confirmDeleteJar(detailJar)">
+          <!-- Acciones secundarias -->
+          <div class="cm-sheet__footer">
+            <button class="cm-btn cm-btn--danger" @click="confirmDeleteJar(detailJar)">
               <q-icon name="delete_outline" size="17px" /> Eliminar
             </button>
-            <button class="jd-btn jd-btn--ghost" @click="showDetail = false">Cerrar</button>
-            <button class="jd-btn jd-btn--primary" @click="openEditSheet(detailJar)">
+            <button class="cm-btn cm-btn--ghost" @click="showDetail = false">Cerrar</button>
+            <button class="cm-btn cm-btn--primary" @click="openEditSheet(detailJar)">
               <q-icon name="edit" size="17px" /> Editar
             </button>
           </div>
         </div>
       </q-dialog>
 
-      <!-- Edit jar sheet -->
+      <!-- ── Bottom-sheet: editar ── -->
       <q-dialog v-model="showEditSheet" position="bottom">
-        <div v-if="editJar" class="jar-detail-sheet">
-          <div class="jar-detail-sheet__handle" />
-          <div style="padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px;">
-            <div class="jar-detail-sheet__name" style="font-size:17px">Editar cántaro</div>
-            <div class="jf-field">
-              <label class="jf-label">Nombre *</label>
-              <input v-model="editJar.name" class="jf-input" placeholder="Nombre del cántaro" />
+        <div v-if="editJar" class="cm-sheet">
+          <div class="cm-sheet__handle" />
+          <div class="cm-form">
+            <div class="cm-sheet__title" style="font-size: 17px">Editar cántaro</div>
+            <div class="cm-field">
+              <label class="cm-field__label">Nombre *</label>
+              <input v-model="editJar.name" class="cm-input" placeholder="Nombre del cántaro" />
             </div>
-            <div class="jf-field">
-              <label class="jf-label">Porcentaje (%)</label>
-              <input v-model.number="editJar.percent" type="number" min="1" max="100" class="jf-input" />
+            <div class="cm-field">
+              <label class="cm-field__label">Porcentaje (%)</label>
+              <input v-model.number="editJar.percent" type="number" min="1" max="100" class="cm-input" />
             </div>
-            <div class="jf-field">
-              <label class="jf-label">Color</label>
-              <div class="jf-colors">
-                <button v-for="c in colorPalette" :key="c"
-                  class="jf-color-btn"
-                  :class="{ 'jf-color-btn--active': editJar.color === c }"
+            <div class="cm-field">
+              <label class="cm-field__label">Color</label>
+              <div class="cm-colors">
+                <button
+                  v-for="c in colorPalette"
+                  :key="c"
+                  type="button"
+                  class="cm-color"
+                  :class="{ 'is-active': editJar.color === c }"
                   :style="{ background: c }"
                   @click="editJar.color = c"
                 />
               </div>
             </div>
-            <div class="jar-detail-sheet__footer">
-              <button class="jd-btn jd-btn--ghost" @click="showEditSheet = false">Cancelar</button>
-              <button class="jd-btn jd-btn--primary" :disabled="editSaving || !editJar.name" @click="saveEditJar">
+            <div class="cm-sheet__footer">
+              <button class="cm-btn cm-btn--ghost" @click="showEditSheet = false">Cancelar</button>
+              <button class="cm-btn cm-btn--primary" :disabled="editSaving || !editJar.name" @click="saveEditJar">
                 <q-spinner v-if="editSaving" size="15px" color="white" />
                 <q-icon v-else name="check" size="17px" />
                 {{ editSaving ? 'Guardando…' : 'Guardar' }}
@@ -189,37 +230,38 @@
         </div>
       </q-dialog>
 
-      <!-- Add jar sheet (simple) -->
+      <!-- ── Bottom-sheet: nuevo ── -->
       <q-dialog v-model="showAddSheet" position="bottom">
-        <div class="jar-detail-sheet">
-          <div class="jar-detail-sheet__handle" />
-          <div style="padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px;">
-            <div class="jar-detail-sheet__name" style="font-size:17px">Nuevo cántaro</div>
-            <div class="jf-field">
-              <label class="jf-label">Nombre *</label>
-              <input v-model="newJar.name" class="jf-input" placeholder="Ej: Vacaciones, Emergencias…" />
+        <div class="cm-sheet">
+          <div class="cm-sheet__handle" />
+          <div class="cm-form">
+            <div class="cm-sheet__title" style="font-size: 17px">Nuevo cántaro</div>
+            <div class="cm-field">
+              <label class="cm-field__label">Nombre *</label>
+              <input v-model="newJar.name" class="cm-input" placeholder="Ej: Vacaciones, Emergencias…" />
             </div>
-            <div class="jf-field">
-              <label class="jf-label">Porcentaje (%)</label>
-              <input v-model.number="newJar.percent" type="number" min="1" max="100" class="jf-input" placeholder="10" />
+            <div class="cm-field">
+              <label class="cm-field__label">Porcentaje (%)</label>
+              <input v-model.number="newJar.percent" type="number" min="1" max="100" class="cm-input" placeholder="10" />
             </div>
-            <div class="jf-field">
-              <label class="jf-label">Color</label>
-              <div class="jf-colors">
-                <button v-for="c in colorPalette" :key="c"
-                  class="jf-color-btn"
-                  :class="{ 'jf-color-btn--active': newJar.color === c }"
+            <div class="cm-field">
+              <label class="cm-field__label">Color</label>
+              <div class="cm-colors">
+                <button
+                  v-for="c in colorPalette"
+                  :key="c"
+                  type="button"
+                  class="cm-color"
+                  :class="{ 'is-active': newJar.color === c }"
                   :style="{ background: c }"
                   @click="newJar.color = c"
                 />
               </div>
             </div>
-            <div v-if="addError" style="font-size:13px;color:#b91c1c;padding:8px 12px;background:rgba(239,68,68,.1);border-radius:8px">
-              {{ addError }}
-            </div>
-            <div class="jar-detail-sheet__footer">
-              <button class="jd-btn jd-btn--ghost" @click="showAddSheet = false">Cancelar</button>
-              <button class="jd-btn jd-btn--primary" :disabled="addSaving || !newJar.name" @click="saveNewJar">
+            <div v-if="addError" class="cm-error">{{ addError }}</div>
+            <div class="cm-sheet__footer">
+              <button class="cm-btn cm-btn--ghost" @click="showAddSheet = false">Cancelar</button>
+              <button class="cm-btn cm-btn--primary" :disabled="addSaving || !newJar.name" @click="saveNewJar">
                 <q-spinner v-if="addSaving" size="15px" color="white" />
                 <q-icon v-else name="check" size="17px" />
                 {{ addSaving ? 'Guardando…' : 'Crear' }}
@@ -228,7 +270,6 @@
           </div>
         </div>
       </q-dialog>
-
     </div>
   </q-page>
 </template>
@@ -255,20 +296,35 @@ interface JarItem {
   color?: string;
 }
 
-const activeJars    = ref<JarItem[]>([]);
-const jarsLoading   = ref(false);
-const totalBalance  = computed(() => activeJars.value.reduce((s, j) => s + j.balance, 0));
+const activeJars = ref<JarItem[]>([]);
+const jarsLoading = ref(false);
 
-// ── Detail ────────────────────────────────────────────────────────────────
+const totalBalance = computed(() => activeJars.value.reduce((s, j) => s + j.balance, 0));
+const totalAllocated = computed(() => activeJars.value.reduce((s, j) => s + Math.max(0, j.allocated), 0));
+const anyOver = computed(() => activeJars.value.some((j) => j.balance < 0));
+const globalUsePct = computed(() => {
+  const alloc = totalAllocated.value;
+  if (alloc <= 0) return 0;
+  const used = activeJars.value.reduce((s, j) => s + Math.max(0, j.allocated - j.balance), 0);
+  return Math.max(0, Math.min(100, (used / alloc) * 100));
+});
+
+// ── Detail ─────────────────────────────────────────────────────────────────
 const showDetail = ref(false);
-const detailJar  = ref<JarItem | null>(null);
+const detailJar = ref<JarItem | null>(null);
 
 function openDetail(jar: JarItem) {
   detailJar.value = jar;
   showDetail.value = true;
 }
 
-// ── Edit ──────────────────────────────────────────────────────────────────
+// Acción rápida: abre el modal global de transacción con el tipo prefijado
+function quickAction(kind: 'income' | 'expense') {
+  showDetail.value = false;
+  ui.openNewTransactionDialog(kind);
+}
+
+// ── Edit ─────────────────────────────────────────────────────────────────────
 const showEditSheet = ref(false);
 const editJar = ref<{ id: number; name: string; percent: number; color: string } | null>(null);
 const editSaving = ref(false);
@@ -298,7 +354,7 @@ async function saveEditJar() {
   }
 }
 
-// ── Delete ────────────────────────────────────────────────────────────────
+// ── Delete ─────────────────────────────────────────────────────────────────
 function confirmDeleteJar(jar: JarItem | null) {
   if (!jar) return;
   $q.dialog({
@@ -320,15 +376,15 @@ function confirmDeleteJar(jar: JarItem | null) {
   });
 }
 
-// ── Add ───────────────────────────────────────────────────────────────────
+// ── Add ──────────────────────────────────────────────────────────────────────
 const showAddSheet = ref(false);
-const addSaving    = ref(false);
-const addError     = ref<string | null>(null);
+const addSaving = ref(false);
+const addError = ref<string | null>(null);
 
-const colorPalette = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#0EA5E9','#F97316'];
+const colorPalette = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#0EA5E9', '#F97316'];
 
 const blankJar = () => ({ name: '', percent: 10, color: '#3B82F6' });
-const newJar   = ref(blankJar());
+const newJar = ref(blankJar());
 
 function openAddSheet() {
   newJar.value = blankJar();
@@ -339,7 +395,7 @@ function openAddSheet() {
 async function saveNewJar() {
   if (!newJar.value.name) return;
   addSaving.value = true;
-  addError.value  = null;
+  addError.value = null;
   try {
     await api.post('/jars', {
       name: newJar.value.name.trim(),
@@ -357,23 +413,28 @@ async function saveNewJar() {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 function formatMoney(n: number): string {
   return `$ ${Math.abs(n).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function jarSoftColor(jar: JarItem): string {
-  const c = jar.color || '#3B82F6';
-  return c + '22'; // ~13% opacity hex
+function barColor(jar: JarItem): string {
+  if (jar.balance < 0) return 'var(--expense)';
+  if (jar.progress > 85) return 'var(--warning)';
+  return jar.color || 'var(--info)';
 }
 
-// ── Data loading ──────────────────────────────────────────────────────────
+// ── Data loading ─────────────────────────────────────────────────────────────
 async function loadJars() {
   jarsLoading.value = true;
   try {
     const jarsRes = await api.get('/jars', { params: { per_page: 100 } });
     const raw = jarsRes.data?.data;
-    const jarsData: Record<string, unknown>[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? (raw.data as Record<string, unknown>[]) : [];
+    const jarsData: Record<string, unknown>[] = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw?.data)
+        ? (raw.data as Record<string, unknown>[])
+        : [];
     const now = new Date();
     const balDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
@@ -384,8 +445,8 @@ async function loadJars() {
           const balRes = await api.get(`/jars/${jarId}/balance`, { params: { date: balDate } });
           const bal = balRes.data?.data || {};
           const assigned = Number(bal.allocated_amount || 0);
-          const balance  = Number(bal.available_balance || 0);
-          const progress = assigned > 0 ? Math.min(100, Math.round((assigned - balance) / assigned * 100)) : 0;
+          const balance = Number(bal.available_balance || 0);
+          const progress = assigned > 0 ? Math.min(100, Math.round(((assigned - balance) / assigned) * 100)) : 0;
           return {
             id: jarId,
             name: typeof jar.name === 'string' ? jar.name : 'Cántaro',
@@ -395,19 +456,21 @@ async function loadJars() {
             percent: Number(jar.percent ?? 0),
             color: (jar.color as string) || 'var(--info)',
           };
-        } catch { return null; }
-      })
+        } catch {
+          return null;
+        }
+      }),
     );
 
     activeJars.value = results.filter((j): j is JarItem => j !== null);
 
-    const totalAllocated   = activeJars.value.reduce((acc, j) => acc + Math.max(0, j.allocated), 0);
-    const totalAvailable   = activeJars.value.reduce((acc, j) => acc + Math.max(0, j.balance), 0);
-    const availabilityPct  = totalAllocated > 0 ? (totalAvailable / totalAllocated) * 100 : 0;
+    const totAllocated = activeJars.value.reduce((acc, j) => acc + Math.max(0, j.allocated), 0);
+    const totAvailable = activeJars.value.reduce((acc, j) => acc + Math.max(0, j.balance), 0);
+    const availabilityPct = totAllocated > 0 ? (totAvailable / totAllocated) * 100 : 0;
 
     ui.setJarStatus({
-      totalAllocated,
-      totalAvailable,
+      totalAllocated: totAllocated,
+      totalAvailable: totAvailable,
       availabilityPercent: Math.max(0, Math.min(100, availabilityPct)),
       usedPercent: Math.max(0, Math.min(100, 100 - availabilityPct)),
       jarCount: activeJars.value.length,
@@ -419,124 +482,198 @@ async function loadJars() {
   }
 }
 
-onMounted(() => { void loadJars(); });
+onMounted(() => {
+  void loadJars();
+});
 </script>
 
 <style scoped lang="scss">
-.lite-page {
+.cm-page {
   background: var(--bg-canvas);
   min-height: 100vh;
+}
 
-  &__container {
-    max-width: var(--container-max, 860px);
-    margin: 0 auto;
-    padding: 24px 32px 140px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+.cm-container {
+  max-width: var(--container-max, 480px);
+  margin: 0 auto;
+  padding: 20px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+// ── Header ──
+.cm-eyebrow {
+  font-family: var(--font-body, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2, #64748b);
+}
+
+.cm-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  &__title {
+    font-family: var(--font-display, sans-serif);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--fg-1, #0f172a);
+    margin: 4px 0 0;
+  }
+
+  &__sub {
+    font-family: var(--font-body, sans-serif);
+    font-size: 12.5px;
+    color: var(--fg-2, #64748b);
+    margin: 2px 0 0;
   }
 }
 
-// ── Page header ──
-.jars-page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.add-btn {
+.cm-add-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 10px 18px;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 9px 15px;
   border: 0;
   cursor: pointer;
   border-radius: var(--radius-pill, 999px);
   background: var(--brand-primary, #2d4da6);
   color: #fff;
   font-family: var(--font-body, sans-serif);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(45,77,166,.28);
-  &:hover { opacity: .9; }
+  box-shadow: 0 4px 14px rgba(45, 77, 166, 0.28);
+  &:hover {
+    opacity: 0.9;
+  }
 }
 
-// ── Hero card ──
-.hero-card {
+// ── Summary card ──
+.cm-summary {
   background: var(--surface-1, #fff);
   border-radius: var(--radius-xl, 20px);
-  padding: 24px 28px 20px;
-  box-shadow: var(--shadow-card, 0 1px 4px rgba(0,0,0,.08));
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow-card, 0 1px 4px rgba(0, 0, 0, 0.08));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 
-  &__top {
+  &__row {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 4px;
   }
 
-  &__meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-
-  &__stat {
-    font-size: 12px;
+  &__label {
+    font-family: var(--font-body, sans-serif);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
     color: var(--fg-2, #64748b);
-    background: var(--surface-2, #f1f4f6);
-    padding: 4px 10px;
-    border-radius: 999px;
+  }
+
+  &__total {
+    font-family: var(--font-money, monospace);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--fg-1, #0f172a);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+    &.is-over {
+      color: var(--expense-fg, #ef4444);
+    }
+  }
+
+  &__stats {
+    display: flex;
+    gap: 22px;
   }
 }
 
-// ── Distribution strip ──
-.dist-strip {
+.cm-dist {
   display: flex;
-  height: 8px;
+  height: 14px;
   border-radius: 999px;
   overflow: hidden;
   gap: 2px;
 
-  &__segment {
+  &__seg {
     min-width: 4px;
     border-radius: 999px;
-    transition: flex 400ms ease;
+    transition: flex 400ms var(--ease-out, ease);
   }
 }
 
-// ── Jar grid (JarsFullGrid spec: 3-col cards) ──
-.jars-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-
-  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 560px) { grid-template-columns: 1fr; }
-}
-
-.jar-tile {
-  background: var(--surface-1, #fff);
-  border-radius: var(--radius-lg, 16px);
-  padding: 18px 20px;
-  box-shadow: var(--shadow-card, 0 1px 4px rgba(0,0,0,.08));
+.cm-stat {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 2px;
+
+  &__k {
+    font-family: var(--font-body, sans-serif);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--fg-2, #64748b);
+  }
+
+  &__v {
+    font-family: var(--font-money, monospace);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--fg-1, #0f172a);
+    font-variant-numeric: tabular-nums;
+    &.is-over {
+      color: var(--expense-fg, #ef4444);
+    }
+  }
+}
+
+// ── Jar list ──
+.cm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cm-jar {
+  width: 100%;
+  text-align: left;
+  border: 1.5px solid transparent;
+  background: var(--surface-1, #fff);
+  border-radius: var(--radius-lg, 16px);
+  padding: 13px 14px;
+  box-shadow: var(--shadow-card, 0 1px 4px rgba(0, 0, 0, 0.08));
   cursor: pointer;
-  transition: box-shadow 150ms;
-  &:hover { box-shadow: 0 3px 12px rgba(0,0,0,.13); }
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  transition: box-shadow 150ms, border-color 120ms;
+  &:hover {
+    box-shadow: var(--shadow-hover, 0 3px 12px rgba(0, 0, 0, 0.13));
+  }
 
   &__head {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 11px;
   }
 
   &__icon {
-    width: 34px; height: 34px;
-    border-radius: var(--radius-pill, 999px);
-    display: inline-flex; align-items: center; justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
   }
 
@@ -545,12 +682,12 @@ onMounted(() => { void loadJars(); });
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 5px;
   }
 
   &__name {
-    font-family: var(--font-display, 'DM Sans', sans-serif);
-    font-size: 14px;
+    font-family: var(--font-display, sans-serif);
+    font-size: 15px;
     font-weight: 600;
     color: var(--fg-1, #0f172a);
     overflow: hidden;
@@ -558,66 +695,113 @@ onMounted(() => { void loadJars(); });
     white-space: nowrap;
   }
 
-  &__sub {
-    font-family: var(--font-body, sans-serif);
-    font-size: 11px;
-    color: var(--fg-2, #64748b);
+  &__tags {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
   }
 
-  &__warn {
-    color: var(--expense-fg, #ef4444);
-    display: inline-flex;
+  &__value {
+    display: flex;
     align-items: center;
+    gap: 2px;
     flex-shrink: 0;
   }
 
   &__amount {
     font-family: var(--font-money, monospace);
-    font-size: 22px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--fg-1, #0f172a);
     font-variant-numeric: tabular-nums;
+    &.is-over {
+      color: var(--expense-fg, #ef4444);
+    }
+  }
+
+  &__chevron {
+    color: var(--fg-3, #94a3b8);
   }
 
   &__bar {
-    height: 4px;
-    border-radius: 999px;
+    height: 5px;
+    border-radius: 3px;
     background: var(--surface-2, #f1f4f6);
     overflow: hidden;
   }
 
   &__bar-fill {
     height: 100%;
-    border-radius: 999px;
-    transition: width 500ms ease-out;
+    border-radius: 3px;
+    transition: width 400ms var(--ease-out, ease);
   }
 
-  &__footer {
+  &__foot {
     display: flex;
     justify-content: space-between;
     font-family: var(--font-body, sans-serif);
-    font-size: 11px;
+    font-size: 11.5px;
     color: var(--fg-2, #64748b);
+    .is-over {
+      color: var(--expense-fg, #ef4444);
+    }
   }
 }
 
-// ── Empty / Entry gate ──
-.empty-card {
-  background: var(--surface-1, #fff);
-  border-radius: var(--radius-lg, 16px);
-  padding: 48px 20px;
-  display: flex;
-  flex-direction: column;
+.cm-tag {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  text-align: center;
-  box-shadow: var(--shadow-card);
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2, #f1f4f6);
+  color: var(--fg-2, #64748b);
+  font-family: var(--font-body, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+
+  &--over {
+    background: var(--expense-soft, #fee2e2);
+    color: var(--expense-fg, #ef4444);
+  }
+
+  &--full {
+    background: var(--income-soft, #dcfce7);
+    color: var(--income-fg, #16a34a);
+  }
 }
 
-.entry-gate {
+// ── FAB ──
+.cm-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  border: 0;
+  cursor: pointer;
+  background: var(--brand-primary, #2d4da6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(45, 77, 166, 0.42);
+  z-index: 30;
+  transition: transform 120ms, box-shadow 160ms;
+  &:hover {
+    transform: scale(1.05);
+  }
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+// ── Empty ──
+.cm-empty {
   background: var(--surface-1, #fff);
   border-radius: var(--radius-xl, 20px);
-  padding: 48px 24px;
+  padding: 44px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -626,8 +810,8 @@ onMounted(() => { void loadJars(); });
   box-shadow: var(--shadow-card);
 
   h2 {
-    font-family: var(--font-display, 'DM Sans', sans-serif);
-    font-size: 1.25rem;
+    font-family: var(--font-display, sans-serif);
+    font-size: 1.2rem;
     font-weight: 600;
     margin: 0;
     color: var(--fg-1, #0f172a);
@@ -640,42 +824,61 @@ onMounted(() => { void loadJars(); });
     font-size: 14px;
     line-height: 1.5;
   }
+
+  &__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }
 
-.ghost-btn {
-  border: 0; background: transparent; cursor: pointer;
+.cm-ghost-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
   font-family: var(--font-body, sans-serif);
-  font-size: 13px; font-weight: 700;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--brand-primary, #2d4da6);
-  padding: 8px 14px;
+  padding: 9px 15px;
   border-radius: var(--radius-sm, 8px);
-  &:hover { background: rgba(45,77,166,.08); }
+  &:hover {
+    background: rgba(45, 77, 166, 0.08);
+  }
 }
 
 // ── Skeleton ──
-.skeleton-row {
-  height: 68px;
+.cm-skeleton {
+  height: 78px;
   border-radius: var(--radius-lg, 16px);
   background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
   background-size: 200% 100%;
-  animation: sk 1.5s infinite;
+  animation: cm-sk 1.5s infinite;
 }
 
-@keyframes sk {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+@keyframes cm-sk {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
-// ── Jar detail sheet ──
-.jar-detail-sheet {
+// ── Bottom-sheet ──
+.cm-sheet {
   background: var(--surface-1, #fff);
   border-radius: 22px 22px 0 0;
-  min-width: min(520px, 100vw);
+  min-width: min(480px, 100vw);
+  width: 100%;
   display: flex;
   flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
 
   &__handle {
-    width: 40px; height: 4px;
+    width: 40px;
+    height: 4px;
     background: var(--surface-3, #e2e8f0);
     border-radius: 999px;
     margin: 12px auto 0;
@@ -686,16 +889,21 @@ onMounted(() => { void loadJars(); });
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    padding: 22px 24px 16px;
+    gap: 6px;
+    padding: 20px 24px 10px;
   }
 
   &__icon {
-    width: 56px; height: 56px; border-radius: 28px;
-    display: flex; align-items: center; justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
   }
 
-  &__name {
+  &__title {
     font-family: var(--font-display, sans-serif);
     font-size: 18px;
     font-weight: 700;
@@ -706,8 +914,34 @@ onMounted(() => { void loadJars(); });
     font-family: var(--font-money, monospace);
     font-size: 30px;
     font-weight: 700;
-    color: var(--fg-1, #0f172a);
+    color: var(--income-fg, #16a34a);
     font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+    &.is-over {
+      color: var(--expense-fg, #ef4444);
+    }
+  }
+
+  &__balance-sub {
+    font-family: var(--font-body, sans-serif);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-3, #94a3b8);
+  }
+
+  &__progress {
+    height: 7px;
+    background: var(--surface-2, #f1f4f6);
+    margin: 8px 20px 0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  &__progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 400ms var(--ease-out, ease);
   }
 
   &__stats {
@@ -715,40 +949,34 @@ onMounted(() => { void loadJars(); });
     grid-template-columns: 1fr 1fr;
     gap: 1px;
     background: var(--border-hairline, #e2e8f0);
+    margin: 16px 0 0;
     border-top: 1px solid var(--border-hairline);
     border-bottom: 1px solid var(--border-hairline);
   }
 
-  &__progress-wrap {
-    height: 6px;
-    background: var(--surface-2, #f1f4f6);
-    margin: 0 20px 8px;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  &__progress-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 500ms ease-out;
+  &__quick {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px 4px;
   }
 
   &__footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    padding: 12px 20px 20px;
+    padding: 14px 20px 20px;
+    flex-wrap: wrap;
   }
 }
 
-.jar-stat {
+.cm-stat2 {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 14px 18px;
   background: var(--surface-1, #fff);
 
-  &__label {
+  &__k {
     font-size: 10.5px;
     font-weight: 600;
     text-transform: uppercase;
@@ -756,61 +984,154 @@ onMounted(() => { void loadJars(); });
     color: var(--fg-3, #94a3b8);
   }
 
-  &__value {
+  &__v {
     font-family: var(--font-money, monospace);
     font-size: 16px;
     font-weight: 700;
     color: var(--fg-1, #0f172a);
     font-variant-numeric: tabular-nums;
+    &.is-over {
+      color: var(--expense-fg, #ef4444);
+    }
   }
 }
 
-.jd-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  border: none; border-radius: 999px;
+.cm-quick-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  cursor: pointer;
+  border-radius: var(--radius-md, 12px);
+  padding: 12px;
   font-family: var(--font-body, sans-serif);
-  font-size: 13.5px; font-weight: 700; cursor: pointer;
-  padding: 10px 18px; transition: opacity 140ms;
+  font-size: 14px;
+  font-weight: 700;
+  transition: opacity 140ms;
+  &:hover {
+    opacity: 0.88;
+  }
+
+  &--income {
+    background: var(--income-soft, #dcfce7);
+    color: var(--income-fg, #16a34a);
+  }
+
+  &--expense {
+    background: var(--expense-soft, #fee2e2);
+    color: var(--expense-fg, #ef4444);
+  }
+}
+
+.cm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--font-body, sans-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 10px 18px;
+  transition: opacity 140ms, background 140ms;
 
   &--primary {
-    background: var(--brand-primary, #2d4da6); color: #fff;
-    box-shadow: 0 3px 10px rgba(45,77,166,.28);
-    &:hover:not(:disabled) { opacity: .9; }
-    &:disabled { opacity: .5; cursor: not-allowed; }
+    background: var(--brand-primary, #2d4da6);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(45, 77, 166, 0.28);
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
+
   &--ghost {
-    background: var(--surface-2, #f1f4f6); color: var(--fg-2);
-    &:hover { background: var(--surface-3); }
+    background: var(--surface-2, #f1f4f6);
+    color: var(--fg-2);
+    &:hover {
+      background: var(--surface-3);
+    }
+  }
+
+  &--danger {
+    background: var(--expense-soft, #fee2e2);
+    color: var(--expense-fg, #ef4444);
+    margin-right: auto;
   }
 }
 
-// ── Add form ──
-.jf-field { display: flex; flex-direction: column; gap: 5px; }
-.jf-label { font-size: 11.5px; font-weight: 600; color: var(--fg-2, #64748b); }
-.jf-input {
+// ── Forms ──
+.cm-form {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cm-field__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-2, #64748b);
+}
+
+.cm-input {
   border: 1px solid var(--border-hairline, #e2e8f0);
-  border-radius: 8px; padding: 10px 13px;
-  font-family: var(--font-body, sans-serif); font-size: 14px;
-  color: var(--fg-1, #0f172a); background: var(--surface-2, #f8fafc);
-  outline: none; box-sizing: border-box; width: 100%;
-  &:focus { border-color: var(--brand-primary); }
-  &::placeholder { color: var(--fg-3); }
-}
-.jf-colors {
-  display: flex; gap: 8px; flex-wrap: wrap;
-}
-.jf-color-btn {
-  width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent;
-  cursor: pointer; transition: transform 120ms;
-  &--active { border-color: var(--fg-1); transform: scale(1.2); }
-  &:hover { transform: scale(1.15); }
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-family: var(--font-body, sans-serif);
+  font-size: 14px;
+  color: var(--fg-1, #0f172a);
+  background: var(--surface-2, #f8fafc);
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+  &:focus {
+    border-color: var(--brand-primary);
+  }
+  &::placeholder {
+    color: var(--fg-3);
+  }
 }
 
-// ── Mobile ──
-@media (max-width: 768px) {
-  .lite-page__container {
-    padding: 16px 16px 120px;
-    gap: 18px;
+.cm-colors {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cm-color {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 120ms;
+  &.is-active {
+    border-color: var(--fg-1);
+    transform: scale(1.2);
   }
+  &:hover {
+    transform: scale(1.15);
+  }
+}
+
+.cm-error {
+  font-size: 13px;
+  color: var(--expense-fg, #b91c1c);
+  padding: 8px 12px;
+  background: var(--expense-soft, rgba(239, 68, 68, 0.1));
+  border-radius: 8px;
 }
 </style>

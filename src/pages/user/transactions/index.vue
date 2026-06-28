@@ -3720,7 +3720,8 @@ async function txDetailConfirmDelete() {
 }
 
 // Computed display helpers for VIEW mode
-const txDetailAmount = computed(() => Number((txDetailRow.value as AnyRecord | null)?.[`amount`] ?? 0));
+function txDetailGetRow(): AnyRecord | null { return txDetailRow.value; }
+const txDetailAmount = computed(() => Number(txDetailGetRow()?.['amount'] ?? 0));
 const txDetailIsIncome = computed(() => txDetailAmount.value >= 0);
 const txDetailFormattedAmount = computed(() => {
   const abs = Math.abs(txDetailAmount.value);
@@ -3728,33 +3729,23 @@ const txDetailFormattedAmount = computed(() => {
   return `${sign}${new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: 2 }).format(abs)}`;
 });
 const txDetailDate = computed(() => {
-  const d = String((txDetailRow.value as AnyRecord | null)?.['date'] ?? '');
+  const d = String(txDetailGetRow()?.['date'] ?? '');
   if (!d) return '';
   try { return new Date(d.replace(' ', 'T')).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch { return d; }
 });
-const txDetailAccountName = computed(() => {
-  const r = txDetailRow.value as AnyRecord | null;
+function txDetailNestedName(key: string): string {
+  const r = txDetailGetRow();
   if (!r) return '';
-  const acc = r['account'];
-  if (acc && typeof acc === 'object') return String((acc as AnyRecord)['name'] || '');
-  return '';
-});
-const txDetailProviderName = computed(() => {
-  const r = txDetailRow.value as AnyRecord | null;
-  if (!r) return '';
-  const prov = r['provider'];
-  if (prov && typeof prov === 'object') return String((prov as AnyRecord)['name'] || '');
-  return '';
-});
-const txDetailTypeName = computed(() => {
-  const r = txDetailRow.value as AnyRecord | null;
-  if (!r) return '';
-  const tt = r['transaction_type'];
-  if (tt && typeof tt === 'object') return String((tt as AnyRecord)['name'] || '');
-  return '';
-});
-const txDetailJarName = computed(() => txDetailRow.value ? txJarName(txDetailRow.value as Row) : '');
-const txDetailJarColor = computed(() => txDetailRow.value ? txJarColor(txDetailRow.value as Row) : 'var(--brand-primary)');
+  const nested = r[key];
+  if (!nested || typeof nested !== 'object') return '';
+  const n = (nested as AnyRecord)['name'];
+  return typeof n === 'string' ? n : '';
+}
+const txDetailAccountName = computed(() => txDetailNestedName('account'));
+const txDetailProviderName = computed(() => txDetailNestedName('provider'));
+const txDetailTypeName = computed(() => txDetailNestedName('transaction_type'));
+const txDetailJarName = computed(() => txDetailRow.value ? txJarName(txDetailRow.value) : '');
+const txDetailJarColor = computed(() => txDetailRow.value ? txJarColor(txDetailRow.value) : 'var(--brand-primary)');
 // ─── /OWF-138 ────────────────────────────────────────────────────────────────
 
 function edit(row: Record<string, unknown>) {
