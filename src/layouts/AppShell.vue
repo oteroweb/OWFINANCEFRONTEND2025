@@ -110,6 +110,9 @@
 
     </div>
 
+    <!-- OWF-147: Banner de impersonación (aparece fixed top cuando el admin impersona) -->
+    <ImpersonationBanner />
+
     <!-- Contenido de la ruta — q-page-container satisface q-page en las vistas -->
     <q-page-container class="shell__page-container">
       <router-view v-slot="{ Component }">
@@ -176,6 +179,7 @@ import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
 import SmartTransactionModal from 'components/SmartTransactionModal.vue';
 import OnboardingFlow from 'components/OnboardingFlow.vue';
 import NotificationsPanel from 'components/NotificationsPanel.vue';
+import ImpersonationBanner from 'components/ImpersonationBanner.vue';
 
 const router = useRouter();
 const route  = useRoute();

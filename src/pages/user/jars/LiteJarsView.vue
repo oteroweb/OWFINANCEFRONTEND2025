@@ -54,8 +54,17 @@
         <div v-for="i in 4" :key="i" class="cm-skeleton" />
       </div>
 
+      <!-- ── Period selector ── -->
+      <div class="cm-periods" v-if="!jarsLoading && allJars.length">
+        <button
+          v-for="p in periods" :key="p"
+          class="cm-period" :class="{ 'cm-period--on': selectedPeriod === p }"
+          @click="selectedPeriod = p"
+        >{{ p }}</button>
+      </div>
+
       <!-- ── Empty state ── -->
-      <div v-else-if="activeJars.length === 0" class="cm-empty">
+      <div v-else-if="!jarsLoading && allJars.length === 0" class="cm-empty">
         <q-icon name="water_drop" size="48px" style="color: var(--brand-primary); opacity: 0.4;" />
         <h2>Tus cántaros están vacíos</h2>
         <p>Registra un ingreso para distribuirlo, o crea tu primer cántaro.</p>
@@ -65,52 +74,77 @@
         </div>
       </div>
 
-      <!-- ── Lista de cántaros (cards) ── -->
-      <div v-else class="cm-list">
-        <button
-          v-for="jar in activeJars"
+      <!-- ── Lista de cántaros (todos: activos + inactivos dimmed) ── -->
+      <div v-if="!jarsLoading && allJars.length" class="cm-list"
+        @dragover.prevent @drop="onDragEnd">
+        <div
+          v-for="(jar, i) in allJars"
           :key="jar.id"
-          type="button"
           class="cm-jar"
-          @click="openDetail(jar)"
+          :class="{ 'cm-jar--dim': !jar.active, 'cm-jar--dragging': dragIndex === i, 'cm-jar--droptarget': overIndex === i && dragIndex !== i }"
+          draggable="false"
+          @dragenter="onDragEnter(i)"
         >
           <div class="cm-jar__head">
-            <span class="cm-jar__icon" :style="{ background: jar.color || 'var(--info)' }">
-              <q-icon name="savings" size="18px" color="white" />
-            </span>
-            <div class="cm-jar__name-wrap">
-              <span class="cm-jar__name">{{ jar.name }}</span>
-              <div class="cm-jar__tags">
-                <span class="cm-tag">{{ jar.percent }}%</span>
-                <span v-if="jar.balance < 0" class="cm-tag cm-tag--over">
-                  <q-icon name="error" size="12px" /> Excedido
-                </span>
-                <span v-else-if="jar.progress >= 100" class="cm-tag cm-tag--full">Lleno</span>
-              </div>
+            <!-- Drag handle -->
+            <div
+              class="cm-jar__drag"
+              draggable="true"
+              @dragstart="onDragStart(i, $event)"
+              @dragend="onDragEnd"
+              title="Arrastra para reordenar"
+            >
+              <q-icon name="drag_indicator" size="20px" />
             </div>
-            <div class="cm-jar__value">
+            <!-- Icon + name -->
+            <button type="button" class="cm-jar__tap" @click="openDetail(jar)">
+              <span class="cm-jar__icon" :style="{ background: jar.color || 'var(--info)', opacity: jar.active ? 1 : 0.4 }">
+                <q-icon name="savings" size="18px" color="white" />
+              </span>
+              <div class="cm-jar__name-wrap">
+                <span class="cm-jar__name">{{ jar.name }}</span>
+                <div class="cm-jar__tags">
+                  <span class="cm-tag">{{ jar.mode === 'fixed' ? `$${jar.fixed}` : `${jar.percent}%` }}</span>
+                  <span class="cm-tag cm-tag--carry" :class="jar.carry === 'accum' ? 'cm-tag--accum' : 'cm-tag--reset'">
+                    <q-icon :name="jar.carry === 'accum' ? 'all_inclusive' : 'restart_alt'" size="10px" />
+                    {{ jar.carry === 'accum' ? 'Acumula' : 'Reset' }}
+                  </span>
+                  <span v-if="!jar.active" class="cm-tag cm-tag--inactive">Inactivo</span>
+                  <span v-else-if="jar.balance < 0" class="cm-tag cm-tag--over">
+                    <q-icon name="error" size="10px" /> Excedido
+                  </span>
+                  <span v-else-if="jar.progress >= 100" class="cm-tag cm-tag--full">Lleno</span>
+                </div>
+              </div>
+            </button>
+            <!-- Value + toggle -->
+            <div class="cm-jar__right">
               <span class="cm-jar__amount" :class="{ 'is-over': jar.balance < 0 }">
                 {{ isHidden ? '$ ••••' : formatMoney(jar.balance) }}
               </span>
-              <q-icon name="chevron_right" size="20px" class="cm-jar__chevron" />
+              <q-toggle
+                :model-value="jar.active"
+                dense
+                size="xs"
+                color="primary"
+                @update:model-value="toggleJarActive(jar)"
+                @click.stop
+              />
             </div>
           </div>
 
-          <!-- Barra de uso fina -->
-          <div class="cm-jar__bar">
+          <!-- Barra de uso -->
+          <div class="cm-jar__bar" v-if="jar.active">
             <div
               class="cm-jar__bar-fill"
-              :style="{
-                width: `${Math.min(100, jar.progress)}%`,
-                background: barColor(jar),
-              }"
+              :style="{ width: `${Math.min(100, jar.progress)}%`, background: barColor(jar) }"
             />
           </div>
-          <div class="cm-jar__foot">
+          <div class="cm-jar__foot" v-if="jar.active">
             <span :class="{ 'is-over': jar.balance < 0 }">{{ Math.round(jar.progress) }}% utilizado</span>
             <span>de {{ isHidden ? '••••' : formatMoney(jar.allocated) }}</span>
           </div>
-        </button>
+        </div>
       </div>
 
       <!-- espaciador para FAB -->
@@ -294,9 +328,23 @@ interface JarItem {
   progress: number;
   percent: number;
   color?: string;
+  // OWF-137 v2 fields
+  active: boolean;
+  carry: 'accum' | 'reset';
+  mode: 'percent' | 'fixed';
+  fixed?: number;
 }
 
-const activeJars = ref<JarItem[]>([]);
+const allJars = ref<JarItem[]>([]);
+const activeJars = computed(() => allJars.value.filter(j => j.active));
+
+// OWF-137: period selector
+const periods = ['Mensual', 'Semestral', 'Anual'];
+const selectedPeriod = ref('Mensual');
+
+// OWF-137: drag-to-reorder state
+const dragIndex = ref<number | null>(null);
+const overIndex = ref<number | null>(null);
 const jarsLoading = ref(false);
 
 const totalBalance = computed(() => activeJars.value.reduce((s, j) => s + j.balance, 0));
@@ -352,6 +400,40 @@ async function saveEditJar() {
   } finally {
     editSaving.value = false;
   }
+}
+
+// OWF-137: toggle activo/inactivo
+async function toggleJarActive(jar: JarItem) {
+  const next = !jar.active;
+  jar.active = next;
+  try {
+    await api.patch(`/jars/${jar.id}`, { active: next ? 1 : 0 });
+  } catch {
+    jar.active = !next; // revert
+    $q.notify({ type: 'negative', message: 'No se pudo cambiar el estado del cántaro' });
+  }
+}
+
+// OWF-137: drag-to-reorder handlers
+function onDragStart(index: number, e: DragEvent) {
+  dragIndex.value = index;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  }
+}
+function onDragEnter(index: number) {
+  if (dragIndex.value !== null && dragIndex.value !== index) overIndex.value = index;
+}
+function onDragEnd() {
+  if (dragIndex.value !== null && overIndex.value !== null && dragIndex.value !== overIndex.value) {
+    const list = [...allJars.value];
+    const moved = list.splice(dragIndex.value, 1)[0];
+    if (moved) list.splice(overIndex.value, 0, moved);
+    allJars.value = list;
+  }
+  dragIndex.value = null;
+  overIndex.value = null;
 }
 
 // ── Delete ─────────────────────────────────────────────────────────────────
@@ -455,6 +537,10 @@ async function loadJars() {
             progress,
             percent: Number(jar.percent ?? 0),
             color: (jar.color as string) || 'var(--info)',
+            active: jar.active !== false && jar.active !== 0,
+            carry: ((jar.carry as string) || 'reset') as 'accum' | 'reset',
+            mode: ((jar.mode as string) || 'percent') as 'percent' | 'fixed',
+            fixed: Number(jar.fixed ?? 0),
           };
         } catch {
           return null;
@@ -462,7 +548,7 @@ async function loadJars() {
       }),
     );
 
-    activeJars.value = results.filter((j): j is JarItem => j !== null);
+    allJars.value = results.filter((j): j is JarItem => j !== null);
 
     const totAllocated = activeJars.value.reduce((acc, j) => acc + Math.max(0, j.allocated), 0);
     const totAvailable = activeJars.value.reduce((acc, j) => acc + Math.max(0, j.balance), 0);
@@ -1134,4 +1220,73 @@ onMounted(() => {
   background: var(--expense-soft, rgba(239, 68, 68, 0.1));
   border-radius: 8px;
 }
+
+/* OWF-137 v2 additions */
+
+/* Period selector */
+.cm-periods {
+  display: flex;
+  gap: 7px;
+  padding: 0 0 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cm-period {
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--surface-1, #fff);
+  color: var(--fg-2, #64748b);
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  transition: background 140ms, color 140ms;
+  &.cm-period--on {
+    background: var(--brand-primary, #1E3A8A);
+    color: #fff;
+    box-shadow: none;
+  }
+}
+
+/* Jar row v2 */
+.cm-jar--dim { opacity: 0.55; }
+.cm-jar--dragging { opacity: 0.5; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.cm-jar--droptarget { border: 1.5px dashed var(--brand-primary, #1E3A8A) !important; }
+
+.cm-jar__drag {
+  cursor: grab;
+  color: var(--fg-3, #cbd5e1);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 4px 0;
+  touch-action: none;
+}
+.cm-jar__tap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+.cm-jar__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Carry tags */
+.cm-tag--carry { display: inline-flex; align-items: center; gap: 2px; }
+.cm-tag--accum { background: rgba(14,165,233,0.12); color: #0369a1; }
+.cm-tag--reset { background: rgba(148,163,184,0.15); color: #64748b; }
+.cm-tag--inactive { background: rgba(100,116,139,0.1); color: #94a3b8; }
 </style>

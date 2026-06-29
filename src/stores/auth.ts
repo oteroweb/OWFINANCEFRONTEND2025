@@ -78,6 +78,9 @@ export const useAuthStore = defineStore('auth', {
     token: null as string | null,
     user: null as User | null,
     settings: null as UserSetting | null,
+    // OWF-147 — Impersonation state
+    impersonating: false,
+    impersonatedUser: null as User | null,
   }),
   getters: {
     isLoggedIn: (state) => !!state.token,
@@ -278,6 +281,34 @@ export const useAuthStore = defineStore('auth', {
     setLayoutMode(mode: 'lite' | 'pro' | 'legacy') {
       this.updateLayoutMode(mode)
     },
+    // OWF-147 — Start impersonating a user (admin clicks "Iniciar sesión como")
+    startImpersonation(token: string, user: User) {
+      // Backup admin credentials in sessionStorage
+      sessionStorage.setItem('owf_admin_token', this.token ?? '')
+      sessionStorage.setItem('owf_admin_user', JSON.stringify(this.user))
+      // Switch to impersonated user
+      this.token = token
+      this.user = user
+      this.impersonating = true
+      this.impersonatedUser = user
+      api.defaults.headers.common.Authorization = `Bearer ${token}`
+    },
+
+    // OWF-147 — Stop impersonating and restore admin credentials
+    stopImpersonation() {
+      const adminToken = sessionStorage.getItem('owf_admin_token')
+      const adminUserRaw = sessionStorage.getItem('owf_admin_user')
+      sessionStorage.removeItem('owf_admin_token')
+      sessionStorage.removeItem('owf_admin_user')
+      if (adminToken && adminUserRaw) {
+        this.token = adminToken
+        try { this.user = JSON.parse(adminUserRaw) as User } catch { /* keep current */ }
+        api.defaults.headers.common.Authorization = `Bearer ${adminToken}`
+      }
+      this.impersonating = false
+      this.impersonatedUser = null
+    },
+
     /** Persiste settings parciales al backend y actualiza estado local. */
     async updateSettings(partial: Partial<UserSetting> & { preferences?: Record<string, unknown> }) {
       // Actualización optimista inmediata
