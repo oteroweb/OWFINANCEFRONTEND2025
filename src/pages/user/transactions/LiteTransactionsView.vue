@@ -189,61 +189,107 @@
       <div v-if="detailTx" class="tx-detail-sheet">
         <div class="tx-detail-sheet__handle" />
 
-        <!-- Hero -->
-        <div class="tx-detail-sheet__hero">
-          <div class="tx-detail-sheet__icon"
-            :class="detailTx.type === 'income' ? 'tx-detail-sheet__icon--income' : 'tx-detail-sheet__icon--expense'">
-            <q-icon :name="detailTx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="26px" />
+        <!-- ── VIEW MODE ── -->
+        <template v-if="!editMode">
+          <!-- Hero -->
+          <div class="tx-detail-sheet__hero">
+            <div class="tx-detail-sheet__icon"
+              :class="detailTx.type === 'income' ? 'tx-detail-sheet__icon--income' : 'tx-detail-sheet__icon--expense'">
+              <q-icon :name="detailTx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="26px" />
+            </div>
+            <div class="tx-detail-sheet__amount"
+              :style="{ color: detailTx.type === 'income' ? 'var(--income-fg, #10b981)' : 'var(--expense-fg, #ef4444)' }">
+              {{ isHidden ? '$ ••••••' : `${detailTx.type === 'income' ? '+' : '−'} ${formatMoney(Math.abs(detailTx.amount))}` }}
+            </div>
+            <div class="tx-detail-sheet__label">{{ detailTx.name }}</div>
           </div>
-          <div class="tx-detail-sheet__amount"
-            :style="{ color: detailTx.type === 'income' ? 'var(--income-fg, #10b981)' : 'var(--expense-fg, #ef4444)' }">
-            {{ isHidden ? '$ ••••••' : `${detailTx.type === 'income' ? '+' : '−'} ${formatMoney(Math.abs(detailTx.amount))}` }}
-          </div>
-          <div class="tx-detail-sheet__label">{{ detailTx.name }}</div>
-        </div>
 
-        <!-- Detail rows -->
-        <div class="tx-detail-sheet__rows">
-          <div class="tx-detail-row">
-            <q-icon name="swap_vert" size="19px" class="tx-detail-row__icon" />
-            <span class="tx-detail-row__key">Tipo</span>
-            <span class="tx-detail-row__val" :style="{ color: detailTx.type === 'income' ? 'var(--income-fg)' : 'var(--expense-fg)' }">
-              {{ detailTx.type === 'income' ? 'Ingreso' : 'Gasto' }}
-            </span>
+          <!-- Detail rows -->
+          <div class="tx-detail-sheet__rows">
+            <div class="tx-detail-row">
+              <q-icon name="swap_vert" size="19px" class="tx-detail-row__icon" />
+              <span class="tx-detail-row__key">Tipo</span>
+              <span class="tx-detail-row__val" :style="{ color: detailTx.type === 'income' ? 'var(--income-fg)' : 'var(--expense-fg)' }">
+                {{ detailTx.type === 'income' ? 'Ingreso' : 'Gasto' }}
+              </span>
+            </div>
+            <div class="tx-detail-row">
+              <q-icon name="label" size="19px" class="tx-detail-row__icon" />
+              <span class="tx-detail-row__key">Categoría</span>
+              <span class="tx-detail-row__val">{{ detailTx.category }}</span>
+            </div>
+            <!-- Cántaro anclado -->
+            <div class="tx-detail-row tx-detail-row--chip">
+              <q-icon name="savings" size="19px" class="tx-detail-row__icon" />
+              <span class="tx-detail-row__key">Cántaro</span>
+              <div class="tx-detail-row__val tx-detail-row__val--chip">
+                <AnchoredJarChip :category-id="detailTx.category_id" />
+              </div>
+            </div>
+            <div class="tx-detail-row">
+              <q-icon name="calendar_today" size="19px" class="tx-detail-row__icon" />
+              <span class="tx-detail-row__key">Fecha</span>
+              <span class="tx-detail-row__val">{{ formatDateShort(detailTx.date) }}</span>
+            </div>
           </div>
-          <div class="tx-detail-row">
-            <q-icon name="label" size="19px" class="tx-detail-row__icon" />
-            <span class="tx-detail-row__key">Categoría</span>
-            <span class="tx-detail-row__val">{{ detailTx.category }}</span>
-          </div>
-          <div v-if="detailTx.jarName" class="tx-detail-row">
-            <q-icon name="savings" size="19px" class="tx-detail-row__icon" />
-            <span class="tx-detail-row__key">Cántaro</span>
-            <span class="tx-detail-row__val" style="display:inline-flex;align-items:center;gap:7px">
-              <span v-if="detailTx.jarColor" :style="{ width: '9px', height: '9px', borderRadius: '50%', background: detailTx.jarColor, flexShrink: 0, display: 'inline-block' }" />
-              {{ detailTx.jarName }}
-            </span>
-          </div>
-          <div class="tx-detail-row">
-            <q-icon name="calendar_today" size="19px" class="tx-detail-row__icon" />
-            <span class="tx-detail-row__key">Fecha</span>
-            <span class="tx-detail-row__val">{{ formatDateShort(detailTx.date) }}</span>
-          </div>
-        </div>
 
-        <!-- Actions -->
-        <div class="tx-detail-sheet__footer">
-          <button class="tx-detail-btn tx-detail-btn--danger" @click="void deleteFromDetail()">
-            <q-icon name="delete_outline" size="17px" /> Eliminar
-          </button>
-          <div style="flex:1" />
-          <button class="tx-detail-btn tx-detail-btn--ghost" @click="showDetail = false">
-            Cerrar
-          </button>
-          <button class="tx-detail-btn tx-detail-btn--primary" @click="editFromDetail">
-            <q-icon name="edit" size="17px" /> Editar
-          </button>
-        </div>
+          <!-- Confirm eliminar inline -->
+          <div v-if="confirmDelete" class="tx-detail-confirm">
+            <span class="tx-detail-confirm__text">¿Eliminar esta transacción?</span>
+            <button class="tx-detail-btn tx-detail-btn--danger" @click="void confirmDeleteNow()">Confirmar</button>
+            <button class="tx-detail-btn tx-detail-btn--ghost" @click="confirmDelete = false">Cancelar</button>
+          </div>
+
+          <!-- Actions -->
+          <div class="tx-detail-sheet__footer">
+            <button class="tx-detail-btn tx-detail-btn--danger" @click="confirmDelete = true">
+              <q-icon name="delete_outline" size="17px" /> Eliminar
+            </button>
+            <button class="tx-detail-btn tx-detail-btn--ghost" @click="void duplicateFromDetail()">
+              <q-icon name="content_copy" size="17px" /> Duplicar
+            </button>
+            <div style="flex:1" />
+            <button class="tx-detail-btn tx-detail-btn--ghost" @click="showDetail = false">Cerrar</button>
+            <button class="tx-detail-btn tx-detail-btn--primary" @click="enterEditMode">
+              <q-icon name="edit" size="17px" /> Editar
+            </button>
+          </div>
+        </template>
+
+        <!-- ── EDIT MODE ── -->
+        <template v-else>
+          <div class="tx-detail-sheet__edit-title">Editar transacción</div>
+
+          <div class="tx-detail-edit__fields">
+            <div class="tx-detail-edit__field">
+              <label class="tx-detail-edit__label">Concepto</label>
+              <input v-model="editForm.name" class="tx-detail-edit__input" placeholder="Concepto" />
+            </div>
+            <div class="tx-detail-edit__field">
+              <label class="tx-detail-edit__label">Monto</label>
+              <input v-model.number="editForm.amount" type="number" class="tx-detail-edit__input" placeholder="0.00" />
+            </div>
+            <div class="tx-detail-edit__field">
+              <label class="tx-detail-edit__label">Fecha</label>
+              <input v-model="editForm.date" type="datetime-local" class="tx-detail-edit__input" />
+            </div>
+            <div class="tx-detail-edit__field">
+              <label class="tx-detail-edit__label">Categoría</label>
+              <q-select v-model="editForm.category_id" :options="editCategoryOptions" emit-value map-options dense outlined
+                clearable placeholder="Sin categoría" :loading="editCatLoading" />
+              <AnchoredJarChip :category-id="editForm.category_id" class="tx-detail-edit__chip" />
+            </div>
+          </div>
+
+          <div class="tx-detail-sheet__footer">
+            <button class="tx-detail-btn tx-detail-btn--ghost" @click="exitEditMode">Cancelar</button>
+            <div style="flex:1" />
+            <button class="tx-detail-btn tx-detail-btn--primary" :disabled="editSaving" @click="void saveEdit()">
+              <q-icon v-if="editSaving" name="hourglass_empty" size="17px" />
+              <q-icon v-else name="check" size="17px" /> Guardar
+            </button>
+          </div>
+        </template>
       </div>
     </q-dialog>
 
@@ -252,14 +298,24 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import { usePeriodStore } from 'stores/period';
 import TxDropdown from './TxDropdown.vue';
 import PeriodNavigator from 'components/PeriodNavigator.vue';
+import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
+import {
+  loadCategoriesWithJars,
+  loadUserJars,
+  getCachedCategories,
+  jarForCategory,
+  getCachedJars,
+} from 'src/utils/txCatalog';
 
 defineOptions({ name: 'LiteTransactionsView' });
 
+const $q = useQuasar();
 const ui = useUiStore();
 const period = usePeriodStore();
 const isHidden = computed(() => ui.hideValues);
@@ -281,9 +337,11 @@ interface TxItem {
   amount: number;
   date: string;
   category: string;
+  category_id?: number | null;
   type: 'income' | 'expense';
   jarName?: string | undefined;
   jarColor?: string | undefined;
+  jar_slug?: string | null;
 }
 
 interface TxOption {
@@ -409,25 +467,104 @@ function applyPreset(p: typeof amountPresets[0]) {
 // ── Detail / Edit ────────────────────────────────────────────────────
 const detailTx = ref<TxItem | null>(null);
 const showDetail = ref(false);
+const confirmDelete = ref(false);
+
+// Edit mode state
+const editMode = ref(false);
+const editSaving = ref(false);
+const editCatLoading = ref(false);
+const editForm = ref({
+  name: '',
+  amount: 0,
+  date: '',
+  category_id: null as number | null,
+});
+
+const editCategoryOptions = computed(() =>
+  getCachedCategories()
+    .filter(c => c.type === 'category' && c.active)
+    .map(c => ({ label: c.name, value: c.id }))
+);
 
 function openDetail(tx: TxItem) {
   detailTx.value = tx;
+  confirmDelete.value = false;
+  editMode.value = false;
   showDetail.value = true;
 }
 
-function editFromDetail() {
-  showDetail.value = false;
+function enterEditMode() {
   if (!detailTx.value) return;
-  ui.openEditTransactionDialog(detailTx.value.id);
+  editForm.value = {
+    name: detailTx.value.name,
+    amount: detailTx.value.amount,
+    date: detailTx.value.date.slice(0, 16),
+    category_id: detailTx.value.category_id ?? null,
+  };
+  editCatLoading.value = true;
+  void Promise.all([loadCategoriesWithJars(), loadUserJars()]).finally(() => {
+    editCatLoading.value = false;
+  });
+  editMode.value = true;
 }
 
-async function deleteFromDetail() {
+function exitEditMode() {
+  editMode.value = false;
+}
+
+async function saveEdit() {
+  if (!detailTx.value || editSaving.value) return;
+  editSaving.value = true;
+  try {
+    const derivedJar = jarForCategory(editForm.value.category_id, getCachedJars());
+    await api.patch(`/transactions/${detailTx.value.id}`, {
+      name: editForm.value.name.trim(),
+      amount: editForm.value.amount,
+      date: editForm.value.date.replace('T', ' ') + ':00',
+      category_id: editForm.value.category_id ?? null,
+      jar_id: derivedJar?.id ?? null,
+    });
+    $q.notify({ type: 'positive', message: 'Transacción actualizada' });
+    showDetail.value = false;
+    void loadTransactions();
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error al guardar' });
+  } finally {
+    editSaving.value = false;
+  }
+}
+
+async function confirmDeleteNow() {
   if (!detailTx.value) return;
   try {
     await api.delete(`/transactions/${detailTx.value.id}`);
     showDetail.value = false;
+    $q.notify({ type: 'positive', message: 'Transacción eliminada' });
     void loadTransactions();
-  } catch { /* silent */ }
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error al eliminar' });
+  }
+}
+
+async function duplicateFromDetail() {
+  if (!detailTx.value) return;
+  const tx = detailTx.value;
+  try {
+    const derivedJar = jarForCategory(tx.category_id, getCachedJars());
+    await api.post('/transactions', {
+      name: tx.name + ' (copia)',
+      amount: tx.amount,
+      date: tx.date.replace('T', ' ').slice(0, 19),
+      category_id: tx.category_id ?? null,
+      jar_id: derivedJar?.id ?? null,
+      payments: [{ account_id: null, amount: tx.type === 'income' ? tx.amount : -tx.amount }],
+    });
+    $q.notify({ type: 'positive', message: 'Transacción duplicada' });
+    showDetail.value = false;
+    void loadTransactions();
+  } catch {
+    $q.notify({ type: 'negative', message: 'Error al duplicar' });
+  }
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -514,15 +651,20 @@ async function loadTransactions() {
         txType = amount >= 0 ? 'income' : 'expense';
       }
 
+      const catRel = typeof tx['category'] === 'object' && tx['category'] ? tx['category'] as Record<string, unknown> : null;
+      const jarRel = typeof tx['jar'] === 'object' && tx['jar'] ? tx['jar'] as Record<string, unknown> : null;
+
       return {
         id: Number(tx.id),
         name: typeof tx.name === 'string' ? tx.name : (typeof tx.description === 'string' ? tx.description : 'Transacción'),
         amount: Math.abs(amount),
         date: typeof tx.date === 'string' ? tx.date : new Date().toISOString(),
-        category: ((tx.transaction_type as Record<string, unknown> | undefined)?.name as string | undefined) ?? 'General',
+        category: (catRel?.['name'] as string | undefined) ?? ((tx.transaction_type as Record<string, unknown> | undefined)?.name as string | undefined) ?? 'General',
+        category_id: catRel ? Number(catRel['id']) : (tx['category_id'] ? Number(tx['category_id']) : null),
         type: txType,
-        jarName: (typeof tx['jar_name'] === 'string' ? tx['jar_name'] : undefined) || (typeof tx['jar'] === 'object' && tx['jar'] ? (tx['jar'] as Record<string, unknown>)['name'] as string | undefined : undefined),
-        jarColor: (typeof tx['jar_color'] === 'string' ? tx['jar_color'] : undefined) || (typeof tx['jar'] === 'object' && tx['jar'] ? (tx['jar'] as Record<string, unknown>)['color'] as string | undefined : undefined),
+        jar_slug: (catRel?.['jar_slug'] as string | null | undefined) ?? null,
+        jarName: (typeof tx['jar_name'] === 'string' ? tx['jar_name'] : undefined) || (jarRel ? jarRel['name'] as string | undefined : undefined),
+        jarColor: (typeof tx['jar_color'] === 'string' ? tx['jar_color'] : undefined) || (jarRel ? jarRel['color'] as string | undefined : undefined),
       };
     });
   } catch (err) {
@@ -1135,6 +1277,78 @@ onUnmounted(() => {
     background: rgba(239,68,68,.1); color: #b91c1c;
     &:hover { background: rgba(239,68,68,.18); }
   }
+}
+
+// Chip row inside detail sheet
+.tx-detail-row--chip {
+  align-items: flex-start;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.tx-detail-row__val--chip {
+  flex: 1;
+}
+
+// Confirm delete bar
+.tx-detail-confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(239,68,68,.06);
+  border-top: 1px solid rgba(239,68,68,.15);
+  border-bottom: 1px solid rgba(239,68,68,.15);
+}
+.tx-detail-confirm__text {
+  flex: 1;
+  font-size: 13px;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+// Edit mode
+.tx-detail-sheet__edit-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-1, #0f172a);
+  padding: 16px 20px 8px;
+}
+
+.tx-detail-edit__fields {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tx-detail-edit__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tx-detail-edit__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-2, #64748b);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.tx-detail-edit__input {
+  width: 100%;
+  border: 1.5px solid var(--border-hairline, #e2e8f0);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--fg-1, #0f172a);
+  background: var(--surface-1, #fff);
+  outline: none;
+  &:focus { border-color: var(--brand-primary, #2d4da6); }
+}
+
+.tx-detail-edit__chip {
+  margin-top: 4px;
 }
 
 </style>

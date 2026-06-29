@@ -14,6 +14,41 @@ const { useState: useTxdState, useEffect: useTxdEffect } = React;
 
 function txdAcct(id) { return (window.SAMPLE_ACCOUNTS || []).find(a => a.id === id) || null; }
 
+/* Cántaro derivado de la categoría (solo lectura) — el cántaro nunca se elige
+ * a mano: entra anclado a la categoría seleccionada. */
+function TxdAnchoredJar({ category }) {
+  const jar = window.owfJarForCategory ? window.owfJarForCategory(category) : null;
+  const T = (s) => (window.t ? window.t(s) : s);
+  if (!category) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 13px', borderRadius: 'var(--radius-sm)', background: 'var(--surface-2)', border: '1px dashed var(--border-hairline)' }}>
+        <span className="material-icons" style={{ fontSize: 18, color: 'var(--fg-3)' }}>savings</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--fg-3)' }}>{T('El cántaro entra con la categoría')}</span>
+      </div>
+    );
+  }
+  if (!jar) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 13px', borderRadius: 'var(--radius-sm)', background: 'var(--surface-2)', border: '1px solid var(--border-hairline)' }}>
+        <span className="material-icons" style={{ fontSize: 18, color: 'var(--fg-3)' }}>block</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--fg-2)' }}>{T('Esta categoría no aporta a ningún cántaro')}</span>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px', borderRadius: 'var(--radius-sm)', background: `color-mix(in srgb, ${jar.color} 9%, var(--surface-1))`, border: `1px solid color-mix(in srgb, ${jar.color} 26%, transparent)` }}>
+      <span style={{ width: 26, height: 26, borderRadius: 8, background: jar.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span className="material-icons" style={{ fontSize: 16, color: '#fff' }}>{jar.icon}</span>
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--fg-1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{T(jar.name)}</div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--fg-2)' }}>{jar.percent}% · {T('anclado a la categoría')}</div>
+      </div>
+      <span className="material-icons" title={T('Definido por la categoría')} style={{ fontSize: 16, color: 'var(--fg-3)' }}>lock</span>
+    </div>
+  );
+}
+
 function TransactionDetailModal({ open, tx, mode = 'lite', hidden = false, onClose, onChanged }) {
   const isPro = mode === 'pro';
   const isMobile = useViewportMobile();
@@ -62,8 +97,9 @@ function TransactionDetailModal({ open, tx, mode = 'lite', hidden = false, onClo
     const amt = parseFloat(draft.amount) || 0;
     tx.label = draft.label.trim() || tx.label;
     tx.category = draft.category;
-    tx.jar = draft.jar;
-    tx.jarColor = draft.jar ? ((window.SAMPLE_JARS || []).find(j => j.name === draft.jar) || {}).color : null;
+    const dj = window.owfJarForCategory ? window.owfJarForCategory(draft.category) : null;
+    tx.jar = dj ? dj.name : null;
+    tx.jarColor = dj ? dj.color : null;
     tx.acctId = draft.acctId;
     tx.amount = (isIncome ? 1 : -1) * Math.abs(amt);
     setEditing(false);
@@ -75,6 +111,16 @@ function TransactionDetailModal({ open, tx, mode = 'lite', hidden = false, onClo
     if (i > -1) window.SAMPLE_TX.splice(i, 1);
     onChanged && onChanged();
     onClose();
+  };
+
+  const duplicate = () => {
+    const list = window.SAMPLE_TX || [];
+    const i = list.indexOf(tx);
+    const copy = { ...tx, label: `${tx.label} (${T('copia')})` };
+    if (i > -1) list.splice(i + 1, 0, copy); else list.push(copy);
+    onChanged && onChanged();
+    // Reopen the detail modal on the new copy, straight into edit mode.
+    if (window.__owOpenTxDetailDesktop) window.__owOpenTxDetailDesktop(copy);
   };
 
   const T = (s) => (window.t ? window.t(s) : s);
@@ -167,6 +213,7 @@ function TransactionDetailModal({ open, tx, mode = 'lite', hidden = false, onClo
             {!confirmDel ? (
               <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
                 <PillButton variant="danger" icon="delete_outline" onClick={() => setConfirmDel(true)}>{T('Eliminar')}</PillButton>
+                <PillButton variant="ghost" icon="content_copy" onClick={duplicate}>{T('Duplicar')}</PillButton>
                 <div style={{ flex: 1 }} />
                 <PillButton variant="ghost" onClick={onClose}>{T('Cerrar')}</PillButton>
                 <button onClick={() => setEditing(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: 0, cursor: 'pointer', padding: '12px 22px', borderRadius: 'var(--radius-pill)', background: accent, color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14 }}>
@@ -204,8 +251,8 @@ function TransactionDetailModal({ open, tx, mode = 'lite', hidden = false, onClo
               <Field label={T('Categoría')} style={{ flex: 1 }}>
                 <Picker value={draft.category} onChange={v => setDraft(d => ({ ...d, category: v }))} options={catOptions} />
               </Field>
-              <Field label={T('Cántaro')} style={{ flex: 1 }}>
-                <Picker value={draft.jar} onChange={v => setDraft(d => ({ ...d, jar: v }))} options={jarOptions} placeholder={T('Sin cántaro')} />
+              <Field label={T('Cántaro')} hint={T('Anclado a la categoría')} style={{ flex: 1 }}>
+                <TxdAnchoredJar category={draft.category} />
               </Field>
             </div>
 

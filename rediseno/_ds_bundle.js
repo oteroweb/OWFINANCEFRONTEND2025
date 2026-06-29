@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"OWFinanceDesignSystem_5fd9e1","components":[{"name":"IconButton","sourcePath":"components/buttons/IconButton.jsx"},{"name":"PillButton","sourcePath":"components/buttons/PillButton.jsx"},{"name":"Chip","sourcePath":"components/chips/Chip.jsx"},{"name":"CurrencyChip","sourcePath":"components/chips/CurrencyChip.jsx"},{"name":"Avatar","sourcePath":"components/primitives/Avatar.jsx"},{"name":"Card","sourcePath":"components/primitives/Card.jsx"},{"name":"Eyebrow","sourcePath":"components/primitives/Eyebrow.jsx"},{"name":"Money","sourcePath":"components/primitives/Money.jsx"}],"sourceHashes":{"cantaros-mobile/atoms.jsx":"33c397067107","cantaros-mobile/categories.jsx":"7e02272eb796","cantaros-mobile/data.jsx":"ae66b19d7bad","cantaros-mobile/detail.jsx":"cdcd6ac7f442","cantaros-mobile/screen.jsx":"2ac5ed578694","cantaros-mobile/tweaks-panel.jsx":"6591467622ed","color-scheme.js":"ce602ba10e3f","components/buttons/IconButton.jsx":"318502b60ad6","components/buttons/PillButton.jsx":"8bc8c6d0ddbd","components/chips/Chip.jsx":"dd91549ca864","components/chips/CurrencyChip.jsx":"279396f07797","components/primitives/Avatar.jsx":"f246e5f4147c","components/primitives/Card.jsx":"55712669b8ae","components/primitives/Eyebrow.jsx":"e2e7368473e5","components/primitives/Money.jsx":"d293e7f8b2cd","marketing.js":"36bbac9b2d80","onboarding/auth.jsx":"5a9d5645064a","onboarding/flow-data.jsx":"12b314de4853","onboarding/flow-desktop.jsx":"70a0407ae2de","onboarding/flow.jsx":"8ef62e3c2391","onboarding/gamification.jsx":"776a66fb1228","onboarding/onb-atoms.jsx":"c8f8c2eb35c2","onboarding/profile-panel.jsx":"69f128c3abf7","onboarding/welcome-dashboard.jsx":"2e28c675f82d","onboarding/welcome-modal.jsx":"ef9f508ea9a8","period-selector.js":"cb172ef88d57","redesign/TxLedger.jsx":"ad297b8e5685","redesign/TxPoolsHeader.jsx":"bcbab66630f1","redesign/app.jsx":"3a3e4769b61b","redesign/data.jsx":"00d3bb08d92a","ui_kits/lite-desktop/atoms/Buttons.jsx":"c3e71689c42d","ui_kits/lite-desktop/atoms/Chips.jsx":"a65662ac37ef","ui_kits/lite-desktop/atoms/Primitives.jsx":"e7aac8cbb6a3","ui_kits/lite-desktop/data/analisis-data.jsx":"e23f915aba6d","ui_kits/lite-desktop/data/finance-data.jsx":"9e55498219c8","ui_kits/lite-desktop/data/i18n.jsx":"096823815739","ui_kits/lite-desktop/data/profile-data.jsx":"597c7186c8f3","ui_kits/lite-desktop/data/sample-data.jsx":"e733d349e52e","ui_kits/lite-desktop/molecules/ChipGroup.jsx":"6ff71ea675aa","ui_kits/lite-desktop/molecules/FormControls.jsx":"b9ef67ebbd31","ui_kits/lite-desktop/molecules/SectionHeader.jsx":"c678a94f59f6","ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx":"4fbe1bc97d0b","ui_kits/lite-desktop/organisms/AccountFilter.jsx":"d818f684b95b","ui_kits/lite-desktop/organisms/AccountsPanel.jsx":"65e31353d59a","ui_kits/lite-desktop/organisms/AnalisisParts.jsx":"37d94b451029","ui_kits/lite-desktop/organisms/BulkImportPanel.jsx":"65d4fd8387e2","ui_kits/lite-desktop/organisms/DebtsPreview.jsx":"b4733871862e","ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx":"cfecb8dac9d5","ui_kits/lite-desktop/organisms/DreamsPreview.jsx":"5462b9553bdd","ui_kits/lite-desktop/organisms/EntryGate.jsx":"1241adaea1c0","ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx":"37f45d6c4723","ui_kits/lite-desktop/organisms/ExpandedMenu.jsx":"0c3e79aec576","ui_kits/lite-desktop/organisms/HeroBalance.jsx":"5cecf9195e72","ui_kits/lite-desktop/organisms/JarsConfig.jsx":"485cb17c69ed","ui_kits/lite-desktop/organisms/JarsPreview.jsx":"5c5508796730","ui_kits/lite-desktop/organisms/LiteHeader.jsx":"6e4a5afe2210","ui_kits/lite-desktop/organisms/LiteNavPill.jsx":"f054260b22fc","ui_kits/lite-desktop/organisms/MobileTabBar.jsx":"1fbb5dbe5887","ui_kits/lite-desktop/organisms/MonthNavigator.jsx":"513eb7e07020","ui_kits/lite-desktop/organisms/NotificationsPanel.jsx":"38325011a256","ui_kits/lite-desktop/organisms/OnboardingFlow.jsx":"1dcdc6d4617c","ui_kits/lite-desktop/organisms/RecentTransactions.jsx":"e92eaeefbcf5","ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx":"90e5576352f1","ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx":"ddfc5df722f7","ui_kits/lite-desktop/organisms/TransactionForm.jsx":"0c08e3146319","ui_kits/lite-desktop/shells/LiteShell.jsx":"a390819044d6","ui_kits/lite-desktop/shells/ProShell.jsx":"67d2053a07ab","ui_kits/lite-desktop/templates/AnalisisRoute.jsx":"592e90af5138","ui_kits/lite-desktop/templates/ConfigRoute.jsx":"0c1d574b38f7","ui_kits/lite-desktop/templates/DebtsRoute.jsx":"92530729a003","ui_kits/lite-desktop/templates/DreamsRoute.jsx":"b614f96aa92e","ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx":"7a9c2f2ef8f2","ui_kits/lite-desktop/templates/HomeRoute.jsx":"cb2aebdcad3c","ui_kits/lite-desktop/templates/JarsRoute.jsx":"53325c31755b","ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx":"53219c9595fb","ui_kits/lite-desktop/templates/ProHomeRoute.jsx":"80ccaf7f02fc","ui_kits/lite-desktop/templates/ProfileRoute.jsx":"87b7e118a222","ui_kits/lite-desktop/templates/TransactionsRoute.jsx":"6826709b3aee","ui_kits/lite-desktop/tweaks-panel.jsx":"6591467622ed","ui_kits/mobile/Shell.jsx":"48ffe926c013","ui_kits/mobile/components/Atoms.jsx":"f89904173ab3","ui_kits/mobile/components/BalanceCard.jsx":"01b71c947363","ui_kits/mobile/components/BottomSheet.jsx":"6356b7e22efd","ui_kits/mobile/components/ChatComponents.jsx":"753c82f5ef5f","ui_kits/mobile/components/DebtComponents.jsx":"d97be1dc6da0","ui_kits/mobile/components/DreamComponents.jsx":"0a03e5018be8","ui_kits/mobile/components/EntryGateMobile.jsx":"a71a2ffcff53","ui_kits/mobile/components/JarComponents.jsx":"f023ec4718e6","ui_kits/mobile/components/MonthNavigatorMobile.jsx":"98c8dfe1d41e","ui_kits/mobile/components/Navigation.jsx":"668e1954c585","ui_kits/mobile/components/OnboardingMobile.jsx":"b2119402d9b2","ui_kits/mobile/components/ProfileComponents.jsx":"017ea1f55228","ui_kits/mobile/components/QuickActionSheet.jsx":"899bed51132c","ui_kits/mobile/components/SmartTransactionSheet.jsx":"87d9ec1c246e","ui_kits/mobile/components/TransactionComponents.jsx":"0f6c229e479f","ui_kits/mobile/components/TransactionDetailSheet.jsx":"b24a4b486cd5","ui_kits/mobile/components/TransactionFilters.jsx":"c2e2df3c685e","ui_kits/mobile/components/TransactionFormSheet.jsx":"102aa4c04d01","ui_kits/mobile/data.jsx":"2673360bfb71","ui_kits/mobile/profile-data.jsx":"597c7186c8f3","ui_kits/mobile/screens/AIAdvisorScreen.jsx":"c8481db07461","ui_kits/mobile/screens/DebtsScreen.jsx":"0c314f06d687","ui_kits/mobile/screens/DreamsScreen.jsx":"2e7a2a5c2f88","ui_kits/mobile/screens/FinancialProfileScreen.jsx":"a459a34c5105","ui_kits/mobile/screens/HomeScreenLite.jsx":"697b1d4f35e4","ui_kits/mobile/screens/HomeScreenPro.jsx":"a28b6371e4e1","ui_kits/mobile/screens/JarsScreen.jsx":"c4d236dbde24","ui_kits/mobile/screens/ProfileScreen.jsx":"c5bf2f4025af","ui_kits/mobile/screens/SettingsScreen.jsx":"338a248ecbbe","ui_kits/mobile/screens/TransactionsScreen.jsx":"913bcb11abac","ui_kits/mobile/tokens.js":"66ccee7c23e3"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"OWFinanceDesignSystem_5fd9e1","components":[{"name":"IconButton","sourcePath":"components/buttons/IconButton.jsx"},{"name":"PillButton","sourcePath":"components/buttons/PillButton.jsx"},{"name":"Chip","sourcePath":"components/chips/Chip.jsx"},{"name":"CurrencyChip","sourcePath":"components/chips/CurrencyChip.jsx"},{"name":"Avatar","sourcePath":"components/primitives/Avatar.jsx"},{"name":"Card","sourcePath":"components/primitives/Card.jsx"},{"name":"Eyebrow","sourcePath":"components/primitives/Eyebrow.jsx"},{"name":"Money","sourcePath":"components/primitives/Money.jsx"}],"sourceHashes":{"cantaros-mobile/atoms.jsx":"33c397067107","cantaros-mobile/categories.jsx":"7e02272eb796","cantaros-mobile/data.jsx":"ae66b19d7bad","cantaros-mobile/detail.jsx":"cdcd6ac7f442","cantaros-mobile/screen.jsx":"2ac5ed578694","cantaros-mobile/tweaks-panel.jsx":"6591467622ed","color-scheme.js":"ce602ba10e3f","components/buttons/IconButton.jsx":"318502b60ad6","components/buttons/PillButton.jsx":"8bc8c6d0ddbd","components/chips/Chip.jsx":"dd91549ca864","components/chips/CurrencyChip.jsx":"279396f07797","components/primitives/Avatar.jsx":"f246e5f4147c","components/primitives/Card.jsx":"55712669b8ae","components/primitives/Eyebrow.jsx":"e2e7368473e5","components/primitives/Money.jsx":"d293e7f8b2cd","marketing.js":"36bbac9b2d80","onboarding/auth.jsx":"5a9d5645064a","onboarding/flow-data.jsx":"12b314de4853","onboarding/flow-desktop.jsx":"70a0407ae2de","onboarding/flow.jsx":"8ef62e3c2391","onboarding/gamification.jsx":"776a66fb1228","onboarding/onb-atoms.jsx":"c8f8c2eb35c2","onboarding/profile-panel.jsx":"69f128c3abf7","onboarding/welcome-dashboard.jsx":"2e28c675f82d","onboarding/welcome-modal.jsx":"ef9f508ea9a8","period-selector.js":"cb172ef88d57","redesign/TxLedger.jsx":"ad297b8e5685","redesign/TxPoolsHeader.jsx":"bcbab66630f1","redesign/app.jsx":"3a3e4769b61b","redesign/data.jsx":"00d3bb08d92a","tx-catalog.js":"58957ac653eb","ui_kits/lite-desktop/atoms/Buttons.jsx":"c3e71689c42d","ui_kits/lite-desktop/atoms/Chips.jsx":"a65662ac37ef","ui_kits/lite-desktop/atoms/Primitives.jsx":"e7aac8cbb6a3","ui_kits/lite-desktop/data/analisis-data.jsx":"e23f915aba6d","ui_kits/lite-desktop/data/finance-data.jsx":"202824a2f7dd","ui_kits/lite-desktop/data/i18n.jsx":"0080736d4ae1","ui_kits/lite-desktop/data/profile-data.jsx":"597c7186c8f3","ui_kits/lite-desktop/data/sample-data.jsx":"e733d349e52e","ui_kits/lite-desktop/molecules/ChipGroup.jsx":"6ff71ea675aa","ui_kits/lite-desktop/molecules/FormControls.jsx":"b9ef67ebbd31","ui_kits/lite-desktop/molecules/SectionHeader.jsx":"c678a94f59f6","ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx":"4fbe1bc97d0b","ui_kits/lite-desktop/organisms/AccountFilter.jsx":"d818f684b95b","ui_kits/lite-desktop/organisms/AccountsPanel.jsx":"65e31353d59a","ui_kits/lite-desktop/organisms/AnalisisParts.jsx":"37d94b451029","ui_kits/lite-desktop/organisms/BulkImportPanel.jsx":"65d4fd8387e2","ui_kits/lite-desktop/organisms/DebtsPreview.jsx":"b4733871862e","ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx":"cfecb8dac9d5","ui_kits/lite-desktop/organisms/DreamsPreview.jsx":"5462b9553bdd","ui_kits/lite-desktop/organisms/EntryGate.jsx":"1241adaea1c0","ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx":"37f45d6c4723","ui_kits/lite-desktop/organisms/ExpandedMenu.jsx":"0c3e79aec576","ui_kits/lite-desktop/organisms/HeroBalance.jsx":"5cecf9195e72","ui_kits/lite-desktop/organisms/JarsConfig.jsx":"485cb17c69ed","ui_kits/lite-desktop/organisms/JarsPreview.jsx":"5c5508796730","ui_kits/lite-desktop/organisms/LiteHeader.jsx":"6e4a5afe2210","ui_kits/lite-desktop/organisms/LiteNavPill.jsx":"f054260b22fc","ui_kits/lite-desktop/organisms/MobileTabBar.jsx":"1fbb5dbe5887","ui_kits/lite-desktop/organisms/MonthNavigator.jsx":"513eb7e07020","ui_kits/lite-desktop/organisms/NotificationsPanel.jsx":"38325011a256","ui_kits/lite-desktop/organisms/OnboardingFlow.jsx":"1dcdc6d4617c","ui_kits/lite-desktop/organisms/RecentTransactions.jsx":"e92eaeefbcf5","ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx":"90e5576352f1","ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx":"0f149e15d8f1","ui_kits/lite-desktop/organisms/TransactionForm.jsx":"121f10b4a185","ui_kits/lite-desktop/shells/LiteShell.jsx":"a390819044d6","ui_kits/lite-desktop/shells/ProShell.jsx":"67d2053a07ab","ui_kits/lite-desktop/templates/AnalisisRoute.jsx":"592e90af5138","ui_kits/lite-desktop/templates/ConfigRoute.jsx":"0c1d574b38f7","ui_kits/lite-desktop/templates/DebtsRoute.jsx":"92530729a003","ui_kits/lite-desktop/templates/DreamsRoute.jsx":"b614f96aa92e","ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx":"7a9c2f2ef8f2","ui_kits/lite-desktop/templates/HomeRoute.jsx":"cb2aebdcad3c","ui_kits/lite-desktop/templates/JarsRoute.jsx":"53325c31755b","ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx":"53219c9595fb","ui_kits/lite-desktop/templates/ProHomeRoute.jsx":"80ccaf7f02fc","ui_kits/lite-desktop/templates/ProfileRoute.jsx":"87b7e118a222","ui_kits/lite-desktop/templates/TransactionsRoute.jsx":"6826709b3aee","ui_kits/lite-desktop/tweaks-panel.jsx":"6591467622ed","ui_kits/mobile/Shell.jsx":"48ffe926c013","ui_kits/mobile/components/Atoms.jsx":"f89904173ab3","ui_kits/mobile/components/BalanceCard.jsx":"01b71c947363","ui_kits/mobile/components/BottomSheet.jsx":"6356b7e22efd","ui_kits/mobile/components/ChatComponents.jsx":"753c82f5ef5f","ui_kits/mobile/components/DebtComponents.jsx":"d97be1dc6da0","ui_kits/mobile/components/DreamComponents.jsx":"0a03e5018be8","ui_kits/mobile/components/EntryGateMobile.jsx":"a71a2ffcff53","ui_kits/mobile/components/JarComponents.jsx":"f023ec4718e6","ui_kits/mobile/components/MonthNavigatorMobile.jsx":"98c8dfe1d41e","ui_kits/mobile/components/Navigation.jsx":"668e1954c585","ui_kits/mobile/components/OnboardingMobile.jsx":"b2119402d9b2","ui_kits/mobile/components/ProfileComponents.jsx":"017ea1f55228","ui_kits/mobile/components/QuickActionSheet.jsx":"899bed51132c","ui_kits/mobile/components/SmartTransactionSheet.jsx":"87d9ec1c246e","ui_kits/mobile/components/TransactionComponents.jsx":"0f6c229e479f","ui_kits/mobile/components/TransactionDetailSheet.jsx":"b24a4b486cd5","ui_kits/mobile/components/TransactionFilters.jsx":"c2e2df3c685e","ui_kits/mobile/components/TransactionFormSheet.jsx":"11b95e08c8b4","ui_kits/mobile/data.jsx":"2673360bfb71","ui_kits/mobile/profile-data.jsx":"597c7186c8f3","ui_kits/mobile/screens/AIAdvisorScreen.jsx":"c8481db07461","ui_kits/mobile/screens/DebtsScreen.jsx":"0c314f06d687","ui_kits/mobile/screens/DreamsScreen.jsx":"2e7a2a5c2f88","ui_kits/mobile/screens/FinancialProfileScreen.jsx":"a459a34c5105","ui_kits/mobile/screens/HomeScreenLite.jsx":"697b1d4f35e4","ui_kits/mobile/screens/HomeScreenPro.jsx":"a28b6371e4e1","ui_kits/mobile/screens/JarsScreen.jsx":"c4d236dbde24","ui_kits/mobile/screens/ProfileScreen.jsx":"c5bf2f4025af","ui_kits/mobile/screens/SettingsScreen.jsx":"338a248ecbbe","ui_kits/mobile/screens/TransactionsScreen.jsx":"913bcb11abac","ui_kits/mobile/tokens.js":"66ccee7c23e3"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -13423,6 +13423,247 @@ Object.assign(window, {
 });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "redesign/data.jsx", error: String((e && e.message) || e) }); }
 
+// tx-catalog.js
+try { (() => {
+/* ─── OW Finance · Catálogo común de Transacciones ──────────────────────
+ * FUENTE ÚNICA compartida por TODOS los kits (lite-desktop + mobile, Lite + Pro).
+ *
+ * Principio de producto (no negociable):
+ *   • El CÁNTARO es una entidad de orden superior. NUNCA se elige a mano.
+ *   • La CATEGORÍA es la unidad común que el usuario elige; cada categoría
+ *     declara a qué cántaro aporta (jarId). El cántaro entra anclado.
+ *
+ * Por eso este archivo define:
+ *   OWF_JARS          → los cántaros canónicos (método 55/10/10/10/10).
+ *   OWF_CATEGORIES    → categorías comunes, cada una con su jarId.
+ *   owfJarForCategory(catRef)  → resuelve el cántaro desde id o nombre de categoría.
+ *   owfCategory(catRef)        → resuelve la categoría desde id o nombre.
+ *
+ * Compatibilidad: los ids de cántaro j1..j5 coinciden con SAMPLE_JARS del kit
+ * desktop, para no romper las pantallas de Cántaros/Análisis ya existentes.
+ * ──────────────────────────────────────────────────────────────────────── */
+(function () {
+  /* Cántaros canónicos — método de los cántaros (Harv Eker 55/10/10/10/10).
+   * Cada uno: id · name · percent · icon · color · tone(semántico). */
+  var OWF_JARS = [{
+    id: 'j1',
+    name: 'Necesidades básicas',
+    percent: 55,
+    icon: 'home',
+    color: '#1E3A8A',
+    tone: 'need'
+  }, {
+    id: 'j2',
+    name: 'Diversión',
+    percent: 10,
+    icon: 'celebration',
+    color: '#F59E0B',
+    tone: 'want'
+  }, {
+    id: 'j3',
+    name: 'Ahorro',
+    percent: 10,
+    icon: 'savings',
+    color: '#10B981',
+    tone: 'save'
+  }, {
+    id: 'j4',
+    name: 'Educación',
+    percent: 10,
+    icon: 'school',
+    color: '#0EA5E9',
+    tone: 'grow'
+  }, {
+    id: 'j5',
+    name: 'Reservas',
+    percent: 10,
+    icon: 'shield',
+    color: '#8B5CF6',
+    tone: 'safe'
+  }];
+
+  /* Categorías comunes — kit + las que faltaban del brief (Ropa, Suscripciones,
+   * Inversión, Salario, Freelance). kind: 'expense' | 'income'.
+   * jarId null = no aporta a ningún cántaro (típico de ingresos).
+   * Los `name` coinciden con los usados en los datos demo para que las
+   * transacciones existentes sigan resolviendo su cántaro. */
+  var OWF_CATEGORIES = [/* ── Gastos · Necesidades (j1) ── */
+  {
+    id: 1,
+    name: 'Vivienda',
+    icon: 'home',
+    jarId: 'j1',
+    kind: 'expense'
+  }, {
+    id: 2,
+    name: 'Supermercado',
+    icon: 'shopping_cart',
+    jarId: 'j1',
+    kind: 'expense'
+  }, {
+    id: 3,
+    name: 'Servicios',
+    icon: 'bolt',
+    jarId: 'j1',
+    kind: 'expense'
+  }, {
+    id: 4,
+    name: 'Transporte',
+    icon: 'directions_car',
+    jarId: 'j1',
+    kind: 'expense'
+  }, {
+    id: 5,
+    name: 'Salud',
+    icon: 'favorite',
+    jarId: 'j1',
+    kind: 'expense'
+  }, /* ── Gastos · Diversión / Quiero (j2) ── */
+  {
+    id: 6,
+    name: 'Restaurantes',
+    icon: 'restaurant',
+    jarId: 'j2',
+    kind: 'expense'
+  }, {
+    id: 7,
+    name: 'Entretenimiento',
+    icon: 'sports_esports',
+    jarId: 'j2',
+    kind: 'expense'
+  }, {
+    id: 8,
+    name: 'Ropa',
+    icon: 'checkroom',
+    jarId: 'j2',
+    kind: 'expense'
+  }, {
+    id: 9,
+    name: 'Suscripciones',
+    icon: 'subscriptions',
+    jarId: 'j2',
+    kind: 'expense'
+  }, /* ── Gastos · Educación (j4) e Inversión / Ahorro (j3) ── */
+  {
+    id: 10,
+    name: 'Educación',
+    icon: 'school',
+    jarId: 'j4',
+    kind: 'expense'
+  }, {
+    id: 11,
+    name: 'Inversión',
+    icon: 'trending_up',
+    jarId: 'j3',
+    kind: 'expense'
+  }, /* ── Gastos · sin cántaro asignado → Reservas (j5) ── */
+  {
+    id: 12,
+    name: 'Otros',
+    icon: 'category',
+    jarId: 'j5',
+    kind: 'expense'
+  }, /* ── Ingresos · no aportan a cántaro ── */
+  {
+    id: 20,
+    name: 'Salario',
+    icon: 'payments',
+    jarId: null,
+    kind: 'income'
+  }, {
+    id: 21,
+    name: 'Freelance',
+    icon: 'work',
+    jarId: null,
+    kind: 'income'
+  }, {
+    id: 22,
+    name: 'Ingresos',
+    icon: 'savings',
+    jarId: null,
+    kind: 'income'
+  }];
+
+  /* Agrupación visual del selector de categorías (2.1) — por cántaro.
+   * Orden y rótulos de los grupos. */
+  var OWF_CATEGORY_GROUPS = [{
+    jarId: 'j1',
+    label: 'Necesidades básicas'
+  }, {
+    jarId: 'j2',
+    label: 'Diversión'
+  }, {
+    jarId: 'j3',
+    label: 'Ahorro e inversión'
+  }, {
+    jarId: 'j4',
+    label: 'Educación'
+  }, {
+    jarId: 'j5',
+    label: 'Reservas y otros'
+  }, {
+    jarId: null,
+    label: 'Ingresos'
+  }];
+  function _norm(s) {
+    return (s == null ? '' : String(s)).trim().toLowerCase();
+  }
+
+  /* Resuelve una categoría desde su id (número) o su nombre (string). */
+  function owfCategory(ref) {
+    if (ref == null) return null;
+    if (typeof ref === 'number') return OWF_CATEGORIES.find(function (c) {
+      return c.id === ref;
+    }) || null;
+    var n = _norm(ref);
+    return OWF_CATEGORIES.find(function (c) {
+      return _norm(c.name) === n || c.id === ref;
+    }) || null;
+  }
+
+  /* Resuelve el cántaro derivado de una categoría (id o nombre). null si no aporta. */
+  function owfJarForCategory(ref) {
+    var cat = owfCategory(ref);
+    if (!cat || !cat.jarId) return null;
+    return OWF_JARS.find(function (j) {
+      return j.id === cat.jarId;
+    }) || null;
+  }
+  function owfJar(id) {
+    return OWF_JARS.find(function (j) {
+      return j.id === id;
+    }) || null;
+  }
+
+  /* Opciones listas para un <Picker>: { value:id, label:name, icon, jarId, jar }. */
+  function owfCategoryOptions(opts) {
+    opts = opts || {};
+    return OWF_CATEGORIES.filter(function (c) {
+      return opts.kind ? c.kind === opts.kind : true;
+    }).map(function (c) {
+      return {
+        value: c.id,
+        label: c.name,
+        icon: c.icon,
+        jarId: c.jarId,
+        jar: owfJar(c.jarId)
+      };
+    });
+  }
+  var api = {
+    OWF_JARS: OWF_JARS,
+    OWF_CATEGORIES: OWF_CATEGORIES,
+    OWF_CATEGORY_GROUPS: OWF_CATEGORY_GROUPS,
+    owfCategory: owfCategory,
+    owfJarForCategory: owfJarForCategory,
+    owfJar: owfJar,
+    owfCategoryOptions: owfCategoryOptions
+  };
+  if (typeof window !== 'undefined') Object.assign(window, api);
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})();
+})(); } catch (e) { __ds_ns.__errors.push({ path: "tx-catalog.js", error: String((e && e.message) || e) }); }
+
 // ui_kits/lite-desktop/atoms/Buttons.jsx
 try { (() => {
 /* global React */
@@ -14208,8 +14449,10 @@ const LITE_WALLET = {
   balance: 4280.50
 };
 
-/* Categories (categories) — operational classification for jars/budget */
-const SAMPLE_CATEGORIES = [{
+/* Categories (categories) — clasificación común desde el catálogo único.
+ * Fuente: tx-catalog.js (window.OWF_CATEGORIES). Cada categoría declara su
+ * jarId; el cántaro entra anclado a la categoría (nunca se elige a mano). */
+const SAMPLE_CATEGORIES = typeof window !== 'undefined' && window.OWF_CATEGORIES ? window.OWF_CATEGORIES : [{
   id: 1,
   name: 'Vivienda',
   icon: 'home',
@@ -14219,41 +14462,6 @@ const SAMPLE_CATEGORIES = [{
   name: 'Supermercado',
   icon: 'shopping_cart',
   jarId: 'j1'
-}, {
-  id: 3,
-  name: 'Servicios',
-  icon: 'bolt',
-  jarId: 'j1'
-}, {
-  id: 4,
-  name: 'Transporte',
-  icon: 'directions_car',
-  jarId: 'j1'
-}, {
-  id: 5,
-  name: 'Salud',
-  icon: 'favorite',
-  jarId: 'j1'
-}, {
-  id: 6,
-  name: 'Restaurantes',
-  icon: 'restaurant',
-  jarId: 'j2'
-}, {
-  id: 7,
-  name: 'Entretenimiento',
-  icon: 'sports_esports',
-  jarId: 'j2'
-}, {
-  id: 8,
-  name: 'Educación',
-  icon: 'school',
-  jarId: 'j4'
-}, {
-  id: 9,
-  name: 'Ingresos',
-  icon: 'payments',
-  jarId: null
 }, {
   id: 10,
   name: 'Otros',
@@ -14651,6 +14859,8 @@ const I18N_EN = {
   'Foto': 'Photo',
   'Pre-rellenado por IA desde': 'Pre-filled by AI from',
   'revisa y confirma': 'review and confirm',
+  'Duplicar': 'Duplicate',
+  'copia': 'copy',
   'Escuchando…': 'Listening…',
   'Toca para dictar': 'Tap to dictate',
   'Di monto, comercio y cuenta. La IA transcribe y arma el movimiento.': 'Say amount, merchant and account. AI transcribes and builds the entry.',
@@ -25967,6 +26177,121 @@ const {
 function txdAcct(id) {
   return (window.SAMPLE_ACCOUNTS || []).find(a => a.id === id) || null;
 }
+
+/* Cántaro derivado de la categoría (solo lectura) — el cántaro nunca se elige
+ * a mano: entra anclado a la categoría seleccionada. */
+function TxdAnchoredJar({
+  category
+}) {
+  const jar = window.owfJarForCategory ? window.owfJarForCategory(category) : null;
+  const T = s => window.t ? window.t(s) : s;
+  if (!category) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9,
+        padding: '11px 13px',
+        borderRadius: 'var(--radius-sm)',
+        background: 'var(--surface-2)',
+        border: '1px dashed var(--border-hairline)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 18,
+        color: 'var(--fg-3)'
+      }
+    }, "savings"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12.5,
+        color: 'var(--fg-3)'
+      }
+    }, T('El cántaro entra con la categoría')));
+  }
+  if (!jar) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9,
+        padding: '11px 13px',
+        borderRadius: 'var(--radius-sm)',
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-hairline)'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 18,
+        color: 'var(--fg-3)'
+      }
+    }, "block"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12.5,
+        color: 'var(--fg-2)'
+      }
+    }, T('Esta categoría no aporta a ningún cántaro')));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '11px 13px',
+      borderRadius: 'var(--radius-sm)',
+      background: `color-mix(in srgb, ${jar.color} 9%, var(--surface-1))`,
+      border: `1px solid color-mix(in srgb, ${jar.color} 26%, transparent)`
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 26,
+      height: 26,
+      borderRadius: 8,
+      background: jar.color,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 16,
+      color: '#fff'
+    }
+  }, jar.icon)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      fontWeight: 600,
+      color: 'var(--fg-1)',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
+    }
+  }, T(jar.name)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11,
+      color: 'var(--fg-2)'
+    }
+  }, jar.percent, "% \xB7 ", T('anclado a la categoría'))), /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    title: T('Definido por la categoría'),
+    style: {
+      fontSize: 16,
+      color: 'var(--fg-3)'
+    }
+  }, "lock"));
+}
 function TransactionDetailModal({
   open,
   tx,
@@ -26036,8 +26361,9 @@ function TransactionDetailModal({
     const amt = parseFloat(draft.amount) || 0;
     tx.label = draft.label.trim() || tx.label;
     tx.category = draft.category;
-    tx.jar = draft.jar;
-    tx.jarColor = draft.jar ? ((window.SAMPLE_JARS || []).find(j => j.name === draft.jar) || {}).color : null;
+    const dj = window.owfJarForCategory ? window.owfJarForCategory(draft.category) : null;
+    tx.jar = dj ? dj.name : null;
+    tx.jarColor = dj ? dj.color : null;
     tx.acctId = draft.acctId;
     tx.amount = (isIncome ? 1 : -1) * Math.abs(amt);
     setEditing(false);
@@ -26048,6 +26374,18 @@ function TransactionDetailModal({
     if (i > -1) window.SAMPLE_TX.splice(i, 1);
     onChanged && onChanged();
     onClose();
+  };
+  const duplicate = () => {
+    const list = window.SAMPLE_TX || [];
+    const i = list.indexOf(tx);
+    const copy = {
+      ...tx,
+      label: `${tx.label} (${T('copia')})`
+    };
+    if (i > -1) list.splice(i + 1, 0, copy);else list.push(copy);
+    onChanged && onChanged();
+    // Reopen the detail modal on the new copy, straight into edit mode.
+    if (window.__owOpenTxDetailDesktop) window.__owOpenTxDetailDesktop(copy);
   };
   const T = s => window.t ? window.t(s) : s;
   const detailRow = (icon, label, value) => /*#__PURE__*/React.createElement("div", {
@@ -26269,7 +26607,11 @@ function TransactionDetailModal({
     variant: "danger",
     icon: "delete_outline",
     onClick: () => setConfirmDel(true)
-  }, T('Eliminar')), /*#__PURE__*/React.createElement("div", {
+  }, T('Eliminar')), /*#__PURE__*/React.createElement(PillButton, {
+    variant: "ghost",
+    icon: "content_copy",
+    onClick: duplicate
+  }, T('Duplicar')), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1
     }
@@ -26405,17 +26747,12 @@ function TransactionDetailModal({
     options: catOptions
   })), /*#__PURE__*/React.createElement(Field, {
     label: T('Cántaro'),
+    hint: T('Anclado a la categoría'),
     style: {
       flex: 1
     }
-  }, /*#__PURE__*/React.createElement(Picker, {
-    value: draft.jar,
-    onChange: v => setDraft(d => ({
-      ...d,
-      jar: v
-    })),
-    options: jarOptions,
-    placeholder: T('Sin cántaro')
+  }, /*#__PURE__*/React.createElement(TxdAnchoredJar, {
+    category: draft.category
   }))), isPro && /*#__PURE__*/React.createElement(Field, {
     label: T('Cuenta')
   }, /*#__PURE__*/React.createElement(Picker, {
@@ -26747,7 +27084,7 @@ function TransactionForm({
     if (isLite) return {
       ...base,
       amount: txType.sign * effectiveAmount,
-      jar_id: jarId,
+      jar_id: jarForCategory(categoryId)?.id || null,
       category_id: categoryId
     };
     if (type === 'transfer') return {
@@ -26839,14 +27176,27 @@ function TransactionForm({
       currency: "USD",
       accent: accent,
       autoFocus: true
-    }), type === 'expense' ? /*#__PURE__*/React.createElement(Field, {
-      label: t("¿De qué cántaro sale?"),
-      required: true
+    }), type === 'expense' ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement(Field, {
+      label: t("Categoría"),
+      required: true,
+      hint: t('El cántaro entra con la categoría')
     }, /*#__PURE__*/React.createElement(Picker, {
-      value: jarId,
-      onChange: setJarId,
-      options: jarOpts,
-      placeholder: t("Elige un cántaro")
+      value: categoryId,
+      onChange: setCategoryId,
+      options: (window.SAMPLE_CATEGORIES || []).filter(c => c.kind !== 'income').map(c => ({
+        value: c.id,
+        label: window.t(c.name),
+        icon: c.icon
+      })),
+      placeholder: t("Elige una categoría")
+    })), /*#__PURE__*/React.createElement(AnchoredJar, {
+      categoryId: categoryId
     })) : /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
@@ -26910,7 +27260,7 @@ function TransactionForm({
         label: window.t('Otra fecha…'),
         icon: 'calendar_month'
       }]
-    })), /*#__PURE__*/React.createElement(Field, {
+    })), type === 'income' && /*#__PURE__*/React.createElement(Field, {
       label: t("Categoría (opcional)"),
       style: {
         flex: 1
@@ -26922,7 +27272,7 @@ function TransactionForm({
         value: null,
         label: window.t('Sin categoría'),
         icon: 'block'
-      }, ...catOpts],
+      }, ...catOpts.filter((o, i) => (window.SAMPLE_CATEGORIES[i] || {}).kind === 'income')],
       placeholder: t("Categoría")
     }))), /*#__PURE__*/React.createElement(TfFooter, {
       accent: accent,
@@ -40211,6 +40561,115 @@ function MFItemsEditor({
 }
 
 /* ═══════════════════════════ MAIN SHEET ═══════════════════════════════ */
+/* cántaro anclado (solo lectura, derivado de la categoría) */
+function MFAnchoredJar({
+  category,
+  accent
+}) {
+  const jar = window.owfJarForCategory ? window.owfJarForCategory(category) : null;
+  if (!category) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '12px 14px',
+        borderRadius: 'var(--radius-md)',
+        background: 'var(--surface-2)',
+        border: '1px dashed var(--border-hairline)',
+        minHeight: 47
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 18,
+        color: 'var(--fg-3)'
+      }
+    }, "savings"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12,
+        color: 'var(--fg-3)',
+        lineHeight: 1.25
+      }
+    }, "Entra con la categor\xEDa"));
+  }
+  if (!jar) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '12px 14px',
+        borderRadius: 'var(--radius-md)',
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-hairline)',
+        minHeight: 47
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 18,
+        color: 'var(--fg-3)'
+      }
+    }, "block"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12,
+        color: 'var(--fg-2)',
+        lineHeight: 1.25
+      }
+    }, "Sin c\xE1ntaro"));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 9,
+      padding: '10px 12px',
+      borderRadius: 'var(--radius-md)',
+      background: `color-mix(in srgb, ${jar.color} 11%, var(--surface-1))`,
+      border: `1px solid color-mix(in srgb, ${jar.color} 28%, transparent)`,
+      minHeight: 47
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 24,
+      height: 24,
+      borderRadius: 7,
+      background: jar.color,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15,
+      color: '#fff'
+    }
+  }, jar.icon)), /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      minWidth: 0,
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      fontWeight: 600,
+      color: 'var(--fg-1)',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
+    }
+  }, jar.name), /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 14,
+      color: 'var(--fg-3)',
+      flexShrink: 0
+    }
+  }, "lock"));
+}
 function TransactionFormSheet({
   open,
   onClose,
@@ -40226,22 +40685,14 @@ function TransactionFormSheet({
     sub: a.currency,
     color: a.color
   }));
-  const jarOpts = [{
-    value: null,
-    label: 'Sin cántaro'
-  }, ...(window.MOBILE_JARS || []).map(j => ({
-    value: j.id,
-    label: j.name,
-    color: TFS_JAR_TONE[j.tone] || 'var(--brand-primary)'
-  }))];
   const catOpts = [{
     value: null,
     label: 'Sin categoría',
     icon: 'block'
-  }, ...TFS_CATS.map(c => ({
-    value: c,
-    label: c,
-    icon: 'label'
+  }, ...(window.OWF_CATEGORIES || []).filter(c => c.kind !== 'income').map(c => ({
+    value: c.id,
+    label: c.name,
+    icon: c.icon
   }))];
   const [type, setType] = useTFSState(initialType);
   const [amount, setAmount] = useTFSState('');
@@ -40317,7 +40768,7 @@ function TransactionFormSheet({
     const newId = Math.max(0, ...window.MOBILE_TX.map(t => t.id)) + 1;
     const acctFor = splitOn && !isTransfer ? payments[0].accountId : accountId;
     const label = concept.trim() || (isTransfer ? 'Transferencia' : itemsOn ? 'Factura' : isIncome ? 'Ingreso' : 'Movimiento');
-    const category = isTransfer ? 'Transferencia' : categoryId || (itemsOn ? 'Factura' : 'Otro');
+    const category = isTransfer ? 'Transferencia' : categoryId ? (window.owfCategory && window.owfCategory(categoryId) || {}).name || 'Otro' : itemsOn ? 'Factura' : 'Otro';
     window.MOBILE_TX.unshift({
       id: newId,
       label,
@@ -40507,11 +40958,13 @@ function TransactionFormSheet({
   }), !itemsOn && /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
-      gap: 10
+      flexDirection: 'column',
+      gap: 12
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
+      minWidth: 0,
       display: 'flex',
       flexDirection: 'column',
       gap: 7
@@ -40519,21 +40972,27 @@ function TransactionFormSheet({
   }, /*#__PURE__*/React.createElement(MFLabel, null, "Categor\xEDa"), /*#__PURE__*/React.createElement(MFPicker, {
     value: categoryId,
     onChange: setCat,
-    options: catOpts,
+    options: [{
+      value: null,
+      label: 'Sin categoría',
+      icon: 'block'
+    }, ...(window.OWF_CATEGORIES || []).filter(c => isIncome ? c.kind === 'income' : c.kind !== 'income').map(c => ({
+      value: c.id,
+      label: c.name,
+      icon: c.icon
+    }))],
     placeholder: "Categor\xEDa",
     accent: accent
-  })), /*#__PURE__*/React.createElement("div", {
+  })), !isIncome && /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
+      minWidth: 0,
       display: 'flex',
       flexDirection: 'column',
       gap: 7
     }
-  }, /*#__PURE__*/React.createElement(MFLabel, null, "C\xE1ntaro"), /*#__PURE__*/React.createElement(MFPicker, {
-    value: jarId,
-    onChange: setJar,
-    options: jarOpts,
-    placeholder: "C\xE1ntaro",
+  }, /*#__PURE__*/React.createElement(MFLabel, null, "C\xE1ntaro"), /*#__PURE__*/React.createElement(MFAnchoredJar, {
+    category: categoryId,
     accent: accent
   }))), itemsOn && /*#__PURE__*/React.createElement(MFItemsEditor, {
     items: items,

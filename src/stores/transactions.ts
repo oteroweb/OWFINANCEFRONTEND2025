@@ -42,12 +42,16 @@ export interface Transaction {
   transaction_type_id?: string | null
   user_id?: number | null
   account_id?: number | null
+  category_id?: number | null
+  jar_id?: number | null
   // Relaciones
   user?: { id: number; name: string } | null
   account?: { id: number; name: string } | null
   provider?: { id: number; name: string } | null
   rate?: { id: number; name: string; value: string } | null
   transaction_type?: { id: number; name: string } | null
+  category?: { id: number; name: string; icon?: string | null; jar_slug?: string | null } | null
+  jar?: { id: number; name: string; color?: string | null; icon?: string | null } | null
   created_at?: string
   updated_at?: string
   payment_transactions?: PaymentTransaction[]

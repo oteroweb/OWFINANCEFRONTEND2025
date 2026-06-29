@@ -182,12 +182,41 @@ function MFItemsEditor({ items, setItems, catOpts, accent }) {
 }
 
 /* ═══════════════════════════ MAIN SHEET ═══════════════════════════════ */
+/* cántaro anclado (solo lectura, derivado de la categoría) */
+function MFAnchoredJar({ category, accent }) {
+  const jar = window.owfJarForCategory ? window.owfJarForCategory(category) : null;
+  if (!category) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', border: '1px dashed var(--border-hairline)', minHeight: 47 }}>
+        <span className="material-icons" style={{ fontSize: 18, color: 'var(--fg-3)' }}>savings</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.25 }}>Entra con la categoría</span>
+      </div>
+    );
+  }
+  if (!jar) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', border: '1px solid var(--border-hairline)', minHeight: 47 }}>
+        <span className="material-icons" style={{ fontSize: 18, color: 'var(--fg-3)' }}>block</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)', lineHeight: 1.25 }}>Sin cántaro</span>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: `color-mix(in srgb, ${jar.color} 11%, var(--surface-1))`, border: `1px solid color-mix(in srgb, ${jar.color} 28%, transparent)`, minHeight: 47 }}>
+      <span style={{ width: 24, height: 24, borderRadius: 7, background: jar.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span className="material-icons" style={{ fontSize: 15, color: '#fff' }}>{jar.icon}</span>
+      </span>
+      <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--fg-1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{jar.name}</span>
+      <span className="material-icons" style={{ fontSize: 14, color: 'var(--fg-3)', flexShrink: 0 }}>lock</span>
+    </div>
+  );
+}
+
 function TransactionFormSheet({ open, onClose, mode = 'pro', initialType = 'expense', onSubmit }) {
   const accent = 'var(--info)';
   const accounts = window.MOBILE_ACCOUNTS || [];
   const acctOpts = accounts.map(a => ({ value: a.id, label: a.name, sub: a.currency, color: a.color }));
-  const jarOpts = [{ value: null, label: 'Sin cántaro' }, ...(window.MOBILE_JARS || []).map(j => ({ value: j.id, label: j.name, color: TFS_JAR_TONE[j.tone] || 'var(--brand-primary)' }))];
-  const catOpts = [{ value: null, label: 'Sin categoría', icon: 'block' }, ...TFS_CATS.map(c => ({ value: c, label: c, icon: 'label' }))];
+  const catOpts = [{ value: null, label: 'Sin categoría', icon: 'block' }, ...(window.OWF_CATEGORIES || []).filter(c => c.kind !== 'income').map(c => ({ value: c.id, label: c.name, icon: c.icon }))];
 
   const [type, setType]         = useTFSState(initialType);
   const [amount, setAmount]     = useTFSState('');
@@ -232,7 +261,7 @@ function TransactionFormSheet({ open, onClose, mode = 'pro', initialType = 'expe
     const newId = Math.max(0, ...window.MOBILE_TX.map(t => t.id)) + 1;
     const acctFor = splitOn && !isTransfer ? payments[0].accountId : accountId;
     const label = concept.trim() || (isTransfer ? 'Transferencia' : itemsOn ? 'Factura' : isIncome ? 'Ingreso' : 'Movimiento');
-    const category = isTransfer ? 'Transferencia' : (categoryId || (itemsOn ? 'Factura' : 'Otro'));
+    const category = isTransfer ? 'Transferencia' : (categoryId ? ((window.owfCategory && window.owfCategory(categoryId) || {}).name || 'Otro') : (itemsOn ? 'Factura' : 'Otro'));
     window.MOBILE_TX.unshift({ id: newId, label, amount: sign * Math.abs(total), day: 'Hoy · Mar 14', time: '', category, acctId: acctFor, m: 2, y: 2026, commission });
     onSubmit && onSubmit();
     onClose();
@@ -305,15 +334,17 @@ function TransactionFormSheet({ open, onClose, mode = 'pro', initialType = 'expe
 
             {/* categoría + cántaro (cuando no es factura) */}
             {!itemsOn && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   <MFLabel>Categoría</MFLabel>
-                  <MFPicker value={categoryId} onChange={setCat} options={catOpts} placeholder="Categoría" accent={accent} />
+                  <MFPicker value={categoryId} onChange={setCat} options={[{ value: null, label: 'Sin categoría', icon: 'block' }, ...(window.OWF_CATEGORIES || []).filter(c => isIncome ? c.kind === 'income' : c.kind !== 'income').map(c => ({ value: c.id, label: c.name, icon: c.icon }))]} placeholder="Categoría" accent={accent} />
                 </div>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {!isIncome && (
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   <MFLabel>Cántaro</MFLabel>
-                  <MFPicker value={jarId} onChange={setJar} options={jarOpts} placeholder="Cántaro" accent={accent} />
+                  <MFAnchoredJar category={categoryId} accent={accent} />
                 </div>
+                )}
               </div>
             )}
 

@@ -157,6 +157,23 @@
             </div>
           </div>
 
+          <div class="row q-col-gutter-sm q-mt-xs">
+            <div class="col-12">
+              <q-select
+                v-model="form.category_id"
+                :options="categoryOptions"
+                emit-value
+                map-options
+                clearable
+                dense
+                filled
+                label="Categoría"
+                :loading="catLoading"
+              />
+              <AnchoredJarChip :category-id="form.category_id" class="q-mt-sm" />
+            </div>
+          </div>
+
           <div class="row items-center q-mt-sm">
             <div class="col-auto">
               <q-btn
@@ -187,6 +204,8 @@ import { useTransactionsStore } from 'stores/transactions';
 import { useTransactionTypesStore, type TransactionType } from 'stores/transactionTypes';
 import { api } from 'boot/axios';
 import type { Transaction } from 'stores/transactions';
+import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
+import { loadCategoriesWithJars, loadUserJars, getCachedCategories, jarForCategory, getCachedJars } from 'src/utils/txCatalog';
 
 const ui = useUiStore();
 const tsStore = useTransactionsStore();
@@ -204,7 +223,15 @@ interface TransactionFormType {
   account_from_id?: number | null;
   account_to_id?: number | null;
   url_file: string;
+  category_id?: number | null;
 }
+
+const catLoading = ref(false);
+const categoryOptions = computed(() =>
+  getCachedCategories()
+    .filter(c => c.type === 'category' && c.active)
+    .map(c => ({ label: c.name, value: c.id }))
+);
 const form = ref<Partial<TransactionFormType>>({});
 
 // ========== Data sources ==========
@@ -392,6 +419,7 @@ function mapTransactionToForm(tx: Transaction): Partial<TransactionFormType> {
     account_from_id: null,
     account_to_id: null,
     url_file: tx.url_file || '',
+    category_id: tx.category_id ?? null,
   };
 }
 
@@ -438,6 +466,8 @@ function persist(updatedForm: Partial<TransactionFormType>) {
     // Mapear a rate_id si se define posteriormente
   }
   if (updatedForm.url_file !== undefined) payload.url_file = updatedForm.url_file || null;
+  if (updatedForm.category_id !== undefined) payload.category_id = updatedForm.category_id ?? null;
+  payload.jar_id = jarForCategory(updatedForm.category_id ?? null, getCachedJars())?.id ?? null;
   void tsStore.updateTransaction(payload);
   ui.closeEditTransactionDialog();
 }
@@ -476,6 +506,8 @@ watch(
 );
 onMounted(() => {
   void loadTransactionTypes();
+  catLoading.value = true;
+  void Promise.all([loadCategoriesWithJars(), loadUserJars()]).finally(() => { catLoading.value = false; });
 });
 </script>
 

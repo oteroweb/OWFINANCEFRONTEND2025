@@ -134,7 +134,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   const buildPayload = () => {
     const txType = window.TX_TYPES.find(t => t.slug === type);
     const base = { name: concept || (type === 'income' ? 'Ingreso' : 'Movimiento'), transaction_type_id: txType?.id, date: dateLabel === 'Hoy' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : dateLabel, include_in_balance: includeBal };
-    if (isLite) return { ...base, amount: txType.sign * effectiveAmount, jar_id: jarId, category_id: categoryId };
+    if (isLite) return { ...base, amount: txType.sign * effectiveAmount, jar_id: jarForCategory(categoryId)?.id || null, category_id: categoryId };
     if (type === 'transfer') return { ...base, amount: Number(amount) || 0, commission: commObj, payments: [ { account_id: accountId, amount: -(Number(amount) || 0), rate: 1 }, { account_id: toAccountId, amount: xferArrives, rate: xferCross ? +xferRate.toFixed(4) : 1 } ] };
     if (type === 'ajuste') return { name: concept || 'Ajuste manual', transaction_type_id: txType?.id, account_id: accountId, target_balance: Number(targetBalance) || 0, include_in_balance: includeBal };
     // income / expense
@@ -165,9 +165,12 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
         <MoneyInput value={amount} onChange={setAmount} currency="USD" accent={accent} autoFocus />
 
         {type === 'expense' ? (
-          <Field label={t("¿De qué cántaro sale?")} required>
-            <Picker value={jarId} onChange={setJarId} options={jarOpts} placeholder={t("Elige un cántaro")} />
-          </Field>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Field label={t("Categoría")} required hint={t('El cántaro entra con la categoría')}>
+              <Picker value={categoryId} onChange={setCategoryId} options={(window.SAMPLE_CATEGORIES || []).filter(c => c.kind !== 'income').map(c => ({ value: c.id, label: window.t(c.name), icon: c.icon }))} placeholder={t("Elige una categoría")} />
+            </Field>
+            <AnchoredJar categoryId={categoryId} />
+          </div>
         ) : (
           <div style={{ display: 'flex', gap: 10, padding: '13px 15px', borderRadius: 'var(--radius-md)', background: 'var(--income-soft)', alignItems: 'flex-start' }}>
             <span className="material-icons" style={{ fontSize: 20, color: 'var(--income-fg)' }}>auto_awesome</span>
@@ -188,9 +191,11 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
           <Field label="Fecha" style={{ flex: 1 }}>
             <Picker value={dateLabel} onChange={setDateLabel} options={[{ value: 'Hoy', label: window.t('Hoy'), icon: 'today' }, { value: 'Ayer', label: window.t('Ayer'), icon: 'history' }, { value: 'Personalizada', label: window.t('Otra fecha…'), icon: 'calendar_month' }]} />
           </Field>
-          <Field label={t("Categoría (opcional)")} style={{ flex: 1 }}>
-            <Picker value={categoryId} onChange={setCategoryId} options={[{ value: null, label: window.t('Sin categoría'), icon: 'block' }, ...catOpts]} placeholder={t("Categoría")} />
-          </Field>
+          {type === 'income' && (
+            <Field label={t("Categoría (opcional)")} style={{ flex: 1 }}>
+              <Picker value={categoryId} onChange={setCategoryId} options={[{ value: null, label: window.t('Sin categoría'), icon: 'block' }, ...catOpts.filter((o, i) => (window.SAMPLE_CATEGORIES[i] || {}).kind === 'income')]} placeholder={t("Categoría")} />
+            </Field>
+          )}
         </div>
 
         <TfFooter accent={accent} onClose={onClose} onSubmit={() => onSubmit && onSubmit(payload)} label={type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')} />

@@ -3,6 +3,7 @@ import { useTransactionsStore, type Transaction } from 'stores/transactions';
 import { useTransactionTypesStore, type TransactionType } from 'stores/transactionTypes';
 import { useAuthStore } from 'stores/auth';
 import { api } from 'boot/axios';
+import { jarForCategory, getCachedJars } from 'src/utils/txCatalog';
 
 export interface TransactionFormState {
   id?: number;
@@ -16,6 +17,7 @@ export interface TransactionFormState {
   account_from_id: number | null;
   account_to_id: number | null;
   url_file: string;
+  category_id: number | null;
 }
 
 export interface UseTransactionFormOptions {
@@ -50,6 +52,7 @@ export function useTransactionForm() {
       account_from_id: defaultAccountId,
       account_to_id: null,
       url_file: '',
+      category_id: null,
     };
   }
   function reset() { form.value = initialForm(); }
@@ -224,6 +227,7 @@ export function useTransactionForm() {
       account_from_id: null,
       account_to_id: null,
       url_file: tx.url_file || '',
+      category_id: tx.category_id ?? null,
     };
   }
 
@@ -240,6 +244,8 @@ export function useTransactionForm() {
     payload['transaction_type_id'] = form.value.transaction_type_id ?? null;
     if (form.value.url_file) payload['url_file'] = form.value.url_file;
     payload['include_in_balance'] = includeInBalance.value ? 1 : 0;
+    payload['category_id'] = form.value.category_id ?? null;
+    payload['jar_id'] = jarForCategory(form.value.category_id, getCachedJars())?.id ?? null;
     return payload;
   }
 
@@ -293,7 +299,11 @@ export function useTransactionForm() {
       account_from_id?: number | null;
       account_to_id?: number | null;
       include_in_balance?: number;
+      category_id?: number | null;
+      jar_id?: number | null;
     };
+
+    const derivedJar = jarForCategory(form.value.category_id, getCachedJars());
 
     const payload: CreatePayload = {
       name: form.value.name || '',
@@ -304,6 +314,8 @@ export function useTransactionForm() {
       url_file: form.value.url_file || null,
       rate: form.value.rate ?? null,
       include_in_balance: includeInBalance.value ? 1 : 0,
+      category_id: form.value.category_id ?? null,
+      jar_id: derivedJar?.id ?? null,
     };
     if (isTransferType) {
       payload.account_from_id = form.value.account_from_id ?? null;

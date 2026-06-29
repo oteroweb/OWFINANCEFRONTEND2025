@@ -79,6 +79,7 @@
             <label class="stm-label">Categoría <span class="stm-label--opt">(opcional)</span></label>
             <q-select v-model="form.category_id" :options="categoryOptions" emit-value map-options dense outlined
               clearable placeholder="Sin categoría" :loading="loadingCategories" />
+            <AnchoredJarChip :category-id="form.category_id" class="stm-jar-chip" />
           </div>
         </div>
 
@@ -87,6 +88,84 @@
           <label class="stm-label">Fecha y hora</label>
           <input v-model="form.date" type="datetime-local" class="stm-text-input" />
         </div>
+
+        <!-- Pro features (solo layout_mode=pro) -->
+        <template v-if="isProMode">
+          <!-- Toggle row -->
+          <div class="stm-pro-toggles">
+            <button class="stm-pro-toggle" :class="{ 'stm-pro-toggle--on': proPanel === 'comision' }" @click="toggleProPanel('comision')">
+              <span class="material-icons" style="font-size:16px">percent</span> Comisión
+            </button>
+            <button class="stm-pro-toggle" :class="{ 'stm-pro-toggle--on': proPanel === 'split' }" @click="toggleProPanel('split')">
+              <span class="material-icons" style="font-size:16px">call_split</span> Split
+            </button>
+            <button class="stm-pro-toggle" :class="{ 'stm-pro-toggle--on': proPanel === 'items' }" @click="toggleProPanel('items')">
+              <span class="material-icons" style="font-size:16px">receipt_long</span> Artículos
+            </button>
+          </div>
+
+          <!-- Comisión panel -->
+          <div v-if="proPanel === 'comision'" class="stm-pro-panel">
+            <div class="stm-row-2">
+              <div class="stm-field">
+                <label class="stm-label">Tipo</label>
+                <q-select v-model="comision.tipo" :options="comisionTipos" emit-value map-options dense outlined />
+              </div>
+              <div class="stm-field">
+                <label class="stm-label">{{ comision.tipo === 'porcentaje' ? 'Porcentaje %' : 'Monto fijo' }}</label>
+                <input v-model.number="comision.valor" type="number" class="stm-text-input" min="0" />
+              </div>
+            </div>
+            <div v-if="comisionCalculada > 0" class="stm-pro-summary">
+              Comisión: <strong>{{ formatMoney(comisionCalculada) }}</strong>
+              — Total: <strong>{{ formatMoney((form.amount ?? 0) + comisionCalculada) }}</strong>
+            </div>
+          </div>
+
+          <!-- Split panel -->
+          <div v-if="proPanel === 'split'" class="stm-pro-panel">
+            <div v-for="(pago, i) in splitPagos" :key="i" class="stm-row-2 stm-split-row">
+              <div class="stm-field">
+                <label class="stm-label">Cuenta {{ i + 1 }}</label>
+                <q-select v-model="pago.account_id" :options="accountOptions" emit-value map-options dense outlined clearable placeholder="Seleccionar…" />
+              </div>
+              <div class="stm-field">
+                <label class="stm-label">Monto</label>
+                <input v-model.number="pago.amount" type="number" class="stm-text-input" min="0" />
+              </div>
+              <button v-if="splitPagos.length > 2" class="stm-pro-rm" @click="splitPagos.splice(i, 1)">
+                <span class="material-icons" style="font-size:16px">close</span>
+              </button>
+            </div>
+            <div class="stm-pro-summary">
+              Suma: <strong>{{ formatMoney(splitTotal) }}</strong>
+              <span :style="{ color: Math.abs(splitTotal - (form.amount ?? 0)) < 0.01 ? '#10b981' : '#ef4444' }">
+                / {{ formatMoney(form.amount ?? 0) }}
+              </span>
+            </div>
+            <button class="stm-pro-add" @click="splitPagos.push({ account_id: null, amount: 0 })">
+              <span class="material-icons" style="font-size:15px">add</span> Agregar cuenta
+            </button>
+          </div>
+
+          <!-- Items/factura panel -->
+          <div v-if="proPanel === 'items'" class="stm-pro-panel">
+            <div v-for="(item, i) in facturaItems" :key="i" class="stm-items-row">
+              <input v-model="item.name" class="stm-text-input stm-text-input--flex" placeholder="Artículo" />
+              <input v-model.number="item.quantity" type="number" class="stm-text-input stm-text-input--qty" min="1" placeholder="Qty" />
+              <input v-model.number="item.price" type="number" class="stm-text-input stm-text-input--price" min="0" placeholder="Precio" />
+              <button class="stm-pro-rm" @click="facturaItems.splice(i, 1)">
+                <span class="material-icons" style="font-size:16px">close</span>
+              </button>
+            </div>
+            <div class="stm-pro-summary">
+              Total artículos: <strong>{{ formatMoney(itemsTotal) }}</strong>
+            </div>
+            <button class="stm-pro-add" @click="facturaItems.push({ name: '', quantity: 1, price: 0 })">
+              <span class="material-icons" style="font-size:15px">add</span> Agregar artículo
+            </button>
+          </div>
+        </template>
 
         <!-- Error -->
         <div v-if="saveError" class="stm-error">{{ saveError }}</div>
@@ -201,6 +280,8 @@ import { api } from 'src/boot/axios';
 import { useTransactionTypesStore } from 'stores/transactionTypes';
 import { useVoiceInput } from 'src/composables/useVoiceInput';
 import { useAiExtraction, type ExtractionResult } from 'src/composables/useAiExtraction';
+import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
+import { jarForCategory, getCachedJars, loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
 
 defineOptions({ name: 'SmartTransactionModal' });
 
@@ -259,6 +340,52 @@ const form = ref({
 
 const saving    = ref(false);
 const saveError = ref<string | null>(null);
+
+// ── Pro mode features ──────────────────────────────────────────────────────
+const isProMode = computed(() =>
+  (auth.settings?.layout_mode ?? auth.user?.layout_mode) === 'pro'
+);
+
+type ProPanel = 'comision' | 'split' | 'items' | null;
+const proPanel = ref<ProPanel>(null);
+
+function toggleProPanel(panel: ProPanel) {
+  proPanel.value = proPanel.value === panel ? null : panel;
+}
+
+// Comisión
+const comisionTipos = [
+  { label: 'Monto fijo ($)', value: 'fijo' },
+  { label: 'Porcentaje (%)', value: 'porcentaje' },
+  { label: 'Pago móvil BCV (0.30%)', value: 'bcv' },
+];
+const comision = ref({ tipo: 'porcentaje', valor: 0 });
+const comisionCalculada = computed(() => {
+  const base = Math.abs(form.value.amount ?? 0);
+  if (comision.value.tipo === 'fijo')       return comision.value.valor;
+  if (comision.value.tipo === 'porcentaje') return (base * comision.value.valor) / 100;
+  if (comision.value.tipo === 'bcv')        return (base * 0.30) / 100;
+  return 0;
+});
+
+// Split
+const splitPagos = ref<{ account_id: number | null; amount: number }[]>([
+  { account_id: null, amount: 0 },
+  { account_id: null, amount: 0 },
+]);
+const splitTotal = computed(() => splitPagos.value.reduce((s, p) => s + (p.amount ?? 0), 0));
+
+// Items / factura
+const facturaItems = ref<{ name: string; quantity: number; price: number }[]>([
+  { name: '', quantity: 1, price: 0 },
+]);
+const itemsTotal = computed(() =>
+  facturaItems.value.reduce((s, it) => s + (it.quantity ?? 0) * (it.price ?? 0), 0)
+);
+
+function formatMoney(n: number) {
+  return `$ ${Math.abs(n).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 // ── Currency options from user accounts ──────────────────────────────────
 const currencyOptions = computed(() => {
@@ -324,14 +451,43 @@ async function save() {
     ? -Math.abs(form.value.amount ?? 0)
     : Math.abs(form.value.amount ?? 0);
 
+  const derivedJar = jarForCategory(form.value.category_id ?? null, getCachedJars());
+
+  // Pro: determinar payments (split o pago simple)
+  let payments: { account_id: number | null; amount: number }[];
+  if (isProMode.value && proPanel.value === 'split' && splitPagos.value.some(p => p.account_id)) {
+    payments = splitPagos.value
+      .filter(p => p.account_id && p.amount)
+      .map(p => ({ account_id: p.account_id, amount: p.amount }));
+  } else {
+    payments = [{ account_id: form.value.account_id, amount }];
+  }
+
+  // Pro: items de factura
+  const items = (isProMode.value && proPanel.value === 'items')
+    ? facturaItems.value.filter(it => it.name && it.price > 0).map(it => ({
+        name: it.name,
+        quantity: it.quantity,
+        amount: it.quantity * it.price,
+      }))
+    : undefined;
+
+  // Pro: monto final con comisión
+  const finalAmount = (isProMode.value && proPanel.value === 'comision' && comisionCalculada.value > 0)
+    ? (form.value.amount ?? 0) + comisionCalculada.value
+    : form.value.amount;
+
   const payload: Record<string, unknown> = {
     name: form.value.name.trim(),
     date: form.value.date.replace('T', ' ') + ':00',
-    amount: form.value.amount,
+    amount: finalAmount,
     transaction_type_id: typeId,
     category_id: form.value.category_id ?? null,
-    payments: [{ account_id: form.value.account_id, amount }],
+    jar_id: derivedJar?.id ?? null,
+    payments,
   };
+
+  if (items?.length) payload['items'] = items;
 
   try {
     await api.post('/transactions', payload);
@@ -416,6 +572,16 @@ function applyAiResult(result: ExtractionResult, source: string) {
   if (d.currency) form.value.currency = d.currency;
   if (d.description) form.value.name = d.description;
   if (d.date) form.value.date = d.date.slice(0, 16);
+
+  // OWF-129 — Resolver sugerencia de categoría al ID real del usuario
+  if (d.category_suggestion && categories.value.length) {
+    const suggestion = d.category_suggestion.toLowerCase().trim();
+    const match = categories.value.find(c => {
+      const name = c.name.toLowerCase();
+      return name === suggestion || name.includes(suggestion) || suggestion.includes(name);
+    });
+    if (match) form.value.category_id = match.id;
+  }
 
   tab.value = 'write';
 }
@@ -814,4 +980,97 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   color: var(--fg-2, #64748b);
   border: 1px solid var(--border-hairline, #e2e8f0);
 }
+
+// ── Pro features ────────────────────────────────────────────────────────────
+.stm-pro-toggles {
+  display: flex;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.stm-pro-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-hairline, #e2e8f0);
+  background: var(--surface-2, #f8fafc);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2, #64748b);
+  cursor: pointer;
+  transition: all 120ms;
+
+  &--on {
+    background: var(--brand-primary, #2d4da6);
+    border-color: var(--brand-primary, #2d4da6);
+    color: #fff;
+  }
+}
+
+.stm-pro-panel {
+  padding: 12px;
+  background: var(--surface-2, #f8fafc);
+  border-radius: 10px;
+  border: 1px solid var(--border-hairline, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stm-pro-summary {
+  font-size: 12.5px;
+  color: var(--fg-2, #64748b);
+  padding: 6px 8px;
+  background: var(--surface-1, #fff);
+  border-radius: 6px;
+  border: 1px solid var(--border-hairline, #e2e8f0);
+}
+
+.stm-pro-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-primary, #2d4da6);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.stm-pro-rm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(239,68,68,.25);
+  color: #ef4444;
+  background: rgba(239,68,68,.06);
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 2px;
+}
+
+.stm-split-row {
+  align-items: flex-end;
+  gap: 6px !important;
+}
+
+.stm-items-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.stm-text-input--flex  { flex: 1; min-width: 0; }
+.stm-text-input--qty   { width: 56px; flex-shrink: 0; }
+.stm-text-input--price { width: 80px; flex-shrink: 0; }
+
+.stm-jar-chip { margin-top: 8px; }
 </style>
