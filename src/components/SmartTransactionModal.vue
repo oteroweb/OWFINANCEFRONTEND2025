@@ -281,7 +281,7 @@ import { useVoiceInput } from 'src/composables/useVoiceInput';
 import { useAiExtraction, type ExtractionResult } from 'src/composables/useAiExtraction';
 import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
 import CategorySelector from 'src/components/CategorySelector.vue';
-import { jarForCategory, getCachedJars, loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
+import { jarForCategory, getCachedJars } from 'src/utils/txCatalog';
 
 defineOptions({ name: 'SmartTransactionModal' });
 
@@ -421,10 +421,6 @@ async function loadCategories() {
   } catch { /* silent */ }
   finally { loadingCategories.value = false; }
 }
-
-const categoryOptions = computed(() =>
-  categories.value.map(c => ({ label: c.name, value: c.id }))
-);
 
 // ── Transaction type id mapping ───────────────────────────────────────────
 const typeIdFor = computed(() => {

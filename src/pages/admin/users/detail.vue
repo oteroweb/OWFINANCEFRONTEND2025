@@ -288,14 +288,16 @@ function confirmRevoke() {
     message: `¿Cerrar todas las sesiones activas de <strong>${user.value?.name}</strong>?`,
     html: true, cancel: true, persistent: true,
     ok: { label: 'Revocar', color: 'negative', unelevated: true },
-  }).onOk(async () => {
-    try {
-      const res = await api.delete(`/admin/users/${userId.value}/tokens`);
-      $q.notify({ type: 'positive', message: `${res.data.data.revoked_count} sesión(es) revocadas` });
-      await loadDetail();
-    } catch {
-      $q.notify({ type: 'negative', message: 'Error al revocar sesiones' });
-    }
+  }).onOk(() => {
+    void (async () => {
+      try {
+        const res = await api.delete(`/admin/users/${userId.value}/tokens`);
+        $q.notify({ type: 'positive', message: `${res.data.data.revoked_count} sesión(es) revocadas` });
+        await loadDetail();
+      } catch {
+        $q.notify({ type: 'negative', message: 'Error al revocar sesiones' });
+      }
+    })();
   });
 }
 

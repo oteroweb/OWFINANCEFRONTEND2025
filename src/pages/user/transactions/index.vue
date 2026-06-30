@@ -1073,7 +1073,7 @@
                 <div style="flex:1">
                   <div class="tx-detail-modal__field-label">Cántaro</div>
                   <div class="tx-detail-modal__field-value q-mt-xs">
-                    <AnchoredJarChip :category-id="(txDetailRow as AnyRecord)['category_id'] as number | null | undefined" />
+                    <AnchoredJarChip :category-id="((txDetailRow as AnyRecord)['category_id'] as number) ?? null" />
                   </div>
                 </div>
               </div>
@@ -3757,8 +3757,6 @@ function txDetailNestedName(key: string): string {
 const txDetailAccountName = computed(() => txDetailNestedName('account'));
 const txDetailProviderName = computed(() => txDetailNestedName('provider'));
 const txDetailTypeName = computed(() => txDetailNestedName('transaction_type'));
-const txDetailJarName = computed(() => txDetailRow.value ? txJarName(txDetailRow.value) : '');
-const txDetailJarColor = computed(() => txDetailRow.value ? txJarColor(txDetailRow.value) : 'var(--brand-primary)');
 // ─── /OWF-138 ────────────────────────────────────────────────────────────────
 
 function edit(row: Record<string, unknown>) {
