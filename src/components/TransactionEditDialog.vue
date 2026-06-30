@@ -159,17 +159,8 @@
 
           <div class="row q-col-gutter-sm q-mt-xs">
             <div class="col-12">
-              <q-select
-                v-model="form.category_id"
-                :options="categoryOptions"
-                emit-value
-                map-options
-                clearable
-                dense
-                filled
-                label="Categoría"
-                :loading="catLoading"
-              />
+              <div class="text-caption q-mb-xs text-grey-6">Categoría</div>
+              <CategorySelector v-model="form.category_id" allow-null placeholder="Sin categoría" />
               <AnchoredJarChip :category-id="form.category_id" class="q-mt-sm" />
             </div>
           </div>
@@ -205,7 +196,8 @@ import { useTransactionTypesStore, type TransactionType } from 'stores/transacti
 import { api } from 'boot/axios';
 import type { Transaction } from 'stores/transactions';
 import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
-import { loadCategoriesWithJars, loadUserJars, getCachedCategories, jarForCategory, getCachedJars } from 'src/utils/txCatalog';
+import CategorySelector from 'src/components/CategorySelector.vue';
+import { loadCategoriesWithJars, loadUserJars, jarForCategory, getCachedJars } from 'src/utils/txCatalog';
 
 const ui = useUiStore();
 const tsStore = useTransactionsStore();
@@ -226,12 +218,7 @@ interface TransactionFormType {
   category_id?: number | null;
 }
 
-const catLoading = ref(false);
-const categoryOptions = computed(() =>
-  getCachedCategories()
-    .filter(c => c.type === 'category' && c.active)
-    .map(c => ({ label: c.name, value: c.id }))
-);
+
 const form = ref<Partial<TransactionFormType>>({});
 
 // ========== Data sources ==========
@@ -506,8 +493,7 @@ watch(
 );
 onMounted(() => {
   void loadTransactionTypes();
-  catLoading.value = true;
-  void Promise.all([loadCategoriesWithJars(), loadUserJars()]).finally(() => { catLoading.value = false; });
+  void Promise.all([loadCategoriesWithJars(), loadUserJars()]);
 });
 </script>
 

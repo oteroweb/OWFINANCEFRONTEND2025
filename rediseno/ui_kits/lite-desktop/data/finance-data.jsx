@@ -61,17 +61,12 @@ const accountsByGroup = () => ACCOUNT_GROUPS
 /* LITE implicit wallet (hidden in UI; the only account in LITE) */
 const LITE_WALLET = { id: 0, name: 'Billetera', type: 'cash', currency: 'USD', balance: 4280.50 };
 
-/* Categories (categories) — operational classification for jars/budget */
-const SAMPLE_CATEGORIES = [
+/* Categories (categories) — clasificación común desde el catálogo único.
+ * Fuente: tx-catalog.js (window.OWF_CATEGORIES). Cada categoría declara su
+ * jarId; el cántaro entra anclado a la categoría (nunca se elige a mano). */
+const SAMPLE_CATEGORIES = (typeof window !== 'undefined' && window.OWF_CATEGORIES) ? window.OWF_CATEGORIES : [
   { id: 1,  name: 'Vivienda',       icon: 'home',            jarId: 'j1' },
   { id: 2,  name: 'Supermercado',   icon: 'shopping_cart',   jarId: 'j1' },
-  { id: 3,  name: 'Servicios',      icon: 'bolt',            jarId: 'j1' },
-  { id: 4,  name: 'Transporte',     icon: 'directions_car',  jarId: 'j1' },
-  { id: 5,  name: 'Salud',          icon: 'favorite',        jarId: 'j1' },
-  { id: 6,  name: 'Restaurantes',   icon: 'restaurant',      jarId: 'j2' },
-  { id: 7,  name: 'Entretenimiento',icon: 'sports_esports',  jarId: 'j2' },
-  { id: 8,  name: 'Educación',      icon: 'school',          jarId: 'j4' },
-  { id: 9,  name: 'Ingresos',       icon: 'payments',        jarId: null },
   { id: 10, name: 'Otros',          icon: 'category',        jarId: 'j5' },
 ];
 

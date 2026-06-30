@@ -117,17 +117,8 @@
             <q-input v-model="form.url_file" label="Archivo (URL)" outlined dense />
           </div>
           <div class="col-12 col-md-6">
-            <q-select
-              v-model="form.category_id"
-              :options="categoryOptions"
-              emit-value
-              map-options
-              clearable
-              dense
-              outlined
-              label="Categoría"
-              :loading="catLoading"
-            />
+            <div class="text-caption q-mb-xs text-grey-6">Categoría</div>
+            <CategorySelector v-model="form.category_id" allow-null placeholder="Sin categoría" />
             <AnchoredJarChip :category-id="form.category_id" class="q-mt-sm" />
           </div>
         </div>
@@ -148,13 +139,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useTransactionsStore, type Transaction } from 'stores/transactions';
 import { useUiStore } from 'stores/ui';
 import { useTransactionForm } from 'src/composables/useTransactionForm';
 import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
-import { loadCategoriesWithJars, loadUserJars, getCachedCategories } from 'src/utils/txCatalog';
+import CategorySelector from 'src/components/CategorySelector.vue';
+import { loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
 
 // v-model for visibility
 const modelValue = defineModel<boolean>({ required: true });
@@ -198,13 +190,7 @@ const {
   saveUpdate,
 } = useTransactionForm();
 
-// Categories for chip
-const catLoading = ref(false);
-const categoryOptions = computed(() =>
-  getCachedCategories()
-    .filter(c => c.type === 'category' && c.active)
-    .map(c => ({ label: c.name, value: c.id }))
-);
+
 
 // Load data when opening
 watch(
@@ -214,8 +200,7 @@ watch(
     void loadTransactionTypes();
     void ensureProvidersLoaded();
     void ensureAccountsLoaded();
-    catLoading.value = true;
-    void Promise.all([loadCategoriesWithJars(), loadUserJars()]).finally(() => { catLoading.value = false; });
+    void Promise.all([loadCategoriesWithJars(), loadUserJars()]);
     if (isUpdate.value && props.id) {
       const tx = txStore.transactions.find((t) => t.id === props.id) as Transaction | undefined;
       if (tx) loadFromTransaction(tx);

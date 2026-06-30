@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"OWFinanceDesignSystem_5fd9e1","components":[{"name":"IconButton","sourcePath":"components/buttons/IconButton.jsx"},{"name":"PillButton","sourcePath":"components/buttons/PillButton.jsx"},{"name":"Chip","sourcePath":"components/chips/Chip.jsx"},{"name":"CurrencyChip","sourcePath":"components/chips/CurrencyChip.jsx"},{"name":"Avatar","sourcePath":"components/primitives/Avatar.jsx"},{"name":"Card","sourcePath":"components/primitives/Card.jsx"},{"name":"Eyebrow","sourcePath":"components/primitives/Eyebrow.jsx"},{"name":"Money","sourcePath":"components/primitives/Money.jsx"}],"sourceHashes":{"cantaros-mobile/atoms.jsx":"33c397067107","cantaros-mobile/categories.jsx":"7e02272eb796","cantaros-mobile/data.jsx":"ae66b19d7bad","cantaros-mobile/detail.jsx":"cdcd6ac7f442","cantaros-mobile/screen.jsx":"2ac5ed578694","cantaros-mobile/tweaks-panel.jsx":"6591467622ed","color-scheme.js":"ce602ba10e3f","components/buttons/IconButton.jsx":"318502b60ad6","components/buttons/PillButton.jsx":"8bc8c6d0ddbd","components/chips/Chip.jsx":"dd91549ca864","components/chips/CurrencyChip.jsx":"279396f07797","components/primitives/Avatar.jsx":"f246e5f4147c","components/primitives/Card.jsx":"55712669b8ae","components/primitives/Eyebrow.jsx":"e2e7368473e5","components/primitives/Money.jsx":"d293e7f8b2cd","marketing.js":"36bbac9b2d80","onboarding/auth.jsx":"5a9d5645064a","onboarding/flow-data.jsx":"12b314de4853","onboarding/flow-desktop.jsx":"70a0407ae2de","onboarding/flow.jsx":"8ef62e3c2391","onboarding/gamification.jsx":"776a66fb1228","onboarding/onb-atoms.jsx":"c8f8c2eb35c2","onboarding/profile-panel.jsx":"69f128c3abf7","onboarding/welcome-dashboard.jsx":"2e28c675f82d","onboarding/welcome-modal.jsx":"ef9f508ea9a8","period-selector.js":"cb172ef88d57","redesign/TxLedger.jsx":"ad297b8e5685","redesign/TxPoolsHeader.jsx":"bcbab66630f1","redesign/app.jsx":"3a3e4769b61b","redesign/data.jsx":"00d3bb08d92a","tx-catalog.js":"58957ac653eb","ui_kits/lite-desktop/atoms/Buttons.jsx":"c3e71689c42d","ui_kits/lite-desktop/atoms/Chips.jsx":"a65662ac37ef","ui_kits/lite-desktop/atoms/Primitives.jsx":"e7aac8cbb6a3","ui_kits/lite-desktop/data/analisis-data.jsx":"e23f915aba6d","ui_kits/lite-desktop/data/finance-data.jsx":"202824a2f7dd","ui_kits/lite-desktop/data/i18n.jsx":"0080736d4ae1","ui_kits/lite-desktop/data/profile-data.jsx":"597c7186c8f3","ui_kits/lite-desktop/data/sample-data.jsx":"e733d349e52e","ui_kits/lite-desktop/molecules/ChipGroup.jsx":"6ff71ea675aa","ui_kits/lite-desktop/molecules/FormControls.jsx":"b9ef67ebbd31","ui_kits/lite-desktop/molecules/SectionHeader.jsx":"c678a94f59f6","ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx":"4fbe1bc97d0b","ui_kits/lite-desktop/organisms/AccountFilter.jsx":"d818f684b95b","ui_kits/lite-desktop/organisms/AccountsPanel.jsx":"65e31353d59a","ui_kits/lite-desktop/organisms/AnalisisParts.jsx":"37d94b451029","ui_kits/lite-desktop/organisms/BulkImportPanel.jsx":"65d4fd8387e2","ui_kits/lite-desktop/organisms/DebtsPreview.jsx":"b4733871862e","ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx":"cfecb8dac9d5","ui_kits/lite-desktop/organisms/DreamsPreview.jsx":"5462b9553bdd","ui_kits/lite-desktop/organisms/EntryGate.jsx":"1241adaea1c0","ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx":"37f45d6c4723","ui_kits/lite-desktop/organisms/ExpandedMenu.jsx":"0c3e79aec576","ui_kits/lite-desktop/organisms/HeroBalance.jsx":"5cecf9195e72","ui_kits/lite-desktop/organisms/JarsConfig.jsx":"485cb17c69ed","ui_kits/lite-desktop/organisms/JarsPreview.jsx":"5c5508796730","ui_kits/lite-desktop/organisms/LiteHeader.jsx":"6e4a5afe2210","ui_kits/lite-desktop/organisms/LiteNavPill.jsx":"f054260b22fc","ui_kits/lite-desktop/organisms/MobileTabBar.jsx":"1fbb5dbe5887","ui_kits/lite-desktop/organisms/MonthNavigator.jsx":"513eb7e07020","ui_kits/lite-desktop/organisms/NotificationsPanel.jsx":"38325011a256","ui_kits/lite-desktop/organisms/OnboardingFlow.jsx":"1dcdc6d4617c","ui_kits/lite-desktop/organisms/RecentTransactions.jsx":"e92eaeefbcf5","ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx":"90e5576352f1","ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx":"0f149e15d8f1","ui_kits/lite-desktop/organisms/TransactionForm.jsx":"121f10b4a185","ui_kits/lite-desktop/shells/LiteShell.jsx":"a390819044d6","ui_kits/lite-desktop/shells/ProShell.jsx":"67d2053a07ab","ui_kits/lite-desktop/templates/AnalisisRoute.jsx":"592e90af5138","ui_kits/lite-desktop/templates/ConfigRoute.jsx":"0c1d574b38f7","ui_kits/lite-desktop/templates/DebtsRoute.jsx":"92530729a003","ui_kits/lite-desktop/templates/DreamsRoute.jsx":"b614f96aa92e","ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx":"7a9c2f2ef8f2","ui_kits/lite-desktop/templates/HomeRoute.jsx":"cb2aebdcad3c","ui_kits/lite-desktop/templates/JarsRoute.jsx":"53325c31755b","ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx":"53219c9595fb","ui_kits/lite-desktop/templates/ProHomeRoute.jsx":"80ccaf7f02fc","ui_kits/lite-desktop/templates/ProfileRoute.jsx":"87b7e118a222","ui_kits/lite-desktop/templates/TransactionsRoute.jsx":"6826709b3aee","ui_kits/lite-desktop/tweaks-panel.jsx":"6591467622ed","ui_kits/mobile/Shell.jsx":"48ffe926c013","ui_kits/mobile/components/Atoms.jsx":"f89904173ab3","ui_kits/mobile/components/BalanceCard.jsx":"01b71c947363","ui_kits/mobile/components/BottomSheet.jsx":"6356b7e22efd","ui_kits/mobile/components/ChatComponents.jsx":"753c82f5ef5f","ui_kits/mobile/components/DebtComponents.jsx":"d97be1dc6da0","ui_kits/mobile/components/DreamComponents.jsx":"0a03e5018be8","ui_kits/mobile/components/EntryGateMobile.jsx":"a71a2ffcff53","ui_kits/mobile/components/JarComponents.jsx":"f023ec4718e6","ui_kits/mobile/components/MonthNavigatorMobile.jsx":"98c8dfe1d41e","ui_kits/mobile/components/Navigation.jsx":"668e1954c585","ui_kits/mobile/components/OnboardingMobile.jsx":"b2119402d9b2","ui_kits/mobile/components/ProfileComponents.jsx":"017ea1f55228","ui_kits/mobile/components/QuickActionSheet.jsx":"899bed51132c","ui_kits/mobile/components/SmartTransactionSheet.jsx":"87d9ec1c246e","ui_kits/mobile/components/TransactionComponents.jsx":"0f6c229e479f","ui_kits/mobile/components/TransactionDetailSheet.jsx":"b24a4b486cd5","ui_kits/mobile/components/TransactionFilters.jsx":"c2e2df3c685e","ui_kits/mobile/components/TransactionFormSheet.jsx":"11b95e08c8b4","ui_kits/mobile/data.jsx":"2673360bfb71","ui_kits/mobile/profile-data.jsx":"597c7186c8f3","ui_kits/mobile/screens/AIAdvisorScreen.jsx":"c8481db07461","ui_kits/mobile/screens/DebtsScreen.jsx":"0c314f06d687","ui_kits/mobile/screens/DreamsScreen.jsx":"2e7a2a5c2f88","ui_kits/mobile/screens/FinancialProfileScreen.jsx":"a459a34c5105","ui_kits/mobile/screens/HomeScreenLite.jsx":"697b1d4f35e4","ui_kits/mobile/screens/HomeScreenPro.jsx":"a28b6371e4e1","ui_kits/mobile/screens/JarsScreen.jsx":"c4d236dbde24","ui_kits/mobile/screens/ProfileScreen.jsx":"c5bf2f4025af","ui_kits/mobile/screens/SettingsScreen.jsx":"338a248ecbbe","ui_kits/mobile/screens/TransactionsScreen.jsx":"913bcb11abac","ui_kits/mobile/tokens.js":"66ccee7c23e3"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"OWFinanceDesignSystem_5fd9e1","components":[{"name":"IconButton","sourcePath":"components/buttons/IconButton.jsx"},{"name":"PillButton","sourcePath":"components/buttons/PillButton.jsx"},{"name":"Chip","sourcePath":"components/chips/Chip.jsx"},{"name":"CurrencyChip","sourcePath":"components/chips/CurrencyChip.jsx"},{"name":"Avatar","sourcePath":"components/primitives/Avatar.jsx"},{"name":"Card","sourcePath":"components/primitives/Card.jsx"},{"name":"Eyebrow","sourcePath":"components/primitives/Eyebrow.jsx"},{"name":"Money","sourcePath":"components/primitives/Money.jsx"}],"sourceHashes":{"cantaros-mobile/atoms.jsx":"33c397067107","cantaros-mobile/categories.jsx":"7e02272eb796","cantaros-mobile/data.jsx":"ae66b19d7bad","cantaros-mobile/detail.jsx":"cdcd6ac7f442","cantaros-mobile/screen.jsx":"2ac5ed578694","cantaros-mobile/tweaks-panel.jsx":"6591467622ed","color-scheme.js":"ce602ba10e3f","components/buttons/IconButton.jsx":"318502b60ad6","components/buttons/PillButton.jsx":"8bc8c6d0ddbd","components/chips/Chip.jsx":"dd91549ca864","components/chips/CurrencyChip.jsx":"279396f07797","components/primitives/Avatar.jsx":"f246e5f4147c","components/primitives/Card.jsx":"55712669b8ae","components/primitives/Eyebrow.jsx":"e2e7368473e5","components/primitives/Money.jsx":"d293e7f8b2cd","marketing.js":"36bbac9b2d80","onboarding/auth.jsx":"5a9d5645064a","onboarding/flow-data.jsx":"12b314de4853","onboarding/flow-desktop.jsx":"70a0407ae2de","onboarding/flow.jsx":"8ef62e3c2391","onboarding/gamification.jsx":"776a66fb1228","onboarding/onb-atoms.jsx":"c8f8c2eb35c2","onboarding/profile-panel.jsx":"69f128c3abf7","onboarding/welcome-dashboard.jsx":"2e28c675f82d","onboarding/welcome-modal.jsx":"ef9f508ea9a8","period-selector.js":"cb172ef88d57","redesign/TxLedger.jsx":"ad297b8e5685","redesign/TxPoolsHeader.jsx":"bcbab66630f1","redesign/app.jsx":"3a3e4769b61b","redesign/data.jsx":"00d3bb08d92a","tx-catalog.js":"58957ac653eb","tx-summary.js":"63cf1f81830e","ui_kits/lite-desktop/atoms/Buttons.jsx":"c3e71689c42d","ui_kits/lite-desktop/atoms/Chips.jsx":"a65662ac37ef","ui_kits/lite-desktop/atoms/Primitives.jsx":"e7aac8cbb6a3","ui_kits/lite-desktop/data/analisis-data.jsx":"e23f915aba6d","ui_kits/lite-desktop/data/finance-data.jsx":"202824a2f7dd","ui_kits/lite-desktop/data/i18n.jsx":"58ac60f6a529","ui_kits/lite-desktop/data/profile-data.jsx":"597c7186c8f3","ui_kits/lite-desktop/data/sample-data.jsx":"e733d349e52e","ui_kits/lite-desktop/molecules/ChipGroup.jsx":"6ff71ea675aa","ui_kits/lite-desktop/molecules/FormControls.jsx":"b9ef67ebbd31","ui_kits/lite-desktop/molecules/SectionHeader.jsx":"c678a94f59f6","ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx":"4fbe1bc97d0b","ui_kits/lite-desktop/organisms/AccountFilter.jsx":"d818f684b95b","ui_kits/lite-desktop/organisms/AccountsPanel.jsx":"65e31353d59a","ui_kits/lite-desktop/organisms/AnalisisParts.jsx":"37d94b451029","ui_kits/lite-desktop/organisms/BulkImportPanel.jsx":"65d4fd8387e2","ui_kits/lite-desktop/organisms/CategorySelector.jsx":"9ac84f7d0a84","ui_kits/lite-desktop/organisms/DebtsPreview.jsx":"b4733871862e","ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx":"cfecb8dac9d5","ui_kits/lite-desktop/organisms/DreamsPreview.jsx":"5462b9553bdd","ui_kits/lite-desktop/organisms/EntryGate.jsx":"1241adaea1c0","ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx":"37f45d6c4723","ui_kits/lite-desktop/organisms/ExpandedMenu.jsx":"0c3e79aec576","ui_kits/lite-desktop/organisms/HeroBalance.jsx":"5cecf9195e72","ui_kits/lite-desktop/organisms/JarsConfig.jsx":"485cb17c69ed","ui_kits/lite-desktop/organisms/JarsPreview.jsx":"5c5508796730","ui_kits/lite-desktop/organisms/LiteHeader.jsx":"6e4a5afe2210","ui_kits/lite-desktop/organisms/LiteNavPill.jsx":"f054260b22fc","ui_kits/lite-desktop/organisms/MobileTabBar.jsx":"1fbb5dbe5887","ui_kits/lite-desktop/organisms/MonthNavigator.jsx":"513eb7e07020","ui_kits/lite-desktop/organisms/NotificationsPanel.jsx":"38325011a256","ui_kits/lite-desktop/organisms/OnboardingFlow.jsx":"1dcdc6d4617c","ui_kits/lite-desktop/organisms/RecentTransactions.jsx":"e92eaeefbcf5","ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx":"90e5576352f1","ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx":"0f149e15d8f1","ui_kits/lite-desktop/organisms/TransactionForm.jsx":"a567f4286bb4","ui_kits/lite-desktop/shells/LiteShell.jsx":"a390819044d6","ui_kits/lite-desktop/shells/ProShell.jsx":"67d2053a07ab","ui_kits/lite-desktop/templates/AnalisisRoute.jsx":"592e90af5138","ui_kits/lite-desktop/templates/ConfigRoute.jsx":"0c1d574b38f7","ui_kits/lite-desktop/templates/DebtsRoute.jsx":"92530729a003","ui_kits/lite-desktop/templates/DreamsRoute.jsx":"b614f96aa92e","ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx":"7a9c2f2ef8f2","ui_kits/lite-desktop/templates/HomeRoute.jsx":"cb2aebdcad3c","ui_kits/lite-desktop/templates/JarsRoute.jsx":"53325c31755b","ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx":"53219c9595fb","ui_kits/lite-desktop/templates/ProHomeRoute.jsx":"80ccaf7f02fc","ui_kits/lite-desktop/templates/ProfileRoute.jsx":"87b7e118a222","ui_kits/lite-desktop/templates/TransactionsRoute.jsx":"6826709b3aee","ui_kits/lite-desktop/tweaks-panel.jsx":"6591467622ed","ui_kits/mobile/Shell.jsx":"48ffe926c013","ui_kits/mobile/components/Atoms.jsx":"f89904173ab3","ui_kits/mobile/components/BalanceCard.jsx":"01b71c947363","ui_kits/mobile/components/BottomSheet.jsx":"6356b7e22efd","ui_kits/mobile/components/ChatComponents.jsx":"753c82f5ef5f","ui_kits/mobile/components/DebtComponents.jsx":"d97be1dc6da0","ui_kits/mobile/components/DreamComponents.jsx":"0a03e5018be8","ui_kits/mobile/components/EntryGateMobile.jsx":"a71a2ffcff53","ui_kits/mobile/components/JarComponents.jsx":"f023ec4718e6","ui_kits/mobile/components/MonthNavigatorMobile.jsx":"98c8dfe1d41e","ui_kits/mobile/components/Navigation.jsx":"668e1954c585","ui_kits/mobile/components/OnboardingMobile.jsx":"b2119402d9b2","ui_kits/mobile/components/ProfileComponents.jsx":"017ea1f55228","ui_kits/mobile/components/QuickActionSheet.jsx":"899bed51132c","ui_kits/mobile/components/SmartTransactionSheet.jsx":"87d9ec1c246e","ui_kits/mobile/components/TransactionComponents.jsx":"0f6c229e479f","ui_kits/mobile/components/TransactionDetailSheet.jsx":"b24a4b486cd5","ui_kits/mobile/components/TransactionFilters.jsx":"c2e2df3c685e","ui_kits/mobile/components/TransactionFormSheet.jsx":"fc4060fba78f","ui_kits/mobile/data.jsx":"2673360bfb71","ui_kits/mobile/profile-data.jsx":"597c7186c8f3","ui_kits/mobile/screens/AIAdvisorScreen.jsx":"c8481db07461","ui_kits/mobile/screens/DebtsScreen.jsx":"0c314f06d687","ui_kits/mobile/screens/DreamsScreen.jsx":"2e7a2a5c2f88","ui_kits/mobile/screens/FinancialProfileScreen.jsx":"a459a34c5105","ui_kits/mobile/screens/HomeScreenLite.jsx":"697b1d4f35e4","ui_kits/mobile/screens/HomeScreenPro.jsx":"a28b6371e4e1","ui_kits/mobile/screens/JarsScreen.jsx":"c4d236dbde24","ui_kits/mobile/screens/ProfileScreen.jsx":"c5bf2f4025af","ui_kits/mobile/screens/SettingsScreen.jsx":"338a248ecbbe","ui_kits/mobile/screens/TransactionsScreen.jsx":"913bcb11abac","ui_kits/mobile/tokens.js":"66ccee7c23e3"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -13664,6 +13664,138 @@ try { (() => {
 })();
 })(); } catch (e) { __ds_ns.__errors.push({ path: "tx-catalog.js", error: String((e && e.message) || e) }); }
 
+// tx-summary.js
+try { (() => {
+/* ─── OW Finance · Resumen de transacción en lenguaje natural ───────────
+ * Genera el texto del Transaction Preview Card (pieza 2.6) y la validación
+ * de campos (pieza 2.5) a partir del payload que ya construyen los forms.
+ * Compartido por ambos kits. Sin dependencias de React.
+ * ──────────────────────────────────────────────────────────────────────── */
+(function () {
+  function money(n, sym) {
+    sym = sym || '$';
+    var v = Math.abs(Number(n) || 0);
+    return sym + ' ' + v.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+  function acctName(id) {
+    var a = (window.SAMPLE_ACCOUNTS || []).find(function (x) {
+      return x.id === id;
+    });
+    return a ? a.name : null;
+  }
+  function catName(id) {
+    var c = window.owfCategory ? window.owfCategory(id) : null;
+    return c ? c.name : null;
+  }
+
+  /* Resumen legible. Recibe un objeto "vista" normalizado desde el form:
+   * { type, amount, currencySym, account, toAccount, category, jar,
+   *   itemsCount, splitCount, commission, targetBalance, balanceDelta } */
+  function owfTxSummary(v) {
+    v = v || {};
+    var sym = v.currencySym || '$';
+    var amt = money(v.amount, sym);
+    var t = v.type;
+    if (t === 'transfer') {
+      var s = 'Transfieres ' + amt;
+      if (v.account) s += ' desde ' + v.account;
+      if (v.toAccount) s += ' a ' + v.toAccount;
+      if (v.crossArrives != null) s += ', llegan ' + money(v.crossArrives, v.toCurrencySym || 'Bs.');
+      if (v.commission) s += ' (comisión ' + money(v.commission, sym) + ')';
+      return s + '.';
+    }
+    if (t === 'ajuste') {
+      var dir = (v.balanceDelta || 0) >= 0 ? 'sube' : 'baja';
+      var d = money(v.balanceDelta, sym);
+      var base = 'Ajustas ' + (v.account || 'la cuenta') + ' a ' + money(v.targetBalance, sym);
+      return base + ' — el saldo ' + dir + ' ' + d + '.';
+    }
+
+    // expense / income
+    var verb = t === 'income' ? 'Registras un ingreso de' : 'Registras un gasto de';
+    var str = verb + ' ' + amt;
+    if (v.itemsCount > 1) str += ' (' + v.itemsCount + ' ítems)';
+    if (v.category) str += ' en ' + v.category;
+    if (v.splitCount > 1) str += ', repartido en ' + v.splitCount + ' cuentas';else if (v.account) str += ' desde ' + v.account;
+    if (v.jar) str += '. Aporta al cántaro ' + v.jar;else str += '.';
+    if (v.commission) str += ' Comisión ' + money(v.commission, sym) + '.';
+    return str;
+  }
+
+  /* ¿La operación es "compleja"? (para el flujo de confirmación 2.4:
+   * complejas → preview card antes de guardar; simples → toast deshacer). */
+  function owfTxIsComplex(v) {
+    v = v || {};
+    return !!(v.splitCount > 1 || v.itemsCount > 1 || v.commission || v.type === 'transfer' || v.type === 'ajuste');
+  }
+
+  /* Validación de campos. Devuelve { ok, errors:[{field,msg}], reasons:[msg] }.
+   * reasons = motivos legibles por los que Guardar está deshabilitado. */
+  function owfValidateTx(v) {
+    v = v || {};
+    var errors = [];
+    var t = v.type;
+    var amt = Number(v.amount) || 0;
+    if (t === 'ajuste') {
+      if (!v.account) errors.push({
+        field: 'account',
+        msg: 'Elige la cuenta a ajustar'
+      });
+      if (v.targetBalance === '' || v.targetBalance == null) errors.push({
+        field: 'targetBalance',
+        msg: 'Indica el nuevo saldo'
+      });
+    } else {
+      if (!(amt > 0) && !(v.itemsCount > 1)) errors.push({
+        field: 'amount',
+        msg: 'Ingresa un monto mayor a 0'
+      });
+      if (t === 'transfer') {
+        if (!v.account) errors.push({
+          field: 'account',
+          msg: 'Elige la cuenta de origen'
+        });
+        if (!v.toAccount) errors.push({
+          field: 'toAccount',
+          msg: 'Elige la cuenta de destino'
+        });
+        if (v.account && v.toAccount && v.sameAccount) errors.push({
+          field: 'toAccount',
+          msg: 'Origen y destino no pueden ser la misma cuenta'
+        });
+      } else if (t === 'expense') {
+        if (v.category == null) errors.push({
+          field: 'category',
+          msg: 'Elige una categoría'
+        });
+      }
+      if (v.splitCount > 1 && v.splitBalanced === false) errors.push({
+        field: 'split',
+        msg: 'La suma de los pagos no coincide con el monto'
+      });
+    }
+    return {
+      ok: errors.length === 0,
+      errors: errors,
+      reasons: errors.map(function (e) {
+        return e.msg;
+      })
+    };
+  }
+  var api = {
+    owfTxSummary: owfTxSummary,
+    owfTxIsComplex: owfTxIsComplex,
+    owfValidateTx: owfValidateTx,
+    owfMoney: money
+  };
+  if (typeof window !== 'undefined') Object.assign(window, api);
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})();
+})(); } catch (e) { __ds_ns.__errors.push({ path: "tx-summary.js", error: String((e && e.message) || e) }); }
+
 // ui_kits/lite-desktop/atoms/Buttons.jsx
 try { (() => {
 /* global React */
@@ -14861,6 +14993,12 @@ const I18N_EN = {
   'revisa y confirma': 'review and confirm',
   'Duplicar': 'Duplicate',
   'copia': 'copy',
+  'Vas a registrar': "You're about to record",
+  'Guardando…': 'Saving…',
+  'Registrado': 'Recorded',
+  'Confirmar y registrar': 'Confirm and record',
+  'Deshacer': 'Undo',
+  'Movimiento registrado': 'Transaction recorded',
   'Escuchando…': 'Listening…',
   'Toca para dictar': 'Tap to dictate',
   'Di monto, comercio y cuenta. La IA transcribe y arma el movimiento.': 'Say amount, merchant and account. AI transcribes and builds the entry.',
@@ -19945,6 +20083,371 @@ Object.assign(window, {
   BulkImportPanel
 });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/lite-desktop/organisms/BulkImportPanel.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/lite-desktop/organisms/CategorySelector.jsx
+try { (() => {
+/* ─── CategorySelector — selector de categorías B+C (desktop) ───────────
+ * Híbrido aprobado:
+ *   · Buscador siempre visible arriba (enfoque C — "buscar primero").
+ *   · En frío: categorías en cuadrícula, AGRUPADAS Y COLOREADAS por cántaro
+ *     (enfoque B). El color enseña el modelo categoría→cántaro.
+ *   · Al escribir: colapsa a lista plana filtrada, con el cántaro como
+ *     píldora al final de cada fila.
+ * El cántaro NUNCA se elige aquí: entra anclado a la categoría (lo muestra
+ * el <AnchoredJar> del formulario, fuera de este selector).
+ * ──────────────────────────────────────────────────────────────────────── */
+/* global React */
+const {
+  useState: useCsState,
+  useRef: useCsRef,
+  useEffect: useCsEffect
+} = React;
+
+/* Color de cántaro tuneado para superficies oscuras (navy se aclara) */
+const CS_DISP = {
+  '#1E3A8A': '#5B7FD6'
+};
+function csJarColor(jar) {
+  return jar ? CS_DISP[jar.color] || jar.color : 'var(--fg-3)';
+}
+function csTint(c, p) {
+  return `color-mix(in srgb, ${c} ${p}%, var(--surface-1))`;
+}
+function CategorySelector({
+  value,
+  onChange,
+  kind = 'expense',
+  allowNull = false,
+  placeholder = 'Elige una categoría'
+}) {
+  const [open, setOpen] = useCsState(false);
+  const [q, setQ] = useCsState('');
+  const ref = useCsRef(null);
+  const inputRef = useCsRef(null);
+  const T = s => window.t ? window.t(s) : s;
+  useCsEffect(() => {
+    if (!open) return;
+    const close = e => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setQ('');
+      }
+    };
+    document.addEventListener('mousedown', close);
+    setTimeout(() => inputRef.current && inputRef.current.focus(), 40);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+  const cats = (window.OWF_CATEGORIES || []).filter(c => kind ? c.kind === kind : true);
+  const sel = value != null ? cats.find(c => c.id === value) : null;
+  const selJar = sel ? window.owfJarForCategory ? window.owfJarForCategory(sel.id) : null : null;
+  const groups = (window.OWF_CATEGORY_GROUPS || []).filter(g => g.jarId && cats.some(c => c.jarId === g.jarId));
+  const ql = q.trim().toLowerCase();
+  const matches = ql ? cats.filter(c => T(c.name).toLowerCase().includes(ql)) : [];
+  const pick = id => {
+    onChange(id);
+    setOpen(false);
+    setQ('');
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    ref: ref,
+    style: {
+      position: 'relative'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setOpen(o => !o),
+    style: {
+      width: '100%',
+      boxSizing: 'border-box',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 9,
+      cursor: 'pointer',
+      border: `1px solid ${open ? 'var(--brand-primary)' : 'var(--border-hairline)'}`,
+      borderRadius: 'var(--radius-sm)',
+      padding: '11px 13px',
+      background: open ? 'var(--surface-1)' : 'var(--surface-2)',
+      textAlign: 'left',
+      transition: 'border-color 150ms, background 150ms'
+    }
+  }, sel ? /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18,
+      color: csJarColor(selJar)
+    }
+  }, sel.icon) : /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18,
+      color: 'var(--fg-3)'
+    }
+  }, "sell"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      minWidth: 0,
+      fontFamily: 'var(--font-body)',
+      fontSize: 14,
+      fontWeight: sel ? 600 : 400,
+      color: sel ? 'var(--fg-1)' : 'var(--fg-3)',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
+    }
+  }, sel ? T(sel.name) : value === null && allowNull ? T('Sin categoría') : T(placeholder)), /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20,
+      color: 'var(--fg-3)'
+    }
+  }, open ? 'expand_less' : 'expand_more')), open && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'absolute',
+      top: 'calc(100% + 8px)',
+      left: 0,
+      right: 0,
+      zIndex: 80,
+      background: 'var(--surface-1)',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-lg)',
+      boxShadow: '0 22px 60px rgba(0,0,0,.5)',
+      overflow: 'hidden',
+      minWidth: 320
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: 12,
+      borderBottom: '1px solid var(--border-hairline)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 9,
+      background: 'var(--surface-2)',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-sm)',
+      padding: '9px 12px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18,
+      color: 'var(--fg-3)'
+    }
+  }, "search"), /*#__PURE__*/React.createElement("input", {
+    ref: inputRef,
+    value: q,
+    onChange: e => setQ(e.target.value),
+    placeholder: T('Escribe para buscar…'),
+    style: {
+      flex: 1,
+      minWidth: 0,
+      border: 0,
+      outline: 'none',
+      background: 'transparent',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      color: 'var(--fg-1)'
+    }
+  }), q && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    onClick: () => setQ(''),
+    style: {
+      fontSize: 17,
+      color: 'var(--fg-3)',
+      cursor: 'pointer'
+    }
+  }, "close"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxHeight: 320,
+      overflowY: 'auto',
+      padding: 12
+    }
+  }, allowNull && !ql && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => pick(null),
+    style: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 9,
+      padding: '8px 10px',
+      marginBottom: 10,
+      border: 0,
+      borderRadius: 'var(--radius-sm)',
+      cursor: 'pointer',
+      background: value === null ? 'var(--surface-2)' : 'transparent',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      color: 'var(--fg-2)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 17,
+      color: 'var(--fg-3)'
+    }
+  }, "block"), T('Sin categoría')), !ql && groups.map(g => {
+    const jar = window.owfJar(g.jarId);
+    const c = csJarColor(jar);
+    return /*#__PURE__*/React.createElement("div", {
+      key: g.jarId,
+      style: {
+        marginBottom: 14
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 9,
+        height: 9,
+        borderRadius: 3,
+        background: c
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '.04em',
+        color: c
+      }
+    }, T(g.label).toUpperCase()), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-money)',
+        fontSize: 10.5,
+        color: 'var(--fg-3)'
+      }
+    }, jar.percent, "%"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        height: 1,
+        background: 'var(--border-hairline)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 7
+      }
+    }, cats.filter(x => x.jarId === g.jarId).map(cat => {
+      const on = cat.id === value;
+      return /*#__PURE__*/React.createElement("button", {
+        key: cat.id,
+        type: "button",
+        onClick: () => pick(cat.id),
+        style: {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 7,
+          padding: '8px 11px',
+          borderRadius: 999,
+          cursor: 'pointer',
+          background: on ? c : csTint(c, 12),
+          border: `1px solid ${on ? c : csTint(c, 28)}`,
+          fontFamily: 'var(--font-body)',
+          fontSize: 12.5,
+          fontWeight: on ? 700 : 500,
+          color: on ? '#fff' : 'var(--fg-1)'
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "material-icons",
+        style: {
+          fontSize: 15,
+          color: on ? '#fff' : c
+        }
+      }, cat.icon), T(cat.name));
+    })));
+  }), ql && (matches.length ? matches.map(cat => {
+    const jar = window.owfJarForCategory(cat.id);
+    const c = csJarColor(jar);
+    const on = cat.id === value;
+    return /*#__PURE__*/React.createElement("button", {
+      key: cat.id,
+      type: "button",
+      onClick: () => pick(cat.id),
+      style: {
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        padding: '10px 11px',
+        border: 0,
+        borderRadius: 'var(--radius-sm)',
+        cursor: 'pointer',
+        background: on ? csTint(c, 14) : 'transparent',
+        marginBottom: 2
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        background: csTint(c, 16),
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 17,
+        color: c
+      }
+    }, cat.icon)), /*#__PURE__*/React.createElement("span", {
+      style: {
+        flex: 1,
+        textAlign: 'left',
+        fontFamily: 'var(--font-body)',
+        fontSize: 13.5,
+        fontWeight: on ? 700 : 500,
+        color: 'var(--fg-1)'
+      }
+    }, T(cat.name)), jar && /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '3px 9px',
+        borderRadius: 999,
+        background: csTint(c, 14)
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 7,
+        height: 7,
+        borderRadius: 2,
+        background: c
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 11,
+        fontWeight: 600,
+        color: 'var(--fg-2)'
+      }
+    }, T(jar.name))));
+  }) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '20px 8px',
+      textAlign: 'center',
+      fontFamily: 'var(--font-body)',
+      fontSize: 13,
+      color: 'var(--fg-3)'
+    }
+  }, T('Sin resultados para'), " \u201C", q, "\u201D")))));
+}
+Object.assign(window, {
+  CategorySelector
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/lite-desktop/organisms/CategorySelector.jsx", error: String((e && e.message) || e) }); }
 
 // ui_kits/lite-desktop/organisms/DebtsPreview.jsx
 try { (() => {
@@ -26983,14 +27486,7 @@ function TransactionForm({
     amount: '',
     rate: RATES.VES.current
   }]);
-  const [items, setItems] = useTfState([{
-    name: '',
-    qty: 1,
-    amount: '',
-    taxId: null,
-    jarId: null,
-    categoryId: null
-  }]);
+  const [items, setItems] = useTfState([]);
   // ajuste
   const [targetBalance, setTargetBalance] = useTfState('');
   // comisión (Venezuela: fija / pago móvil / porcentaje)
@@ -27145,6 +27641,27 @@ function TransactionForm({
     };
   };
   const payload = buildPayload();
+
+  // ── Vista-resumen para el Preview Card (2.6) + validación (2.5) ──
+  const curSym = window.CURRENCIES[currency]?.symbol || '$';
+  const summaryView = {
+    type,
+    amount: type === 'transfer' ? Number(amount) || 0 : type === 'ajuste' ? Math.abs(adjustDiff) : effectiveAmount,
+    currencySym: curSym,
+    account: selAccount?.name,
+    toAccount: type === 'transfer' ? selTo?.name : null,
+    sameAccount: accountId === toAccountId,
+    category: isLite || type === 'expense' || type === 'income' ? jarForCategory(categoryId) && catOpts.find(c => c.value === categoryId)?.label || (categoryId != null ? (window.SAMPLE_CATEGORIES.find(c => c.id === categoryId) || {}).name : null) : null,
+    jar: (jarForCategory(categoryId) || {}).name ? t(jarForCategory(categoryId).name) : null,
+    itemsCount: itemsOn ? items.length : 1,
+    splitCount: splitOn ? payments.length : 1,
+    splitBalanced: true,
+    commission: commOn ? commAmount : 0,
+    targetBalance: Number(targetBalance) || 0,
+    balanceDelta: adjustDiff,
+    crossArrives: xferCross ? xferArrives : null,
+    toCurrencySym: selTo ? window.CURRENCIES[selTo.currency]?.symbol || 'Bs.' : null
+  };
   const G = 14; // gap
   const isMobile = useViewportMobile();
   const rowDir = isMobile ? 'column' : 'row';
@@ -27186,14 +27703,10 @@ function TransactionForm({
       label: t("Categoría"),
       required: true,
       hint: t('El cántaro entra con la categoría')
-    }, /*#__PURE__*/React.createElement(Picker, {
+    }, /*#__PURE__*/React.createElement(CategorySelector, {
       value: categoryId,
       onChange: setCategoryId,
-      options: (window.SAMPLE_CATEGORIES || []).filter(c => c.kind !== 'income').map(c => ({
-        value: c.id,
-        label: window.t(c.name),
-        icon: c.icon
-      })),
+      kind: "expense",
       placeholder: t("Elige una categoría")
     })), /*#__PURE__*/React.createElement(AnchoredJar, {
       categoryId: categoryId
@@ -27274,7 +27787,9 @@ function TransactionForm({
         icon: 'block'
       }, ...catOpts.filter((o, i) => (window.SAMPLE_CATEGORIES[i] || {}).kind === 'income')],
       placeholder: t("Categoría")
-    }))), /*#__PURE__*/React.createElement(TfFooter, {
+    }))), /*#__PURE__*/React.createElement(TfReview, {
+      view: summaryView,
+      payload: payload,
       accent: accent,
       onClose: onClose,
       onSubmit: () => onSubmit && onSubmit(payload),
@@ -27557,14 +28072,11 @@ function TransactionForm({
     style: {
       flex: 1
     }
-  }, /*#__PURE__*/React.createElement(Picker, {
+  }, /*#__PURE__*/React.createElement(CategorySelector, {
     value: categoryId,
     onChange: setCategoryId,
-    options: [{
-      value: null,
-      label: window.t('Sin categoría'),
-      icon: 'block'
-    }, ...catOpts],
+    kind: "expense",
+    allowNull: true,
     placeholder: t("Categoría")
   })), /*#__PURE__*/React.createElement(Field, {
     label: t('Cántaro'),
@@ -27652,12 +28164,117 @@ function TransactionForm({
     icon: "account_balance_wallet",
     label: t("Afecta el saldo"),
     sub: t("Desactiva para movimientos informativos")
-  })), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement(TfReview, {
+    view: summaryView,
+    payload: payload,
+    accent: accent,
+    onClose: onClose,
+    onSubmit: () => onSubmit && onSubmit(payload),
+    label: type === 'transfer' ? t('Registrar transferencia') : type === 'ajuste' ? t('Aplicar ajuste') : type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')
+  }));
+}
+
+/* ---------- Review: preview card + validación + guardar con estados ----------
+ * 2.6 Preview Card · 2.5 estados (idle/loading/success) + validación ·
+ * 2.4 confirmación híbrida (las operaciones complejas muestran el resumen
+ * de forma destacada antes de guardar; las simples guardan directo). */
+function TfReview({
+  view,
+  payload,
+  accent,
+  onClose,
+  onSubmit,
+  label
+}) {
+  const [status, setStatus] = useTfState('idle'); // idle | loading | success
+  const [showPayload, setShowPayload] = useTfState(false);
+  const valid = window.owfValidateTx ? window.owfValidateTx(view) : {
+    ok: true,
+    reasons: []
+  };
+  const complex = window.owfTxIsComplex ? window.owfTxIsComplex(view) : false;
+  const summary = window.owfTxSummary ? window.owfTxSummary(view) : '';
+  const go = () => {
+    if (!valid.ok || status !== 'idle') return;
+    setStatus('loading');
+    setTimeout(() => {
+      setStatus('success');
+      setTimeout(() => {
+        onSubmit && onSubmit();
+        setStatus('idle');
+      }, 720);
+    }, 760);
+  };
+  return /*#__PURE__*/React.createElement("div", {
     style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
       borderTop: '1px solid var(--border-hairline)',
-      paddingTop: 12
+      paddingTop: 14
     }
-  }, /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 11,
+      padding: '13px 15px',
+      borderRadius: 'var(--radius-md)',
+      background: complex ? `color-mix(in srgb, ${accent} 8%, var(--surface-1))` : 'var(--surface-2)',
+      border: `1px solid ${complex ? `color-mix(in srgb, ${accent} 26%, transparent)` : 'var(--border-hairline)'}`
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20,
+      color: accent,
+      marginTop: 1
+    }
+  }, complex ? 'fact_check' : 'visibility'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10.5,
+      fontWeight: 700,
+      letterSpacing: '.06em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)',
+      marginBottom: 3
+    }
+  }, t('Vas a registrar')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      lineHeight: 1.5,
+      color: 'var(--fg-1)',
+      textWrap: 'pretty'
+    }
+  }, summary))), !valid.ok && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 5
+    }
+  }, valid.reasons.map((r, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 7,
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      color: 'var(--fg-2)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 15,
+      color: 'var(--warning)'
+    }
+  }, "error_outline"), r))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: () => setShowPayload(s => !s),
     style: {
@@ -27668,35 +28285,76 @@ function TransactionForm({
       background: 'transparent',
       cursor: 'pointer',
       fontFamily: 'var(--font-body)',
-      fontSize: 12,
+      fontSize: 11.5,
       fontWeight: 600,
-      color: 'var(--fg-2)',
+      color: 'var(--fg-3)',
       padding: 0
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "material-icons",
     style: {
-      fontSize: 16
+      fontSize: 15
     }
   }, showPayload ? 'expand_less' : 'data_object'), showPayload ? t('Ocultar') : t('Ver'), " payload \xB7 POST /api/v1/transactions"), showPayload && /*#__PURE__*/React.createElement("pre", {
     style: {
-      marginTop: 10,
-      padding: 14,
+      marginTop: 9,
+      padding: 13,
       borderRadius: 'var(--radius-sm)',
       background: 'var(--ink-base)',
       color: '#A8BCE6',
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-      fontSize: 11.5,
+      fontSize: 11,
       lineHeight: 1.5,
       overflowX: 'auto',
-      maxHeight: 220
+      maxHeight: 200
     }
-  }, JSON.stringify(payload, null, 2))), /*#__PURE__*/React.createElement(TfFooter, {
-    accent: accent,
-    onClose: onClose,
-    onSubmit: () => onSubmit && onSubmit(payload),
-    label: type === 'transfer' ? t('Registrar transferencia') : type === 'ajuste' ? t('Aplicar ajuste') : type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')
-  }));
+  }, JSON.stringify(payload, null, 2))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 2
+    }
+  }, /*#__PURE__*/React.createElement(PillButton, {
+    variant: "ghost",
+    onClick: onClose
+  }, t("Cancelar")), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: go,
+    disabled: !valid.ok || status !== 'idle',
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 8,
+      border: 0,
+      cursor: valid.ok && status === 'idle' ? 'pointer' : 'not-allowed',
+      padding: '12px 24px',
+      borderRadius: 'var(--radius-pill)',
+      background: status === 'success' ? 'var(--income)' : valid.ok ? accent : 'var(--surface-3)',
+      color: valid.ok || status === 'success' ? '#fff' : 'var(--fg-3)',
+      fontFamily: 'var(--font-body)',
+      fontWeight: 700,
+      fontSize: 14.5,
+      transition: 'background 200ms, color 200ms',
+      minWidth: 190,
+      justifyContent: 'center'
+    }
+  }, status === 'loading' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons tf-spin",
+    style: {
+      fontSize: 19
+    }
+  }, "progress_activity"), t('Guardando…')), status === 'success' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19
+    }
+  }, "check_circle"), t('Registrado')), status === 'idle' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19
+    }
+  }, complex ? 'task_alt' : 'check'), complex ? t('Confirmar y registrar') : label))), /*#__PURE__*/React.createElement("style", null, `@keyframes tfSpin{to{transform:rotate(360deg)}}.tf-spin{animation:tfSpin 800ms linear infinite}`));
 }
 
 /* ---------- Commission (Venezuela: fija / pago móvil / porcentaje) ---------- */
@@ -28298,6 +28956,74 @@ function TfItemsEditor({
     categoryId: null
   }]);
   const rm = i => setItems(items.filter((_, idx) => idx !== i));
+  // Estado vacío (2.2)
+  if (!items.length) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 10,
+        padding: '28px 16px',
+        borderRadius: 'var(--radius-md)',
+        background: 'var(--surface-2)',
+        border: '1px dashed var(--border-hairline)',
+        textAlign: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        background: 'var(--surface-1)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 25,
+        color: 'var(--fg-3)'
+      }
+    }, "receipt_long")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 14,
+        fontWeight: 600,
+        color: 'var(--fg-1)'
+      }
+    }, t('Sin ítems todavía')), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12.5,
+        color: 'var(--fg-3)',
+        marginTop: 2
+      }
+    }, t('Desglosa la factura línea por línea. El total se suma solo.'))), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: add,
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        border: 0,
+        cursor: 'pointer',
+        padding: '10px 16px',
+        borderRadius: 'var(--radius-pill)',
+        background: 'var(--brand-primary)',
+        color: '#fff',
+        fontFamily: 'var(--font-body)',
+        fontSize: 13,
+        fontWeight: 700
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 16
+      }
+    }, "add"), t('Añadir primer ítem')));
+  }
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
@@ -40402,6 +41128,74 @@ function MFItemsEditor({
     category: null
   }]);
   const rm = i => setItems(items.filter((_, idx) => idx !== i));
+  // Estado vacío (2.2): aún no hay ítems en la factura
+  if (!items.length) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 10,
+        padding: '26px 16px',
+        borderRadius: 'var(--radius-md)',
+        background: 'var(--surface-2)',
+        border: '1px dashed var(--border-hairline)',
+        textAlign: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 46,
+        height: 46,
+        borderRadius: 14,
+        background: 'var(--surface-1)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 24,
+        color: 'var(--fg-3)'
+      }
+    }, "receipt_long")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 14,
+        fontWeight: 600,
+        color: 'var(--fg-1)'
+      }
+    }, "Sin \xEDtems todav\xEDa"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 12.5,
+        color: 'var(--fg-3)',
+        marginTop: 2
+      }
+    }, "Desglosa la factura l\xEDnea por l\xEDnea. El total se suma solo.")), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: add,
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        border: 0,
+        cursor: 'pointer',
+        padding: '10px 16px',
+        borderRadius: 'var(--radius-pill)',
+        background: accent,
+        color: '#fff',
+        fontFamily: 'var(--font-body)',
+        fontSize: 13,
+        fontWeight: 700
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 16
+      }
+    }, "add"), "A\xF1adir primer \xEDtem"));
+  }
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
@@ -40561,6 +41355,308 @@ function MFItemsEditor({
 }
 
 /* ═══════════════════════════ MAIN SHEET ═══════════════════════════════ */
+/* ── Selector de categorías B+C (mobile: trigger + bottom sheet) ──────────
+ * Buscador siempre arriba (C); en frío, cuadrícula agrupada y coloreada por
+ * cántaro (B); al escribir, lista plana filtrada. El cántaro entra anclado. */
+const MFC_DISP = {
+  '#1E3A8A': '#5B7FD6'
+};
+const mfcJarColor = j => j ? MFC_DISP[j.color] || j.color : 'var(--fg-3)';
+const mfcTint = (c, p) => `color-mix(in srgb, ${c} ${p}%, var(--surface-1))`;
+function MFCategoryField({
+  value,
+  onChange,
+  kind = 'expense',
+  accent
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState('');
+  const cats = (window.OWF_CATEGORIES || []).filter(c => kind ? c.kind === kind : true);
+  const sel = value != null ? cats.find(c => c.id === value) : null;
+  const selJar = sel ? window.owfJarForCategory(sel.id) : null;
+  const groups = (window.OWF_CATEGORY_GROUPS || []).filter(g => g.jarId && cats.some(c => c.jarId === g.jarId));
+  const ql = q.trim().toLowerCase();
+  const matches = ql ? cats.filter(c => c.name.toLowerCase().includes(ql)) : [];
+  const pick = id => {
+    onChange(id);
+    setOpen(false);
+    setQ('');
+  };
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setOpen(true),
+    style: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 9,
+      padding: '13px 14px',
+      borderRadius: 'var(--radius-md)',
+      background: 'var(--surface-2)',
+      border: '1px solid var(--border-hairline)',
+      cursor: 'pointer',
+      minHeight: 47
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18,
+      color: sel ? mfcJarColor(selJar) : 'var(--fg-3)'
+    }
+  }, sel ? sel.icon : 'sell'), /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      minWidth: 0,
+      textAlign: 'left',
+      fontFamily: 'var(--font-body)',
+      fontSize: 14,
+      fontWeight: sel ? 600 : 400,
+      color: sel ? 'var(--fg-1)' : 'var(--fg-3)',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis'
+    }
+  }, sel ? sel.name : value === null ? 'Sin categoría' : 'Elegir categoría'), /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 20,
+      color: 'var(--fg-3)'
+    }
+  }, "unfold_more")), /*#__PURE__*/React.createElement(MobileBottomSheet, {
+    open: open,
+    onClose: () => {
+      setOpen(false);
+      setQ('');
+    },
+    title: "Categor\xEDa",
+    maxHeight: "86%"
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '0 20px 8px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 9,
+      background: 'var(--surface-2)',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-md)',
+      padding: '12px 14px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19,
+      color: 'var(--fg-3)'
+    }
+  }, "search"), /*#__PURE__*/React.createElement("input", {
+    value: q,
+    onChange: e => setQ(e.target.value),
+    placeholder: "Escribe para buscar\u2026",
+    autoFocus: true,
+    style: {
+      flex: 1,
+      minWidth: 0,
+      border: 0,
+      outline: 'none',
+      background: 'transparent',
+      fontFamily: 'var(--font-body)',
+      fontSize: 15,
+      color: 'var(--fg-1)'
+    }
+  }), q && /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    onClick: () => setQ(''),
+    style: {
+      fontSize: 18,
+      color: 'var(--fg-3)'
+    }
+  }, "close"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '8px 20px 28px'
+    }
+  }, kind !== 'income' && !ql && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => pick(null),
+    style: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '11px 12px',
+      marginBottom: 12,
+      border: 0,
+      borderRadius: 'var(--radius-md)',
+      background: value === null ? 'var(--surface-2)' : 'transparent',
+      cursor: 'pointer',
+      fontFamily: 'var(--font-body)',
+      fontSize: 14,
+      color: 'var(--fg-2)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19,
+      color: 'var(--fg-3)'
+    }
+  }, "block"), "Sin categor\xEDa"), !ql && groups.map(g => {
+    const jar = window.owfJar(g.jarId);
+    const c = mfcJarColor(jar);
+    return /*#__PURE__*/React.createElement("div", {
+      key: g.jarId,
+      style: {
+        marginBottom: 18
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 10
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 9,
+        height: 9,
+        borderRadius: 3,
+        background: c
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '.04em',
+        color: c
+      }
+    }, g.label.toUpperCase()), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-money)',
+        fontSize: 10.5,
+        color: 'var(--fg-3)'
+      }
+    }, jar.percent, "%"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        height: 1,
+        background: 'var(--border-hairline)'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 8
+      }
+    }, cats.filter(x => x.jarId === g.jarId).map(cat => {
+      const on = cat.id === value;
+      return /*#__PURE__*/React.createElement("button", {
+        key: cat.id,
+        type: "button",
+        onClick: () => pick(cat.id),
+        style: {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 7,
+          padding: '10px 13px',
+          borderRadius: 999,
+          cursor: 'pointer',
+          minHeight: 44,
+          background: on ? c : mfcTint(c, 12),
+          border: `1px solid ${on ? c : mfcTint(c, 28)}`,
+          fontFamily: 'var(--font-body)',
+          fontSize: 13.5,
+          fontWeight: on ? 700 : 500,
+          color: on ? '#fff' : 'var(--fg-1)'
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "material-icons",
+        style: {
+          fontSize: 16,
+          color: on ? '#fff' : c
+        }
+      }, cat.icon), cat.name);
+    })));
+  }), ql && (matches.length ? matches.map(cat => {
+    const jar = window.owfJarForCategory(cat.id);
+    const c = mfcJarColor(jar);
+    const on = cat.id === value;
+    return /*#__PURE__*/React.createElement("button", {
+      key: cat.id,
+      type: "button",
+      onClick: () => pick(cat.id),
+      style: {
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px',
+        border: 0,
+        borderRadius: 'var(--radius-md)',
+        background: on ? mfcTint(c, 14) : 'transparent',
+        cursor: 'pointer'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 34,
+        height: 34,
+        borderRadius: 9,
+        background: mfcTint(c, 16),
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "material-icons",
+      style: {
+        fontSize: 18,
+        color: c
+      }
+    }, cat.icon)), /*#__PURE__*/React.createElement("span", {
+      style: {
+        flex: 1,
+        textAlign: 'left',
+        fontFamily: 'var(--font-body)',
+        fontSize: 15,
+        fontWeight: on ? 700 : 500,
+        color: 'var(--fg-1)'
+      }
+    }, cat.name), jar && /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '4px 10px',
+        borderRadius: 999,
+        background: mfcTint(c, 14)
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 7,
+        height: 7,
+        borderRadius: 2,
+        background: c
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 11.5,
+        fontWeight: 600,
+        color: 'var(--fg-2)'
+      }
+    }, jar.name)));
+  }) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '24px 8px',
+      textAlign: 'center',
+      fontFamily: 'var(--font-body)',
+      fontSize: 14,
+      color: 'var(--fg-3)'
+    }
+  }, "Sin resultados para \u201C", q, "\u201D")))));
+}
+
 /* cántaro anclado (solo lectura, derivado de la categoría) */
 function MFAnchoredJar({
   category,
@@ -40677,7 +41773,6 @@ function TransactionFormSheet({
   initialType = 'expense',
   onSubmit
 }) {
-  const accent = 'var(--info)';
   const accounts = window.MOBILE_ACCOUNTS || [];
   const acctOpts = accounts.map(a => ({
     value: a.id,
@@ -40719,6 +41814,7 @@ function TransactionFormSheet({
   const [commOn, setCommOn] = useTFSState(false);
   const [commKind, setCommKind] = useTFSState('pagomovil');
   const [commValue, setCommVal] = useTFSState('');
+  const [targetBalance, setTargetBalance] = useTFSState('');
   useTFSEffect(() => {
     if (open) {
       setType(initialType);
@@ -40737,26 +41833,50 @@ function TransactionFormSheet({
         accountId: 4,
         amount: ''
       }]);
-      setItems([{
-        name: '',
-        qty: 1,
-        amount: '',
-        category: null
-      }]);
+      setItems([]);
       setCommOn(false);
       setCommKind('pagomovil');
       setCommVal('');
+      setTargetBalance('');
     }
   }, [open, initialType]);
   if (!open) return null;
+  const accentMap = {
+    expense: 'var(--info)',
+    income: 'var(--income)',
+    transfer: '#8B5CF6',
+    ajuste: 'var(--warning)'
+  };
+  const accent = accentMap[type] || 'var(--info)';
   const isTransfer = type === 'transfer';
   const isIncome = type === 'income';
+  const isAjuste = type === 'ajuste';
+  const selAccount = accounts.find(a => a.id === accountId);
+  const adjustDelta = (Number(targetBalance) || 0) - (selAccount ? selAccount.balance : 0);
   const itemsTotal = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.amount) || 0), 0);
   const splitTotal = payments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const baseAmount = itemsOn ? itemsTotal : splitOn && !isTransfer ? splitTotal : Number(amount) || 0;
   const commValForCalc = commKind === 'pagomovil' ? window.MOBILE_PAGOMOVIL_PCT : Number(commValue) || 0;
   const commAmount = commOn ? window.mobileComputeCommission(commKind, commValForCalc, baseAmount) : 0;
   const submit = () => {
+    const newId = Math.max(0, ...window.MOBILE_TX.map(t => t.id)) + 1;
+    if (isAjuste) {
+      window.MOBILE_TX.unshift({
+        id: newId,
+        label: concept.trim() || 'Ajuste de saldo',
+        amount: adjustDelta,
+        day: 'Hoy · Mar 14',
+        time: '',
+        category: 'Ajuste',
+        acctId: accountId,
+        m: 2,
+        y: 2026,
+        commission: null
+      });
+      onSubmit && onSubmit();
+      onClose();
+      return;
+    }
     const total = baseAmount;
     const sign = isIncome ? 1 : -1;
     const commission = commOn ? {
@@ -40765,7 +41885,6 @@ function TransactionFormSheet({
       amount: +commAmount.toFixed(2),
       currency: 'USD'
     } : null;
-    const newId = Math.max(0, ...window.MOBILE_TX.map(t => t.id)) + 1;
     const acctFor = splitOn && !isTransfer ? payments[0].accountId : accountId;
     const label = concept.trim() || (isTransfer ? 'Transferencia' : itemsOn ? 'Factura' : isIncome ? 'Ingreso' : 'Movimiento');
     const category = isTransfer ? 'Transferencia' : categoryId ? (window.owfCategory && window.owfCategory(categoryId) || {}).name || 'Otro' : itemsOn ? 'Factura' : 'Otro';
@@ -40783,6 +41902,24 @@ function TransactionFormSheet({
     });
     onSubmit && onSubmit();
     onClose();
+  };
+
+  // ── Vista-resumen para preview card (2.6) + validación (2.5) ──
+  const summaryView = {
+    type,
+    amount: isAjuste ? Math.abs(adjustDelta) : baseAmount,
+    currencySym: '$',
+    account: selAccount ? selAccount.name : null,
+    toAccount: isTransfer ? (accounts.find(a => a.id === toAccountId) || {}).name : null,
+    sameAccount: accountId === toAccountId,
+    category: !isTransfer && !isAjuste && categoryId != null ? (window.owfCategory && window.owfCategory(categoryId) || {}).name : null,
+    jar: !isTransfer && !isAjuste && window.owfJarForCategory && window.owfJarForCategory(categoryId) ? window.owfJarForCategory(categoryId).name : null,
+    itemsCount: itemsOn ? items.length : 1,
+    splitCount: splitOn && !isTransfer ? payments.length : 1,
+    splitBalanced: true,
+    commission: commOn ? commAmount : 0,
+    targetBalance: Number(targetBalance) || 0,
+    balanceDelta: adjustDelta
   };
   const moneyInput = /*#__PURE__*/React.createElement("div", {
     style: {
@@ -40857,7 +41994,7 @@ function TransactionFormSheet({
       borderRadius: 'var(--radius-pill)',
       padding: 4
     }
-  }, [['expense', 'Gasto', 'arrow_outward'], ['income', 'Ingreso', 'arrow_downward'], ['transfer', 'Transferir', 'swap_horiz']].map(([k, lbl, icon]) => {
+  }, [['expense', 'Gasto', 'arrow_outward'], ['income', 'Ingreso', 'arrow_downward'], ['transfer', 'Transferir', 'swap_horiz'], ['ajuste', 'Ajuste', 'tune']].map(([k, lbl, icon]) => {
     const on = type === k;
     return /*#__PURE__*/React.createElement("button", {
       key: k,
@@ -40866,23 +42003,23 @@ function TransactionFormSheet({
         flex: 1,
         border: 0,
         cursor: 'pointer',
-        padding: '9px 4px',
+        padding: '9px 2px',
         borderRadius: 'var(--radius-pill)',
         background: on ? 'var(--surface-1)' : 'transparent',
-        color: on ? accent : 'var(--fg-2)',
+        color: on ? accentMap[k] : 'var(--fg-2)',
         fontFamily: 'var(--font-body)',
         fontWeight: on ? 700 : 500,
-        fontSize: 12.5,
+        fontSize: 11.5,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 4,
+        gap: 3,
         boxShadow: on ? 'var(--shadow-card)' : 'none'
       }
     }, /*#__PURE__*/React.createElement("span", {
       className: "material-icons",
       style: {
-        fontSize: 15
+        fontSize: 14
       }
     }, icon), lbl);
   })), isTransfer && /*#__PURE__*/React.createElement(React.Fragment, null, moneyInput, /*#__PURE__*/React.createElement("div", {
@@ -40917,7 +42054,118 @@ function TransactionFormSheet({
     amount: commAmount,
     base: baseAmount,
     accent: accent
-  }), conceptInput), !isTransfer && /*#__PURE__*/React.createElement(React.Fragment, null, !itemsOn && moneyInput, itemsOn && /*#__PURE__*/React.createElement("div", {
+  }), conceptInput), isAjuste && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 7
+    }
+  }, /*#__PURE__*/React.createElement(MFLabel, null, "Cuenta a ajustar"), /*#__PURE__*/React.createElement(MFPicker, {
+    value: accountId,
+    onChange: setAccountId,
+    options: acctOpts,
+    accent: accent
+  }), selAccount && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 11.5,
+      color: 'var(--fg-3)'
+    }
+  }, "Saldo actual ", /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      color: 'var(--fg-2)'
+    }
+  }, "$ ", tfsFmt(selAccount.balance)))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 7
+    }
+  }, /*#__PURE__*/React.createElement(MFLabel, null, "Nuevo saldo"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      background: 'var(--surface-2)',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-md)',
+      padding: '10px 14px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontWeight: 700,
+      fontSize: 28,
+      color: 'var(--fg-3)'
+    }
+  }, "$"), /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "decimal",
+    value: targetBalance,
+    placeholder: selAccount ? tfsFmt(selAccount.balance) : '0.00',
+    onChange: e => setTargetBalance(e.target.value),
+    style: {
+      flex: 1,
+      minWidth: 0,
+      border: 0,
+      background: 'transparent',
+      outline: 'none',
+      fontFamily: 'var(--font-money)',
+      fontWeight: 700,
+      fontSize: 28,
+      color: 'var(--fg-1)',
+      fontVariantNumeric: 'tabular-nums'
+    }
+  }))), targetBalance !== '' && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 11,
+      padding: '12px 14px',
+      borderRadius: 'var(--radius-md)',
+      background: adjustDelta >= 0 ? 'var(--income-soft)' : 'var(--expense-soft)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 22,
+      color: adjustDelta >= 0 ? 'var(--income-fg)' : 'var(--expense-fg)'
+    }
+  }, adjustDelta >= 0 ? 'trending_up' : 'trending_down'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 12,
+      color: 'var(--fg-2)'
+    }
+  }, "Se crear\xE1 un ajuste de"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-money)',
+      fontWeight: 700,
+      fontSize: 18,
+      color: adjustDelta >= 0 ? 'var(--income-fg)' : 'var(--expense-fg)'
+    }
+  }, adjustDelta >= 0 ? '+' : '−', " $ ", tfsFmt(Math.abs(adjustDelta))))), /*#__PURE__*/React.createElement("input", {
+    value: concept,
+    onChange: e => setConcept(e.target.value),
+    placeholder: "Motivo (opcional)",
+    style: {
+      width: '100%',
+      boxSizing: 'border-box',
+      border: '1px solid var(--border-hairline)',
+      borderRadius: 'var(--radius-md)',
+      padding: '12px 14px',
+      fontFamily: 'var(--font-body)',
+      fontSize: 14,
+      color: 'var(--fg-1)',
+      background: 'var(--surface-2)',
+      outline: 'none'
+    }
+  })), !isTransfer && !isAjuste && /*#__PURE__*/React.createElement(React.Fragment, null, !itemsOn && moneyInput, itemsOn && /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'baseline',
@@ -40969,19 +42217,10 @@ function TransactionFormSheet({
       flexDirection: 'column',
       gap: 7
     }
-  }, /*#__PURE__*/React.createElement(MFLabel, null, "Categor\xEDa"), /*#__PURE__*/React.createElement(MFPicker, {
+  }, /*#__PURE__*/React.createElement(MFLabel, null, "Categor\xEDa"), /*#__PURE__*/React.createElement(MFCategoryField, {
     value: categoryId,
     onChange: setCat,
-    options: [{
-      value: null,
-      label: 'Sin categoría',
-      icon: 'block'
-    }, ...(window.OWF_CATEGORIES || []).filter(c => isIncome ? c.kind === 'income' : c.kind !== 'income').map(c => ({
-      value: c.id,
-      label: c.name,
-      icon: c.icon
-    }))],
-    placeholder: "Categor\xEDa",
+    kind: isIncome ? 'income' : 'expense',
     accent: accent
   })), !isIncome && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -41029,11 +42268,105 @@ function TransactionFormSheet({
     amount: commAmount,
     base: baseAmount,
     accent: accent
-  })), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement(MFReview, {
+    view: summaryView,
+    accent: accent,
+    onClose: onClose,
+    onSubmit: submit,
+    label: isTransfer ? 'Registrar transferencia' : isAjuste ? 'Aplicar ajuste' : isIncome ? 'Registrar ingreso' : 'Registrar gasto'
+  })));
+}
+
+/* ── Review mobile: preview card + validación + guardar con estados ── */
+function MFReview({
+  view,
+  accent,
+  onClose,
+  onSubmit,
+  label
+}) {
+  const [status, setStatus] = useTFSState('idle');
+  const valid = window.owfValidateTx ? window.owfValidateTx(view) : {
+    ok: true,
+    reasons: []
+  };
+  const complex = window.owfTxIsComplex ? window.owfTxIsComplex(view) : false;
+  const summary = window.owfTxSummary ? window.owfTxSummary(view) : '';
+  const go = () => {
+    if (!valid.ok || status !== 'idle') return;
+    setStatus('loading');
+    setTimeout(() => {
+      setStatus('success');
+      setTimeout(() => {
+        onSubmit && onSubmit();
+      }, 650);
+    }, 720);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+      marginTop: 4
+    }
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       gap: 10,
-      marginTop: 4
+      padding: '12px 14px',
+      borderRadius: 'var(--radius-md)',
+      background: complex ? `color-mix(in srgb, ${accent} 9%, var(--surface-1))` : 'var(--surface-2)',
+      border: `1px solid ${complex ? `color-mix(in srgb, ${accent} 26%, transparent)` : 'var(--border-hairline)'}`
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 19,
+      color: accent,
+      marginTop: 1
+    }
+  }, complex ? 'fact_check' : 'visibility'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: '.06em',
+      textTransform: 'uppercase',
+      color: 'var(--fg-3)',
+      marginBottom: 3
+    }
+  }, "Vas a registrar"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: 'var(--font-body)',
+      fontSize: 13.5,
+      lineHeight: 1.5,
+      color: 'var(--fg-1)'
+    }
+  }, summary))), !valid.ok && valid.reasons.map((r, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 7,
+      fontFamily: 'var(--font-body)',
+      fontSize: 12.5,
+      color: 'var(--fg-2)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 16,
+      color: 'var(--warning)'
+    }
+  }, "error_outline"), r)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 10
     }
   }, /*#__PURE__*/React.createElement("button", {
     onClick: onClose,
@@ -41050,29 +42383,41 @@ function TransactionFormSheet({
       color: 'var(--fg-1)'
     }
   }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
-    onClick: submit,
+    onClick: go,
+    disabled: !valid.ok || status !== 'idle',
     style: {
       flex: 1,
       border: 0,
-      background: accent,
-      color: '#fff',
-      cursor: 'pointer',
+      cursor: valid.ok && status === 'idle' ? 'pointer' : 'not-allowed',
       padding: '13px',
       borderRadius: 'var(--radius-pill)',
+      background: status === 'success' ? 'var(--income)' : valid.ok ? accent : 'var(--surface-3)',
+      color: valid.ok || status === 'success' ? '#fff' : 'var(--fg-3)',
       fontFamily: 'var(--font-body)',
       fontSize: 14,
       fontWeight: 700,
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 8
+      gap: 8,
+      transition: 'background 200ms'
     }
-  }, /*#__PURE__*/React.createElement("span", {
+  }, status === 'loading' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons mfs-spin",
+    style: {
+      fontSize: 18
+    }
+  }, "progress_activity"), "Guardando\u2026"), status === 'success' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
     className: "material-icons",
     style: {
       fontSize: 18
     }
-  }, "check"), isTransfer ? 'Registrar transferencia' : isIncome ? 'Registrar ingreso' : 'Registrar gasto'))));
+  }, "check_circle"), "Registrado"), status === 'idle' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "material-icons",
+    style: {
+      fontSize: 18
+    }
+  }, complex ? 'task_alt' : 'check'), complex ? 'Confirmar y registrar' : label))), /*#__PURE__*/React.createElement("style", null, `@keyframes mfsSpin{to{transform:rotate(360deg)}}.mfs-spin{animation:mfsSpin 800ms linear infinite}`));
 }
 Object.assign(window, {
   TransactionFormSheet

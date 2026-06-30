@@ -1198,13 +1198,15 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    padding: 22px 24px 18px;
+    gap: 8px;
+    padding: 20px 24px 16px;
+    min-height: 0;
   }
 
   &__icon {
-    width: 56px; height: 56px; border-radius: 28px;
+    width: 52px; height: 52px; border-radius: 26px;
     display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
 
     &--income  { background: rgba(16,185,129,.12); color: var(--income-fg, #10b981); }
     &--expense { background: rgba(239,68,68,.1);   color: var(--expense-fg, #ef4444); }
@@ -1212,18 +1214,27 @@ onUnmounted(() => {
 
   &__amount {
     font-family: var(--font-money, monospace);
-    font-size: 34px;
+    font-size: 30px;
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.15;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   &__label {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 500;
-    color: var(--fg-1, #0f172a);
+    color: var(--fg-2, #64748b);
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 24px);
+    margin-top: 2px;
   }
 
   &__rows {

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>OW Finance · Harness de auditoría — Transacciones</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .material-icons {
+      font-family: 'Material Icons', sans-serif; font-style: normal;
+      display: inline-flex; align-items: center; justify-content: center;
+      line-height: 1; letter-spacing: normal; text-transform: none;
+      white-space: nowrap; direction: ltr;
+      -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Kill entrance animations so screenshots don't catch opacity:0 keyframe frames */
+    *, *::before, *::after { animation: none !important; transition-duration: 0.001s !important; }
+    body { margin: 0; background: var(--surface-1); color: var(--fg-1); font-family: var(--font-body); }
+    .harness-wrap { display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 40px 20px 80px; }
+    .harness-frame {
+      width: 560px; max-width: 100%; box-sizing: border-box;
+      background: var(--surface-1);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      box-shadow: var(--shadow-popover, 0 24px 64px rgba(0,0,0,.5));
+    }
+    .harness-frame.mobile-sim { width: 390px; }
+    .harness-label {
+      font-family: var(--font-body); font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3);
+      margin-bottom: 12px;
+    }
+    .harness-title-row { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; }
+    .harness-title-row .t { font-family: var(--font-display, var(--font-body)); font-weight: 700; font-size: 20px; color: var(--fg-1); }
+  </style>
+</head>
+<body>
+  <div id="harness" class="harness-wrap"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- i18n + atoms + molecules + data + form -->
+  <script src="../../tx-catalog.js"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/data/i18n.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/atoms/Primitives.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/atoms/Buttons.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/atoms/Chips.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/molecules/FormControls.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/molecules/ChipGroup.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/data/finance-data.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/data/sample-data.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/data/profile-data.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/organisms/TransactionForm.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx"></script>
+
+  <script type="text/babel">
+    // Render one or more TransactionForm instances inline, controllable from JS.
+    const root = ReactDOM.createRoot(document.getElementById('harness'));
+    function Frame({ label, mode, type, prefill, mobile }) {
+      return (
+        <div className={'harness-frame' + (mobile ? ' mobile-sim' : '')}>
+          <div className="harness-label">{label}</div>
+          <div className="harness-title-row">
+            <span className="t">{mode === 'lite' ? 'Lite' : 'Pro'} · {type}</span>
+          </div>
+          <TransactionForm key={label} mode={mode} type={type} prefill={prefill || null} onClose={() => {}} onSubmit={() => {}} />
+        </div>
+      );
+    }
+    window.renderForm = (cfg) => {
+      // cfg: { mode, type, prefill, mobile }
+      root.render(<Frame label={(cfg.mode||'pro').toUpperCase()+' · '+(cfg.type||'expense')} {...cfg} />);
+    };
+
+    // ── URL-driven state, so show_html (real pixel capture) lands directly in a state ──
+    // params: ?mode=pro&type=expense&toggle=items,commission&pick=VES&scroll=<text|y>
+    function applyFromUrl() {
+      const q = new URLSearchParams(location.search);
+      const mode = q.get('mode') || 'pro';
+      const type = q.get('type') || 'expense';
+
+      // Detail modal view ─────────────────────────────────────
+      if (q.get('view') === 'detail') {
+        const SAMPLE_TX = {
+          id: 'demo', label: 'Supermercado Whole Foods', meta: 'mar 14 May · 2:42 PM', day: 'mar 14 May',
+          amount: -125.40, category: 'Supermercado', jar: 'Necesidades básicas', jarColor: '#10B981',
+          acctId: 1, commission: { type: 'pagomovil', value: 0.30, amount: 1.50, currency: 'USD' },
+        };
+        function DetailFrame() {
+          const [open, setOpen] = React.useState(true);
+          React.useEffect(() => {
+            if (q.get('edit') === '1') {
+              setTimeout(() => { const b=[...document.querySelectorAll('button')].find(e=>e.textContent.trim()==='editEditar'||/^edit/.test(e.textContent.trim())&&/Editar$/.test(e.textContent.trim())); const eb=[...document.querySelectorAll('button')].find(e=>/Editar$/.test(e.textContent.trim())&&e.querySelector('.material-icons')); (eb||b)&&(eb||b).click(); }, 80);
+            }
+            if (q.get('del') === '1') {
+              setTimeout(() => { const b=[...document.querySelectorAll('button')].find(e=>/Eliminar/.test(e.textContent)); b&&b.click(); }, 80);
+            }
+          }, []);
+          return <TransactionDetailModal open={open} tx={SAMPLE_TX} mode={mode} hidden={false} onClose={()=>{}} onChanged={()=>{}} />;
+        }
+        root.render(<DetailFrame />);
+        return;
+      }
+
+      const prefill = q.get('comm') ? { commission: { type: q.get('comm'), value: q.get('commval') || '' } } : null;
+      window.renderForm({ mode, type, prefill, mobile: q.get('mobile') === '1' });
+      // After mount, click requested toggles + currency, then scroll.
+      const toggles = (q.get('toggle') || '').split(',').filter(Boolean);
+      const labelFor = { split: 'Pago múltiple', items: 'Detalle / factura', commission: 'Cobrar comisión', balance: 'Afecta el saldo' };
+      setTimeout(() => {
+        toggles.forEach(tk => {
+          const txt = labelFor[tk]; if (!txt) return;
+          const b = [...document.querySelectorAll('button')].find(e => e.textContent.includes(txt));
+          if (b) b.click();
+        });
+        const cur = q.get('pick');
+        if (cur) {
+          const cb = [...document.querySelectorAll('button')].find(e => e.textContent.trim() === cur);
+          if (cb) cb.click();
+        }
+        const sc = q.get('scroll');
+        if (sc != null) {
+          if (/^\d+$/.test(sc)) { window.scrollTo(0, +sc); }
+          else {
+            const el = [...document.querySelectorAll('span,button,div')].find(e => e.textContent.trim().startsWith(sc));
+            if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 80);
+          }
+        }
+      }, 60);
+    }
+
+    if (location.search) applyFromUrl();
+    else window.renderForm({ mode: 'pro', type: 'expense' });
+  </script>
+</body>
+</html>

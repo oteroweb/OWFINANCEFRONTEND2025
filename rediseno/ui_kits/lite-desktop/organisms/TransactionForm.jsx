@@ -84,7 +84,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   const [splitOn, setSplitOn] = useTfState(false);
   const [itemsOn, setItemsOn] = useTfState(false);
   const [payments, setPayments] = useTfState([{ accountId: 1, amount: '', rate: 1 }, { accountId: 4, amount: '', rate: RATES.VES.current }]);
-  const [items, setItems] = useTfState([{ name: '', qty: 1, amount: '', taxId: null, jarId: null, categoryId: null }]);
+  const [items, setItems] = useTfState([]);
   // ajuste
   const [targetBalance, setTargetBalance] = useTfState('');
   // comisión (Venezuela: fija / pago móvil / porcentaje)
@@ -147,6 +147,27 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   };
   const payload = buildPayload();
 
+  // ── Vista-resumen para el Preview Card (2.6) + validación (2.5) ──
+  const curSym = (window.CURRENCIES[currency]?.symbol) || '$';
+  const summaryView = {
+    type,
+    amount: type === 'transfer' ? (Number(amount) || 0) : type === 'ajuste' ? Math.abs(adjustDiff) : effectiveAmount,
+    currencySym: curSym,
+    account: selAccount?.name,
+    toAccount: type === 'transfer' ? selTo?.name : null,
+    sameAccount: accountId === toAccountId,
+    category: isLite || type === 'expense' || type === 'income' ? jarForCategory(categoryId) && catOpts.find(c => c.value === categoryId)?.label || (categoryId != null ? (window.SAMPLE_CATEGORIES.find(c => c.id === categoryId) || {}).name : null) : null,
+    jar: (jarForCategory(categoryId) || {}).name ? t((jarForCategory(categoryId)).name) : null,
+    itemsCount: itemsOn ? items.length : 1,
+    splitCount: splitOn ? payments.length : 1,
+    splitBalanced: true,
+    commission: commOn ? commAmount : 0,
+    targetBalance: Number(targetBalance) || 0,
+    balanceDelta: adjustDiff,
+    crossArrives: xferCross ? xferArrives : null,
+    toCurrencySym: selTo ? (window.CURRENCIES[selTo.currency]?.symbol || 'Bs.') : null,
+  };
+
   const G = 14; // gap
   const isMobile = useViewportMobile();
   const rowDir = isMobile ? 'column' : 'row';
@@ -167,7 +188,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
         {type === 'expense' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Field label={t("Categoría")} required hint={t('El cántaro entra con la categoría')}>
-              <Picker value={categoryId} onChange={setCategoryId} options={(window.SAMPLE_CATEGORIES || []).filter(c => c.kind !== 'income').map(c => ({ value: c.id, label: window.t(c.name), icon: c.icon }))} placeholder={t("Elige una categoría")} />
+              <CategorySelector value={categoryId} onChange={setCategoryId} kind="expense" placeholder={t("Elige una categoría")} />
             </Field>
             <AnchoredJar categoryId={categoryId} />
           </div>
@@ -198,7 +219,9 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
           )}
         </div>
 
-        <TfFooter accent={accent} onClose={onClose} onSubmit={() => onSubmit && onSubmit(payload)} label={type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')} />
+        <TfReview view={summaryView} payload={payload} accent={accent} onClose={onClose}
+          onSubmit={() => onSubmit && onSubmit(payload)}
+          label={type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')} />
       </div>
     );
   }
@@ -306,7 +329,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
           {!itemsOn && (
             <div style={{ display: 'flex', flexDirection: rowDir, gap: G, alignItems: 'flex-start' }}>
               <Field label="Categoría" style={{ flex: 1 }}>
-                <Picker value={categoryId} onChange={setCategoryId} options={[{ value: null, label: window.t('Sin categoría'), icon: 'block' }, ...catOpts]} placeholder={t("Categoría")} />
+                <CategorySelector value={categoryId} onChange={setCategoryId} kind="expense" allowNull placeholder={t("Categoría")} />
               </Field>
               <Field label={t('Cántaro')} hint={t('Anclado a la categoría')} style={{ flex: 1 }}>
                 <AnchoredJar categoryId={categoryId} />
@@ -338,20 +361,84 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
         </>
       )}
 
-      {/* payload preview */}
-      <div style={{ borderTop: '1px solid var(--border-hairline)', paddingTop: 12 }}>
-        <button type="button" onClick={() => setShowPayload(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--fg-2)', padding: 0 }}>
-          <span className="material-icons" style={{ fontSize: 16 }}>{showPayload ? 'expand_less' : 'data_object'}</span>
+      {/* Preview card + validación + estados de guardado (2.4/2.5/2.6) */}
+      <TfReview view={summaryView} payload={payload} accent={accent} onClose={onClose}
+        onSubmit={() => onSubmit && onSubmit(payload)}
+        label={type === 'transfer' ? t('Registrar transferencia') : type === 'ajuste' ? t('Aplicar ajuste') : type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')} />
+    </div>
+  );
+}
+
+/* ---------- Review: preview card + validación + guardar con estados ----------
+ * 2.6 Preview Card · 2.5 estados (idle/loading/success) + validación ·
+ * 2.4 confirmación híbrida (las operaciones complejas muestran el resumen
+ * de forma destacada antes de guardar; las simples guardan directo). */
+function TfReview({ view, payload, accent, onClose, onSubmit, label }) {
+  const [status, setStatus] = useTfState('idle'); // idle | loading | success
+  const [showPayload, setShowPayload] = useTfState(false);
+  const valid = (window.owfValidateTx ? window.owfValidateTx(view) : { ok: true, reasons: [] });
+  const complex = window.owfTxIsComplex ? window.owfTxIsComplex(view) : false;
+  const summary = window.owfTxSummary ? window.owfTxSummary(view) : '';
+
+  const go = () => {
+    if (!valid.ok || status !== 'idle') return;
+    setStatus('loading');
+    setTimeout(() => {
+      setStatus('success');
+      setTimeout(() => { onSubmit && onSubmit(); setStatus('idle'); }, 720);
+    }, 760);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid var(--border-hairline)', paddingTop: 14 }}>
+      {/* Preview card — resumen en lenguaje natural */}
+      <div style={{ display: 'flex', gap: 11, padding: '13px 15px', borderRadius: 'var(--radius-md)', background: complex ? `color-mix(in srgb, ${accent} 8%, var(--surface-1))` : 'var(--surface-2)', border: `1px solid ${complex ? `color-mix(in srgb, ${accent} 26%, transparent)` : 'var(--border-hairline)'}` }}>
+        <span className="material-icons" style={{ fontSize: 20, color: accent, marginTop: 1 }}>{complex ? 'fact_check' : 'visibility'}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 10.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--fg-3)', marginBottom: 3 }}>{t('Vas a registrar')}</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg-1)', textWrap: 'pretty' }}>{summary}</div>
+        </div>
+      </div>
+
+      {/* Motivos por los que no se puede guardar */}
+      {!valid.ok && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {valid.reasons.map((r, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)' }}>
+              <span className="material-icons" style={{ fontSize: 15, color: 'var(--warning)' }}>error_outline</span>{r}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Dev payload (colapsado) */}
+      <div>
+        <button type="button" onClick={() => setShowPayload(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 11.5, fontWeight: 600, color: 'var(--fg-3)', padding: 0 }}>
+          <span className="material-icons" style={{ fontSize: 15 }}>{showPayload ? 'expand_less' : 'data_object'}</span>
           {showPayload ? t('Ocultar') : t('Ver')} payload · POST /api/v1/transactions
         </button>
         {showPayload && (
-          <pre style={{ marginTop: 10, padding: 14, borderRadius: 'var(--radius-sm)', background: 'var(--ink-base)', color: '#A8BCE6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 11.5, lineHeight: 1.5, overflowX: 'auto', maxHeight: 220 }}>
+          <pre style={{ marginTop: 9, padding: 13, borderRadius: 'var(--radius-sm)', background: 'var(--ink-base)', color: '#A8BCE6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 11, lineHeight: 1.5, overflowX: 'auto', maxHeight: 200 }}>
 {JSON.stringify(payload, null, 2)}
           </pre>
         )}
       </div>
 
-      <TfFooter accent={accent} onClose={onClose} onSubmit={() => onSubmit && onSubmit(payload)} label={type === 'transfer' ? t('Registrar transferencia') : type === 'ajuste' ? t('Aplicar ajuste') : type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')} />
+      {/* Footer con estados */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+        <PillButton variant="ghost" onClick={onClose}>{t("Cancelar")}</PillButton>
+        <button type="button" onClick={go} disabled={!valid.ok || status !== 'idle'}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: 0, cursor: valid.ok && status === 'idle' ? 'pointer' : 'not-allowed',
+            padding: '12px 24px', borderRadius: 'var(--radius-pill)',
+            background: status === 'success' ? 'var(--income)' : valid.ok ? accent : 'var(--surface-3)',
+            color: valid.ok || status === 'success' ? '#fff' : 'var(--fg-3)',
+            fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14.5, transition: 'background 200ms, color 200ms', minWidth: 190, justifyContent: 'center' }}>
+          {status === 'loading' && <><span className="material-icons tf-spin" style={{ fontSize: 19 }}>progress_activity</span>{t('Guardando…')}</>}
+          {status === 'success' && <><span className="material-icons" style={{ fontSize: 19 }}>check_circle</span>{t('Registrado')}</>}
+          {status === 'idle' && <><span className="material-icons" style={{ fontSize: 19 }}>{complex ? 'task_alt' : 'check'}</span>{complex ? t('Confirmar y registrar') : label}</>}
+        </button>
+      </div>
+      <style>{`@keyframes tfSpin{to{transform:rotate(360deg)}}.tf-spin{animation:tfSpin 800ms linear infinite}`}</style>
     </div>
   );
 }
@@ -527,6 +614,21 @@ function TfItemsEditor({ items, setItems, taxOpts, jarOpts, catOpts }) {
   const upd = (i, k, v) => setItems(items.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
   const add = () => setItems([...items, { name: '', qty: 1, amount: '', taxId: null, jarId: null, categoryId: null }]);
   const rm = (i) => setItems(items.filter((_, idx) => idx !== i));
+  // Estado vacío (2.2)
+  if (!items.length) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '28px 16px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', border: '1px dashed var(--border-hairline)', textAlign: 'center' }}>
+        <span style={{ width: 48, height: 48, borderRadius: 14, background: 'var(--surface-1)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span className="material-icons" style={{ fontSize: 25, color: 'var(--fg-3)' }}>receipt_long</span>
+        </span>
+        <div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--fg-1)' }}>{t('Sin ítems todavía')}</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--fg-3)', marginTop: 2 }}>{t('Desglosa la factura línea por línea. El total se suma solo.')}</div>
+        </div>
+        <button type="button" onClick={add} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 0, cursor: 'pointer', padding: '10px 16px', borderRadius: 'var(--radius-pill)', background: 'var(--brand-primary)', color: '#fff', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700 }}><span className="material-icons" style={{ fontSize: 16 }}>add</span>{t('Añadir primer ítem')}</button>
+      </div>
+    );
+  }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }}>
       <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--fg-2)' }}>{t("Ítems de la factura")}</span>

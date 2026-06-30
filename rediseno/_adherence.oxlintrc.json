@@ -25,6 +25,8 @@
               "onboarding/**",
               "period-selector.js",
               "redesign/**",
+              "tx-catalog.js",
+              "tx-summary.js",
               "ui_kits/lite-desktop/**",
               "ui_kits/lite-desktop/atoms/**",
               "ui_kits/lite-desktop/data/**",

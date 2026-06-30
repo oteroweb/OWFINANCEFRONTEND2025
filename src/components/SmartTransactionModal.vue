@@ -77,8 +77,7 @@
           </div>
           <div class="stm-field">
             <label class="stm-label">Categoría <span class="stm-label--opt">(opcional)</span></label>
-            <q-select v-model="form.category_id" :options="categoryOptions" emit-value map-options dense outlined
-              clearable placeholder="Sin categoría" :loading="loadingCategories" />
+            <CategorySelector v-model="form.category_id" allow-null placeholder="Sin categoría" />
             <AnchoredJarChip :category-id="form.category_id" class="stm-jar-chip" />
           </div>
         </div>
@@ -281,6 +280,7 @@ import { useTransactionTypesStore } from 'stores/transactionTypes';
 import { useVoiceInput } from 'src/composables/useVoiceInput';
 import { useAiExtraction, type ExtractionResult } from 'src/composables/useAiExtraction';
 import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
+import CategorySelector from 'src/components/CategorySelector.vue';
 import { jarForCategory, getCachedJars, loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
 
 defineOptions({ name: 'SmartTransactionModal' });
@@ -316,6 +316,7 @@ const types = [
   { id: 'expense'  as const, label: 'Gasto',      icon: 'arrow_outward'  },
   { id: 'income'   as const, label: 'Ingreso',     icon: 'arrow_downward' },
   { id: 'transfer' as const, label: 'Transferir',  icon: 'swap_horiz'     },
+  { id: 'ajuste'   as const, label: 'Ajuste',      icon: 'tune'           },
 ];
 
 // ── Form state ────────────────────────────────────────────────────────────
@@ -329,7 +330,7 @@ const now = () => {
 };
 
 const form = ref({
-  type: 'expense' as 'expense' | 'income' | 'transfer',
+  type: 'expense' as 'expense' | 'income' | 'transfer' | 'ajuste',
   amount: null as number | null,
   currency: auth.user?.currency?.code ?? 'USD',
   name: '',
@@ -427,12 +428,13 @@ const categoryOptions = computed(() =>
 
 // ── Transaction type id mapping ───────────────────────────────────────────
 const typeIdFor = computed(() => {
-  const map: Record<string, string | null> = { expense: null, income: null, transfer: null };
+  const map: Record<string, string | null> = { expense: null, income: null, transfer: null, ajuste: null };
   for (const t of ttypes.types) {
     const s = (t.slug ?? '').toLowerCase();
     if (s.includes('gasto') || s.includes('expense')) map.expense = t.id;
     else if (s.includes('ingreso') || s.includes('income')) map.income = t.id;
     else if (s.includes('transfer')) map.transfer = t.id;
+    else if (s.includes('ajuste') || s.includes('adjust')) map.ajuste = t.id;
   }
   return map;
 });
@@ -447,9 +449,12 @@ async function save() {
   saveError.value = null;
 
   const typeId = typeIdFor.value[form.value.type] ?? null;
+  const rawAmt = form.value.amount ?? 0;
   const amount = form.value.type === 'expense'
-    ? -Math.abs(form.value.amount ?? 0)
-    : Math.abs(form.value.amount ?? 0);
+    ? -Math.abs(rawAmt)
+    : form.value.type === 'ajuste'
+      ? rawAmt  // ajuste: puede ser positivo o negativo
+      : Math.abs(rawAmt);
 
   const derivedJar = jarForCategory(form.value.category_id ?? null, getCachedJars());
 
@@ -769,9 +774,10 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 
   &--active { background: var(--surface-1, #fff); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
 
-  &--expense.stm-type-btn--active { color: #ef4444; }
-  &--income.stm-type-btn--active  { color: #10b981; }
+  &--expense.stm-type-btn--active  { color: #ef4444; }
+  &--income.stm-type-btn--active   { color: #10b981; }
   &--transfer.stm-type-btn--active { color: #8b5cf6; }
+  &--ajuste.stm-type-btn--active   { color: #f59e0b; }
 }
 
 // ── Fields ──
@@ -810,7 +816,7 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   &::placeholder { color: var(--fg-3, #94a3b8); }
 }
 
-.stm-amount-input { font-size: 17px; font-weight: 600; }
+.stm-amount-input { font-size: 32px; font-weight: 700; line-height: 1.1; }
 
 .stm-row-2 {
   display: grid;
