@@ -1067,17 +1067,13 @@
                   <div class="tx-detail-modal__field-value">{{ txDetailTypeName }}</div>
                 </div>
               </div>
-              <!-- Cántaro -->
-              <div v-if="txDetailJarName" class="tx-detail-modal__field">
+              <!-- Cántaro anclado -->
+              <div class="tx-detail-modal__field">
                 <span class="material-icons tx-detail-modal__field-icon text-grey-6">savings</span>
-                <div>
+                <div style="flex:1">
                   <div class="tx-detail-modal__field-label">Cántaro</div>
-                  <div class="tx-detail-modal__field-value">
-                    <span class="tx-detail-modal__jar-chip"
-                      :style="{ background: 'color-mix(in srgb,' + txDetailJarColor + ' 15%, transparent)', color: 'color-mix(in srgb,' + txDetailJarColor + ' 70%, #222)' }">
-                      <span class="tx-detail-modal__jar-dot" :style="{ background: txDetailJarColor }"></span>
-                      {{ txDetailJarName }}
-                    </span>
+                  <div class="tx-detail-modal__field-value q-mt-xs">
+                    <AnchoredJarChip :category-id="(txDetailRow as AnyRecord)['category_id'] as number | null | undefined" />
                   </div>
                 </div>
               </div>
@@ -1127,12 +1123,17 @@
                 />
               </div>
               <div class="col-12 col-md-6">
+                <div class="text-caption q-mb-xs text-grey-6">Categoría</div>
+                <CategorySelector v-model="txDetailForm.category_id" allow-null placeholder="Sin categoría" />
+                <AnchoredJarChip :category-id="txDetailForm.category_id" class="q-mt-xs" />
+              </div>
+              <div class="col-12 col-md-6">
                 <q-select
                   v-model="txDetailForm.provider_id"
                   :options="txDetailProviderOptions"
                   option-value="id"
                   :option-label="(opt: AnyRecord) => String(opt['name'] || '')"
-                  label="Categoría / Proveedor"
+                  label="Proveedor"
                   outlined dense emit-value map-options
                   use-input input-debounce="300"
                   @filter="txDetailFilterProviders"
@@ -1242,6 +1243,8 @@ import { useAuthStore } from 'stores/auth';
 import { dictionary as dictionaryDef } from './dictionary';
 import { AccountsSidebarWidget, TransactionFormDialog } from 'components';
 import AccountFilterWidget from 'components/AccountFilterWidget.vue';
+import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
+import CategorySelector from 'src/components/CategorySelector.vue';
 import TransactionBulkImportDialog from 'components/TransactionBulkImportDialog.vue';
 import { useTransactionsStore } from 'stores/transactions';
 import LiteTransactionsView from './LiteTransactionsView.vue';
@@ -1254,6 +1257,7 @@ import {
   type LayoutModeOption,
   type UserLayoutMode,
 } from 'src/utils/layoutMode';
+import { loadCategoriesWithJars, loadUserJars, jarForCategory, getCachedJars } from 'src/utils/txCatalog';
 defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
@@ -3581,6 +3585,7 @@ const txDetailForm = ref({
   datetime: '',
   account_id: null as number | null,
   provider_id: null as number | null,
+  category_id: null as number | null,
   transaction_type_id: null as string | null,
   include_in_balance: true,
 });
@@ -3613,6 +3618,7 @@ function txDetailFilterProviders(val: string, update: (cb: () => void) => void) 
 }
 
 async function txDetailLoadOptions() {
+  void Promise.all([loadCategoriesWithJars(), loadUserJars()]);
   try {
     const uid = authStore.user?.id;
     const [accRes, provRes, ttRes] = await Promise.all([
@@ -3648,6 +3654,7 @@ function txDetailFillForm(row: AnyRecord, overrideId?: number | null) {
     datetime,
     account_id: (row['account_id'] as number | null) ?? null,
     provider_id: (row['provider_id'] as number | null) ?? null,
+    category_id: (row['category_id'] as number | null) ?? null,
     transaction_type_id: txDetailStr(row['transaction_type_id']),
     include_in_balance: row['include_in_balance'] !== 0,
   };
@@ -3676,12 +3683,15 @@ async function txDetailSave() {
   try {
     const isUpdate = txDetailMode.value === 'edit' && txDetailForm.value.id != null;
     const dateStr = (txDetailForm.value.datetime || '').replace('T', ' ');
+    const derivedJar = jarForCategory(txDetailForm.value.category_id, getCachedJars());
     const payload: AnyRecord = {
       name: txDetailForm.value.name,
       amount: txDetailForm.value.amount ?? 0,
       date: dateStr,
       account_id: txDetailForm.value.account_id,
       provider_id: txDetailForm.value.provider_id ?? 0,
+      category_id: txDetailForm.value.category_id ?? null,
+      jar_id: derivedJar?.id ?? null,
       transaction_type_id: txDetailForm.value.transaction_type_id,
       include_in_balance: txDetailForm.value.include_in_balance ? 1 : 0,
       user_id: authStore.user?.id,
