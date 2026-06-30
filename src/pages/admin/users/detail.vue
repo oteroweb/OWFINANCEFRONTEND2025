@@ -47,13 +47,54 @@
 
         <!-- PERFIL -->
         <q-tab-panel name="info" class="adm-panel">
-          <div class="adm-panel__grid">
+          <!-- Read-only info row -->
+          <div class="adm-panel__grid" style="margin-bottom:24px">
             <div class="adm-field"><div class="adm-field__label">ID</div><div class="adm-field__value">{{ user?.id }}</div></div>
-            <div class="adm-field"><div class="adm-field__label">Nombre</div><div class="adm-field__value">{{ user?.name }}</div></div>
-            <div class="adm-field"><div class="adm-field__label">Email</div><div class="adm-field__value">{{ user?.email }}</div></div>
             <div class="adm-field"><div class="adm-field__label">Moneda</div><div class="adm-field__value">{{ detail.user.currency?.code ?? '—' }}</div></div>
             <div class="adm-field"><div class="adm-field__label">Registro</div><div class="adm-field__value">{{ fmtDate(user?.created_at) }}</div></div>
             <div class="adm-field"><div class="adm-field__label">Último login</div><div class="adm-field__value">{{ fmtDate(detail.security.last_login) }}</div></div>
+          </div>
+
+          <!-- Editable form -->
+          <div class="adm-profile-form">
+            <div class="adm-profile-form__section-label">Datos personales</div>
+            <div class="adm-profile-form__row">
+              <q-input v-model="profileForm.name" label="Nombre completo" outlined dense />
+              <q-input v-model="profileForm.email" label="Email" outlined dense type="email" />
+            </div>
+
+            <div class="adm-profile-form__section-label" style="margin-top:20px">Cuenta y rol</div>
+            <div class="adm-profile-form__row">
+              <q-select
+                v-model="profileForm.role_id"
+                :options="roles"
+                option-value="id"
+                option-label="name"
+                emit-value
+                map-options
+                label="Rol"
+                outlined dense
+                hint="Cambiar el rol afecta el acceso al panel"
+              />
+              <div>
+                <div class="adm-field__label" style="margin-bottom:6px">Plan</div>
+                <q-btn-toggle
+                  v-model="profileForm.layout_mode"
+                  :options="[{ label: 'Lite', value: 'lite' }, { label: 'Pro', value: 'pro' }]"
+                  unelevated dense
+                  color="primary"
+                  text-color="primary"
+                  toggle-color="primary"
+                  toggle-text-color="white"
+                  style="border:1px solid #CBD5E1;border-radius:8px"
+                />
+              </div>
+            </div>
+
+            <div class="adm-profile-form__actions">
+              <q-btn flat label="Descartar" @click="() => { if(detail) profileForm = { name: detail.user.name, email: detail.user.email, role_id: detail.user.role?.id ?? null, layout_mode: (detail.settings as Record<string,string>|null)?.layout_mode === 'pro' ? 'pro' : 'lite' } }" />
+              <q-btn unelevated color="primary" icon="check" label="Guardar cambios" @click="saveProfile" :loading="savingProfile" />
+            </div>
           </div>
         </q-tab-panel>
 
@@ -168,7 +209,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
@@ -210,6 +251,47 @@ interface DetailData {
 
 const detail = ref<DetailData | null>(null);
 const user = computed(() => detail.value?.user ?? null);
+
+// --- Roles ---
+interface RoleOption { id: number; name: string; slug: string }
+const roles = ref<RoleOption[]>([]);
+async function loadRoles() {
+  try {
+    const res = await api.get('/admin/roles');
+    const raw = res.data?.data ?? res.data ?? [];
+    roles.value = Array.isArray(raw) ? raw : [];
+  } catch { /* silent */ }
+}
+
+// --- Profile form ---
+interface ProfileForm { name: string; email: string; role_id: number | null; layout_mode: 'lite' | 'pro' }
+const profileForm = ref<ProfileForm>({ name: '', email: '', role_id: null, layout_mode: 'lite' });
+const savingProfile = ref(false);
+
+watch(detail, (d) => {
+  if (!d) return;
+  profileForm.value = {
+    name:        d.user.name,
+    email:       d.user.email,
+    role_id:     d.user.role?.id ?? null,
+    layout_mode: (d.settings as Record<string, string> | null)?.layout_mode === 'pro' ? 'pro' : 'lite',
+  };
+});
+
+async function saveProfile() {
+  savingProfile.value = true;
+  try {
+    const res = await api.put(`/admin/users/${userId.value}/profile`, profileForm.value);
+    $q.notify({ type: 'positive', message: 'Perfil actualizado' });
+    // update local detail with fresh user
+    if (detail.value) detail.value.user = res.data.data as UserFull;
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } };
+    $q.notify({ type: 'negative', message: err.response?.data?.message ?? 'Error al guardar' });
+  } finally {
+    savingProfile.value = false;
+  }
+}
 
 const flatSettings = computed((): Record<string, string | number | boolean> => {
   const s = detail.value?.settings;
@@ -340,6 +422,7 @@ async function doImpersonate() {
 
 onMounted(() => {
   void loadDetail();
+  void loadRoles();
 });
 </script>
 
@@ -486,4 +569,36 @@ onMounted(() => {
 .adm-badge--user     { background: #DBEAFE; color: #1D4ED8; }
 .adm-badge--active   { background: #DCFCE7; color: #16A34A; }
 .adm-badge--inactive { background: #F1F5F9; color: #64748B; }
+
+/* Profile edit form */
+.adm-profile-form {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 20px;
+}
+.adm-profile-form__section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  margin-bottom: 12px;
+}
+.adm-profile-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 600px) {
+  .adm-profile-form__row { grid-template-columns: 1fr; }
+}
+.adm-profile-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #E2E8F0;
+}
 </style>

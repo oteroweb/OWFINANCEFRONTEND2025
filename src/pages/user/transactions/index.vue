@@ -101,7 +101,7 @@
           </div>
         </div>
 
-        <!-- Pool 2 · Categorías ────────────────────────────────────── -->
+        <!-- Pool 2 · Categorías (agrupadas por cántaro) ────────────── -->
         <div class="tx-pool">
           <div class="tx-pool__head">
             <span class="material-icons" style="font-size:17px;color:var(--info)">sell</span>
@@ -109,14 +109,39 @@
             <span class="tx-pool__count">{{ categorySpendTags.length }}</span>
             <span class="tx-pool__hint">clic para filtrar</span>
           </div>
-          <div class="tx-pool__chips">
+          <!-- Grouped layout when catalog is loaded -->
+          <div v-if="catPoolByJar.length" class="tx-pool__cat-groups">
+            <div v-for="group in catPoolByJar" :key="group.slug" class="tx-pool__cat-group">
+              <div class="tx-pool__cat-group-head">
+                <span class="tx-pool__cat-group-dot" :style="{ background: group.color }" />
+                <span class="tx-pool__cat-group-name" :style="{ color: group.color }">{{ group.name }}</span>
+                <span v-if="group.pct != null" class="tx-pool__cat-group-pct">{{ group.pct }}%</span>
+                <span class="tx-pool__cat-group-line" />
+                <span class="tx-pool__cat-group-total">{{ Number(group.total).toFixed(2) }}</span>
+              </div>
+              <div class="tx-pool__chips">
+                <button v-for="cat in group.cats" :key="cat.key"
+                  class="tx-pool__pick tx-pool__pick--colored"
+                  :class="{ 'tx-pool__pick--active': proSelCats.includes(cat.id) }"
+                  :style="proSelCats.includes(cat.id) ? { background: group.color + '33', borderColor: group.color + '55' } : {}"
+                  @click="toggleProCat(cat.id)">
+                  <span class="material-icons" style="font-size:14px" :style="{ color: group.color }">label</span>
+                  {{ cat.name }}
+                  <span class="tx-pool__pick-count">{{ Number(cat.total).toFixed(2) }}</span>
+                  <span v-if="proSelCats.includes(cat.id)" class="material-icons" style="font-size:13px" :style="{ color: group.color }">check</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Fallback flat list (catalog not loaded yet) -->
+          <div v-else class="tx-pool__chips">
             <button v-for="cat in categorySpendTags" :key="cat.key"
               class="tx-pool__pick"
               :class="{ 'tx-pool__pick--active': proSelCats.includes(cat.id) }"
               @click="toggleProCat(cat.id)">
               <span class="material-icons" style="font-size:14px;color:var(--fg-3)">label</span>
               {{ cat.name }}
-              <span class="tx-pool__pick-count">{{ cat.total }}</span>
+              <span class="tx-pool__pick-count">{{ Number(cat.total).toFixed(2) }}</span>
               <span v-if="proSelCats.includes(cat.id)" class="material-icons" style="font-size:13px">check</span>
             </button>
           </div>
@@ -1257,7 +1282,7 @@ import {
   type LayoutModeOption,
   type UserLayoutMode,
 } from 'src/utils/layoutMode';
-import { loadCategoriesWithJars, loadUserJars, jarForCategory, getCachedJars } from 'src/utils/txCatalog';
+import { loadCategoriesWithJars, loadUserJars, jarForCategory, getCachedJars, getCachedCategories, JAR_SLUG_NAMES } from 'src/utils/txCatalog';
 defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
@@ -2093,6 +2118,61 @@ type CategorySpendTag = {
 };
 
 const categorySpendTags = ref<CategorySpendTag[]>([]);
+
+// Jar accent colors keyed by slug (stable palette matching the design system)
+const JAR_COLORS: Record<string, string> = {
+  necesidades: '#1E3A8A',
+  diversion:   '#7C3AED',
+  ahorro:      '#059669',
+  educacion:   '#0EA5E9',
+  reservas:    '#F59E0B',
+};
+
+interface CatPoolGroup {
+  slug: string;
+  name: string;
+  color: string;
+  total: number;
+  pct: number | null;
+  cats: CategorySpendTag[];
+}
+
+// Groups categorySpendTags by their jar_slug using the cached category catalog.
+const catPoolByJar = computed((): CatPoolGroup[] => {
+  const tags = categorySpendTags.value;
+  if (!tags.length) return [];
+  const catalog = getCachedCategories();
+  const groups = new Map<string, CatPoolGroup>();
+  const ungrouped: CategorySpendTag[] = [];
+  const grandTotal = tags.reduce((s, t) => s + t.total, 0);
+
+  for (const tag of tags) {
+    const catEntry = catalog.find(c => c.id === tag.id);
+    const slug = catEntry?.jar_slug ?? null;
+    if (!slug) { ungrouped.push(tag); continue; }
+    if (!groups.has(slug)) {
+      groups.set(slug, {
+        slug,
+        name: JAR_SLUG_NAMES[slug] ?? slug,
+        color: JAR_COLORS[slug] ?? '#64748B',
+        total: 0,
+        pct: null,
+        cats: [],
+      });
+    }
+    const g = groups.get(slug)!;
+    g.total += tag.total;
+    g.cats.push(tag);
+  }
+
+  const result = Array.from(groups.values()).sort((a, b) => b.total - a.total);
+  if (grandTotal > 0) result.forEach(g => { g.pct = Math.round((g.total / grandTotal) * 100); });
+  if (ungrouped.length) {
+    result.push({ slug: '_other', name: 'Sin cántaro', color: '#94A3B8', total: ungrouped.reduce((s, t) => s + t.total, 0), pct: null, cats: ungrouped });
+  }
+  return result;
+});
+
 const filtersExpanded = ref(false);
 const hasCategoryFilterSelected = computed(() => {
   const raw = (filters as Record<string, FilterValue>)['category_id'];
@@ -4779,6 +4859,46 @@ function exportCSV(): void {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* Pool 2 — categories grouped by jar */
+.tx-pool__cat-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+.tx-pool__cat-group-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+.tx-pool__cat-group-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.tx-pool__cat-group-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+.tx-pool__cat-group-pct {
+  font-size: 10.5px;
+  color: var(--fg-3);
+}
+.tx-pool__cat-group-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-hairline);
+}
+.tx-pool__cat-group-total {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg-1);
+  white-space: nowrap;
 }
 
 /* PickChip buttons (pool 2 & 3) */
