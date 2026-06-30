@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Cántaros · Mobile — Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .material-icons { font-family: 'Material Icons', sans-serif; font-style: normal;
+      display: inline-flex; align-items: center; justify-content: center;
+      line-height: 1; letter-spacing: normal; text-transform: none;
+      white-space: nowrap; word-wrap: normal; direction: ltr;
+      -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: radial-gradient(ellipse at 50% 24%, #0E1520 0%, #06080D 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 28px 20px; font-family: var(--font-body);
+    }
+    .phone-outer { width: 424px; height: 878px; position: relative; flex-shrink: 0; }
+    .phone-body {
+      position: absolute; inset: 0; border-radius: 56px;
+      background: linear-gradient(160deg, #22252F 0%, #13151C 100%);
+      box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.10), inset 0 0 0 3px #0C0D12,
+        0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04);
+    }
+    .phone-screen {
+      position: absolute; top: 17px; left: 17px; right: 17px; bottom: 17px;
+      border-radius: 44px; overflow: hidden; background: var(--bg-canvas);
+    }
+    .dynamic-island {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 118px; height: 34px; border-radius: 18px; background: #0B0C10; z-index: 200;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    #root { height: 100%; }
+    @media (max-height: 940px) { .phone-outer { transform: scale(0.86); transform-origin: center; } }
+    @media (max-height: 800px) { .phone-outer { transform: scale(0.74); transform-origin: center; } }
+    .demo-nav {
+      position: fixed; top: 18px; left: 18px; z-index: 500;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .demo-nav a {
+      display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+      font-family: var(--font-body); font-size: 12.5px; font-weight: 600;
+      color: rgba(255,255,255,0.82); background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12); padding: 8px 13px; border-radius: 999px;
+      backdrop-filter: blur(8px); transition: background 160ms;
+    }
+    .demo-nav a:hover { background: rgba(255,255,255,0.14); }
+    .demo-nav .material-icons { font-size: 16px; }
+  </style>
+</head>
+<body>
+  <nav class="demo-nav">
+    <a href="../onboarding/Ciclo OW.html"><span class="material-icons">arrow_back</span>Ciclo OW</a>
+    <a href="../OW Finance - Guía de Integración.html"><span class="material-icons">menu_book</span>Guía</a>
+  </nav>
+  <div class="phone-outer">
+    <div class="phone-body"></div>
+    <div class="phone-screen">
+      <div class="dynamic-island"></div>
+      <div id="root"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="atoms.jsx"></script>
+  <script type="text/babel" src="categories.jsx"></script>
+  <script type="text/babel" src="detail.jsx"></script>
+  <script type="text/babel" src="screen.jsx"></script>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "detailPattern": "Acordeón",
+      "theme": "Oscuro",
+      "income": 1200,
+      "showUsage": true
+    }/*EDITMODE-END*/;
+
+    const PATTERN_MAP = { 'Acordeón': 'inline', 'Sheet': 'sheet', 'Pantalla': 'screen' };
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const [route, setRoute] = useState('cantaros'); // 'finprofile' | 'cantaros'
+
+      React.useEffect(() => {
+        document.documentElement.setAttribute('data-theme', t.theme === 'Claro' ? 'light' : 'dark');
+      }, [t.theme]);
+
+      React.useEffect(() => { window.CM_EXPECTED_INCOME = Number(t.income) || 1200; }, [t.income]);
+
+      const pattern = PATTERN_MAP[t.detailPattern] || 'sheet';
+
+      return (
+        <React.Fragment>
+          <CmCantarosScreen key={pattern + '-' + t.income} detailPattern={pattern} expectedIncome={Number(t.income) || 1200} onBack={() => {}} />
+          <TweaksPanel>
+            <TweakSection label="Patrón de detalle" />
+            <TweakRadio label="Cómo se abre" value={t.detailPattern}
+              options={['Acordeón', 'Sheet', 'Pantalla']}
+              onChange={v => setTweak('detailPattern', v)} />
+            <TweakSection label="Contexto" />
+            <TweakSlider label="Ingreso esperado" value={t.income} min={400} max={4000} step={100} unit=" US$"
+              onChange={v => setTweak('income', v)} />
+            <TweakRadio label="Tema" value={t.theme} options={['Oscuro', 'Claro']}
+              onChange={v => setTweak('theme', v)} />
+          </TweaksPanel>
+        </React.Fragment>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
