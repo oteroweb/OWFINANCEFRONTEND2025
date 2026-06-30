@@ -94,9 +94,9 @@ export async function loadUserJars(): Promise<JarRef[]> {
     const raw = res.data?.data ?? (res.data as unknown as unknown[]) ?? [];
     _jars.value = (Array.isArray(raw) ? raw : []).map((j: unknown): JarRef => {
       const jar = j as Record<string, unknown>;
-      const result: JarRef = { id: Number(jar['id']), name: String(jar['name'] ?? '') };
-      if (jar['color']) result.color = String(jar['color']);
-      if (jar['icon'])  result.icon  = String(jar['icon']);
+      const result: JarRef = { id: Number(jar['id']), name: String(jar['name'] ?? '' as unknown) };
+      if (jar['color']) result.color = String(jar['color'] as unknown);
+      if (jar['icon'])  result.icon  = String(jar['icon'] as unknown);
       if (jar['percent'] != null) result.percent = Number(jar['percent']);
       return result;
     });

@@ -274,14 +274,16 @@ function confirmDelete(row: UserRow) {
     cancel: true,
     persistent: true,
     ok: { label: 'Eliminar', color: 'negative', unelevated: true },
-  }).onOk(async () => {
-    try {
-      await api.delete(`/users/${row.id}`);
-      await loadUsers();
-      $q.notify({ type: 'positive', message: 'Usuario eliminado' });
-    } catch {
-      $q.notify({ type: 'negative', message: 'No se pudo eliminar' });
-    }
+  }).onOk(() => {
+    void (async () => {
+      try {
+        await api.delete(`/users/${row.id}`);
+        await loadUsers();
+        $q.notify({ type: 'positive', message: 'Usuario eliminado' });
+      } catch {
+        $q.notify({ type: 'negative', message: 'No se pudo eliminar' });
+      }
+    })();
   });
 }
 
