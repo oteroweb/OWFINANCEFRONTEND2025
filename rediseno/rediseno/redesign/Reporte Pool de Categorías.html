@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>OW Finance · Reporte — Pool de categorías (Transacciones)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .material-icons{font-family:'Material Icons';font-style:normal;display:inline-flex;align-items:center;justify-content:center;line-height:1;vertical-align:middle;-webkit-font-feature-settings:'liga';font-feature-settings:'liga'}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--surface-1);color:var(--fg-1);font-family:var(--font-body);line-height:1.55}
+  .page{max-width:1120px;margin:0 auto;padding:54px 40px 120px}
+  @media(max-width:720px){.page{padding:32px 20px 80px}}
+
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--info-fg)}
+  h1{font-family:var(--font-display);font-size:36px;line-height:1.08;margin:8px 0 14px;letter-spacing:-.015em}
+  h2{font-family:var(--font-display);font-size:24px;margin:0 0 6px;letter-spacing:-.01em}
+  h3{font-family:var(--font-display);font-size:16px;margin:0 0 4px}
+  p{color:var(--fg-2);max-width:74ch}
+  .lead{font-size:16.5px;color:var(--fg-1);max-width:76ch}
+  section{padding:36px 0;border-top:1px solid var(--border-hairline)}
+  .sec-h{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
+  .sec-h .num{font-family:var(--font-money);font-size:13px;font-weight:700;color:var(--info-fg);letter-spacing:.05em}
+
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:22px 0 4px}
+  @media(max-width:720px){.summary{grid-template-columns:1fr 1fr}}
+  .scard{padding:16px 16px 14px;border-radius:var(--radius-lg);border:1px solid var(--border-hairline);background:var(--surface-2)}
+  .scard .n{font-family:var(--font-money);font-size:30px;font-weight:700;line-height:1;letter-spacing:-.01em}
+  .scard .l{font-size:11.5px;color:var(--fg-2);margin-top:6px;line-height:1.4}
+  .scard.bad .n{color:var(--expense-fg)} .scard.ok .n{color:var(--income-fg)} .scard.warn .n{color:var(--warning)}
+
+  .prob{display:flex;gap:13px;padding:14px 0;border-top:1px solid var(--border-hairline)}
+  .prob:first-child{border-top:0}
+  .prob .ic{flex-shrink:0;width:30px;height:30px;border-radius:9px;background:var(--expense-soft);color:var(--expense-fg);display:inline-flex;align-items:center;justify-content:center;font-size:17px}
+  .prob .t{font-size:14px;font-weight:700;color:var(--fg-1);margin-bottom:2px}
+  .prob .d{font-size:13px;color:var(--fg-2);max-width:72ch}
+  code{font-family:var(--font-money);font-size:12.5px;background:var(--surface-3);border-radius:5px;padding:1px 6px;color:var(--expense-fg)}
+
+  /* faithful panel recreations */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:8px}
+  @media(max-width:860px){.compare{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--border-hairline);border-radius:var(--radius-lg);background:var(--surface-2);padding:18px;min-height:200px}
+  .panel-h{display:flex;align-items:center;gap:8px;margin-bottom:15px}
+  .panel-h .material-icons{font-size:17px;color:var(--fg-2)}
+  .panel-h .ttl{font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-2)}
+  .panel-h .cnt{font-family:var(--font-money);font-size:12px;font-weight:700;color:#fff;background:var(--fg-3);border-radius:999px;padding:1px 8px;min-width:22px;text-align:center}
+  .verdict{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-left:auto}
+  .verdict.bad{background:var(--expense-soft);color:var(--expense-fg)}
+  .verdict.ok{background:var(--income-soft);color:var(--income-fg)}
+
+  /* before chips */
+  .pool{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:999px;padding:8px 13px;font-size:13px;color:var(--fg-1)}
+  .chip .dot{width:13px;height:11px;border-radius:3px;background:var(--fg-3);flex-shrink:0}
+  .chip .amt{font-family:var(--font-money);font-size:12px;color:var(--fg-3)}
+  .chip .amt.raw{color:var(--expense-fg)}
+
+  /* after grouped */
+  .grp{margin-bottom:16px}
+  .grp:last-child{margin-bottom:0}
+  .grp-h{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .grp-h .gd{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .grp-h .gn{font-family:var(--font-body);font-size:11.5px;font-weight:700;letter-spacing:.04em}
+  .grp-h .gp{font-family:var(--font-money);font-size:10.5px;color:var(--fg-3)}
+  .grp-h .gt{font-family:var(--font-money);font-size:12.5px;font-weight:700;color:var(--fg-1);margin-left:auto}
+  .grp-h .ln{flex:1;height:1px;background:var(--border-hairline)}
+  .gchips{display:flex;flex-wrap:wrap;gap:7px}
+  .gchip{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:500;color:var(--fg-1)}
+  .gchip .gi{font-size:15px}
+  .gchip .ga{font-family:var(--font-money);font-size:11.5px;color:var(--fg-2)}
+
+  /* mapping table */
+  .map{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+  .map th{text-align:left;font-family:var(--font-body);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);padding:0 12px 10px;border-bottom:1px solid var(--border-hairline)}
+  .map td{padding:10px 12px;border-bottom:1px solid var(--border-hairline);vertical-align:middle;color:var(--fg-2)}
+  .map td.old{color:var(--fg-2)}
+  .map td.new{color:var(--fg-1);font-weight:600}
+  .map .arrow{color:var(--fg-3)}
+  .map .jpill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600}
+  .map tr:last-child td{border-bottom:0}
+
+  .callout{padding:16px 18px;border-radius:var(--radius-md);background:var(--surface-2);border:1px solid var(--border-hairline);margin:18px 0}
+  .callout.good{border-color:color-mix(in srgb,var(--income) 32%,transparent)}
+  .callout .h{font-weight:700;font-size:13.5px;color:var(--fg-1);display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .callout p{margin:0;font-size:13px}
+  ul.clean{margin:8px 0;padding-left:18px}
+  ul.clean li{color:var(--fg-2);font-size:13.5px;margin:6px 0}
+  ul.clean li b{color:var(--fg-1)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--fg-2);margin-top:14px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend .d{width:10px;height:10px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">Reporte · Tarea adicional · Vista de Transacciones (producción v1.0.22)</div>
+  <h1>Pool de categorías:<br>diagnóstico y propuesta unificada</h1>
+  <p class="lead">El panel <b style="color:var(--fg-1)">CATEGORÍAS</b> de la vista de Transacciones muestra hoy 18 etiquetas sueltas, sin orden semántico, con montos sin formatear y sin relación con los cántaros. Este reporte compara la vista actual con una propuesta que <b style="color:var(--fg-1)">unifica el catálogo, lo agrupa por cántaro y arregla el formato</b> — y cierra esta vista alineándola con el modelo "categoría → cántaro anclado".</p>
+
+  <div class="summary">
+    <div class="scard bad"><div class="n">18 → 12</div><div class="l">Etiquetas consolidadas eliminando solapamientos</div></div>
+    <div class="scard bad"><div class="n">4</div><div class="l">Montos con bug de coma flotante (sin redondear)</div></div>
+    <div class="scard warn"><div class="n">0 → 3</div><div class="l">Cántaros visibles: hoy desconectados, luego agrupan</div></div>
+    <div class="scard ok"><div class="n">$472.65</div><div class="l">Gasto del mes — mismo total, ahora legible por cántaro</div></div>
+  </div>
+
+  <!-- DIAGNÓSTICO -->
+  <section>
+    <div class="sec-h"><span class="num">01</span><h2>Diagnóstico de la vista actual</h2></div>
+    <p>Recreación fiel del panel de producción. Los problemas son estructurales, de datos y visuales a la vez:</p>
+
+    <div style="margin:18px 0 6px">
+      <div class="prob"><span class="ic"><span class="material-icons">bug_report</span></span><div><div class="t">Montos sin formatear (bug de coma flotante)</div><div class="d">Se muestran valores crudos como <code>136.42000000000002</code>, <code>7.199999999999999</code>, <code>4.199999999999999</code>, <code>3.1100000000000003</code>. Falta redondeo a 2 decimales y símbolo de moneda.</div></div></div>
+      <div class="prob"><span class="ic"><span class="material-icons">content_copy</span></span><div><div class="t">Categorías solapadas / redundantes</div><div class="d">Comida fragmentada en 5 etiquetas (<i>Proteína, Suplementos, Comida resolver saludable, Café/Snacks, Comida calle/rápida</i>); salud en 2 (<i>Farmacia, Consultas</i>); compras en 2 (<i>Compras personales, Compras comodidad hogar</i>). El mismo gasto se reparte en tags arbitrarios.</div></div></div>
+      <div class="prob"><span class="ic"><span class="material-icons">text_fields</span></span><div><div class="t">Nomenclatura inconsistente</div><div class="d">Nombres ad-hoc y largos: "Distraccion M", "Comida resolver saludable Mayormente", "Proteina" (sin tilde), paréntesis que abultan ("(ropa, gadgets, etc.)", "(Luz, Agua, Gas, Internet, Teléfono)").</div></div></div>
+      <div class="prob"><span class="ic"><span class="material-icons">link_off</span></span><div><div class="t">Sin relación con cántaros</div><div class="d">El panel CÁNTAROS marca <b style="color:var(--fg-1)">0</b> mientras CATEGORÍAS marca 18. Las categorías no aportan a ningún cántaro — justo lo que la Fase 2 corrige con el catálogo común.</div></div></div>
+      <div class="prob"><span class="ic"><span class="material-icons">blur_on</span></span><div><div class="t">Ruido visual</div><div class="d">18 chips grises idénticos, de anchos dispares, envueltos en varias filas. Sin color ni jerarquía: cuesta encontrar una categoría y es imposible leer "en qué gasto más".</div></div></div>
+    </div>
+  </section>
+
+  <!-- COMPARATIVA -->
+  <section>
+    <div class="sec-h"><span class="num">02</span><h2>Comparativa — antes / después</h2></div>
+    <p>Mismos datos del mes (June 2026). Izquierda: producción. Derecha: propuesta unificada, agrupada por cántaro, con totales y montos formateados.</p>
+    <div class="compare">
+      <div>
+        <div class="panel">
+          <div class="panel-h"><span class="material-icons">sell</span><span class="ttl">Categorías</span><span class="cnt">18</span><span class="verdict bad"><span class="material-icons" style="font-size:13px">close</span>Actual</span></div>
+          <div class="pool" id="poolBefore"></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panel-h"><span class="material-icons">sell</span><span class="ttl">Categorías</span><span class="cnt" id="afterCount" style="background:var(--brand-primary)">12</span><span class="verdict ok"><span class="material-icons" style="font-size:13px">check</span>Propuesta</span></div>
+          <div id="poolAfter"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAPEO -->
+  <section>
+    <div class="sec-h"><span class="num">03</span><h2>Mapeo de unificación</h2></div>
+    <p>Cómo se consolidan las 18 etiquetas de producción en el catálogo común. Cada categoría limpia declara su cántaro (anclado).</p>
+    <table class="map" id="mapTable">
+      <thead><tr><th>Etiqueta actual (producción)</th><th></th><th>Categoría unificada</th><th>Cántaro</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- RESULTADO -->
+  <section>
+    <div class="sec-h"><span class="num">04</span><h2>Qué resuelve y próximos pasos</h2></div>
+    <ul class="clean">
+      <li><b>Montos legibles:</b> redondeo a 2 decimales + símbolo de moneda en todo el pool (<code style="color:var(--income-fg)">$136.42</code> en vez de <code>136.42000000000002</code>).</li>
+      <li><b>Catálogo único:</b> las 12 categorías son las mismas del selector (pieza 2.1) y de ambos kits — una sola fuente de verdad.</li>
+      <li><b>Agrupado por cántaro:</b> el panel pasa a leerse como un mini-presupuesto — totales por cántaro y color que enseña el modelo. CÁNTAROS deja de estar en 0.</li>
+      <li><b>Menos ruido:</b> de 18 chips dispares a 12 ordenados por cántaro y monto; encontrar y filtrar es inmediato.</li>
+      <li><b>Filtrar sigue igual:</b> "clic para filtrar" se mantiene; ahora también puedes filtrar por cántaro completo desde el encabezado del grupo.</li>
+    </ul>
+    <div class="callout good">
+      <div class="h"><span class="material-icons" style="font-size:18px">recommend</span>Cómo lo cerramos</div>
+      <p>Esta propuesta usa el mismo <code style="color:var(--fg-2)">tx-catalog.js</code> de la Fase 2. Al cablear el selector híbrido <b style="color:var(--fg-1)">B+C</b> que elegiste, este pool de filtro queda alineado automáticamente. Sugiero: (1) migrar las etiquetas viejas con el mapeo de arriba, (2) aplicar el formato de moneda, (3) rediseñar el panel agrupado. Lo dejo listo para implementar cuando apruebes el mapeo.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const JARS = {
+  j1: { name: 'Necesidades básicas', short: 'NECESIDADES', pct: 55, c: '#5B7FD6' },
+  j2: { name: 'Diversión',           short: 'DIVERSIÓN',   pct: 10, c: '#F59E0B' },
+  j3: { name: 'Ahorro',              short: 'AHORRO',      pct: 10, c: '#10B981' },
+  j4: { name: 'Educación',           short: 'EDUCACIÓN',   pct: 10, c: '#0EA5E9' },
+  j5: { name: 'Reservas',            short: 'RESERVAS',    pct: 10, c: '#8B5CF6' },
+};
+const tint = (hex, p) => `color-mix(in srgb, ${hex} ${p}%, var(--surface-2))`;
+const money = (n) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/* BEFORE — exactly as production (raw float strings) */
+const BEFORE = [
+  ['Eventos sociales', '136.42000000000002', true],
+  ['Compras personales (ropa, gadgets, etc.)', '68.1', false],
+  ['Proteina', '44.41', false],
+  ['Familia', '41.72', false],
+  ['Distraccion M', '39.23', false],
+  ['Servicios (Luz, Agua, Gas, Internet, Teléfono)', '29.02', false],
+  ['Supermercado', '28.11', false],
+  ['Suplementos', '18.14', false],
+  ['Farmacia / Medicamentos', '13.65', false],
+  ['Mantenimiento / Taller', '11.45', false],
+  ['Comida resolver saludable Mayormente', '8.92', false],
+  ['Consultas / Salud médica', '7.52', false],
+  ['Compras comodidad hogar', '7.199999999999999', true],
+  ['Café / Snacks', '5.75', false],
+  ['Combustible / Gasolina', '5.43', false],
+  ['Comida calle / rápida', '4.199999999999999', true],
+  ['Benéficas', '3.1100000000000003', true],
+  ['Comisiones bancarias', '0.27', false],
+];
+
+/* AFTER — unified, grouped by jar */
+const AFTER = [
+  { jar: 'j1', cats: [
+    ['Salud', 'favorite', 83.72],
+    ['Familia', 'diversity_3', 41.72],
+    ['Supermercado', 'shopping_cart', 37.03],
+    ['Servicios', 'bolt', 29.02],
+    ['Transporte', 'directions_car', 16.88],
+    ['Hogar', 'home', 7.20],
+  ]},
+  { jar: 'j2', cats: [
+    ['Eventos sociales', 'celebration', 136.42],
+    ['Compras personales', 'shopping_bag', 68.10],
+    ['Distracción', 'sports_esports', 39.23],
+    ['Restaurantes y café', 'restaurant', 9.95],
+  ]},
+  { jar: 'j5', cats: [
+    ['Donaciones', 'volunteer_activism', 3.11],
+    ['Comisiones bancarias', 'account_balance', 0.27],
+  ]},
+];
+
+/* MAPPING (old → new + jar) */
+const MAP = [
+  ['Eventos sociales', 'Eventos sociales', 'j2'],
+  ['Compras personales (ropa, gadgets, etc.)', 'Compras personales', 'j2'],
+  ['Proteina', 'Salud', 'j1'],
+  ['Suplementos', 'Salud', 'j1'],
+  ['Farmacia / Medicamentos', 'Salud', 'j1'],
+  ['Consultas / Salud médica', 'Salud', 'j1'],
+  ['Familia', 'Familia', 'j1'],
+  ['Distraccion M', 'Distracción', 'j2'],
+  ['Servicios (Luz, Agua, Gas, Internet, Teléfono)', 'Servicios', 'j1'],
+  ['Supermercado', 'Supermercado', 'j1'],
+  ['Comida resolver saludable Mayormente', 'Supermercado', 'j1'],
+  ['Mantenimiento / Taller', 'Transporte', 'j1'],
+  ['Combustible / Gasolina', 'Transporte', 'j1'],
+  ['Compras comodidad hogar', 'Hogar', 'j1'],
+  ['Café / Snacks', 'Restaurantes y café', 'j2'],
+  ['Comida calle / rápida', 'Restaurantes y café', 'j2'],
+  ['Benéficas', 'Donaciones', 'j5'],
+  ['Comisiones bancarias', 'Comisiones bancarias', 'j5'],
+];
+
+/* render BEFORE */
+const pb = document.getElementById('poolBefore');
+BEFORE.forEach(([name, amt, raw]) => {
+  const c = document.createElement('span'); c.className = 'chip';
+  c.innerHTML = `<span class="dot"></span><span>${name}</span><span class="amt${raw ? ' raw' : ''}">${amt}</span>`;
+  pb.appendChild(c);
+});
+
+/* render AFTER */
+const pa = document.getElementById('poolAfter');
+AFTER.forEach(g => {
+  const j = JARS[g.jar];
+  const total = g.cats.reduce((s, c) => s + c[2], 0);
+  const grp = document.createElement('div'); grp.className = 'grp';
+  const h = document.createElement('div'); h.className = 'grp-h';
+  h.innerHTML = `<span class="gd" style="background:${j.c}"></span>
+    <span class="gn" style="color:${j.c}">${j.short}</span>
+    <span class="gp">${j.pct}%</span><span class="ln"></span>
+    <span class="gt">${money(total)}</span>`;
+  grp.appendChild(h);
+  const cc = document.createElement('div'); cc.className = 'gchips';
+  g.cats.forEach(([name, icon, amt]) => {
+    const ch = document.createElement('span'); ch.className = 'gchip';
+    ch.style.background = tint(j.c, 12);
+    ch.style.border = `1px solid ${tint(j.c, 26)}`;
+    ch.innerHTML = `<span class="material-icons gi" style="color:${j.c}">${icon}</span>${name}<span class="ga">${money(amt)}</span>`;
+    cc.appendChild(ch);
+  });
+  grp.appendChild(cc);
+  pa.appendChild(grp);
+});
+document.getElementById('afterCount').textContent = AFTER.reduce((s, g) => s + g.cats.length, 0);
+
+/* legend */
+const lg = document.getElementById('legend');
+['j1','j2','j5'].forEach(k => {
+  const s = document.createElement('span');
+  s.innerHTML = `<span class="d" style="background:${JARS[k].c}"></span>${JARS[k].name}`;
+  lg.appendChild(s);
+});
+
+/* mapping table */
+const tb = document.querySelector('#mapTable tbody');
+MAP.forEach(([oldN, newN, jar]) => {
+  const j = JARS[jar];
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="old">${oldN}</td>
+    <td class="arrow"><span class="material-icons" style="font-size:16px">arrow_forward</span></td>
+    <td class="new">${newN}</td>
+    <td><span class="jpill" style="background:${tint(j.c,16)};color:${j.c}"><span class="d" style="width:8px;height:8px;border-radius:2px;background:${j.c};display:inline-block"></span>${j.name}</span></td>`;
+  tb.appendChild(tr);
+});
+</script>
+</body>
+</html>

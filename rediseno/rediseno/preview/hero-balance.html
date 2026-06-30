@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!-- @dsCard group="Components" name="Hero balance card" subtitle="Available · USD with delta + CTA" viewport="700x280" -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--bg-canvas); }
+  body { padding: 24px; }
+  .card {
+    background: var(--surface-1); border-radius: var(--radius-xl);
+    padding: 32px;
+    box-shadow: var(--shadow-float);
+    display: flex; flex-direction: column; gap: 18px;
+    max-width: 600px;
+  }
+  .row { display: flex; align-items: center; gap: 14px; }
+  .amount-wrap { display: flex; align-items: baseline; gap: 12px; }
+  .ccy {
+    font-family: var(--font-body); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; padding: 4px 10px;
+    background: var(--surface-2); color: var(--fg-2); border-radius: var(--radius-pill);
+  }
+  .delta {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    color: var(--income-fg); background: var(--income-soft);
+    padding: 4px 10px; border-radius: var(--radius-pill);
+  }
+  .delta .material-icons { font-size: 14px; }
+  .cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px; border-radius: var(--radius-pill);
+    background: var(--brand-primary); color: var(--fg-on-brand);
+    font-family: var(--font-body); font-weight: 600; font-size: 14px;
+    border: 0; cursor: pointer; align-self: flex-start;
+  }
+  .cta .material-icons { font-size: 18px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="t-eyebrow">Available · USD</div>
+    <div class="amount-wrap">
+      <div class="t-hero-amount">$ 12,480.50</div>
+      <div class="delta"><span class="material-icons">arrow_upward</span>+ 4.2% MoM</div>
+    </div>
+    <div class="t-body-sm">As of today, 2:42 PM</div>
+    <button class="cta"><span class="material-icons">add</span>Quick add</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>OW Finance · Harness mobile — Transacciones</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .material-icons { font-family: 'Material Icons', sans-serif; font-style: normal;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+      letter-spacing: normal; text-transform: none; white-space: nowrap; direction: ltr;
+      -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+    *, *::before, *::after { animation: none !important; transition-duration: 0.001s !important; box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(ellipse at 50% 30%, #0E1520 0%, #06080D 100%); min-height: 100vh;
+      display: flex; justify-content: center; align-items: flex-start; padding: 24px; font-family: var(--font-body); }
+    .phone {
+      position: relative; width: 390px; height: 780px; flex-shrink: 0;
+      background: var(--bg-canvas); border-radius: 40px; overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,.7), inset 0 0 0 2px rgba(255,255,255,.05);
+    }
+    /* faux screen content behind the sheet */
+    .screen-bg { position:absolute; inset:0; padding: 56px 18px; opacity:.34; }
+    .screen-bg .b { height: 16px; border-radius: 6px; background: var(--surface-3); margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="phone" id="phone">
+    <div class="screen-bg">
+      <div class="b" style="width:60%"></div>
+      <div class="b" style="width:90%;height:60px"></div>
+      <div class="b" style="width:40%"></div>
+      <div class="b" style="width:80%"></div>
+      <div class="b" style="width:70%"></div>
+    </div>
+    <div id="root"></div>
+  </div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="../../ui_kits/mobile/tokens.js"></script>
+  <script src="../../tx-catalog.js"></script>
+  <script src="../../tx-summary.js"></script>
+  <script type="text/babel" src="../../ui_kits/mobile/data.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/mobile/profile-data.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/mobile/components/Atoms.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/mobile/components/BottomSheet.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/mobile/components/TransactionComponents.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/mobile/components/TransactionFormSheet.jsx"></script>
+  <script type="text/babel" src="../../ui_kits/mobile/components/TransactionDetailSheet.jsx"></script>
+
+  <script type="text/babel">
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    const q = new URLSearchParams(location.search);
+
+    function FormHarness() {
+      const type = q.get('type') || 'expense';
+      React.useEffect(() => {
+        const toggles = (q.get('toggle') || '').split(',').filter(Boolean);
+        const labelFor = { split: 'Pago compuesto', items: 'Monto compuesto', commission: 'Cobrar comisión' };
+        setTimeout(() => {
+          toggles.forEach(tk => { const b=[...document.querySelectorAll('button')].find(e=>e.textContent.includes(labelFor[tk])); if(b)b.click(); });
+          const cat = q.get('cat');
+          if (cat) { const p=[...document.querySelectorAll('#root button')].find(e=>/Sin categor/.test(e.textContent)); if(p){p.click(); setTimeout(()=>{ const o=[...document.querySelectorAll('#root button')].find(e=>e.textContent.includes(cat)&&!/Sin categor/.test(e.textContent)); if(o)o.click(); }, 20);} }
+          const sc = q.get('scroll');
+          if (sc) { const body=document.querySelector('#root [style*="overflow"]')||document.querySelector('#root'); const el=[...document.querySelectorAll('#root *')].find(e=>e.textContent.trim().startsWith(sc)); if(el&&body){ body.scrollTop = el.offsetTop - 40; } }
+        }, 80);
+      }, []);
+      return <TransactionFormSheet open={true} mode="pro" initialType={type} onClose={()=>{}} onSubmit={()=>{}} />;
+    }
+
+    function DetailHarness() {
+      const tx = { id: 1, label: 'Supermercado Whole Foods', amount: -125.40, day: 'mar 14 May', time: '2:42 PM',
+        category: 'Supermercado', acctId: 1, commission: { type:'pagomovil', value:0.30, amount:1.50, currency:'USD' } };
+      React.useEffect(() => {
+        if (q.get('edit')==='1') setTimeout(()=>{ const b=[...document.querySelectorAll('button')].find(e=>/Editar/.test(e.textContent)); if(b)b.click(); }, 90);
+      }, []);
+      return <TransactionDetailSheet open={true} tx={tx} mode="pro" onClose={()=>{}} onSave={()=>{}} onDelete={()=>{}} />;
+    }
+
+    root.render(q.get('view')==='detail' ? <DetailHarness/> : <FormHarness/>);
+  </script>
+</body>
+</html>

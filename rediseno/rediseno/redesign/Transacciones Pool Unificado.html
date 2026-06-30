@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>OW Finance · Transacciones — pool unificado (propuesta en contexto)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .material-icons{font-family:'Material Icons';font-style:normal;display:inline-flex;align-items:center;justify-content:center;line-height:1;vertical-align:middle;-webkit-font-feature-settings:'liga';font-feature-settings:'liga'}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-canvas);color:var(--fg-1);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
+  .app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+
+  /* sidebar */
+  .side{background:var(--surface-1);border-right:1px solid var(--border-hairline);padding:22px 16px;display:flex;flex-direction:column;gap:4px}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 6px 18px}
+  .brand .logo{width:38px;height:38px;border-radius:11px;background:var(--info);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:800;font-size:14px}
+  .brand .nm{font-family:var(--font-display);font-weight:700;font-size:16px}
+  .brand .pro{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--info);background:var(--info-soft);border-radius:5px;padding:1px 5px;vertical-align:middle}
+  .menu-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--fg-3);padding:8px 10px 6px}
+  .nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-md);color:var(--fg-2);font-size:14px;font-weight:500;cursor:pointer}
+  .nav .material-icons{font-size:20px}
+  .nav.on{background:var(--info-soft);color:var(--info);font-weight:600}
+  .nav:hover:not(.on){background:var(--surface-2)}
+  .me{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 8px;border-top:1px solid var(--border-hairline)}
+  .me .av{width:34px;height:34px;border-radius:50%;background:var(--navy-700);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+
+  /* main */
+  .main{padding:30px 36px 60px;min-width:0;max-width:1320px}
+  .h1row{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  h1{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-.01em;margin:0}
+  .ver{margin-left:auto;font-family:var(--font-money);font-size:11px;font-weight:700;color:#fff;background:#1F2937;border-radius:7px;padding:3px 9px}
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .pillbtn{display:inline-flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-pill);padding:10px 15px;font-size:14px;font-weight:600;color:var(--fg-1);box-shadow:var(--shadow-card,0 1px 2px rgba(15,23,42,.04))}
+  .icbtn{width:40px;height:40px;border-radius:50%;background:var(--surface-1);border:1px solid var(--border-hairline);display:inline-flex;align-items:center;justify-content:center;color:var(--fg-2)}
+  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:9px;background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-pill);padding:10px 16px;color:var(--fg-3);font-size:14px}
+  .netinfo{font-size:13px;color:var(--fg-2);font-weight:500}
+  .netinfo b{font-family:var(--font-money);color:var(--expense-fg);font-weight:700}
+
+  .panels{display:grid;grid-template-columns:0.85fr 1.25fr 0.9fr;gap:18px;margin-top:8px}
+  @media(max-width:1100px){.panels{grid-template-columns:1fr}}
+  .panel{background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-xl);padding:20px}
+  .panel-h{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+  .panel-h .material-icons{font-size:18px;color:var(--info)}
+  .panel-h .ttl{font-size:12px;font-weight:700;letter-spacing:.07em;color:var(--fg-2)}
+  .panel-h .cnt{font-family:var(--font-money);font-size:12px;font-weight:700;color:var(--fg-1);background:var(--surface-2);border-radius:999px;padding:1px 9px}
+  .panel-h .hint{margin-left:auto;font-size:11.5px;color:var(--fg-3)}
+
+  /* filtros activos */
+  .seg{display:flex;background:var(--surface-2);border-radius:var(--radius-pill);padding:4px;gap:3px;margin-top:auto}
+  .seg button{flex:1;border:0;cursor:pointer;padding:11px 0;border-radius:var(--radius-pill);font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--fg-2);background:transparent}
+  .seg button.on{background:var(--navy-700);color:#fff}
+  .fchip{display:inline-flex;align-items:center;gap:7px;background:var(--brand-primary-soft);color:var(--brand-primary-fg-soft);border:1px solid color-mix(in srgb,var(--brand-primary) 20%,transparent);border-radius:var(--radius-pill);padding:7px 13px;font-size:13px;font-weight:600}
+
+  /* categorías — grouped by jar */
+  .grp{margin-bottom:15px}
+  .grp:last-child{margin-bottom:0}
+  .grp-h{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .grp-h .gd{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+  .grp-h .gn{font-size:11px;font-weight:700;letter-spacing:.05em}
+  .grp-h .gp{font-family:var(--font-money);font-size:10.5px;color:var(--fg-3)}
+  .grp-h .ln{flex:1;height:1px;background:var(--border-hairline)}
+  .grp-h .gt{font-family:var(--font-money);font-size:13px;font-weight:700;color:var(--fg-1)}
+  .gchips{display:flex;flex-wrap:wrap;gap:8px}
+  .gchip{display:inline-flex;align-items:center;gap:8px;border-radius:var(--radius-pill);padding:8px 13px;font-size:13px;font-weight:500;color:var(--fg-1);cursor:pointer}
+  .gchip .gi{font-size:15px}
+  .gchip .ga{font-family:var(--font-money);font-size:12px;font-weight:600;color:var(--fg-2)}
+
+  /* cántaros */
+  .jar{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border-hairline)}
+  .jar:first-of-type{border-top:0}
+  .jar .ji{width:38px;height:38px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .jar .jn{font-size:13.5px;font-weight:600;color:var(--fg-1)}
+  .jar .jb{height:5px;border-radius:3px;background:var(--surface-2);margin-top:6px;overflow:hidden}
+  .jar .jf{height:100%;border-radius:3px}
+  .jar .jv{font-family:var(--font-money);font-size:13.5px;font-weight:700;color:var(--fg-1);text-align:right}
+  .jar .jp{font-family:var(--font-money);font-size:11px;color:var(--fg-3);text-align:right}
+
+  /* ledger */
+  .ledger{margin-top:20px;background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-xl);overflow:hidden}
+  .led-day{display:flex;justify-content:space-between;padding:14px 22px 8px;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--fg-3)}
+  .led-day .s{font-family:var(--font-money);color:var(--fg-2)}
+  .row{display:flex;align-items:center;gap:14px;padding:13px 22px;border-top:1px solid var(--border-hairline)}
+  .row .ri{width:38px;height:38px;border-radius:50%;background:var(--expense-soft);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .row .ri .material-icons{font-size:18px;color:var(--expense-fg)}
+  .row .rl{flex:1;font-size:14.5px;font-weight:600;color:var(--fg-1)}
+  .row .rc{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:var(--radius-pill);font-size:12px;font-weight:600}
+  .row .ra{font-family:var(--font-money);font-size:14px;font-weight:700;color:var(--expense-fg);min-width:96px;text-align:right}
+
+  /* annotation banner */
+  .note{display:flex;gap:12px;align-items:flex-start;margin:0 0 22px;padding:14px 18px;border-radius:var(--radius-md);background:var(--income-soft);border:1px solid color-mix(in srgb,var(--income) 28%,transparent)}
+  .note .material-icons{color:var(--income-fg);font-size:20px}
+  .note .t{font-size:13px;color:var(--fg-1)}
+  .note .t b{font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="brand"><span class="logo">OW</span><div><div class="nm">Finance <span class="pro">PRO</span></div></div></div>
+    <div class="menu-lbl">MENÚ</div>
+    <div class="nav"><span class="material-icons">home</span>Inicio</div>
+    <div class="nav on"><span class="material-icons">receipt_long</span>Transacciones</div>
+    <div class="nav"><span class="material-icons">donut_small</span>Análisis</div>
+    <div class="nav"><span class="material-icons">savings</span>Cántaros</div>
+    <div class="nav"><span class="material-icons">auto_awesome</span>Sueños</div>
+    <div class="nav"><span class="material-icons">credit_card</span>Deudas</div>
+    <div class="nav"><span class="material-icons">smart_toy</span>Asesor IA</div>
+    <div class="nav"><span class="material-icons">settings</span>Configuración</div>
+    <div class="me"><span class="av">J</span><div><div style="font-size:13px;font-weight:600">Jose Otero</div><div style="font-size:11px;color:var(--fg-3)">otero@demo.com</div></div></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="h1row"><h1>June 2026</h1><span class="ver">v1.1 · propuesta</span></div>
+
+    <div class="note">
+      <span class="material-icons">auto_fix_high</span>
+      <div class="t"><b>Propuesta en contexto.</b> Mismo mes y datos que producción. El pool de <b>CATEGORÍAS</b> ahora está unificado y agrupado por cántaro, con montos formateados; el panel <b>CÁNTAROS</b> deja de estar en 0. Compáralo con el reporte y el screenshot de producción.</div>
+    </div>
+
+    <div class="toolbar">
+      <span class="pillbtn"><span class="material-icons" style="font-size:18px;color:var(--fg-3)">grid_view</span>Mes <span class="material-icons" style="font-size:18px;color:var(--fg-3)">expand_more</span></span>
+      <span class="icbtn"><span class="material-icons" style="font-size:20px">chevron_left</span></span>
+      <span class="pillbtn"><span class="material-icons" style="font-size:18px;color:var(--fg-3)">grid_view</span>June 2026 <span class="material-icons" style="font-size:18px;color:var(--fg-3)">expand_more</span></span>
+      <span class="icbtn"><span class="material-icons" style="font-size:20px">chevron_right</span></span>
+    </div>
+    <div class="toolbar">
+      <span class="pillbtn"><span class="material-icons" style="font-size:18px;color:var(--fg-3)">account_balance_wallet</span>Todas las cuentas <span class="material-icons" style="font-size:18px;color:var(--fg-3)">expand_more</span></span>
+      <span class="search"><span class="material-icons" style="font-size:19px">search</span>Buscar…</span>
+      <span class="netinfo">10 mov. · neto <b>−$35.32</b></span>
+      <span class="icbtn"><span class="material-icons" style="font-size:19px">download</span></span>
+      <span class="icbtn" style="color:var(--expense-fg)"><span class="material-icons" style="font-size:19px">delete_outline</span></span>
+    </div>
+
+    <div class="panels">
+      <!-- FILTROS ACTIVOS -->
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div class="panel-h"><span class="material-icons">filter_alt</span><span class="ttl">FILTROS ACTIVOS</span><span class="hint">sólo el mes</span></div>
+        <div><span class="fchip"><span class="material-icons" style="font-size:15px">grid_view</span>June 2026 <span class="material-icons" style="font-size:14px">lock</span></span></div>
+        <div class="seg"><button class="on">Todas</button><button>Ingresos</button><button>Gastos</button></div>
+      </div>
+
+      <!-- CATEGORÍAS (unified, grouped by jar) -->
+      <div class="panel">
+        <div class="panel-h"><span class="material-icons">sell</span><span class="ttl">CATEGORÍAS</span><span class="cnt" id="catCount">12</span><span class="hint">clic para filtrar</span></div>
+        <div id="catPool"></div>
+      </div>
+
+      <!-- CÁNTAROS (now populated) -->
+      <div class="panel">
+        <div class="panel-h"><span class="material-icons">savings</span><span class="ttl">CÁNTAROS</span><span class="cnt" id="jarCount">3</span><span class="hint">clic para filtrar</span></div>
+        <div id="jarList"></div>
+      </div>
+    </div>
+
+    <!-- Ledger -->
+    <div class="ledger" id="ledger"></div>
+  </main>
+</div>
+
+<script>
+const JARS = {
+  j1: { name: 'Necesidades básicas', short: 'NECESIDADES', pct: 55, icon: 'home',        c: '#1E3A8A' },
+  j2: { name: 'Diversión',           short: 'DIVERSIÓN',   pct: 10, icon: 'celebration', c: '#D97706' },
+  j5: { name: 'Reservas',            short: 'RESERVAS',    pct: 10, icon: 'shield',      c: '#7C3AED' },
+};
+const tint = (hex, p) => `color-mix(in srgb, ${hex} ${p}%, var(--surface-1))`;
+const money = (n) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const POOL = [
+  { jar: 'j1', cats: [
+    ['Salud', 'favorite', 83.72],
+    ['Familia', 'diversity_3', 41.72],
+    ['Supermercado', 'shopping_cart', 37.03],
+    ['Servicios', 'bolt', 29.02],
+    ['Transporte', 'directions_car', 16.88],
+    ['Hogar', 'home', 7.20],
+  ]},
+  { jar: 'j2', cats: [
+    ['Eventos sociales', 'celebration', 136.42],
+    ['Compras personales', 'shopping_bag', 68.10],
+    ['Distracción', 'sports_esports', 39.23],
+    ['Restaurantes y café', 'restaurant', 9.95],
+  ]},
+  { jar: 'j5', cats: [
+    ['Donaciones', 'volunteer_activism', 3.11],
+    ['Comisiones bancarias', 'account_balance', 0.27],
+  ]},
+];
+
+/* CATEGORÍAS pool grouped by jar */
+const cp = document.getElementById('catPool');
+POOL.forEach(g => {
+  const j = JARS[g.jar];
+  const total = g.cats.reduce((s, c) => s + c[2], 0);
+  const grp = document.createElement('div'); grp.className = 'grp';
+  grp.innerHTML = `<div class="grp-h"><span class="gd" style="background:${j.c}"></span>
+    <span class="gn" style="color:${j.c}">${j.short}</span><span class="gp">${j.pct}%</span>
+    <span class="ln"></span><span class="gt">${money(total)}</span></div>`;
+  const cc = document.createElement('div'); cc.className = 'gchips';
+  g.cats.forEach(([name, icon, amt]) => {
+    const ch = document.createElement('span'); ch.className = 'gchip';
+    ch.style.background = tint(j.c, 8);
+    ch.style.border = `1px solid ${tint(j.c, 22)}`;
+    ch.innerHTML = `<span class="material-icons gi" style="color:${j.c}">${icon}</span>${name}<span class="ga">${money(amt)}</span>`;
+    cc.appendChild(ch);
+  });
+  grp.appendChild(cc); cp.appendChild(grp);
+});
+
+/* CÁNTAROS panel — totals + share of spend */
+const jl = document.getElementById('jarList');
+const grand = POOL.reduce((s, g) => s + g.cats.reduce((a, c) => a + c[2], 0), 0);
+POOL.forEach(g => {
+  const j = JARS[g.jar];
+  const total = g.cats.reduce((s, c) => s + c[2], 0);
+  const share = Math.round(total / grand * 100);
+  const row = document.createElement('div'); row.className = 'jar';
+  row.innerHTML = `<span class="ji" style="background:${tint(j.c, 14)}"><span class="material-icons" style="font-size:20px;color:${j.c}">${j.icon}</span></span>
+    <div style="flex:1;min-width:0"><div class="jn">${j.name}</div>
+      <div class="jb"><div class="jf" style="width:${share}%;background:${j.c}"></div></div></div>
+    <div><div class="jv">${money(total)}</div><div class="jp">${share}% del gasto</div></div>`;
+  jl.appendChild(row);
+});
+document.getElementById('catCount').textContent = POOL.reduce((s, g) => s + g.cats.length, 0);
+
+/* Ledger — a few rows like production */
+const ROWS = [
+  ['Helado con dami', 'Restaurantes y café', 'j2', 1.16],
+  ['1010.51 Pago cafe furia', 'Restaurantes y café', 'j2', 1.28],
+  ['Empanadas 6,690.01 carlos y fabi', 'Eventos sociales', 'j2', 8.47],
+  ['David pasaje Karina', 'Donaciones', 'j5', 0.83],
+  ['Farmatodo · proteína mensual', 'Salud', 'j1', 7.40],
+];
+const led = document.getElementById('ledger');
+led.innerHTML = `<div class="led-day"><span>MAR 23 JUN</span><span class="s">−$19.14</span></div>`;
+ROWS.forEach(([label, cat, jar, amt]) => {
+  const j = JARS[jar];
+  const r = document.createElement('div'); r.className = 'row';
+  r.innerHTML = `<span class="ri"><span class="material-icons">north_east</span></span>
+    <span class="rl">${label}</span>
+    <span class="rc" style="background:${tint(j.c, 10)};color:${j.c}"><span style="width:7px;height:7px;border-radius:2px;background:${j.c}"></span>${cat}</span>
+    <span class="ra">−${money(amt)} <span style="font-size:11px;color:var(--fg-3)">USD</span></span>`;
+  led.appendChild(r);
+});
+</script>
+</body>
+</html>
