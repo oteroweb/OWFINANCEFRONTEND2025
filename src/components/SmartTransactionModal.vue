@@ -207,18 +207,24 @@
 
           <!-- Items/factura panel -->
           <div v-if="proPanel === 'items'" class="stm-pro-panel">
-            <div v-for="(item, i) in facturaItems" :key="i" class="stm-items-row">
-              <input v-model="item.name" class="stm-text-input stm-text-input--flex" placeholder="Artículo" />
-              <input v-model.number="item.quantity" type="number" class="stm-text-input stm-text-input--qty" min="1" placeholder="Qty" />
-              <input v-model.number="item.price" type="number" class="stm-text-input stm-text-input--price" min="0" placeholder="Precio" />
-              <button class="stm-pro-rm" @click="facturaItems.splice(i, 1)">
-                <span class="material-icons" style="font-size:16px">close</span>
-              </button>
+            <div v-for="(item, i) in facturaItems" :key="i" class="stm-items-block">
+              <div class="stm-items-row">
+                <input v-model="item.name" class="stm-text-input stm-text-input--flex" placeholder="Artículo" />
+                <input v-model.number="item.quantity" type="number" class="stm-text-input stm-text-input--qty" min="1" placeholder="Qty" />
+                <input v-model.number="item.price" type="number" class="stm-text-input stm-text-input--price" min="0" placeholder="Precio" />
+                <button class="stm-pro-rm" @click="facturaItems.splice(i, 1)">
+                  <span class="material-icons" style="font-size:16px">close</span>
+                </button>
+              </div>
+              <div class="stm-items-cat">
+                <CategorySelector v-model="item.category_id" allow-null placeholder="Categoría del artículo…" />
+                <AnchoredJarChip :category-id="item.category_id" />
+              </div>
             </div>
             <div class="stm-pro-summary">
               Total artículos: <strong>{{ formatMoney(itemsTotal) }}</strong>
             </div>
-            <button class="stm-pro-add" @click="facturaItems.push({ name: '', quantity: 1, price: 0 })">
+            <button class="stm-pro-add" @click="facturaItems.push({ name: '', quantity: 1, price: 0, category_id: null })">
               <span class="material-icons" style="font-size:15px">add</span> Agregar artículo
             </button>
           </div>
@@ -487,8 +493,8 @@ const splitPagos = ref<{ account_id: number | null; amount: number }[]>([
 const splitTotal = computed(() => splitPagos.value.reduce((s, p) => s + (p.amount ?? 0), 0));
 
 // Items / factura
-const facturaItems = ref<{ name: string; quantity: number; price: number }[]>([
-  { name: '', quantity: 1, price: 0 },
+const facturaItems = ref<{ name: string; quantity: number; price: number; category_id: number | null }[]>([
+  { name: '', quantity: 1, price: 0, category_id: null },
 ]);
 const itemsTotal = computed(() =>
   facturaItems.value.reduce((s, it) => s + (it.quantity ?? 0) * (it.price ?? 0), 0)
@@ -576,11 +582,16 @@ async function save() {
 
   // Pro: items de factura
   const items = (isProMode.value && proPanel.value === 'items')
-    ? facturaItems.value.filter(it => it.name && it.price > 0).map(it => ({
-        name: it.name,
-        quantity: it.quantity,
-        amount: it.quantity * it.price,
-      }))
+    ? facturaItems.value.filter(it => it.name && it.price > 0).map(it => {
+        const itemJar = jarForCategory(it.category_id ?? null, getCachedJars());
+        return {
+          name: it.name,
+          quantity: it.quantity,
+          amount: it.quantity * it.price,
+          category_id: it.category_id ?? null,
+          jar_id: itemJar?.id ?? null,
+        };
+      })
     : undefined;
 
   // Pro: monto final con comisión
@@ -1181,10 +1192,24 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   gap: 6px !important;
 }
 
+.stm-items-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--stm-border) 50%, transparent);
+  &:last-of-type { border-bottom: none; }
+}
 .stm-items-row {
   display: flex;
   gap: 6px;
   align-items: center;
+}
+.stm-items-cat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 2px;
 }
 
 .stm-text-input--flex  { flex: 1; min-width: 0; }
