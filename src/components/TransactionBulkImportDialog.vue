@@ -1334,10 +1334,19 @@ const selectedAccount = computed(() => {
 })
 const needsRateForSelectedAccount = computed(() => {
   // Check if account currency is not the default user currency
-  // For now, we assume any non-default is cross-currency
   // In a real implementation, we'd check user.default_currency_id or user.currency_code
-  return selectedAccount.value && (selectedAccount.value.currencyCode !== 'USD' && selectedAccount.value.currencyCode !== 'ARS')
+  const code = selectedAccount.value?.currencyCode
+  if (!code) return false
+  const nonRateCurrencies = ['USD', 'ARS', 'EUR', 'GBP', 'COP', 'MXN', 'BRL', 'CLP', 'PEN', 'UYU']
+  return !nonRateCurrencies.includes(code)
 })
+
+// Detect if a value looks like a rate (e.g. VEF/USD) rather than a transaction amount
+function looksLikeRate(value: number, amounts: number[]): boolean {
+  if (amounts.length === 0) return false
+  const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length
+  return value > 20 && value < 300 && avg > 0 && Math.abs(value - avg) / avg > 0.5
+}
 
 function getCurrentRateForSelectedAccount(): number {
   const code = selectedAccount.value?.currencyCode
@@ -2114,7 +2123,12 @@ function normalizeRow(row: Record<string, unknown>, clientId: string) {
   const categoryNameRaw = row.Categoría || row.categoria || row.Category || row.category
   const categoryName = typeof categoryNameRaw === 'string' || typeof categoryNameRaw === 'number' ? String(categoryNameRaw) : ''
   const rateRaw = row.Tasa || row.tasa || row.Rate || row.rate
-  const rate = typeof rateRaw === 'string' || typeof rateRaw === 'number' ? parseFloat(String(rateRaw)) : null
+  let rate = typeof rateRaw === 'string' || typeof rateRaw === 'number' ? parseFloat(String(rateRaw)) : null
+  // If parsed rate looks like a VEF rate (not a transaction amount), keep it; otherwise discard
+  if (rate !== null && !Number.isNaN(rate)) {
+    const otherAmounts = [amount].filter(v => Number.isFinite(v) && v > 0)
+    if (!looksLikeRate(rate, otherAmounts)) rate = null
+  }
   const accountNameRaw = row.Cuenta || row.cuenta || row.Account || row.account
   const accountName = typeof accountNameRaw === 'string' || typeof accountNameRaw === 'number' ? String(accountNameRaw) : ''
   const fromAccountNameRaw = row.CuentaOrigen || row.cuentaOrigen || row.FromAccount || row.from_account

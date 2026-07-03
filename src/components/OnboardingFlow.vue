@@ -544,6 +544,8 @@ const ChipField = defineComponent({
   padding: 20px;
 }
 
+// OWF-175: layout 2-col pendiente — refactor estructural requerido
+// (topbar/body/footer en columna única impide grid sin reestructurar el DOM)
 .ob {
   width: min(540px, 100vw - 40px);
   max-height: calc(100vh - 60px);
@@ -553,6 +555,10 @@ const ChipField = defineComponent({
   background: var(--surface-1);
   border-radius: var(--radius-xl, 20px);
   box-shadow: 0 32px 80px rgba(15, 23, 42, 0.28);
+
+  @media (min-width: 768px) {
+    width: min(680px, 100vw - 40px);
+  }
 }
 
 /* ── Topbar ───────────────────────────────────────────────────────── */
@@ -615,6 +621,10 @@ const ChipField = defineComponent({
   overflow-y: auto;
   padding: 16px 24px 24px;
   scrollbar-width: thin;
+
+  @media (min-width: 768px) {
+    padding: 20px 32px 32px;
+  }
 
   &--centered {
     display: flex;

@@ -29,7 +29,7 @@
           <NpHeader :unread-count="unreadCount" @mark-all="markAllRead" />
           <div class="np-list np-list--sheet">
             <NpRow v-for="n in items" :key="n.id" :item="n" @read="readOne(n.id)" />
-            <NpFooter @close="emit('close')" />
+            <NpFooter @close="emit('close')" :on-view-all="viewAll" />
           </div>
         </div>
       </div>
@@ -40,6 +40,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { useQuasar } from 'quasar';
+import { useRouter } from 'vue-router';
 
 defineOptions({ name: 'NotificationsPanel' });
 
@@ -47,6 +48,7 @@ const props = defineProps<{ show: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const $q = useQuasar();
+const router = useRouter();
 const isMobile = computed(() => $q.screen.lt.md);
 const panelRef = ref<HTMLElement | null>(null);
 
@@ -62,6 +64,7 @@ interface Notif {
   unread: boolean;
 }
 
+// OWF-177: conectar a /api/v1/notifications cuando el endpoint exista
 const SEED: Notif[] = [
   { id: 1, icon: 'credit_card',   tone: 'expense', title: 'Cuota Cashea por vencer',       body: 'iPhone 15 · $148.50 vence en 2 días.',              time: 'Hace 2 h',  unread: true  },
   { id: 2, icon: 'savings',       tone: 'info',    title: 'Dinero ocioso detectado',       body: 'Tienes $1,240 sin asignar a ningún cántaro hace 9 días.', time: 'Hace 5 h', unread: true  },
@@ -113,6 +116,11 @@ onUnmounted(() => {
   document.removeEventListener('mousedown', handleClickOutside);
   document.removeEventListener('keydown', handleEscape);
 });
+
+function viewAll() {
+  emit('close');
+  void router.push('/user/notifications');
+}
 </script>
 
 <!-- Sub-components as script-setup compatible inline (no separate files needed) -->
@@ -176,14 +184,15 @@ export const NpRow = dc({
 
 export const NpFooter = dc({
   name: 'NpFooter',
+  props: { onViewAll: Function as unknown as () => (() => void) | undefined },
   emits: ['close'],
-  setup(_p, { emit }) {
+  setup(props, { emit }) {
     const hover = sRef(false);
     return () => h('button', {
       class: ['np-footer-btn', { 'np-footer-btn--hover': hover.value }],
       onMouseenter: () => { hover.value = true; },
       onMouseleave: () => { hover.value = false; },
-      onClick: () => emit('close'),
+      onClick: () => { emit('close'); if (props.onViewAll) props.onViewAll(); },
     }, ['Ver todas las notificaciones', h('span', { class: 'material-icons', style: { fontSize: '18px' } }, 'chevron_right')]);
   },
 });
