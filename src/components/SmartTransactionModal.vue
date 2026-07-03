@@ -88,6 +88,64 @@
           <input v-model="form.date" type="datetime-local" class="stm-text-input" />
         </div>
 
+        <!-- Proveedor -->
+        <div class="stm-field">
+          <label class="stm-label">Proveedor / Comercio <span class="stm-label--opt">(opcional)</span></label>
+          <q-select
+            v-model="form.provider_id"
+            :options="providerOptions"
+            emit-value map-options
+            use-input
+            clearable
+            dense outlined
+            placeholder="Buscar proveedor…"
+            option-value="id"
+            option-label="name"
+            @filter="filterProviders"
+          >
+            <template v-slot:prepend><q-icon name="storefront" /></template>
+          </q-select>
+        </div>
+
+        <!-- Etiquetas -->
+        <div class="stm-field">
+          <label class="stm-label">Etiquetas <span class="stm-label--opt">(opcional)</span></label>
+          <div class="stm-tags-row">
+            <button
+              v-for="tag in visibleTags"
+              :key="tag.id"
+              type="button"
+              class="stm-tag-chip"
+              :class="{ 'stm-tag-chip--active': form.tags.includes(tag.id) }"
+              :style="form.tags.includes(tag.id)
+                ? { background: `color-mix(in srgb, ${tag.color} 18%, transparent)`, borderColor: tag.color, color: tag.color }
+                : {}"
+              @click="toggleTag(tag.id)"
+            >
+              <span class="material-icons" style="font-size:14px">{{ tag.icon }}</span>
+              {{ tag.name }}
+            </button>
+            <button
+              v-if="!showNewTagForm"
+              type="button"
+              class="stm-tag-chip stm-tag-chip--add"
+              @click="showNewTagForm = true"
+            >
+              <span class="material-icons" style="font-size:14px">add</span>
+              Nueva etiqueta
+            </button>
+            <div v-if="showNewTagForm" class="stm-new-tag-form">
+              <input v-model="newTagName" class="stm-text-input stm-text-input--flex" placeholder="Nombre de etiqueta" @keydown.enter.prevent="createTag" />
+              <button type="button" class="stm-btn stm-btn--primary stm-btn--xs" :disabled="!newTagName.trim()" @click="createTag">
+                <q-icon name="check" size="14px" />
+              </button>
+              <button type="button" class="stm-btn stm-btn--ghost stm-btn--xs" @click="showNewTagForm = false; newTagName = ''">
+                <q-icon name="close" size="14px" />
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Pro features (solo layout_mode=pro) -->
         <template v-if="isProMode">
           <!-- Toggle row -->
@@ -277,6 +335,7 @@ import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
 import { api } from 'src/boot/axios';
 import { useTransactionTypesStore } from 'stores/transactionTypes';
+import { useTagsStore } from 'stores/tags';
 import { useVoiceInput } from 'src/composables/useVoiceInput';
 import { useAiExtraction, type ExtractionResult } from 'src/composables/useAiExtraction';
 import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
@@ -291,6 +350,7 @@ const $q = useQuasar();
 const ui = useUiStore();
 const auth = useAuthStore();
 const ttypes = useTransactionTypesStore();
+const tagsStore = useTagsStore();
 
 const show = computed({
   get: () => ui.showSmartModal,
@@ -337,10 +397,60 @@ const form = ref({
   account_id: null as number | null,
   category_id: null as number | null,
   date: now(),
+  provider_id: null as number | null,
+  tags: [] as number[],
 });
 
 const saving    = ref(false);
 const saveError = ref<string | null>(null);
+
+// ── Provider search ──────────────────────────────────────────────────────────
+interface Provider { id: number; name: string }
+const providerOptions = ref<Provider[]>([])
+
+async function filterProviders(val: string, update: (fn: () => void) => void) {
+  if (!val.trim()) {
+    update(() => { providerOptions.value = [] })
+    return
+  }
+  try {
+    const res = await api.get<Provider[] | { data: Provider[] }>('/providers', { params: { search: val } })
+    const raw = res.data
+    const list = Array.isArray(raw) ? raw : ((raw as { data: Provider[] }).data ?? [])
+    update(() => { providerOptions.value = list })
+  } catch {
+    update(() => { providerOptions.value = [] })
+  }
+}
+
+// ── Tags ──────────────────────────────────────────────────────────────────────
+const LITE_TAG_SLUGS = ['impulso', 'planificado', 'recurrente']
+
+const isLiteLayout = computed(() =>
+  (auth.settings?.layout_mode ?? auth.user?.layout_mode) !== 'pro'
+)
+
+const visibleTags = computed(() =>
+  isLiteLayout.value
+    ? tagsStore.tags.filter(t => LITE_TAG_SLUGS.includes(t.slug))
+    : tagsStore.tags
+)
+
+function toggleTag(id: number) {
+  const idx = form.value.tags.indexOf(id)
+  if (idx === -1) form.value.tags.push(id)
+  else form.value.tags.splice(idx, 1)
+}
+
+const showNewTagForm = ref(false)
+const newTagName = ref('')
+
+async function createTag() {
+  if (!newTagName.value.trim()) return
+  await tagsStore.createTag(newTagName.value.trim())
+  newTagName.value = ''
+  showNewTagForm.value = false
+}
 
 // ── Pro mode features ──────────────────────────────────────────────────────
 const isProMode = computed(() =>
@@ -485,6 +595,8 @@ async function save() {
     transaction_type_id: typeId,
     category_id: form.value.category_id ?? null,
     jar_id: derivedJar?.id ?? null,
+    provider_id: form.value.provider_id ?? null,
+    tags: form.value.tags,
     payments,
   };
 
@@ -595,6 +707,10 @@ function onShow() {
   form.value.amount = null;
   form.value.name = '';
   form.value.category_id = null;
+  form.value.provider_id = null;
+  form.value.tags = [];
+  showNewTagForm.value = false;
+  newTagName.value = '';
   aiPrefill.value = null;
   aiSource.value  = null;
   voiceResult.value = null;
@@ -609,6 +725,7 @@ function onShow() {
 
   void ttypes.fetchTransactionTypes();
   void loadCategories();
+  void tagsStore.fetchTags();
 }
 
 function onHide() {
@@ -1075,4 +1192,45 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 .stm-text-input--price { width: 80px; flex-shrink: 0; }
 
 .stm-jar-chip { margin-top: 8px; }
+
+// ── Tags ────────────────────────────────────────────────────────────────────
+.stm-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.stm-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline, #e2e8f0);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2, #64748b);
+  cursor: pointer;
+  transition: all 120ms;
+
+  &--active { font-weight: 700; }
+  &--add { color: var(--fg-3, #94a3b8); border-style: dashed; }
+  &--add:hover { color: var(--fg-2); border-color: var(--fg-3); }
+}
+
+.stm-new-tag-form {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.stm-btn--xs {
+  padding: 4px 8px;
+  font-size: 12px;
+  min-height: unset;
+}
 </style>

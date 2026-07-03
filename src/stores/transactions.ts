@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { AxiosResponse } from 'axios'
 import { api } from 'boot/axios'
+import type { Tag } from 'stores/tags'
 
 export interface PaymentTransaction {
   id?: number
@@ -52,6 +53,7 @@ export interface Transaction {
   transaction_type?: { id: number; name: string } | null
   category?: { id: number; name: string; icon?: string | null; jar_slug?: string | null } | null
   jar?: { id: number; name: string; color?: string | null; icon?: string | null } | null
+  tags?: Tag[]
   created_at?: string
   updated_at?: string
   payment_transactions?: PaymentTransaction[]

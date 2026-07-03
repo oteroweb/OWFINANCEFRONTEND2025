@@ -26,7 +26,8 @@ export const dictionary = {
   { id: 2, col: 4, vmodel: 'account_id', vmodel_api: 'payment_account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 3, col: 4, vmodel: 'transaction_type_id', vmodel_api: 'transaction_type_id', vmodel_url: 'transaction_types', type: 'select', label: 'Tipo de Transacción', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 4, col: 3, vmodel: 'date_from', vmodel_api: 'date_from', type: 'datetime', label: 'Fecha y hora desde', placeholder: 'YYYY-MM-DDTHH:mm', value: '' },
-    { id: 5, col: 3, vmodel: 'date_to', vmodel_api: 'date_to', type: 'datetime', label: 'Fecha y hora hasta', placeholder: 'YYYY-MM-DDTHH:mm', value: '' }
+    { id: 5, col: 3, vmodel: 'date_to', vmodel_api: 'date_to', type: 'datetime', label: 'Fecha y hora hasta', placeholder: 'YYYY-MM-DDTHH:mm', value: '' },
+    { id: 6, col: 4, vmodel: 'tag_ids', vmodel_api: 'tag_ids', vmodel_url: 'tags', type: 'select', label: 'Etiqueta', select_label: 'name', placeholder: 'Filtrar por etiqueta', value: '', items: [], order_by: 'name', order_dir: 'asc' }
   ],
 
   // Columnas de la tabla
@@ -39,6 +40,7 @@ export const dictionary = {
     { name: 'Tipo', key: 'transaction_type.name' },
     { name: 'Cantidad', key: 'amount' },
     { name: 'Impuesto', key: 'amount_tax' },
+    { name: 'Etiquetas', key: 'tags', type: 'tags' },
     { name: 'Fecha', key: 'date' },
     { name: 'Activo', key: 'active', type: 'boolean' },
     { name: 'Acciones', key: 'actions' }
@@ -65,7 +67,8 @@ export const dictionary = {
     { id: 8, vmodel: 'provider_id', vmodel_api: 'provider_id', vmodel_url: 'providers', type: 'select', label: 'Proveedor', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
   { id: 9, vmodel: 'account_id', vmodel_api: 'account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 10, vmodel: 'transaction_type_id', vmodel_api: 'transaction_type_id', vmodel_url: 'transaction_types', type: 'select', label: 'Tipo de Transacción', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 11, vmodel: 'url_file', vmodel_api: 'url_file', type: 'input', label: 'URL del Archivo', placeholder: 'URL del archivo', value: '' }
+    { id: 11, vmodel: 'url_file', vmodel_api: 'url_file', type: 'input', label: 'URL del Archivo', placeholder: 'URL del archivo', value: '' },
+    { id: 12, vmodel: 'tags', vmodel_api: 'tags', vmodel_url: 'tags', type: 'multiselect', label: 'Etiquetas', select_label: 'name', placeholder: 'Seleccionar etiquetas', value: [], items: [] }
   ],
 
   // Edición de transacción
@@ -83,6 +86,7 @@ export const dictionary = {
     { id: 8, vmodel: 'provider_id', vmodel_api: 'provider_id', vmodel_url: 'providers', type: 'select', label: 'Proveedor', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
   { id: 9, vmodel: 'account_id', vmodel_api: 'account_id', vmodel_url: 'accounts', type: 'select', label: 'Cuenta', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
     { id: 10, vmodel: 'transaction_type_id', vmodel_api: 'transaction_type_id', vmodel_url: 'transaction_types', type: 'select', label: 'Tipo de Transacción', select_label: 'name', placeholder: '', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 11, vmodel: 'url_file', vmodel_api: 'url_file', type: 'input', label: 'URL del Archivo', placeholder: 'URL del archivo', value: '' }
+    { id: 11, vmodel: 'url_file', vmodel_api: 'url_file', type: 'input', label: 'URL del Archivo', placeholder: 'URL del archivo', value: '' },
+    { id: 12, vmodel: 'tags', vmodel_api: 'tags', vmodel_url: 'tags', type: 'multiselect', label: 'Etiquetas', select_label: 'name', placeholder: 'Seleccionar etiquetas', value: [], items: [] }
   ]
 } as const;

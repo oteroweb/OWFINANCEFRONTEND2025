@@ -68,6 +68,20 @@
           <q-btn flat round icon="delete" color="negative" @click="remove(props.row)" />
         </q-td>
       </template>
+      <template v-slot:body-cell-tags="props">
+        <q-td>
+          <div class="crud-tags-cell">
+            <span
+              v-for="tag in (props.row['tags'] || [])"
+              :key="(tag as Record<string,unknown>)['id'] as number"
+              class="crud-tag-chip"
+              :style="{ background: `color-mix(in srgb, ${(tag as Record<string,unknown>)['color']} 18%, transparent)`, color: (tag as Record<string,unknown>)['color'] as string, borderColor: (tag as Record<string,unknown>)['color'] as string }"
+            >
+              {{ (tag as Record<string,unknown>)['name'] }}
+            </span>
+          </div>
+        </q-td>
+      </template>
       <template
         v-for="col in manyToManyColumns"
         :key="col.key"
@@ -143,7 +157,7 @@ interface CrudField {
   type: string;
   label: string;
   placeholder?: string;
-  value?: string | number | boolean;
+  value?: string | number | boolean | ReadonlyArray<unknown>;
   items?: ReadonlyArray<unknown>;
   select_label?: string;
   order_by?: string;
@@ -333,7 +347,7 @@ function formComponent(type: string) {
   if (type === 'textarea') return QInput;
   if (type === 'checkbox') return QCheckbox;
   if (type === 'select') return QSelect;
-  // por defecto usar QInput; mapear date/time a tipos nativos
+  if (type === 'multiselect') return QSelect;
   return QInput;
 }
 
@@ -398,6 +412,34 @@ function fieldProps(field: CrudField): Partial<QSelectProps & QInputProps> {
       });
     }) as QSelectProps['onFilter'];
   }
+  if (field.type === 'multiselect') {
+    propsObj.options = selectOptionsFiltered[field.vmodel] || [];
+    propsObj.optionValue = 'id';
+    propsObj.optionLabel = field.select_label || 'name';
+    propsObj.emitValue = true;
+    propsObj.mapOptions = true;
+    propsObj.multiple = true;
+    propsObj.useChips = true;
+    propsObj.clearable = true;
+    propsObj.inputDebounce = 0;
+    propsObj.onFilter = ((val: string, doneFn: (fn: () => void) => void) => {
+      const labelKey = field.select_label || 'name';
+      const all = selectOptionsAll[field.vmodel] || [];
+      const needle = String(val || '').toLowerCase();
+      doneFn(() => {
+        if (!needle) {
+          selectOptionsFiltered[field.vmodel] = all;
+        } else {
+          selectOptionsFiltered[field.vmodel] = all.filter((opt: Record<string, unknown>) => {
+            const raw = opt[labelKey];
+            const lbl = toStringLabel(raw);
+            return lbl.toLowerCase().includes(needle);
+          });
+        }
+      });
+    }) as QSelectProps['onFilter'];
+    return propsObj as Partial<QSelectProps & QInputProps>;
+  }
   if (field.type === 'date') Object.assign(propsObj, { type: 'date' as const });
   if (field.type === 'datetime') Object.assign(propsObj, { type: 'datetime-local' as const });
   if (isTextarea) Object.assign(propsObj, { type: 'textarea' as const });
@@ -409,7 +451,11 @@ function fieldProps(field: CrudField): Partial<QSelectProps & QInputProps> {
 function resetForm(): void {
   Object.keys(form).forEach((k) => delete form[k]);
   for (const field of dictionary.forms_save) {
-    form[field.vmodel] = field.value ?? (field.type === 'checkbox' ? false : '');
+    if (field.type === 'multiselect') {
+      form[field.vmodel] = (Array.isArray(field.value) ? [...field.value] : []) as unknown as FormValue;
+    } else {
+      form[field.vmodel] = (field.value as FormValue) ?? (field.type === 'checkbox' ? false : '');
+    }
   }
   // sugerir usuario actual si el formulario tiene user_id
   if (Object.prototype.hasOwnProperty.call(form, 'user_id')) {
@@ -445,6 +491,11 @@ function loadRowIntoForm(row: Row): void {
       } catch {
         form[field.vmodel] = '';
       }
+      continue;
+    }
+    // multiselect: extract IDs from array of objects
+    if (field.type === 'multiselect' && Array.isArray(raw)) {
+      form[field.vmodel] = (raw as Record<string, unknown>[]).map(item => item['id']) as unknown as FormValue;
       continue;
     }
     // Default mapping
@@ -769,7 +820,7 @@ onMounted(async () => {
     dictionary.forms_save,
     dictionary.forms_update
   )) {
-    if (field.type !== 'select') continue;
+    if (field.type !== 'select' && field.type !== 'multiselect') continue;
     try {
       if (field.vmodel_url) {
         const params: Record<string, unknown> = {};
@@ -928,3 +979,21 @@ function exportCSV(): void {
 import { defineComponent } from 'vue';
 export default defineComponent({ name: 'CrudPage' });
 </script>
+
+<style scoped>
+.crud-tags-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.crud-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+</style>
