@@ -243,6 +243,8 @@ import { useUiStore } from 'stores/ui';
 
 defineOptions({ name: 'ProHomeView' });
 
+// OWF-173-GAP2: AccountsPanel overlay mobile — panel ya oculto via CSS (display:none @1024px); reestructuración del layout para mobile overlay invasivo — pendiente
+
 const router = useRouter();
 const ui = useUiStore();
 const isHidden = computed(() => ui.hideValues);
@@ -1197,8 +1199,23 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  // OWF-173-GAP2: overlay mobile para AccountsPanel
   .ap-panel {
-    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 200;
+    height: 100vh;
+    max-height: 100vh;
+    width: 300px;
+    box-shadow: -8px 0 32px rgba(15, 23, 42, 0.18);
+    border-left: 1px solid var(--border-hairline);
+  }
+
+  .ap-toggle {
+    top: 16px;
+    right: 16px;
+    z-index: 210;
   }
 }
 
@@ -1223,9 +1240,22 @@ onMounted(() => {
     gap: 20px;
   }
 
+  // OWF-173-GAP1: KPI 2×2 en mobile — 2 columnas garantizadas + tamaños compactos
   .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+
+  .kpi-card {
+    padding: 10px 8px;
+  }
+
+  .kpi-card .t-amount-lg {
+    font-size: 18px;
+  }
+
+  .kpi-card .t-eyebrow {
+    font-size: 10px;
   }
 
   .tx-dense {
