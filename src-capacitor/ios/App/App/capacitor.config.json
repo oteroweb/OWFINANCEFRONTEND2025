@@ -1,9 +1,0 @@
-{
-	"appId": "com.owfinance.app",
-	"appName": "OWFinance",
-	"webDir": "www",
-	"packageClassList": [
-		"AppPlugin",
-		"NativeBiometric"
-	]
-}
