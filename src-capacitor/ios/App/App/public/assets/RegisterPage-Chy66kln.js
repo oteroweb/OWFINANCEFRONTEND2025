@@ -1,0 +1,1 @@
+import{a as e,u as r,c as t,o}from"./index-DlEgD8M7.js";const p=e({__name:"RegisterPage",setup(a){return r().replace({path:"/login",query:{tab:"register"}}),(n,c)=>(o(),t("div"))}});export{p as default};
