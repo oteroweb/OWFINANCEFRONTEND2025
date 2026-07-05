@@ -29,8 +29,9 @@
             class="quick-add-dialog__type-toggle"
           />
 
+          <template v-if="!isAdjuste">
           <div class="row q-col-gutter-sm">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-6">
               <q-input
                 v-model.number="form.amount"
                 label="Monto"
@@ -40,21 +41,14 @@
                 input-class="text-h5 text-weight-bold"
               />
             </div>
-            <div class="col-12 col-md-5">
+            <div class="col-12 col-md-6">
               <q-input v-model="form.name" label="Concepto" filled />
-            </div>
-            <div class="col-12 col-md-3">
-              <q-input
-                v-model="form.datetime"
-                label="Fecha y hora"
-                type="datetime-local"
-                filled
-              />
             </div>
           </div>
 
           <div v-if="!isTransfer" class="row q-col-gutter-sm">
-            <div v-if="!isAdvancedPayment && !isLiteMode" class="col-12 col-md-7">
+            <!-- OWF-180: Cuenta en su propia fila a ancho completo (oculto en Lite: isLiteMode auto-asigna cuenta) -->
+            <div v-if="!isAdvancedPayment && !isLiteMode" class="col-12">
               <q-select
                 v-model="form.account_id"
                 :options="accountOptions"
@@ -101,8 +95,16 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <div :class="isAdvancedPayment ? 'col-12 col-md-8' : 'col-12 col-md-5'">
+          <!-- OWF-180: Categoría (no existe catálogo de "Cántaro" con id propio; ver nota en el reporte final) -->
+          <!-- OWF-188: en el layout Lite y para Ingreso, Categoría es opcional y comparte fila con Fecha -->
+          <div v-if="!isTransfer" class="row q-col-gutter-sm">
+            <div
+              :class="
+                isLiteLayout && isIncomeType ? 'col-12 col-md-6' : isAdvancedPayment ? 'col-12' : 'col-12 col-md-6'
+              "
+            >
               <q-select
                 v-model="simpleCategoryId"
                 :options="txnCategoryOptions"
@@ -115,7 +117,7 @@
                 use-input
                 clearable
                 input-debounce="300"
-                label="Categoría de la transacción"
+                :label="isLiteLayout && isIncomeType ? 'Categoría (opcional)' : 'Categoría de la transacción'"
                 @focus="ensureTxnCategoriesLoaded"
               />
               <div class="row items-center justify-between q-px-xs q-pt-xs">
@@ -128,10 +130,18 @@
                 <q-btn dense flat color="primary" label="Ver árbol" @click="openTxnCatsDialog" />
               </div>
             </div>
+            <!-- OWF-188: Fecha comparte fila con Categoría solo en el layout Lite + Ingreso -->
+            <div v-if="isLiteLayout && isIncomeType" class="col-12 col-md-6">
+              <q-input v-model="form.datetime" label="Fecha y hora" type="datetime-local" filled />
+            </div>
+            <div v-if="isIncomeType" class="col-12">
+              <JarPercentSplitInfo />
+            </div>
           </div>
 
-          <div v-else class="row q-col-gutter-sm">
-            <div class="col-12 col-md-6">
+          <div v-else class="row q-col-gutter-sm items-center">
+            <!-- OWF-185: Desde -> Hacia con layout direccional explícito -->
+            <div class="col-12 col-md-5">
               <q-select
                 v-model="form.account_from_id"
                 :options="accountOptions"
@@ -144,11 +154,17 @@
                 use-input
                 clearable
                 input-debounce="300"
-                label="Cuenta origen"
+                label="Desde"
                 @focus="ensureAccountsLoaded"
-              />
+              >
+                <template #prepend><q-icon name="arrow_upward" color="negative" /></template>
+              </q-select>
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-2 flex flex-center">
+              <q-icon name="arrow_forward" size="24px" class="text-grey-6 gt-sm" />
+              <q-icon name="arrow_downward" size="24px" class="text-grey-6 lt-md" />
+            </div>
+            <div class="col-12 col-md-5">
               <q-select
                 v-model="form.account_to_id"
                 :options="accountOptions"
@@ -161,9 +177,11 @@
                 use-input
                 clearable
                 input-debounce="300"
-                label="Cuenta destino"
+                label="Hacia"
                 @focus="ensureAccountsLoaded"
-              />
+              >
+                <template #prepend><q-icon name="arrow_downward" color="positive" /></template>
+              </q-select>
             </div>
             <div
               v-if="form.account_from_id || form.account_to_id"
@@ -201,10 +219,11 @@
           </div>
 
           <div class="row q-col-gutter-sm items-start">
-            <div v-if="showRateInput" class="col-12 col-md-6">
+            <!-- OWF-179: cuando la moneda relevante != USD, mostrar tasa paralelo (actual) y tasa BCV (oficial) lado a lado -->
+            <div v-if="showRateInput" :class="showOfficialRateInput ? 'col-12 col-md-6' : 'col-12 col-md-6'">
               <q-input
                 v-model.number="form.rate"
-                :label="rateLabel"
+                :label="showOfficialRateInput ? 'Tasa paralelo (actual)' : rateLabel"
                 type="number"
                 step="0.0001"
                 filled
@@ -231,7 +250,12 @@
               </div>
               <div class="row items-center q-gutter-md q-pt-xs">
                 <q-checkbox v-model="form.rateMarkCurrent" dense label="Marcar como actual" />
-                <q-checkbox v-model="form.rateMarkOfficial" dense label="Marcar como oficial" />
+                <q-checkbox
+                  v-if="!showOfficialRateInput"
+                  v-model="form.rateMarkOfficial"
+                  dense
+                  label="Marcar como oficial"
+                />
               </div>
               <div class="q-mt-xs text-right" v-if="Number(form.rate || 0) > 0">
                 <q-btn
@@ -246,7 +270,84 @@
               </div>
             </div>
 
-            <div :class="showRateInput ? 'col-12 col-md-6' : 'col-12'">
+            <!-- OWF-179: Tasa BCV (oficial), paralela a la tasa actual -->
+            <div v-if="showOfficialRateInput" class="col-12 col-md-6">
+              <q-input
+                v-model.number="rateOficial"
+                label="Tasa BCV (oficial)"
+                type="number"
+                step="0.0001"
+                filled
+              />
+              <div class="row items-center justify-between q-pt-xs">
+                <div class="col-auto">
+                  <q-btn
+                    size="sm"
+                    flat
+                    dense
+                    color="secondary"
+                    icon="history"
+                    :loading="rateLoadingOficial"
+                    @click="useOfficialRateForSelectedAccount()"
+                    label="Usar oficial"
+                  />
+                </div>
+                <div class="col text-right text-caption text-grey-7">
+                  <span v-if="officialRateInfo"
+                    >Oficial: {{ Number(officialRateInfo.rate).toFixed(4) }} —
+                    {{ officialRateInfo.date }}</span
+                  >
+                </div>
+              </div>
+              <div class="text-caption text-grey-7 q-pt-xs">
+                Referencia BCV, se guarda como tasa oficial histórica de la moneda.
+              </div>
+            </div>
+
+            <div :class="showRateInput ? 'col-12' : 'col-12 col-md-6'" v-if="showOfficialRateInput">
+              <div class="quick-add-dialog__result shell-surface shell-surface--subtle">
+                <div class="row items-center no-wrap q-gutter-xs">
+                  <div class="text-subtitle2 text-weight-medium">{{ resultLabel }}</div>
+                  <q-icon name="info_outline" size="16px" class="text-grey-6">
+                    <q-tooltip class="text-caption" anchor="top middle" self="bottom middle">
+                      <template v-if="isTransfer && isCrossCurrency">
+                        <span v-if="transferRateIsMultiply"
+                          >Conversión: monto origen &times; tasa = monto destino.</span
+                        >
+                        <span v-else>Conversión: monto origen &divide; tasa = monto destino.</span>
+                      </template>
+                      <template v-else>
+                        Conversión: monto de la cuenta / tasa = monto en moneda base.
+                      </template>
+                      <div v-if="!showRateInput">No se requiere tasa (misma moneda).</div>
+                    </q-tooltip>
+                  </q-icon>
+                </div>
+                <div class="text-h6 text-weight-bold q-mt-xs">
+                  {{ userCurrencySymbol || resultCurrencySymbol }}{{ Number(resultTotal).toFixed(2) }}
+                </div>
+                <div v-if="applyRateToTotal" class="text-caption text-grey-7 q-mt-xs">
+                  <template v-if="!isAdvancedAmount">
+                    Original: {{ selectedAccount?.currencySymbol || originCurrencySymbol || '' }}{{
+                      Math.abs(Number(form.amount || 0)).toFixed(2)
+                    }}
+                  </template>
+                  <template v-else>
+                    Subtotal original: {{ selectedAccount?.currencySymbol || '' }}{{
+                      Number(invoiceSubtotal).toFixed(2)
+                    }}
+                  </template>
+                </div>
+                <div
+                  v-if="isTransfer && form.account_from_id && form.account_to_id && form.amount != null"
+                  class="text-caption text-grey-7 q-mt-xs"
+                >
+                  {{ originAccount?.name || '—' }} ({{ originAccount?.currencyCode || '—' }}) →
+                  {{ destAccount?.name || '—' }} ({{ destAccount?.currencyCode || '—' }})
+                </div>
+              </div>
+            </div>
+            <div v-else :class="showRateInput ? 'col-12 col-md-6' : 'col-12'">
               <div class="quick-add-dialog__result shell-surface shell-surface--subtle">
                 <div class="row items-center no-wrap q-gutter-xs">
                   <div class="text-subtitle2 text-weight-medium">{{ resultLabel }}</div>
@@ -302,8 +403,9 @@
             class="quick-add-dialog__expansion"
           >
             <div class="column q-gutter-md q-pt-sm">
+              <!-- OWF-181: Proveedor + Fecha en la misma fila (Fecha ya se muestra arriba en Lite+Ingreso, ver OWF-188) -->
               <div v-if="!isTransfer" class="row q-col-gutter-sm">
-                <div class="col-12 col-md-7">
+                <div :class="isLiteLayout && isIncomeType ? 'col-12' : 'col-12 col-md-6'">
                   <q-select
                     v-model="form.provider_id"
                     :options="providerOptions"
@@ -329,12 +431,38 @@
                     </template>
                   </q-select>
                 </div>
-                <div class="col-12 col-md-5">
+                <div v-if="!(isLiteLayout && isIncomeType)" class="col-12 col-md-6">
+                  <q-input
+                    v-model="form.datetime"
+                    label="Fecha y hora"
+                    type="datetime-local"
+                    filled
+                  />
+                </div>
+              </div>
+              <div v-else class="row q-col-gutter-sm">
+                <div class="col-12">
+                  <q-input
+                    v-model="form.datetime"
+                    label="Fecha y hora"
+                    type="datetime-local"
+                    filled
+                  />
+                </div>
+              </div>
+
+              <!-- OWF-182: switches para pago múltiple y detalle/factura (reemplaza el patrón de 3 botones) -->
+              <div v-if="!isTransfer" class="row q-col-gutter-sm">
+                <div class="col-12 col-md-6">
                   <q-toggle
                     v-model="isAdvancedPayment"
-                    label="Pago avanzado (múltiples cuentas)"
+                    label="Pago múltiple"
+                    color="primary"
                     @update:model-value="onToggleAdvancedPayment"
                   />
+                </div>
+                <div class="col-12 col-md-6">
+                  <q-toggle v-model="isAdvancedAmount" label="Detalle/factura" color="primary" />
                 </div>
               </div>
 
@@ -481,13 +609,8 @@
                 </div>
               </div>
 
-              <div v-if="!isTransfer" class="row items-center q-col-gutter-sm">
-                <div class="col-auto">
-                  <q-toggle v-model="isAdvancedAmount" label="Detalle (factura)" />
-                </div>
-                <div class="col text-caption text-grey-7" v-if="isAdvancedAmount">
-                  El monto se calcula desde las líneas y debe coincidir con el total.
-                </div>
+              <div v-if="!isTransfer && isAdvancedAmount" class="text-caption text-grey-7">
+                El monto se calcula desde las líneas y debe coincidir con el total.
               </div>
 
               <div v-if="!isTransfer && isAdvancedAmount" class="q-mt-xs">
@@ -575,7 +698,11 @@
 
               <div class="row q-col-gutter-sm">
                 <div class="col-12 col-md-6">
-                  <q-toggle v-model="includeInBalance" label="Incluir en balance de cuentas" />
+                  <q-toggle
+                    v-model="includeInBalance"
+                    label="Afecta el saldo de la cuenta"
+                    color="primary"
+                  />
                 </div>
                 <div class="col-12 col-md-6">
                   <q-input v-model="form.url_file" label="Archivo (URL)" dense filled />
@@ -583,6 +710,84 @@
               </div>
             </div>
           </q-expansion-item>
+          </template>
+
+          <!-- OWF-186: Ajuste de saldo a nivel de cuenta -->
+          <div v-else class="column q-gutter-md">
+            <div class="row q-col-gutter-sm">
+              <div class="col-12">
+                <q-select
+                  v-model="form.account_id"
+                  :options="accountOptions"
+                  :onFilter="onAccountFilter"
+                  option-value="id"
+                  :option-label="accountLabel"
+                  emit-value
+                  map-options
+                  filled
+                  use-input
+                  clearable
+                  input-debounce="300"
+                  label="Cuenta"
+                  @focus="ensureAccountsLoaded"
+                />
+              </div>
+            </div>
+            <div class="row q-col-gutter-sm">
+              <div class="col-12 col-md-6">
+                <q-input
+                  v-model.number="adjusteTargetBalance"
+                  label="Saldo objetivo"
+                  type="number"
+                  step="0.01"
+                  filled
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="quick-add-dialog__result shell-surface shell-surface--subtle">
+                  <div class="text-subtitle2 text-weight-medium">Diferencia</div>
+                  <div
+                    class="text-h6 text-weight-bold q-mt-xs"
+                    :class="adjusteDiff > 0 ? 'text-positive' : adjusteDiff < 0 ? 'text-negative' : ''"
+                  >
+                    {{ currencySymbol }}{{ Number(adjusteDiff).toFixed(2) }}
+                  </div>
+                  <div class="text-caption text-grey-7 q-mt-xs">
+                    Saldo actual: {{ currencySymbol }}{{ Number(currentBalance).toFixed(2) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row q-col-gutter-sm">
+              <div class="col-12">
+                <q-input
+                  v-model="adjusteMotivo"
+                  label="Motivo"
+                  hint="Requerido: explica el porqué del ajuste"
+                  type="textarea"
+                  rows="2"
+                  filled
+                />
+              </div>
+            </div>
+          </div>
+
+          <TfReviewCard
+            :type-label="selectedTypeLabel"
+            :is-adjuste="isAdjuste"
+            :is-transfer="isTransfer"
+            :amount="form.amount"
+            :name="form.name"
+            :category-name="selectedCategoryName"
+            :account-name="selectedAccount?.name || null"
+            :from-account-name="originAccount?.name || null"
+            :to-account-name="destAccount?.name || null"
+            :datetime="form.datetime"
+            :adjuste-account-name="selectedAccount?.name || null"
+            :adjuste-target-balance="adjusteTargetBalance"
+            :adjuste-motivo="adjusteMotivo"
+            :validation-errors="reviewValidationErrors"
+          />
 
           <div class="row justify-end q-gutter-sm q-pt-sm">
             <q-btn flat label="Cancelar" v-close-popup />
@@ -590,7 +795,7 @@
               color="primary"
               :label="saveButtonLabel"
               type="submit"
-              :disable="isSaveDisabled || (!isTransfer && isAdvancedPayment && paymentsMismatch)"
+              :disable="isSaveDisabled || (!isTransfer && isAdvancedPayment && paymentsMismatch) || reviewValidationErrors.length > 0"
             />
           </div>
         </q-form>
@@ -744,6 +949,8 @@ import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import { useI18n } from 'vue-i18n';
 import CategoriesTree from './CategoriesTree.vue';
+import TfReviewCard from './TfReviewCard.vue';
+import JarPercentSplitInfo from './JarPercentSplitInfo.vue';
 import { useTransactionForm } from 'src/composables/useTransactionForm';
 defineOptions({ name: 'TransactionCreateDialog' });
 
@@ -812,6 +1019,7 @@ const dialogLoading = ref(false);
 // ----- Transaction Types & Shared Form Helpers (from composable) -----
 const {
   ttOptions,
+  ADJUSTMENT_TYPE_ID,
   loadTransactionTypes,
   // Providers
   providerOptions,
@@ -1547,6 +1755,37 @@ const isSaveDisabled = computed(() => {
   return false;
 });
 
+// OWF-184: validaciones usadas por TfReviewCard para bloquear el envío con mensajes claros
+const reviewValidationErrors = computed<string[]>(() => {
+  const errors: string[] = [];
+  if (isAdjuste.value) {
+    if (!form.value.account_id) errors.push('Selecciona la cuenta a ajustar.');
+    if (adjusteTargetBalance.value == null) errors.push('Ingresa el saldo objetivo.');
+    if (!adjusteMotivo.value || !adjusteMotivo.value.trim()) errors.push('El motivo es requerido.');
+    return errors;
+  }
+  const nameTrim = (form.value.name || '').trim();
+  if (!nameTrim) errors.push('El concepto es requerido.');
+  if (!(Number(form.value.amount || 0) !== 0)) errors.push('El monto debe ser mayor a 0.');
+  if (isTransfer.value) {
+    if (!form.value.account_from_id || !form.value.account_to_id) {
+      errors.push('Selecciona cuenta origen y destino.');
+    }
+    if (isCrossCurrency.value && !(Number(form.value.rate || 0) > 0)) {
+      errors.push('Ingresa la tasa Origen→Destino.');
+    }
+  } else {
+    if (!form.value.account_id && !isAdvancedPayment.value) errors.push('Selecciona una cuenta.');
+    if (showRateInput.value && !(Number(form.value.rate || 0) > 0)) {
+      errors.push('Ingresa la tasa de cambio.');
+    }
+  }
+  if (isAdvancedAmount.value && advancedMismatch.value) {
+    errors.push('El subtotal no coincide con el monto.');
+  }
+  return errors;
+});
+
 const showAdvancedOptions = ref(false);
 
 const selectedTypeLabel = computed(() => {
@@ -1596,6 +1835,27 @@ const isTransfer = computed(() => {
   const name = (ty?.name || '').toLowerCase();
   return slug === 'transfer' || name.includes('transfer');
 });
+// OWF-186: Ajuste — tipo 4, a nivel de cuenta. Puede resolver a un id real de backend
+// (si existe un transaction_type con slug/nombre "ajuste"/"adjustment") o al sentinel local.
+const isAdjuste = computed(() => {
+  const id = form.value.transaction_type_id;
+  if (!id) return false;
+  if (id === ADJUSTMENT_TYPE_ID) return true;
+  const ty = ttypes.types.find((t: TransactionType) => t.id === id);
+  const slug = (ty?.slug || '').toLowerCase();
+  const name = (ty?.name || '').toLowerCase();
+  return slug === 'adjustment' || name.includes('ajuste');
+});
+const isIncomeType = computed(() => {
+  const id = form.value.transaction_type_id;
+  if (!id) return false;
+  const ty = ttypes.types.find((t: TransactionType) => t.id === id);
+  const slug = (ty?.slug || '').toLowerCase();
+  const name = (ty?.name || '').toLowerCase();
+  return slug === 'income' || name.includes('ingreso');
+});
+// OWF-187/188: detectar si el usuario está en el layout "Lite" (ver DynamicHomePage.vue)
+const isLiteLayout = computed(() => auth.settings?.layout_mode === 'lite');
 // Helpers to safely compare currency identity
 function toNumId(v: unknown): number | null {
   if (v == null) return null;
@@ -1653,6 +1913,96 @@ const rateLabel = computed(() => {
     selectedAccountCurrencyCode.value || 'Cuenta'
   })`;
 });
+
+// OWF-179: moneda relevante para decidir si mostramos el par paralelo/BCV (solo aplica si != USD)
+const relevantRateCurrencyCode = computed<string | null>(() => {
+  if (isTransfer.value) {
+    return destAccount.value?.currencyCode || originAccount.value?.currencyCode || null;
+  }
+  return selectedAccountCurrencyCode.value || null;
+});
+const showOfficialRateInput = computed(() => {
+  if (!showRateInput.value) return false;
+  const code = (relevantRateCurrencyCode.value || '').toUpperCase();
+  return !!code && code !== 'USD';
+});
+// Tasa BCV (oficial) — campo independiente de la tasa paralelo/actual (form.rate).
+const rateOficial = ref<number | null>(null);
+const rateLoadingOficial = ref(false);
+const officialRateCache = ref<Record<string, CurrentRateInfo>>({});
+async function fetchUserOfficialRate(
+  currencyId: number | null | undefined
+): Promise<CurrentRateInfo | null> {
+  const uid =
+    typeof (auth.user as unknown as { id?: number })?.id === 'number'
+      ? (auth.user as unknown as { id: number }).id
+      : null;
+  if (!uid || !currencyId) return null;
+  const key = currentRateKey(uid, currencyId);
+  const cached = officialRateCache.value[key];
+  if (cached) return cached;
+  try {
+    const res = await api.get('/user_currencies', {
+      params: { user_id: uid, currency_id: currencyId, is_official: 1, limit: 1 },
+    });
+    const data = (res.data?.data || res.data || []) as Array<{
+      current_rate?: number | string;
+      updated_at?: string;
+      created_at?: string;
+    }>;
+    const first = Array.isArray(data) && data.length ? data[0] : null;
+    const rateNum = first && first.current_rate != null ? Number(first.current_rate) : NaN;
+    if (!first || !Number.isFinite(rateNum) || rateNum <= 0) return null;
+    const date = (first.updated_at || first.created_at || '').slice(0, 10);
+    const info: CurrentRateInfo = { rate: rateNum, date };
+    officialRateCache.value[key] = info;
+    return info;
+  } catch {
+    return null;
+  }
+}
+const officialRateInfo = computed<CurrentRateInfo | null>(() => {
+  const acc = isTransfer.value ? destAccount.value : selectedAccount.value;
+  if (!acc || !acc.currencyId) return null;
+  const uid =
+    typeof (auth.user as unknown as { id?: number })?.id === 'number'
+      ? (auth.user as unknown as { id: number }).id
+      : null;
+  const key = currentRateKey(uid, acc.currencyId);
+  return officialRateCache.value[key] || null;
+});
+async function useOfficialRateForSelectedAccount() {
+  const acc = isTransfer.value ? destAccount.value : selectedAccount.value;
+  if (!acc || !acc.currencyId) return;
+  rateLoadingOficial.value = true;
+  try {
+    const info = await fetchUserOfficialRate(acc.currencyId);
+    if (info && Number(info.rate) > 0) rateOficial.value = Number(info.rate);
+  } finally {
+    rateLoadingOficial.value = false;
+  }
+}
+// Persistir la tasa BCV/oficial reutilizando el endpoint existente de user_currencies (sin nueva integración externa)
+async function persistOfficialRateIfNeeded() {
+  const val = Number(rateOficial.value || 0);
+  if (!(val > 0)) return;
+  const acc = isTransfer.value ? destAccount.value : selectedAccount.value;
+  const uid =
+    typeof (auth.user as unknown as { id?: number })?.id === 'number'
+      ? (auth.user as unknown as { id: number }).id
+      : null;
+  if (!acc?.currencyId || !uid) return;
+  try {
+    await api.post('/user_currencies', {
+      user_id: uid,
+      currency_id: acc.currencyId,
+      current_rate: val,
+      is_official: true,
+    });
+  } catch {
+    // Silencioso: no bloquear el guardado de la transacción por esto
+  }
+}
 
 // taxes UI/logic removed for now
 const needsRateForAccountBalance = computed(
@@ -1786,6 +2136,13 @@ const currencySymbol = computed(() => {
   const accId = isTransfer.value ? form.value.account_from_id : form.value.account_id;
   const acc = allAccounts.value.find((a) => a.id === accId);
   return acc?.currencySymbol || '';
+});
+// OWF-186: Ajuste — saldo objetivo, diferencia y motivo (a nivel de cuenta, ver AccountController::adjustBalance)
+const adjusteTargetBalance = ref<number | null>(null);
+const adjusteMotivo = ref('');
+const adjusteDiff = computed(() => {
+  if (adjusteTargetBalance.value == null) return 0;
+  return Number((Number(adjusteTargetBalance.value) - Number(currentBalance.value || 0)).toFixed(2));
 });
 const originCurrencySymbol = computed(() => originAccount.value?.currencySymbol || '');
 const destCurrencySymbol = computed(() => destAccount.value?.currencySymbol || '');
@@ -2440,6 +2797,12 @@ type TxnCategoryOption = {
 const allTxnCategoriesTree = ref<TxnCategoryNode[] | null>(null);
 const allTxnCategoriesFlat = ref<TxnCategoryOption[]>([]);
 const txnCategoryOptions = ref<TxnCategoryOption[]>([]);
+// OWF-184: nombre de categoría seleccionada, usado por el resumen de TfReviewCard
+const selectedCategoryName = computed<string | null>(() => {
+  if (simpleCategoryId.value == null) return null;
+  const found = allTxnCategoriesFlat.value.find((c) => c.id === simpleCategoryId.value);
+  return found?.rawName || found?.name || null;
+});
 
 async function ensureTxnCategoriesLoaded() {
   // Permitir refetch forzado cuando se pasa force=true
@@ -2904,7 +3267,52 @@ watch(
 );
 
 // Save
+// OWF-186: Ajuste de saldo — usa el endpoint dedicado POST /accounts/{id}/adjust-balance
+// en lugar del flujo normal de transacciones (no aplica payments/items/rate).
+function saveAdjuste() {
+  if (reviewValidationErrors.value.length) {
+    $q.notify({ type: 'warning', message: reviewValidationErrors.value[0] || 'Revisa el formulario.' });
+    return;
+  }
+  const accId = form.value.account_id as number;
+  const target = Number(adjusteTargetBalance.value);
+  dialogLoading.value = true;
+  api
+    .post(`/accounts/${accId}/adjust-balance`, {
+      target_balance: target,
+      include_in_balance: !!includeInBalance.value,
+      description: adjusteMotivo.value.trim(),
+    })
+    .then(() => {
+      $q.notify({ type: 'positive', message: 'Ajuste de saldo registrado' });
+      if (accId in accountBalanceCache.value) delete accountBalanceCache.value[accId];
+      void fetchAccountBalance(accId);
+      window.dispatchEvent(
+        new CustomEvent('ow:transactions:changed', {
+          detail: { account_ids: [accId], reason: 'adjust' },
+        })
+      );
+      ui.closeNewTransactionDialog();
+      resetForm();
+    })
+    .catch((err: unknown) => {
+      console.error(err);
+      $q.notify({ type: 'negative', message: 'Error al registrar el ajuste de saldo' });
+    })
+    .finally(() => {
+      dialogLoading.value = false;
+    });
+}
+
 function saveTransaction() {
+  if (isAdjuste.value) {
+    saveAdjuste();
+    return;
+  }
+  if (reviewValidationErrors.value.length) {
+    $q.notify({ type: 'warning', message: reviewValidationErrors.value[0] || 'Revisa el formulario.' });
+    return;
+  }
   const ty = ttypes.types.find((t: TransactionType) => t.id === form.value.transaction_type_id);
   const slug = (ty?.slug || '').toLowerCase();
   if (slug === 'expense' && form.value.amount && form.value.amount > 0)
@@ -3321,6 +3729,8 @@ function saveTransaction() {
         type: 'positive',
         message: doUpdate ? 'Transacción actualizada' : 'Transacción creada',
       });
+      // OWF-179: si el usuario capturó una tasa BCV/oficial, guardarla como referencia histórica
+      if (showOfficialRateInput.value) void persistOfficialRateIfNeeded();
       // Refrescar tasas del usuario tras crear/actualizar para mantener el store al día
       try {
         const storeWithRefresh = auth as unknown as {
@@ -3467,6 +3877,10 @@ function resetForm() {
     isTransfer: false,
     payments: [],
   };
+  // OWF-179 / OWF-186
+  rateOficial.value = null;
+  adjusteTargetBalance.value = null;
+  adjusteMotivo.value = '';
 }
 
 // ---- React to user currency changes globally ----
