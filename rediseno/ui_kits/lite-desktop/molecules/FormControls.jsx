@@ -100,16 +100,26 @@ function Segmented({ options, value, onChange, accentMap }) {
 /* ---------- Picker (custom dropdown) ----------
  * options: [{ value, label, sub?, icon?, color?, right? }]
  */
-function Picker({ value, onChange, options, placeholder = 'Seleccionar', leadingIcon }) {
+function Picker({ value, onChange, options, placeholder = 'Seleccionar', leadingIcon, searchable, onCreate, createLabel = 'Crear' }) {
   const [open, setOpen] = useFcState(false);
+  const [query, setQuery] = useFcState('');
   const boxRef = useFcRef(null);
+  const searchRef = useFcRef(null);
+  const canSearch = searchable || !!onCreate;
   useFcEffect(() => {
     if (!open) return;
-    const fn = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    const fn = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) { setOpen(false); setQuery(''); } };
     document.addEventListener('mousedown', fn);
+    if (canSearch && searchRef.current) searchRef.current.focus();
     return () => document.removeEventListener('mousedown', fn);
   }, [open]);
   const sel = options.find(o => o.value === value);
+  const q = query.trim().toLowerCase();
+  const filtered = canSearch && q ? options.filter(o => String(o.label).toLowerCase().includes(q)) : options;
+  const exact = options.some(o => String(o.label).trim().toLowerCase() === q);
+  const showCreate = !!onCreate && q.length > 0 && !exact;
+  const pick = (v) => { onChange(v); setOpen(false); setQuery(''); };
+  const handleCreate = () => { const created = onCreate(query.trim()); if (created != null) onChange(created); setOpen(false); setQuery(''); };
   return (
     <div ref={boxRef} style={{ position: 'relative' }}>
       <button type="button" onClick={() => setOpen(o => !o)}
@@ -123,11 +133,20 @@ function Picker({ value, onChange, options, placeholder = 'Seleccionar', leading
         <span className="material-icons" style={{ fontSize: 18, color: 'var(--fg-3)' }}>{open ? 'expand_less' : 'expand_more'}</span>
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 40, background: 'var(--surface-1)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-popover)', padding: 6, maxHeight: 260, overflowY: 'auto', border: '1px solid var(--border-hairline)' }}>
-          {options.map(o => {
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 40, background: 'var(--surface-1)', borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-popover)', padding: 6, maxHeight: 280, overflowY: 'auto', border: '1px solid var(--border-hairline)' }}>
+          {canSearch && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '4px 8px', marginBottom: 4, borderBottom: '1px solid var(--border-hairline)' }}>
+              <span className="material-icons" style={{ fontSize: 17, color: 'var(--fg-3)' }}>search</span>
+              <input ref={searchRef} value={query} onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (showCreate) handleCreate(); else if (filtered[0]) pick(filtered[0].value); } }}
+                placeholder={onCreate ? 'Buscar o crear…' : 'Buscar…'}
+                style={{ flex: 1, border: 0, outline: 'none', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--fg-1)', padding: '5px 0' }} />
+            </div>
+          )}
+          {filtered.map(o => {
             const active = o.value === value;
             return (
-              <button key={String(o.value)} type="button" onClick={() => { onChange(o.value); setOpen(false); }}
+              <button key={String(o.value)} type="button" onClick={() => pick(o.value)}
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
                 onMouseLeave={e => e.currentTarget.style.background = active ? 'var(--brand-primary-soft)' : 'transparent'}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', border: 0, cursor: 'pointer', borderRadius: 'var(--radius-xs)', background: active ? 'var(--brand-primary-soft)' : 'transparent', textAlign: 'left', transition: 'background 120ms' }}>
@@ -142,6 +161,18 @@ function Picker({ value, onChange, options, placeholder = 'Seleccionar', leading
               </button>
             );
           })}
+          {canSearch && filtered.length === 0 && !showCreate && (
+            <div style={{ padding: '10px', fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--fg-3)', textAlign: 'center' }}>Sin resultados</div>
+          )}
+          {showCreate && (
+            <button type="button" onClick={handleCreate}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--brand-primary-soft)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', border: 0, cursor: 'pointer', borderRadius: 'var(--radius-xs)', background: 'transparent', textAlign: 'left', marginTop: filtered.length ? 4 : 0, borderTop: filtered.length ? '1px solid var(--border-hairline)' : 0 }}>
+              <span className="material-icons" style={{ fontSize: 18, color: 'var(--brand-primary)' }}>add_circle</span>
+              <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 13.5, fontWeight: 600, color: 'var(--brand-primary)' }}>{createLabel} “{query.trim()}”</span>
+            </button>
+          )}
         </div>
       )}
     </div>

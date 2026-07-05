@@ -88,6 +88,25 @@ const SAMPLE_PROVIDERS = [
   { id: 7, name: 'Megastore' },
 ];
 
+/* Tags (tags) — GET /api/v1/tags → { id, slug, name, description, color, icon, type }
+ * type='system' son los 6 tags del sistema; type='user' son propios del usuario.
+ * El payload guarda tags: number[] (array de IDs seleccionados). */
+const SAMPLE_TAGS = [
+  { id: 1, slug: 'comision',              name: 'Comisión',    icon: 'toll',            color: '#F59E0B', type: 'system', description: 'Cargo o comisión bancaria asociada al movimiento' },
+  { id: 2, slug: 'pago_movil',            name: 'Pago móvil',  icon: 'smartphone',      color: '#0EA5E9', type: 'system', description: 'Operación realizada por Pago Móvil P2P' },
+  { id: 3, slug: 'impulso',               name: 'Impulso',     icon: 'bolt',            color: '#EF4444', type: 'system', description: 'Compra impulsiva, fuera del plan' },
+  { id: 4, slug: 'planificado',           name: 'Planificado', icon: 'event_available', color: '#10B981', type: 'system', description: 'Gasto previsto dentro de tu presupuesto' },
+  { id: 5, slug: 'recurrente',            name: 'Recurrente',  icon: 'autorenew',       color: '#3B82F6', type: 'system', description: 'Se repite cada período (suscripción, servicio)' },
+  { id: 6, slug: 'transferencia_interna', name: 'Interna',     icon: 'sync_alt',        color: '#8B5CF6', type: 'system', description: 'Movimiento entre tus propias cuentas' },
+  /* Tags de usuario (type='user') */
+  { id: 7, slug: 'trabajo',               name: 'Trabajo',     icon: 'work',            color: '#0EA5E9', type: 'user',   description: 'Gasto reembolsable de trabajo' },
+  { id: 8, slug: 'viaje',                 name: 'Viaje',       icon: 'flight',          color: '#14B8A6', type: 'user',   description: 'Relacionado con un viaje' },
+];
+/* En modo Lite mostramos solo los 3 más relevantes por defecto. */
+const LITE_RELEVANT_TAGS = [3, 4, 5]; // impulso · planificado · recurrente
+/* Paleta sugerida al crear un tag de usuario. */
+const TAG_PALETTE = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#0EA5E9', '#8B5CF6', '#EC4899', '#14B8A6'];
+
 /* ─── Comisiones (Venezuela) ──────────────────────────────────────────
  * Modelo de comisión que se aplica a una transacción (transferencia/pago).
  * Tres modos reales del mercado venezolano:
@@ -118,5 +137,6 @@ Object.assign(window, {
   TX_TYPES, ACCOUNT_TYPES, CURRENCIES, DEFAULT_RATES,
   SAMPLE_ACCOUNTS, ACCOUNT_GROUPS, accountsByGroup,
   LITE_WALLET, SAMPLE_CATEGORIES, SAMPLE_TAXES, SAMPLE_PROVIDERS,
+  SAMPLE_TAGS, LITE_RELEVANT_TAGS, TAG_PALETTE,
   COMMISSION_TYPES, PAGOMOVIL_PCT, PAGOMOVIL_MIN_VES, computeCommission,
 });

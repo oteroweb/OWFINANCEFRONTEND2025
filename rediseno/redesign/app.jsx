@@ -25,6 +25,34 @@ function App() {
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
   }, [TX]);
 
+  // pool de CATEGORÍAS unificado: agrupado por cántaro, con totales de mes
+  // formateados (migración del pool de producción — diseño aprobado en el reporte).
+  const catPool = useMemo(() => {
+    const groups = {}; // jar | '__income' -> { catName -> {name,icon,amount,count} }
+    TX.forEach(t => {
+      const key = t.jar || '__income';
+      const g = (groups[key] = groups[key] || {});
+      const c = (g[t.category] = g[t.category] || { name: t.category, icon: t.catIcon, amount: 0, count: 0 });
+      c.amount += Math.abs(t.amount); c.count += 1;
+    });
+    const out = [];
+    const order = Object.keys(window.JAR_CANON).sort((a, b) => window.JAR_CANON[a].order - window.JAR_CANON[b].order);
+    order.forEach(name => {
+      if (!groups[name]) return;
+      const cats = Object.values(groups[name]).sort((a, b) => b.amount - a.amount);
+      const meta = window.JAR_CANON[name];
+      out.push({ key: name, name, short: meta.short, pct: meta.pct, color: meta.color,
+                 total: cats.reduce((s, c) => s + c.amount, 0), cats });
+    });
+    if (groups['__income']) {
+      const cats = Object.values(groups['__income']).sort((a, b) => b.amount - a.amount);
+      out.push({ key: '__income', name: 'Ingresos', short: 'INGRESOS', pct: null, color: 'var(--income-fg)',
+                 total: cats.reduce((s, c) => s + c.amount, 0), cats });
+    }
+    return out;
+  }, [TX]);
+  const catCount = catPool.reduce((s, g) => s + g.cats.length, 0);
+
   const toggleCat = (c) => setSelCats(s => s.includes(c) ? s.filter(x => x !== c) : [...s, c]);
   const toggleJar = (j) => setSelJars(s => s.includes(j) ? s.filter(x => x !== j) : [...s, j]);
   const clearFilters = () => { setType('all'); setSelCats([]); setSelJars([]); };
@@ -80,7 +108,7 @@ function App() {
       {/* fila superior · tres pools */}
       <TxPoolsHeader
         monthLabel={MONTH_LABEL} type={type} setType={setType}
-        cats={cats} jars={jars} selCats={selCats} selJars={selJars}
+        cats={cats} catPool={catPool} catCount={catCount} jars={jars} selCats={selCats} selJars={selJars}
         toggleCat={toggleCat} toggleJar={toggleJar} clearFilters={clearFilters} hasFilters={hasFilters} />
 
       {/* ledger */}

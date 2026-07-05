@@ -249,7 +249,10 @@ function TransactionDetailModal({ open, tx, mode = 'lite', hidden = false, onClo
 
             <div style={{ display: 'flex', gap: 14, flexDirection: isMobile ? 'column' : 'row' }}>
               <Field label={T('Categoría')} style={{ flex: 1 }}>
-                <Picker value={draft.category} onChange={v => setDraft(d => ({ ...d, category: v }))} options={catOptions} />
+                <CategorySelector
+                  value={window.owfCategory ? (window.owfCategory(draft.category) || {}).id ?? null : null}
+                  onChange={id => { const c = window.owfCategory && window.owfCategory(id); setDraft(d => ({ ...d, category: c ? c.name : d.category })); }}
+                  kind={null} placeholder={T('Categoría')} />
               </Field>
               <Field label={T('Cántaro')} hint={T('Anclado a la categoría')} style={{ flex: 1 }}>
                 <TxdAnchoredJar category={draft.category} />

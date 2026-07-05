@@ -4,13 +4,21 @@
  * para soportar la selección múltiple. accent Pro = var(--info).
  * ──────────────────────────────────────────────────────────────────── */
 
-const JAR_META = {
-  'Necesidades básicas': { color: '#1E3A8A', icon: 'home' },
-  'Diversión':           { color: '#F59E0B', icon: 'celebration' },
-  'Ahorro':              { color: '#10B981', icon: 'savings' },
-  'Educación':           { color: '#0EA5E9', icon: 'school' },
-  'Reservas':            { color: '#8B5CF6', icon: 'shield' },
-};
+/* Cántaros canónicos: derivados de la fuente única (tx-catalog.js → OWF_JARS).
+ * Fallback inline por si el catálogo aún no cargó. JAR_CANON añade pct + short
+ * + orden para el pool de CATEGORÍAS agrupado por cántaro. */
+const _OWF_JARS = (typeof window !== 'undefined' && window.OWF_JARS) || [
+  { name: 'Necesidades básicas', percent: 55, icon: 'home',        color: '#1E3A8A' },
+  { name: 'Diversión',           percent: 10, icon: 'celebration', color: '#F59E0B' },
+  { name: 'Ahorro',              percent: 10, icon: 'savings',     color: '#10B981' },
+  { name: 'Educación',           percent: 10, icon: 'school',      color: '#0EA5E9' },
+  { name: 'Reservas',            percent: 10, icon: 'shield',      color: '#8B5CF6' },
+];
+const JAR_META = {}, JAR_CANON = {};
+_OWF_JARS.forEach((j, i) => {
+  JAR_META[j.name]  = { color: j.color, icon: j.icon };
+  JAR_CANON[j.name] = { color: j.color, icon: j.icon, pct: j.percent, short: j.name.toUpperCase(), order: i };
+});
 
 const CAT_ICON = {
   'Ingresos': 'payments', 'Supermercado': 'shopping_cart', 'Transporte': 'directions_bus',
@@ -46,5 +54,7 @@ const fmtMoney = (v) => {
   const sign = v > 0 ? '+' : v < 0 ? '−' : '';
   return sign + '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
+/* monto sin signo, siempre con símbolo y 2 decimales (pool agrupado) */
+const fmtAbs = (v) => '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-Object.assign(window, { TX, JAR_META, CAT_ICON, fmtMoney });
+Object.assign(window, { TX, JAR_META, JAR_CANON, CAT_ICON, fmtMoney, fmtAbs });

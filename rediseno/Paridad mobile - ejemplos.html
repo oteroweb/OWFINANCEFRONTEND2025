@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>OW Finance · Paridad mobile — ejemplos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="colors_and_type.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .material-icons{font-family:'Material Icons';font-style:normal;display:inline-flex;align-items:center;justify-content:center;line-height:1;-webkit-font-smoothing:antialiased}
+  body{margin:0;background:#EEF1F6;font-family:var(--font-body)}
+  .wrap{display:flex;flex-wrap:wrap;gap:56px;padding:64px 56px 96px;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:18px;width:390px}
+  .cap .n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:var(--brand-primary);color:#fff;font-family:var(--font-money);font-weight:700;font-size:14px;flex:0 0 auto}
+  .cap{display:flex;gap:11px;align-items:flex-start}
+  .cap h2{margin:0;font-family:var(--font-display);font-weight:700;font-size:19px;color:var(--fg-1);line-height:1.25}
+  .cap p{margin:4px 0 0;font-size:13px;line-height:1.5;color:var(--fg-2)}
+  .rec{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px}
+  .rec.yes{background:var(--income-soft);color:var(--income-fg)}
+  .rec.opt{background:var(--warning-soft);color:var(--warning-fg)}
+  .rec .material-icons{font-size:15px}
+
+  /* phone frame */
+  .phone{width:390px;box-sizing:border-box;background:#0B1220;border-radius:44px;padding:12px;box-shadow:0 26px 70px rgba(11,18,32,.34)}
+  .screen{background:var(--bg-canvas);border-radius:33px;overflow:hidden}
+  .statusbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-family:var(--font-money);font-weight:600;font-size:14px;color:var(--fg-1)}
+  .statusbar .r{display:flex;gap:6px;align-items:center}
+  .statusbar .material-icons{font-size:16px;color:var(--fg-1)}
+  .sheet{background:var(--surface-1);border-top-left-radius:24px;border-top-right-radius:24px;padding:8px 18px 26px;min-height:520px;box-shadow:0 -1px 0 var(--border-hairline)}
+  .grab{width:38px;height:4px;border-radius:999px;background:var(--slate-300);margin:8px auto 16px}
+  .sheet-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .sheet-h h3{margin:0;font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--fg-1)}
+  .sheet-h .x{width:32px;height:32px;border-radius:999px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--fg-2)}
+  .sheet-h .x .material-icons{font-size:18px}
+
+  .lbl{font-family:var(--font-body);font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:7px;display:block}
+  .field{margin-bottom:15px}
+  .ctrl{display:flex;align-items:center;gap:9px;border:1px solid var(--border-hairline);border-radius:var(--radius-sm);padding:12px 13px;background:var(--surface-2)}
+  .ctrl.tall{padding:13px}
+  .ctrl .material-icons{font-size:18px;color:var(--fg-3)}
+  .ctrl .v{flex:1;font-size:14px;color:var(--fg-1);font-weight:500}
+  .ctrl .chev{color:var(--fg-3)}
+  .money{font-family:var(--font-money);font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+  .mini{font-family:var(--font-body);font-size:10.5px;font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:.03em}
+  .row2{display:flex;gap:9px}
+  .note{font-size:11px;color:var(--fg-3);margin-top:20px;text-align:center}
+
+  /* cross-currency card */
+  .xcard{margin-top:6px;padding:13px;border-radius:var(--radius-md);background:color-mix(in srgb,var(--violet-500) 8%,var(--surface-1));border:1px solid color-mix(in srgb,var(--violet-500) 26%,transparent)}
+  .xcard .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+  .xcard .top .t{font-size:11.5px;font-weight:700;color:var(--violet-500)}
+  .xcard .top .rate{font-family:var(--font-money);font-size:11.5px;color:var(--fg-2)}
+  .xflow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .xflow .k{font-size:10.5px;color:var(--fg-3);margin-bottom:3px}
+  .xflow .a{font-family:var(--font-money);font-weight:700;font-size:16px;color:var(--fg-1);white-space:nowrap}
+  .xflow .mid{color:var(--fg-3)}
+
+  /* split rows */
+  .split{padding:12px;border-radius:var(--radius-md);background:var(--surface-2)}
+  .split .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .split .sh .t{font-size:12px;font-weight:600;color:var(--fg-2)}
+  .split .sh .sum{font-family:var(--font-money);font-weight:700;font-size:13px;color:var(--fg-1);white-space:nowrap}
+  .prow{background:var(--surface-1);border-radius:var(--radius-sm);box-shadow:var(--shadow-card);padding:11px;margin-bottom:8px}
+  .prow .acct{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .prow .dot{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+  .prow .acct .nm{font-size:13px;font-weight:600;color:var(--fg-1)}
+  .prow .acct .cur{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--fg-3);background:var(--surface-2);padding:2px 8px;border-radius:999px}
+  .prow .three{display:flex;gap:7px}
+  .prow .cell{flex:1;min-width:0}
+  .prow .cell.res{flex:0 0 82px;text-align:right}
+  .inp{display:flex;align-items:center;gap:5px;border:1px solid var(--border-hairline);border-radius:10px;padding:8px 9px;background:var(--surface-2)}
+  .inp .sym{font-family:var(--font-money);font-weight:700;font-size:13px;color:var(--fg-3)}
+  .inp .val{flex:1;min-width:0;font-family:var(--font-money);font-weight:700;font-size:14px;color:var(--fg-1);font-variant-numeric:tabular-nums}
+  .inp .u{font-size:10px;color:var(--fg-3);white-space:nowrap}
+  .inp.lock{background:var(--surface-3);justify-content:center;gap:5px}
+  .inp.lock .material-icons{font-size:13px;color:var(--fg-3)}
+  .resv{font-family:var(--font-money);font-weight:700;font-size:15px;color:var(--fg-1);font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:4px}
+
+  /* tags + provider */
+  .chips{display:flex;gap:8px;overflow:hidden;padding-bottom:2px}
+  .chip{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;padding:7px 12px 7px 10px;border-radius:999px;font-size:12.5px;white-space:nowrap;border:1px solid}
+  .chip .material-icons{font-size:15px}
+  .disc{display:inline-flex;align-items:center;gap:6px;margin-top:2px;color:var(--fg-2);font-size:12.5px;font-weight:600}
+  .disc .material-icons{font-size:17px}
+
+  /* invoice items */
+  .items{padding:12px;border-radius:var(--radius-md);background:var(--surface-2);display:flex;flex-direction:column;gap:9px}
+  .items>.hd{font-size:12px;font-weight:600;color:var(--fg-2)}
+  .item{background:var(--surface-1);border-radius:var(--radius-sm);box-shadow:var(--shadow-card);padding:11px;display:flex;flex-direction:column;gap:8px}
+  .item .l1{display:flex;gap:8px}
+  .item .l1 .nm{flex:1;font-size:13px;font-weight:600;color:var(--fg-1)}
+  .item .l1 .amt{font-family:var(--font-money);font-weight:700;font-size:14px;color:var(--fg-1);white-space:nowrap}
+  .item .l2{display:flex;gap:7px}
+  .item .l2 .pill{flex:1;display:flex;align-items:center;gap:6px;border:1px solid var(--border-hairline);border-radius:10px;padding:8px 9px;background:var(--surface-2);font-size:11.5px;color:var(--fg-1);font-weight:500;min-width:0}
+  .item .l2 .pill .material-icons{font-size:14px;flex:0 0 auto}
+  .item .l2 .pill .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .jar{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--fg-2)}
+  .item .jar .d{width:8px;height:8px;border-radius:3px;flex:0 0 auto}
+  .addi{display:inline-flex;align-items:center;gap:5px;color:var(--brand-primary);font-size:12.5px;font-weight:600;padding:2px}
+  .addi .material-icons{font-size:16px}
+  .itot{display:flex;align-items:baseline;justify-content:space-between;padding:11px 13px;border-radius:var(--radius-md);background:var(--surface-2)}
+  .itot .k{font-size:13px;color:var(--fg-2)}
+  .itot .v{font-family:var(--font-money);font-weight:700;font-size:22px;color:var(--fg-1);white-space:nowrap}
+
+  /* doble tasa (paralelo + BCV) */
+  .curtag{font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--fg-2);background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:999px;padding:5px 11px;white-space:nowrap}
+  .rates{margin-top:9px;border:1px solid var(--border-hairline);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-1)}
+  .rrow{display:flex;align-items:center;justify-content:space-between;padding:10px 13px}
+  .rrow.bcv{border-top:1px dashed var(--border-hairline);background:color-mix(in srgb,var(--cyan-500) 5%,var(--surface-1))}
+  .rrow .rk{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--fg-2)}
+  .rrow .rk .dot2{width:8px;height:8px;border-radius:3px;flex:0 0 auto}
+  .rrow .rt{font-family:var(--font-money);font-size:11.5px;font-weight:600;color:var(--fg-3);font-variant-numeric:tabular-nums}
+  .rrow .upd{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-body);font-size:10.5px;font-weight:600;color:var(--cyan-700);background:var(--cyan-100);padding:2px 7px;border-radius:999px}
+  .rrow .upd .material-icons{font-size:12px}
+  .rrow .rv{font-family:var(--font-money);font-weight:700;font-size:15px;color:var(--fg-1);font-variant-numeric:tabular-nums;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 1 · CRUCE DE MONEDA -->
+  <div class="col" id="ej1">
+    <div class="cap">
+      <span class="n">1</span>
+      <div>
+        <h2>Cruce de moneda (transferencia)</h2>
+        <p>Cuando envías desde una cuenta en una moneda a otra en moneda distinta (p. ej. cuenta USD → cuenta VES), aparece esta tarjeta: muestra la <b>tasa</b> y cuánto <b>envías</b> vs cuánto <b>llega</b> ya convertido. Hoy solo existe en desktop.</p>
+        <span class="rec yes"><span class="material-icons">check</span>Recomiendo incluirlo</span>
+      </div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r"><span class="material-icons">signal_cellular_alt</span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sheet-h"><h3>Transferencia</h3><div class="x"><span class="material-icons">close</span></div></div>
+
+        <div class="field"><span class="lbl">Monto</span>
+          <div class="ctrl tall"><span class="money" style="font-size:22px;color:var(--fg-1)">$&nbsp;120.00</span></div>
+        </div>
+        <div class="field"><span class="lbl">Desde → Hacia</span>
+          <div class="row2">
+            <div class="ctrl" style="flex:1"><span class="dot" style="width:9px;height:9px;border-radius:3px;background:var(--cyan-500)"></span><span class="v">Zelle · USD</span></div>
+            <div class="ctrl" style="flex:0 0 auto;padding:12px"><span class="material-icons" style="color:var(--fg-3)">east</span></div>
+            <div class="ctrl" style="flex:1"><span class="dot" style="width:9px;height:9px;border-radius:3px;background:var(--amber-500)"></span><span class="v">Bs. Mercantil</span></div>
+          </div>
+        </div>
+
+        <div class="xcard">
+          <div class="top"><span class="t">Cruce de moneda · USD → VES</span><span class="rate">tasa 51.40</span></div>
+          <div class="xflow">
+            <div><div class="k">Envías</div><div class="a">$&nbsp;120.00</div></div>
+            <span class="material-icons mid">east</span>
+            <div style="text-align:right"><div class="k">Llega</div><div class="a">Bs.&nbsp;6.168,00</div></div>
+          </div>
+        </div>
+        <div class="note">La tarjeta solo aparece si las dos cuentas tienen monedas distintas.</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 2 · TASA POR FILA (SPLIT) -->
+  <div class="col" id="ej2">
+    <div class="cap">
+      <span class="n">2</span>
+      <div>
+        <h2>Tasa por fila (pago múltiple)</h2>
+        <p>Cuando un mismo gasto se paga con <b>varias cuentas</b> y alguna no está en USD, cada fila lleva su propia <b>tasa</b> editable (USD→Bs) y muestra el <b>resultado</b> convertido. Las cuentas en USD bloquean la tasa en 1.00. Hoy solo en desktop.</p>
+        <span class="rec opt"><span class="material-icons">bolt</span>Potente pero de nicho — opcional</span>
+      </div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r"><span class="material-icons">signal_cellular_alt</span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sheet-h"><h3>Pago múltiple</h3><div class="x"><span class="material-icons">close</span></div></div>
+        <div class="split">
+          <div class="sh"><span class="t">Pago compuesto · 2 cuentas</span><span class="sum">Σ ≈ $&nbsp;95.00</span></div>
+
+          <div class="prow">
+            <div class="acct"><span class="dot" style="background:var(--cyan-500)"></span><span class="nm">Zelle</span><span class="cur">USD</span></div>
+            <div class="three">
+              <div class="cell"><div class="mini" style="margin-bottom:4px">Monto · USD</div><div class="inp"><span class="sym">$</span><span class="val">60.00</span></div></div>
+              <div class="cell"><div class="mini" style="margin-bottom:4px">Tasa</div><div class="inp lock"><span class="material-icons">lock</span><span class="val" style="flex:0;color:var(--fg-3)">1.00</span></div></div>
+              <div class="cell res"><div class="mini" style="margin-bottom:4px">Resultado</div><div class="resv">$&nbsp;60.00</div></div>
+            </div>
+          </div>
+
+          <div class="prow">
+            <div class="acct"><span class="dot" style="background:var(--amber-500)"></span><span class="nm">Bs. Mercantil</span><span class="cur">VES</span></div>
+            <div class="three">
+              <div class="cell"><div class="mini" style="margin-bottom:4px">Monto · VES</div><div class="inp"><span class="sym">Bs</span><span class="val">1799</span></div></div>
+              <div class="cell"><div class="mini" style="margin-bottom:4px">USD→VES</div><div class="inp"><span class="val">51.40</span><span class="u">Bs/$</span></div></div>
+              <div class="cell res"><div class="mini" style="margin-bottom:4px">Resultado</div><div class="resv">$&nbsp;35.00</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="note">Cada fila = una cuenta. La tasa solo aparece en cuentas que no son USD.</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 3 · PROVEEDOR + FECHA + ETIQUETAS -->
+  <div class="col" id="ej3">
+    <div class="cap">
+      <span class="n">3</span>
+      <div>
+        <h2>Proveedor + fecha + etiquetas</h2>
+        <p>Lo que acabamos de añadir en desktop, llevado al sheet mobile: selector de <b>proveedor</b>, <b>fecha</b>, y las <b>etiquetas</b> como chips (3 relevantes + “más” en Lite, todas en Pro).</p>
+        <span class="rec yes"><span class="material-icons">check</span>Recomiendo incluirlo (ya existe la lógica)</span>
+      </div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r"><span class="material-icons">signal_cellular_alt</span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sheet-h"><h3>Nuevo gasto</h3><div class="x"><span class="material-icons">close</span></div></div>
+
+        <div class="field"><span class="lbl">Categoría</span>
+          <div class="ctrl"><span class="material-icons" style="color:var(--red-500)">restaurant</span><span class="v">Comida fuera</span><span class="material-icons chev">expand_more</span></div>
+        </div>
+        <div class="field">
+          <div class="row2">
+            <div style="flex:1"><span class="lbl">Proveedor</span><div class="ctrl"><span class="material-icons">storefront</span><span class="v">La Casa del Sabor</span></div></div>
+            <div style="flex:1"><span class="lbl">Fecha</span><div class="ctrl"><span class="material-icons">today</span><span class="v">Hoy</span></div></div>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">Etiquetas</span>
+          <div class="chips">
+            <span class="chip" style="background:var(--red-500);color:#fff;border-color:var(--red-500);font-weight:700"><span class="material-icons" style="color:#fff">bolt</span>Impulso</span>
+            <span class="chip" style="background:color-mix(in srgb,var(--emerald-500) 7%,#fff);color:var(--fg-1);border-color:color-mix(in srgb,var(--emerald-500) 34%,var(--border-hairline))"><span class="material-icons" style="color:var(--emerald-500)">event_available</span>Planificado</span>
+            <span class="chip" style="background:color-mix(in srgb,var(--cyan-500) 7%,#fff);color:var(--fg-1);border-color:color-mix(in srgb,var(--cyan-500) 34%,var(--border-hairline))"><span class="material-icons" style="color:var(--cyan-500)">autorenew</span>Recurr…</span>
+            <span class="chip" style="border-style:dashed;border-color:var(--border-hairline);color:var(--fg-2);font-weight:600;padding:7px 12px"><span class="material-icons">more_horiz</span>3 más</span>
+          </div>
+        </div>
+        <div class="note">Idéntico a desktop: chips scrollables + “+ Etiqueta” para crear.</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 4 · FACTURA CON IMPUESTO + CÁNTARO POR ÍTEM -->
+  <div class="col" id="ej4">
+    <div class="cap">
+      <span class="n">4</span>
+      <div>
+        <h2>Factura: impuesto + cántaro por ítem</h2>
+        <p>Desglosar un gasto línea por línea, cada ítem con su <b>categoría</b>, su <b>impuesto</b> (IVA/exento) y su <b>cántaro</b> anclado a la categoría. El total se suma solo. Hoy en mobile solo se captura el monto total.</p>
+        <span class="rec opt"><span class="material-icons">bolt</span>Denso en mobile — opcional</span>
+      </div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r"><span class="material-icons">signal_cellular_alt</span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sheet-h"><h3>Detalle / factura</h3><div class="x"><span class="material-icons">close</span></div></div>
+        <div class="items">
+          <div class="hd">Ítems de la factura</div>
+
+          <div class="item">
+            <div class="l1"><span class="nm">Arroz 1kg</span><span class="amt">$&nbsp;3.20</span></div>
+            <div class="l2">
+              <span class="pill"><span class="material-icons" style="color:var(--emerald-500)">shopping_cart</span><span class="txt">Mercado</span></span>
+              <span class="pill"><span class="material-icons" style="color:var(--fg-3)">percent</span><span class="txt">IVA 16%</span></span>
+            </div>
+            <div class="jar"><span class="d" style="background:var(--navy-500)"></span>Necesidades · 50%</div>
+          </div>
+
+          <div class="item">
+            <div class="l1"><span class="nm">Refresco</span><span class="amt">$&nbsp;1.80</span></div>
+            <div class="l2">
+              <span class="pill"><span class="material-icons" style="color:var(--red-500)">local_bar</span><span class="txt">Antojos</span></span>
+              <span class="pill"><span class="material-icons" style="color:var(--fg-3)">block</span><span class="txt">Exento</span></span>
+            </div>
+            <div class="jar"><span class="d" style="background:var(--amber-500)"></span>Estilo de vida · 30%</div>
+          </div>
+
+          <span class="addi"><span class="material-icons">add</span>Añadir ítem</span>
+        </div>
+        <div style="height:12px"></div>
+        <div class="itot"><span class="k">Total (suma de ítems)</span><span class="v">$&nbsp;5.00</span></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 5 · DOBLE TASA (PARALELO + BCV) -->
+  <div class="col" id="ej5">
+    <div class="cap">
+      <span class="n">5</span>
+      <div>
+        <h2>Monto en Bs → equivalente paralelo + BCV</h2>
+        <p>Al escribir un monto en bolívares, debajo aparece el equivalente en dólares a <b>nuestra tasa (paralelo)</b> y también al <b>BCV oficial</b>, que la app actualiza a diario. Así se ve el mismo gasto medido con las dos tasas.</p>
+        <span class="rec yes"><span class="material-icons">check</span>Sub-línea bajo el monto en Bs</span>
+      </div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r"><span class="material-icons">signal_cellular_alt</span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="sheet-h"><h3>Nuevo gasto</h3><div class="x"><span class="material-icons">close</span></div></div>
+
+        <div class="field"><span class="lbl">Monto</span>
+          <div class="ctrl tall" style="justify-content:space-between">
+            <span class="money" style="font-size:24px;color:var(--fg-1)">Bs&nbsp;1.000,00</span>
+            <span class="curtag">Bs ▾</span>
+          </div>
+
+          <!-- Doble tasa -->
+          <div class="rates">
+            <div class="rrow">
+              <span class="rk"><span class="dot2" style="background:var(--brand-primary)"></span>Paralelo <span class="rt">550,00</span></span>
+              <span class="rv">≈ $&nbsp;1,82</span>
+            </div>
+            <div class="rrow bcv">
+              <span class="rk"><span class="dot2" style="background:var(--cyan-500)"></span>BCV <span class="rt">500,00</span> <span class="upd"><span class="material-icons">schedule</span>hoy</span></span>
+              <span class="rv">≈ $&nbsp;2,00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field"><span class="lbl">Categoría</span>
+          <div class="ctrl"><span class="material-icons" style="color:var(--red-500)">restaurant</span><span class="v">Comida fuera</span><span class="material-icons chev">expand_more</span></div>
+        </div>
+        <div class="note">La tasa de referencia (paralelo o BCV) se elige en Ajustes; el BCV se sincroniza cada día.</div>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>

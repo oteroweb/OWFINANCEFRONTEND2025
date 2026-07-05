@@ -21,6 +21,7 @@
               "components/buttons/**",
               "components/chips/**",
               "components/primitives/**",
+              "doc-page.js",
               "marketing.js",
               "onboarding/**",
               "period-selector.js",

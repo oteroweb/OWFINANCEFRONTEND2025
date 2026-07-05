@@ -343,6 +343,111 @@
       </div>
     </section>
 
+    <!-- ============ TRANSACCIONES ============ -->
+    <section class="sec">
+      <div class="sec-head">
+        <span class="si"><span class="material-icons">receipt_long</span></span>
+        <h2>Transacciones · formulario y categorías</h2>
+        <span class="meta" data-group-meta="tx"></span>
+      </div>
+      <p class="sec-sub">De la auditoría del formulario + la unificación del pool de categorías. Lo verde se hizo esta sesión sobre los kits reales (desktop + mobile) usando dos helpers raíz compartidos: <code>tx-catalog.js</code> (categorías→cántaros) y <code>tx-summary.js</code> (resumen + validación).</p>
+      <div class="tasks" data-group="tx">
+
+        <div class="task" data-id="tx-catalog" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Catálogo común de categorías</div><div class="t-desc"><code>tx-catalog.js</code>: cántaros canónicos (j1–j5, 55/10/10/10/10) + 15 categorías comunes con su <code>jarId</code>. Fuente única para ambos kits.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-anchor" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Cántaro anclado a la categoría (regla unificada)</div><div class="t-desc">Eliminado el selector manual de cántaro en los 3 sitios que lo violaban: Lite, edición del detalle desktop y form mobile. El cántaro entra derivado (solo lectura).</div></div>
+          <div class="t-right"><span class="tag dec">Decisión aplicada</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-selector" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">2.1 · Selector de categorías B+C</div><div class="t-desc">Popover (desktop) + bottom sheet (mobile): buscador siempre visible (C) + cuadrícula agrupada y coloreada por cántaro (B). Cableado a ambos forms.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-preview" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">2.6 · Transaction Preview Card</div><div class="t-desc">Reemplazó el bloque JSON crudo por un resumen en lenguaje natural ("Registras un gasto de $45.00 desde BofA…"). JSON queda colapsado para devs.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-savestates" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">2.5 · Estados de guardado + validación</div><div class="t-desc">Botón idle → Guardando… (spinner) → Registrado (✓). Se deshabilita con motivos legibles cuando faltan datos. Ambos forms.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-confirm" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">2.4 · Confirmación híbrida (parte preview)</div><div class="t-desc">Las operaciones complejas (split, factura, comisión, transfer, ajuste) resaltan el preview y el botón pasa a "Confirmar y registrar". Falta el toast "Deshacer" (ver pendiente abajo).</div></div>
+          <div class="t-right"><span class="tag rec">Hecho parcial</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-empty" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">2.2 · Estado vacío del editor de factura</div><div class="t-desc">Al activar el detalle: ícono + texto + CTA "Añadir primer ítem" en vez de una fila en blanco. Desktop y mobile.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-ajuste" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">2.3 · Modo Ajuste en mobile</div><div class="t-desc">4.º tab + pantalla: cuenta a ajustar (+ saldo actual), nuevo saldo, preview del delta con color/flecha y motivo.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-dup" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Duplicar transacción</div><div class="t-desc">Opción "Duplicar" en el detalle: clona el movimiento debajo del original y abre el detalle de la copia.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-report" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Reporte + vista del pool unificado</div><div class="t-desc">Diagnóstico, comparativa antes/después y mapeo 18→12 (<code>redesign/Reporte Pool de Categorías.html</code>) + vista en contexto (<code>redesign/Transacciones Pool Unificado.html</code>).</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+
+        <div class="task" data-id="tx-poolcode" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Migrar el pool de filtro de producción en código</div><div class="t-desc">Hecho en la vista viva <code>redesign/Transacciones Pro.html</code>: el pool de CATEGORÍAS ahora se agrupa por cántaro (orden y % canónicos de <code>tx-catalog.js</code>), con total por cántaro y monto por categoría formateados (<code>$136.42</code>, sin coma flotante ni wrapping). El filtro por categoría sigue funcionando.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-provtags" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Proveedor + Etiquetas en el formulario</div><div class="t-desc">Desktop (Lite + Pro): <code>provider_id</code> (autocomplete con crear) y <code>tags</code> (chips multi-selección con colores de sistema + crear tag de usuario). Lite muestra 3 etiquetas relevantes + “más” y el proveedor bajo “Más detalles”. El payload ya envía <code>provider_id</code> y <code>tags:number[]</code>. Pendiente: portarlo al kit mobile legacy.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-undo" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">2.4 · Toast “Deshacer” tras guardar</div><div class="t-desc">Cerrada la parte B del híbrido: al registrar aparece un toast en el shell (<code>window.owToast</code>) con el resumen del movimiento + acción “Deshacer” (auto-cierre 4s, barra de progreso, respeta reduced-motion). Aplica a ambos forms.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-money-wrap" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">S1 · Wrapping de cifras de dinero</div><div class="t-desc">Resuelto: <code>tfMoney</code> usa NBSP entre símbolo y cifra (saldos del Picker, previews de cruce, total factura, resultado del split) y el resumen de comisión lleva <code>white-space:nowrap</code>. Ninguna cifra se parte en dos líneas.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-mobile-parity" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Paridad mobile del form</div><div class="t-desc">Resuelto: el <code>TransactionForm</code> es un solo componente responsive (el mismo sheet mobile del <code>SmartTransactionModal</code>), así que cruce de moneda, tasa por fila (tras el switch “Pago múltiple”), proveedor/fecha/etiquetas y factura con impuesto+cántaro por ítem ya sirven en mobile y desktop. <b>Alcance aprobado:</b> 1 sí · 2 tras check · 3 sí · 4 sí (mobile+desktop) · 5 sí.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-dual-rate" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Doble tasa: paralelo + BCV bajo el monto</div><div class="t-desc">Al escribir un monto en Bs (gasto/ingreso Pro), debajo aparece el equivalente en USD al <b>paralelo</b> (tasa actual) y al <b>BCV</b> (tasa oficial, con chip “hoy”), leyendo <code>DEFAULT_RATES.VES.{current, official}</code>. Listo para sincronizar el BCV a diario.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-comm-touch" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Mini-tabs de comisión ≥ 44px en mobile</div><div class="t-desc">Resuelto: las 3 mini-tabs (fija / pago móvil / porcentaje) tienen ahora <code>min-height:44px</code> con contenido centrado — cumplen el mínimo táctil.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+        <div class="task" data-id="tx-detail-selector" data-state="done">
+          <button class="cyc"><span class="material-icons">check</span></button>
+          <div class="t-body"><div class="t-title">Selector B+C también en factura y detalle-edición</div><div class="t-desc">Resuelto: el editor de ítems (factura) y la edición del detalle usan ahora el <code>CategorySelector</code> B+C (buscador + cuadrícula por cántaro). El detalle guarda por nombre vía puente id↔nombre (<code>owfCategory</code>); el cántaro sigue anclado a la categoría.</div></div>
+          <div class="t-right"><span class="tag rec">Hecho</span><span class="statepill"></span></div>
+        </div>
+
+      </div>
+    </section>
+
     <!-- ============ DECISIONES ABIERTAS ============ -->
     <section class="sec">
       <div class="sec-head">
@@ -356,6 +461,8 @@
         <div class="q"><span class="material-icons qi">help</span><p><b>Alcance de mecánicas:</b> ¿priorizamos rachas + metas con cierre para el primer corte, o prefieres empezar por extender niveles e insignias al perfil permanente?</p></div>
         <div class="q"><span class="material-icons qi">help</span><p><b>Salud del DS:</b> el aviso "0 componentes" no bloquea nada (todo funciona). ¿Lo dejamos en A (vigente) o autorizas el refactor B para silenciarlo de raíz?</p></div>
         <div class="q"><span class="material-icons qi">help</span><p><b>Tono:</b> el objetivo es 3/10 (sobrio con calidez puntual). ¿Lo mantenemos, o lo movemos en alguna superficie concreta?</p></div>
+        <div class="q"><span class="material-icons qi">help</span><p><b>Pool de filtro de producción:</b> el diseño unificado ya está aprobado. ¿Avanzo con la migración en código (mapeo 18→12 + formato de moneda + agrupado por cántaro) en la vista real de Transacciones, o lo dejamos para la siguiente tanda?</p></div>
+        <div class="q"><span class="material-icons qi">help</span><p><b>Paridad mobile:</b> ¿qué llevamos del desktop al form mobile — cruce de moneda, proveedor/fecha, impuesto+cántaro por ítem — o lo mantenemos deliberadamente más simple en teléfono?</p></div>
       </div>
     </section>
 

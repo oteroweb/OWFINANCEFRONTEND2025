@@ -12,7 +12,39 @@ const { useState: useTfState, useMemo: useTfMemo } = React;
 
 function tfMoney(n, sym = '$') {
   const v = Math.abs(Number(n) || 0);
-  return `${sym} ${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // NBSP entre símbolo y cifra: nunca se parten en dos líneas.
+  return `${sym}\u00A0${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/* Desglose de doble tasa: monto en moneda extranjera → equivalente en USD
+ * al PARALELO (tasa actual del usuario) y al BCV (tasa oficial, sincronizada
+ * a diario). rates = { [cur]: { current, official } }. */
+function TfRateBreakdown({ foreignAmount, currency, rates }) {
+  if (currency === 'USD') return null;
+  const r = (rates || window.DEFAULT_RATES || {})[currency] || {};
+  const cur = r.current || 1;
+  const off = r.official || cur;
+  const amt = Math.abs(Number(foreignAmount) || 0);
+  const fmtRate = n => Number(n).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const rowStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 13px' };
+  const keyStyle = { display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, color: 'var(--fg-2)' };
+  const rateStyle = { fontFamily: 'var(--font-money)', fontSize: 11.5, color: 'var(--fg-3)', fontVariantNumeric: 'tabular-nums' };
+  const valStyle = { fontFamily: 'var(--font-money)', fontWeight: 700, fontSize: 15, color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' };
+  return (
+    <div style={{ border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'var(--surface-1)' }}>
+      <div style={rowStyle}>
+        <span style={keyStyle}><span style={{ width: 8, height: 8, borderRadius: 3, background: 'var(--brand-primary)', flexShrink: 0 }} />{t('Paralelo')} <span style={rateStyle}>{fmtRate(cur)}</span></span>
+        <span style={valStyle}>≈ {tfMoney(amt / cur)}</span>
+      </div>
+      <div style={{ ...rowStyle, borderTop: '1px dashed var(--border-hairline)', background: 'color-mix(in srgb, var(--info) 5%, var(--surface-1))' }}>
+        <span style={keyStyle}>
+          <span style={{ width: 8, height: 8, borderRadius: 3, background: 'var(--info)', flexShrink: 0 }} />{t('BCV')} <span style={rateStyle}>{fmtRate(off)}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontFamily: 'var(--font-body)', fontSize: 10.5, fontWeight: 600, color: 'var(--info-fg)', background: 'var(--info-soft)', padding: '2px 7px', borderRadius: 999 }}><span className="material-icons" style={{ fontSize: 12 }}>schedule</span>{t('hoy')}</span>
+        </span>
+        <span style={valStyle}>≈ {tfMoney(amt / off)}</span>
+      </div>
+    </div>
+  );
 }
 
 /* El cántaro está anclado a la categoría: cada categoría define su jar_id.
@@ -75,6 +107,9 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   const [categoryId,setCategoryId]= useTfState(null);
   const [jarId,     setJarId]     = useTfState(isLite ? 'j1' : null);
   const [providerId,setProviderId]= useTfState(null);
+  const [tags,      setTags]      = useTfState([]);
+  const [liteMore,  setLiteMore]  = useTfState(false);
+  const [providers, setProviders] = useTfState(window.SAMPLE_PROVIDERS);
   const [accountId, setAccountId] = useTfState(1);
   const [toAccountId,setToAccountId] = useTfState(2);
   const [includeBal,setIncludeBal]= useTfState(true);
@@ -100,7 +135,12 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   const accountOpts = acc.map(a => ({ value: a.id, label: a.name, sub: `${window.t(window.ACCOUNT_TYPES[a.type].label)} · ${a.currency}`, color: a.color, right: tfMoney(a.balance, window.CURRENCIES[a.currency].symbol) }));
   const jarOpts = window.SAMPLE_JARS.map(j => ({ value: j.id, label: window.t(j.name), sub: `${j.percent}% · ${window.t('disp.')} ${tfMoney(j.amount)}`, color: j.color }));
   const catOpts = window.SAMPLE_CATEGORIES.map(c => ({ value: c.id, label: window.t(c.name), icon: c.icon }));
-  const provOpts = [{ value: null, label: window.t('Sin proveedor'), icon: 'block' }, ...window.SAMPLE_PROVIDERS.map(p => ({ value: p.id, label: p.name, icon: 'storefront' }))];
+  const provOpts = [{ value: null, label: window.t('Sin proveedor'), icon: 'block' }, ...providers.map(p => ({ value: p.id, label: p.name, icon: 'storefront' }))];
+  const createProvider = (name) => {
+    const id = 'new-' + Date.now();
+    setProviders(prev => [...prev, { id, name }]);
+    return id;
+  };
   const itemTaxOpts = [{ value: null, label: window.t('Sin impuesto') }, ...window.SAMPLE_TAXES.filter(t => t.applies_to !== 'payment').map(t => ({ value: t.id, label: t.name }))];
 
   const selAccount = acc.find(a => a.id === accountId);
@@ -134,8 +174,8 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   const buildPayload = () => {
     const txType = window.TX_TYPES.find(t => t.slug === type);
     const base = { name: concept || (type === 'income' ? 'Ingreso' : 'Movimiento'), transaction_type_id: txType?.id, date: dateLabel === 'Hoy' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : dateLabel, include_in_balance: includeBal };
-    if (isLite) return { ...base, amount: txType.sign * effectiveAmount, jar_id: jarForCategory(categoryId)?.id || null, category_id: categoryId };
-    if (type === 'transfer') return { ...base, amount: Number(amount) || 0, commission: commObj, payments: [ { account_id: accountId, amount: -(Number(amount) || 0), rate: 1 }, { account_id: toAccountId, amount: xferArrives, rate: xferCross ? +xferRate.toFixed(4) : 1 } ] };
+    if (isLite) return { ...base, amount: txType.sign * effectiveAmount, jar_id: jarForCategory(categoryId)?.id || null, category_id: categoryId, provider_id: providerId, tags };
+    if (type === 'transfer') return { ...base, amount: Number(amount) || 0, commission: commObj, tags, payments: [ { account_id: accountId, amount: -(Number(amount) || 0), rate: 1 }, { account_id: toAccountId, amount: xferArrives, rate: xferCross ? +xferRate.toFixed(4) : 1 } ] };
     if (type === 'ajuste') return { name: concept || 'Ajuste manual', transaction_type_id: txType?.id, account_id: accountId, target_balance: Number(targetBalance) || 0, include_in_balance: includeBal };
     // income / expense
     const sign = type === 'income' ? 1 : -1;
@@ -143,7 +183,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
       ? payments.map(p => ({ account_id: p.accountId, amount: sign * (Number(p.amount) || 0), rate: Number(p.rate) || 1 }))
       : [{ account_id: accountId, amount: sign * (currency === selAccount?.currency ? effectiveAmount : effectiveAmount), rate: currency === 'USD' ? 1 : rateForCur, rate_is_current: currency !== 'USD' }];
     const it = itemsOn ? items.map(i => ({ name: i.name, quantity: Number(i.qty) || 1, amount: Number(i.amount) || 0, tax_id: i.taxId, jar_id: jarForCategory(i.categoryId)?.id || null, category_id: i.categoryId })) : [{ name: concept || 'Movimiento', amount: effectiveAmount, category_id: categoryId, jar_id: jarForCategory(categoryId)?.id || null }];
-    return { ...base, amount: sign * effectiveAmount, provider_id: providerId, category_id: categoryId, jar_id: jarForCategory(categoryId)?.id || null, commission: commObj, payments: pay, items: it };
+    return { ...base, amount: sign * effectiveAmount, provider_id: providerId, tags, category_id: categoryId, jar_id: jarForCategory(categoryId)?.id || null, commission: commObj, payments: pay, items: it };
   };
   const payload = buildPayload();
 
@@ -219,6 +259,23 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
           )}
         </div>
 
+        <TfTags selected={tags} onChange={setTags} accent={accent} mode="lite" />
+
+        {/* Más detalles → proveedor (colapsado en Lite) */}
+        <div>
+          <button type="button" onClick={() => setLiteMore(m => !m)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-2)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, padding: 0 }}>
+            <span className="material-icons" style={{ fontSize: 17, transition: 'transform 160ms', transform: liteMore ? 'rotate(180deg)' : 'none' }}>expand_more</span>
+            {liteMore ? t('Menos detalles') : t('Más detalles')}
+          </button>
+          {liteMore && (
+            <div style={{ marginTop: 12 }}>
+              <Field label={t('Proveedor / Comercio')} hint={t('Opcional')}>
+                <Picker value={providerId} onChange={setProviderId} options={provOpts} placeholder={t('Proveedor / Comercio')} leadingIcon="storefront" onCreate={createProvider} createLabel={t('Crear proveedor')} />
+              </Field>
+            </div>
+          )}
+        </div>
+
         <TfReview view={summaryView} payload={payload} accent={accent} onClose={onClose}
           onSubmit={() => onSubmit && onSubmit(payload)}
           label={type === 'income' ? t('Registrar ingreso') : t('Registrar gasto')} />
@@ -243,7 +300,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
       {type === 'ajuste' && (
         <>
           <Field label={t("Cuenta a ajustar")} required>
-            <Picker value={accountId} onChange={setAccountId} options={accountOpts} />
+            <Picker value={accountId} onChange={setAccountId} options={accountOpts} searchable />
           </Field>
           <Field label={t('Saldo objetivo')} hint={`${t('Saldo actual:')} ${tfMoney(selAccount?.balance, window.CURRENCIES[selAccount?.currency || 'USD'].symbol)}`}>
             <MoneyInput value={targetBalance} onChange={setTargetBalance} currency={selAccount?.currency || 'USD'} accent={accent} />
@@ -268,11 +325,11 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
           <MoneyInput value={amount} onChange={setAmount} currency={selAccount?.currency || 'USD'} accent={accent} autoFocus />
           <div style={{ display: 'flex', flexDirection: rowDir, gap: G, alignItems: isMobile ? 'stretch' : 'flex-end' }}>
             <Field label={t("Desde (origen)")} style={{ flex: 1 }} required>
-              <Picker value={accountId} onChange={setAccountId} options={accountOpts} />
+              <Picker value={accountId} onChange={setAccountId} options={accountOpts} searchable />
             </Field>
             <div style={{ paddingBottom: 11 }}><span className="material-icons" style={{ fontSize: 22, color: 'var(--fg-3)' }}>arrow_forward</span></div>
             <Field label={t("Hacia (destino)")} style={{ flex: 1 }} required>
-              <Picker value={toAccountId} onChange={setToAccountId} options={accountOpts.filter(o => o.value !== accountId)} />
+              <Picker value={toAccountId} onChange={setToAccountId} options={accountOpts.filter(o => o.value !== accountId)} searchable />
             </Field>
           </div>
           {xferCross && (
@@ -308,18 +365,15 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
             </div>
           )}
 
-          {/* cross-currency single-payment preview */}
+          {/* cross-currency single-payment preview — doble tasa (paralelo + BCV) */}
           {!splitOn && currency !== 'USD' && !itemsOn && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', borderRadius: 'var(--radius-sm)', background: 'var(--info-soft)' }}>
-              <span className="material-icons" style={{ fontSize: 17, color: 'var(--info-fg)' }}>currency_exchange</span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--fg-1)' }}>{t("tasa")} {currency} {rateForCur} · ≈ <strong>{tfMoney(usdEquiv)}</strong></span>
-            </div>
+            <TfRateBreakdown foreignAmount={effectiveAmount} currency={currency} rates={RATES} />
           )}
 
           {/* account / split */}
           {!splitOn ? (
             <Field label={t("Cuenta de origen")} required>
-              <Picker value={accountId} onChange={setAccountId} options={accountOpts} />
+              <Picker value={accountId} onChange={setAccountId} options={accountOpts} searchable />
             </Field>
           ) : (
             <TfPaymentsEditor payments={payments} setPayments={setPayments} accountOpts={accountOpts} accounts={acc} total={splitTotal} />
@@ -342,13 +396,16 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
 
           {/* provider + date */}
           <div style={{ display: 'flex', flexDirection: rowDir, gap: G }}>
-            <Field label={t("Proveedor")} style={{ flex: 1 }}>
-              <Picker value={providerId} onChange={setProviderId} options={provOpts} placeholder={t("Proveedor")} />
+            <Field label={t("Proveedor / Comercio")} style={{ flex: 1 }}>
+              <Picker value={providerId} onChange={setProviderId} options={provOpts} placeholder={t("Proveedor / Comercio")} leadingIcon="storefront" onCreate={createProvider} createLabel={t("Crear proveedor")} />
             </Field>
             <Field label="Fecha" style={{ flex: 1 }}>
               <Picker value={dateLabel} onChange={setDateLabel} options={[{ value: 'Hoy', label: window.t('Hoy'), icon: 'today' }, { value: 'Ayer', label: window.t('Ayer'), icon: 'history' }, { value: 'Personalizada', label: window.t('Otra fecha…'), icon: 'calendar_month' }]} />
             </Field>
           </div>
+
+          {/* etiquetas (Pro: todas) */}
+          <TfTags selected={tags} onChange={setTags} accent={accent} mode="pro" />
 
           {/* advanced toggles */}
           <div style={{ display: 'flex', flexDirection: rowDir, gap: G }}>
@@ -385,7 +442,21 @@ function TfReview({ view, payload, accent, onClose, onSubmit, label }) {
     setStatus('loading');
     setTimeout(() => {
       setStatus('success');
-      setTimeout(() => { onSubmit && onSubmit(); setStatus('idle'); }, 720);
+      setTimeout(() => {
+        onSubmit && onSubmit();
+        setStatus('idle');
+        // Parte B del híbrido: confirmación + Deshacer en el shell de la app.
+        if (window.owToast) {
+          const labels = { expense: 'Gasto', income: 'Ingreso', transfer: 'Transferencia', ajuste: 'Ajuste' };
+          window.owToast({
+            message: t(labels[view.type] || 'Movimiento') + ' ' + t('registrado'),
+            sub: summary,
+            accent: accent,
+            actionLabel: t('Deshacer'),
+            onAction: () => window.owToast({ message: t('Movimiento descartado'), icon: 'undo', accent: 'var(--warning)', duration: 2600 }),
+          });
+        }
+      }, 720);
     }, 760);
   };
 
@@ -443,6 +514,109 @@ function TfReview({ view, payload, accent, onClose, onSubmit, label }) {
   );
 }
 
+/* ---------- Etiquetas (tags) — chips horizontales multi-selección ----------
+ * GET /api/v1/tags → chips scrollables. Inactivo: borde suave · Activo: fondo
+ * color del tag. Multi-selección. "+ Etiqueta" crea un tag de usuario
+ * (POST /api/v1/tags). Lite: 3 relevantes + "más". Pro: todos.
+ * onChange recibe number[] con los IDs seleccionados.
+ * -------------------------------------------------------------------------- */
+function TfTags({ selected, onChange, accent, mode = 'pro' }) {
+  const isLite = mode === 'lite';
+  const [allTags, setAllTags] = useTfState(window.SAMPLE_TAGS || []);
+  const [expanded, setExpanded] = useTfState(!isLite);
+  const [creating, setCreating] = useTfState(false);
+  const [newName, setNewName] = useTfState('');
+  const [newColor, setNewColor] = useTfState((window.TAG_PALETTE || ['#3B82F6'])[3]);
+  const [hovered, setHovered] = useTfState(null);
+
+  const relevant = window.LITE_RELEVANT_TAGS || [];
+  const palette = window.TAG_PALETTE || ['#3B82F6'];
+  const collapsedLite = isLite && !expanded;
+  const visible = collapsedLite ? allTags.filter(tg => relevant.includes(tg.id)) : allTags;
+  const hiddenCount = allTags.length - visible.length;
+
+  const toggle = (id) => onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id]);
+  const createTag = () => {
+    const name = newName.trim(); if (!name) return;
+    const id = Date.now();
+    const tag = { id, slug: name.toLowerCase().replace(/\s+/g, '_'), name, icon: 'sell', color: newColor, type: 'user', description: t('Etiqueta personal') };
+    setAllTags(prev => [...prev, tag]);
+    onChange([...selected, id]);
+    setCreating(false); setNewName('');
+  };
+
+  const hoveredTag = allTags.find(tg => tg.id === hovered);
+  const chipBase = { display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '7px 13px 7px 10px', borderRadius: 'var(--radius-pill)', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 12.5, whiteSpace: 'nowrap', transition: 'background 140ms, border-color 140ms, color 140ms', outline: 'none' };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+      <style>{`.tf-tags-row::-webkit-scrollbar{height:5px}.tf-tags-row::-webkit-scrollbar-thumb{background:var(--border-hairline);border-radius:99px}`}</style>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+        <label style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--fg-3)' }}>{t('Etiquetas')}</label>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-3)', minHeight: 15, textAlign: 'right', textWrap: 'pretty' }}>
+          {hoveredTag ? hoveredTag.description : selected.length ? `${selected.length} ${t('seleccionadas')}` : t('Toca para clasificar el movimiento')}
+        </span>
+      </div>
+
+      <div className="tf-tags-row" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 0 5px' }}>
+        {visible.map(tg => {
+          const on = selected.includes(tg.id);
+          return (
+            <button key={tg.id} type="button" title={tg.description}
+              onClick={() => toggle(tg.id)}
+              onMouseEnter={() => setHovered(tg.id)} onMouseLeave={() => setHovered(null)}
+              onFocus={() => setHovered(tg.id)} onBlur={() => setHovered(null)}
+              style={{ ...chipBase,
+                border: on ? `1px solid ${tg.color}` : `1px solid color-mix(in srgb, ${tg.color} 34%, var(--border-hairline))`,
+                background: on ? tg.color : `color-mix(in srgb, ${tg.color} 7%, var(--surface-1))`,
+                color: on ? '#fff' : 'var(--fg-1)', fontWeight: on ? 700 : 500 }}>
+              <span className="material-icons" style={{ fontSize: 15, color: on ? '#fff' : tg.color }}>{tg.icon}</span>
+              {t(tg.name)}
+            </button>
+          );
+        })}
+
+        {collapsedLite && hiddenCount > 0 && (
+          <button type="button" onClick={() => setExpanded(true)}
+            style={{ ...chipBase, padding: '7px 13px', border: '1px dashed var(--border-hairline)', background: 'transparent', color: 'var(--fg-2)', fontWeight: 600 }}>
+            <span className="material-icons" style={{ fontSize: 15 }}>more_horiz</span>{hiddenCount} {t('más')}
+          </button>
+        )}
+
+        <button type="button" onClick={() => setCreating(c => !c)}
+          style={{ ...chipBase, padding: '7px 13px', border: `1px dashed ${creating ? accent : 'var(--border-hairline)'}`, background: 'transparent', color: creating ? accent : 'var(--brand-primary)', fontWeight: 600 }}>
+          <span className="material-icons" style={{ fontSize: 15 }}>add</span>{t('Etiqueta')}
+        </button>
+      </div>
+
+      {creating && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 11, padding: 13, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)', border: '1px solid var(--border-hairline)', animation: 'tfCommBar 200ms var(--ease-out)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 30, height: 30, borderRadius: 9, background: newColor, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span className="material-icons" style={{ fontSize: 16, color: '#fff' }}>sell</span>
+            </span>
+            <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); createTag(); } }}
+              placeholder={t('Nombre de la etiqueta')} style={{ ...window.FC_INPUT_STYLE, flex: 1, padding: '9px 12px' }} onFocus={window.fcFocus} onBlur={window.fcBlur} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+            {palette.map(c => (
+              <button key={c} type="button" onClick={() => setNewColor(c)} title={c}
+                style={{ width: 24, height: 24, borderRadius: 8, background: c, cursor: 'pointer', flexShrink: 0, border: newColor === c ? '2px solid var(--fg-1)' : '2px solid transparent', boxShadow: newColor === c ? '0 0 0 2px var(--surface-2)' : 'none' }} />
+            ))}
+            <span style={{ flex: 1 }} />
+            <button type="button" onClick={() => { setCreating(false); setNewName(''); }} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, padding: '7px 10px' }}>{t('Cancelar')}</button>
+            <button type="button" onClick={createTag} disabled={!newName.trim()}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: 0, cursor: newName.trim() ? 'pointer' : 'not-allowed', padding: '8px 14px', borderRadius: 'var(--radius-pill)', background: newName.trim() ? 'var(--brand-primary)' : 'var(--surface-3)', color: newName.trim() ? '#fff' : 'var(--fg-3)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 700 }}>
+              <span className="material-icons" style={{ fontSize: 15 }}>add</span>{t('Crear etiqueta')}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Commission (Venezuela: fija / pago móvil / porcentaje) ---------- */
 function TfCommission({ on, setOn, kind, setKind, value, setValue, amount, base, currency, accent }) {
   const sym = (window.CURRENCIES?.[currency]?.symbol) || '$';
@@ -462,7 +636,7 @@ function TfCommission({ on, setOn, kind, setKind, value, setValue, amount, base,
               const active = kind === ty.id;
               return (
                 <button key={ty.id} type="button" onClick={() => setKind(ty.id)}
-                  style={{ flex: 1, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 4, border: active ? `1px solid ${accent}` : '1px solid var(--border-hairline)', cursor: 'pointer', padding: '9px 6px', borderRadius: 'var(--radius-sm)', background: active ? `color-mix(in srgb, ${accent} 12%, var(--surface-1))` : 'var(--surface-1)', color: active ? accent : 'var(--fg-2)', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: active ? 700 : 500, transition: 'all 150ms' }}>
+                  style={{ flex: 1, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 44, border: active ? `1px solid ${accent}` : '1px solid var(--border-hairline)', cursor: 'pointer', padding: '9px 6px', borderRadius: 'var(--radius-sm)', background: active ? `color-mix(in srgb, ${accent} 12%, var(--surface-1))` : 'var(--surface-1)', color: active ? accent : 'var(--fg-2)', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: active ? 700 : 500, transition: 'all 150ms' }}>
                   <span className="material-icons" style={{ fontSize: 18 }}>{ty.icon}</span>{t(ty.label)}
                 </button>
               );
@@ -493,8 +667,8 @@ function TfCommission({ on, setOn, kind, setKind, value, setValue, amount, base,
 
           {/* Resultado */}
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', borderTop: '1px solid var(--border-hairline)', paddingTop: 10 }}>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)' }}>{t('Comisión')} ≈ <strong style={{ color: 'var(--fg-1)', fontFamily: 'var(--font-money)' }}>{sym} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)' }}>{t('Total')} <strong style={{ color: 'var(--fg-1)', fontFamily: 'var(--font-money)' }}>{sym} {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)' }}>{t('Comisión')} ≈ <strong style={{ color: 'var(--fg-1)', fontFamily: 'var(--font-money)', whiteSpace: 'nowrap' }}>{sym} {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--fg-2)' }}>{t('Total')} <strong style={{ color: 'var(--fg-1)', fontFamily: 'var(--font-money)', whiteSpace: 'nowrap' }}>{sym} {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
           </div>
         </div>
       )}
@@ -546,7 +720,7 @@ function TfPaymentsEditor({ payments, setPayments, accountOpts, accounts, total 
           <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 9, padding: 11, borderRadius: 'var(--radius-sm)', background: 'var(--surface-1)', boxShadow: 'var(--shadow-card)' }}>
             {/* fila 1: cuenta + eliminar */}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div style={{ flex: 1, minWidth: 0 }}><Picker value={p.accountId} onChange={v => { const acct = accounts.find(x => x.id === v); upd(i, 'accountId', v); upd(i, 'rate', (window.DEFAULT_RATES[acct.currency]?.current) || 1); }} options={accountOpts} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}><Picker value={p.accountId} onChange={v => { const acct = accounts.find(x => x.id === v); upd(i, 'accountId', v); upd(i, 'rate', (window.DEFAULT_RATES[acct.currency]?.current) || 1); }} options={accountOpts} searchable /></div>
               {payments.length > 1 && <button type="button" onClick={() => rm(i)} title={t('Quitar pago')} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex', flexShrink: 0 }}><span className="material-icons" style={{ fontSize: 18 }}>close</span></button>}
             </div>
             {/* fila 2: monto · tasa · resultado */}
@@ -642,7 +816,7 @@ function TfItemsEditor({ items, setItems, taxOpts, jarOpts, catOpts }) {
             {items.length > 1 && <button type="button" onClick={() => rm(i)} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex' }}><span className="material-icons" style={{ fontSize: 18 }}>close</span></button>}
           </div>
           <div style={{ display: 'flex', gap: 7 }}>
-            <div style={{ flex: 1 }}><Picker value={it.categoryId} onChange={v => upd(i, 'categoryId', v)} options={[{ value: null, label: window.t('Categoría'), icon: 'block' }, ...catOpts]} placeholder={t("Categoría")} /></div>
+            <div style={{ flex: 1 }}><CategorySelector value={it.categoryId} onChange={v => upd(i, 'categoryId', v)} kind="expense" allowNull placeholder={t("Categoría")} /></div>
             <div style={{ flex: 1 }}><Picker value={it.taxId} onChange={v => upd(i, 'taxId', v)} options={taxOpts} placeholder={t("Impuesto")} /></div>
           </div>
           <TfItemJar categoryId={it.categoryId} />

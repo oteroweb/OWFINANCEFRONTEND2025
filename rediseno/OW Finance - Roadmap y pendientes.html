@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>OW Finance · Roadmap y pendientes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="colors_and_type.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  doc-page:not(:defined){visibility:hidden}
+  body{background:#EEF1F6}
+  doc-page{--doc-shadow:0 8px 40px rgba(15,23,42,.12)}
+  h1,h2,h3{font-family:var(--font-display);color:var(--fg-1);margin:0}
+  p,li,td,th{font-family:var(--font-body);color:var(--fg-1)}
+  .material-icons{font-family:'Material Icons';font-style:normal;vertical-align:middle}
+
+  .doc-h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+  .kicker{font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--brand-primary);margin-bottom:10px}
+  .lede{font-size:14.5px;line-height:1.6;color:var(--fg-2);margin:14px 0 0}
+
+  .callout{display:flex;gap:12px;align-items:flex-start;margin:22px 0 4px;padding:15px 17px;border-radius:14px;background:var(--warning-soft);border:1px solid color-mix(in srgb,var(--warning) 34%,transparent)}
+  .callout .material-icons{color:var(--warning-fg);font-size:22px;flex:0 0 auto}
+  .callout b{color:var(--warning-fg)}
+  .callout p{font-size:13px;line-height:1.55;color:var(--fg-1);margin:0}
+
+  h2.sec{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);margin:34px 0 4px;padding-bottom:8px;border-bottom:2px solid var(--border-hairline)}
+  .sec-sub{font-family:var(--font-body);font-size:13px;color:var(--fg-2);margin:8px 0 14px;line-height:1.5}
+
+  .row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border-hairline);break-inside:avoid}
+  .row:last-child{border-bottom:0}
+  .ic{width:30px;height:30px;border-radius:9px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+  .ic .material-icons{font-size:17px}
+  .ic.done{background:var(--income-soft)}.ic.done .material-icons{color:var(--income-fg)}
+  .ic.next{background:var(--brand-primary-soft)}.ic.next .material-icons{color:var(--brand-primary)}
+  .ic.idea{background:var(--surface-2)}.ic.idea .material-icons{color:var(--fg-2)}
+  .ic.dec{background:color-mix(in srgb,var(--info) 14%,transparent)}.ic.dec .material-icons{color:var(--info-fg)}
+  .rc{flex:1;min-width:0}
+  .rt{font-family:var(--font-display);font-size:14.5px;font-weight:600;color:var(--fg-1);line-height:1.3}
+  .rd{font-family:var(--font-body);font-size:12.5px;color:var(--fg-2);line-height:1.5;margin-top:3px}
+  .rd code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+  .tag{flex:0 0 auto;align-self:center;font-family:var(--font-body);font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .tag.done{background:var(--income-soft);color:var(--income-fg)}
+  .tag.pri{background:var(--brand-primary-soft);color:var(--brand-primary)}
+  .tag.idea{background:var(--surface-2);color:var(--fg-2)}
+  .tag.dec{background:color-mix(in srgb,var(--info) 14%,transparent);color:var(--info-fg)}
+
+  .decis{margin-top:12px;padding:14px 16px;border-radius:12px;background:var(--surface-2)}
+  .decis .dh{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--fg-1);margin-bottom:8px}
+  .decis ol{margin:0;padding-left:20px}
+  .decis li{font-size:12.5px;line-height:1.6;color:var(--fg-1);margin-bottom:5px}
+  .decis code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--surface-1);padding:1px 5px;border-radius:5px}
+
+  .foot{font-family:var(--font-body);font-size:11px;color:var(--fg-3);display:flex;justify-content:space-between;padding:0 2px}
+</style>
+</head>
+<body>
+<doc-page size="letter" margin="0.8in">
+
+  <div slot="footer" class="foot"><span>OW Finance · Design System</span><span>Roadmap y pendientes</span></div>
+
+  <div class="kicker">Estado del sistema · Julio 2026</div>
+  <h1 class="doc-h1">Roadmap y pendientes</h1>
+  <p class="lede">Registro de lo entregado y lo que sigue en el sistema de diseño de OW Finance. Sirve como punto de retomada cuando volvamos sobre estos frentes.</p>
+
+  <div class="callout">
+    <span class="material-icons">pause_circle</span>
+    <p><b>No es prioridad ahora.</b> El foco pasa a implementar el diseño en otro sistema. Todo lo de abajo queda <b>en pendiente y acotado</b> — descrito lo suficiente para retomarlo sin volver a investigar, pero sin trabajo activo por el momento.</p>
+  </div>
+
+  <!-- ENTREGADO -->
+  <h2 class="sec">Entregado — Formulario de transacciones</h2>
+  <p class="sec-sub">Cerrado en esta ronda sobre el kit <code>lite-desktop</code> (form responsive: sirve desktop y el bottom-sheet mobile).</p>
+
+  <div class="row">
+    <span class="ic done"><span class="material-icons">check</span></span>
+    <div class="rc"><div class="rt">Proveedores y etiquetas</div><div class="rd">Selector de proveedor (buscar + crear) y etiquetas como chips multi-selección con crear tag de usuario. Lite: 3 relevantes + “más” y proveedor bajo “Más detalles”. El payload envía <code>provider_id</code> y <code>tags: number[]</code>.</div></div>
+    <span class="tag done">Hecho</span>
+  </div>
+  <div class="row">
+    <span class="ic done"><span class="material-icons">check</span></span>
+    <div class="rc"><div class="rt">Toast “Deshacer” tras guardar</div><div class="rd">Confirmación en el shell (<code>window.owToast</code>) con resumen del movimiento + acción Deshacer, barra de auto-cierre y respeto a reduced-motion.</div></div>
+    <span class="tag done">Hecho</span>
+  </div>
+  <div class="row">
+    <span class="ic done"><span class="material-icons">check</span></span>
+    <div class="rc"><div class="rt">Selector de categorías B+C en factura y detalle</div><div class="rd">Editor de ítems y edición del detalle migrados al <code>CategorySelector</code> (buscador + cuadrícula por cántaro). Cántaro anclado a la categoría.</div></div>
+    <span class="tag done">Hecho</span>
+  </div>
+  <div class="row">
+    <span class="ic done"><span class="material-icons">check</span></span>
+    <div class="rc"><div class="rt">Paridad mobile del formulario</div><div class="rd">Cruce de moneda, tasa por fila (tras el switch “Pago múltiple”), proveedor/fecha/etiquetas y factura con impuesto+cántaro por ítem: todo sirve en mobile y desktop con un solo componente.</div></div>
+    <span class="tag done">Hecho</span>
+  </div>
+  <div class="row">
+    <span class="ic done"><span class="material-icons">check</span></span>
+    <div class="rc"><div class="rt">Doble tasa: paralelo + BCV</div><div class="rd">Al escribir un monto en Bs, equivalente en USD al paralelo (tasa actual) y al BCV (oficial, chip “hoy”). Lee <code>DEFAULT_RATES.VES.{current, official}</code>.</div></div>
+    <span class="tag done">Hecho</span>
+  </div>
+  <div class="row">
+    <span class="ic done"><span class="material-icons">check</span></span>
+    <div class="rc"><div class="rt">Pulido: wrapping de cifras · mini-tabs táctiles</div><div class="rd">Cifras con NBSP (no se parten en dos líneas) y mini-tabs de comisión a ≥44px de alto táctil en mobile.</div></div>
+    <span class="tag done">Hecho</span>
+  </div>
+
+  <!-- PENDIENTE -->
+  <h2 class="sec">Pendiente — Próximos pasos del sistema</h2>
+  <p class="sec-sub">Acotado para retomar. Sin trabajo activo hasta que vuelva a ser prioridad.</p>
+
+  <h3 style="font-size:14px;font-weight:700;color:var(--fg-1);margin:18px 0 2px">Mecánicas de juego <span style="font-weight:500;color:var(--fg-3);font-size:12px">— mayor retorno de producto; enganchan con el onboarding</span></h3>
+  <div class="row">
+    <span class="ic next"><span class="material-icons">local_fire_department</span></span>
+    <div class="rc"><div class="rt">Rachas — días seguidos registrando</div><div class="rd">Premia la constancia, nunca el monto. Ya existe base en el onboarding: extender.</div></div>
+    <span class="tag pri">Extender</span>
+  </div>
+  <div class="row">
+    <span class="ic next"><span class="material-icons">flag</span></span>
+    <div class="rc"><div class="rt">Metas con cierre celebrado</div><div class="rd">Al cumplir, el cántaro se llena y se sella. Un gesto sobrio, sin confeti.</div></div>
+    <span class="tag pri">Posible</span>
+  </div>
+  <div class="row">
+    <span class="ic next"><span class="material-icons">emoji_events</span></span>
+    <div class="rc"><div class="rt">Retos suaves</div><div class="rd">Una propuesta opcional a la vez, siempre descartable. “¿Apartas $20 esta semana?”</div></div>
+    <span class="tag pri">Posible</span>
+  </div>
+  <div class="row">
+    <span class="ic next"><span class="material-icons">lightbulb</span></span>
+    <div class="rc"><div class="rt">Consejos del personaje</div><div class="rd">La mascota observa patrones y propone el siguiente paso pequeño. Conecta con la voz IA.</div></div>
+    <span class="tag pri">Posible</span>
+  </div>
+
+  <h3 style="font-size:14px;font-weight:700;color:var(--fg-1);margin:22px 0 2px">Mascota / personaje <span style="font-weight:500;color:var(--fg-3);font-size:12px">— necesita dirección antes de ejecutar</span></h3>
+  <div class="row">
+    <span class="ic idea"><span class="material-icons">face</span></span>
+    <div class="rc"><div class="rt">Prototipar el Asesor “con cara”</div><div class="rd">Tercera dirección en vivo, si se decide explorar.</div></div>
+    <span class="tag idea">Idea</span>
+  </div>
+  <div class="row">
+    <span class="ic idea"><span class="material-icons">menu_book</span></span>
+    <div class="rc"><div class="rt">Guía de personaje (character bible)</div><div class="rd">Rasgos, voz, do/don’t, paleta, expresiones. Base del brief al ilustrador.</div></div>
+    <span class="tag idea">Idea</span>
+  </div>
+  <div class="row">
+    <span class="ic idea"><span class="material-icons">forum</span></span>
+    <div class="rc"><div class="rt">Banco de frases (tono de voz)</div><div class="rd">Mensajes por estado: racha, meta, consejo, sin actividad. Segunda persona, calmado.</div></div>
+    <span class="tag idea">Idea</span>
+  </div>
+  <div class="row">
+    <span class="ic idea"><span class="material-icons">brush</span></span>
+    <div class="rc"><div class="rt">Brief + arte final al ilustrador</div><div class="rd">A partir del concepto-norte. El emblema actual es base, no entregable.</div></div>
+    <span class="tag idea">Idea</span>
+  </div>
+
+  <h3 style="font-size:14px;font-weight:700;color:var(--fg-1);margin:22px 0 2px">Design system <span style="font-weight:500;color:var(--fg-3);font-size:12px">— decisiones técnicas</span></h3>
+  <div class="row">
+    <span class="ic dec"><span class="material-icons">architecture</span></span>
+    <div class="rc"><div class="rt">Refactor acotado (Opción B)</div><div class="rd">Extraer solo los átomos reutilizables para silenciar el aviso del compilador, sin reescribir el kit.</div></div>
+    <span class="tag dec">Decisión</span>
+  </div>
+  <div class="row">
+    <span class="ic dec"><span class="material-icons">dark_mode</span></span>
+    <div class="rc"><div class="rt">Tokens bajo <code>[data-theme="dark"]</code></div><div class="rd">Completar/validar el tema oscuro para todos los componentes del kit.</div></div>
+    <span class="tag dec">Decisión</span>
+  </div>
+
+  <!-- DECISIONES ABIERTAS -->
+  <h2 class="sec">Decisiones abiertas (para datos reales)</h2>
+  <div class="decis">
+    <div class="dh">Doble tasa paralelo / BCV</div>
+    <ol>
+      <li><b>Tasa principal de la app</b> — hoy el cálculo base usa <code>current</code> (paralelo) y el BCV va como referencia. Confirmar si se mantiene así.</li>
+      <li><b>Origen del BCV diario</b> — de dónde se sincroniza (API del BCV, carga manual, etc.). En el kit está fijo como ejemplo.</li>
+    </ol>
+  </div>
+
+</doc-page>
+<script src="doc-page.js"></script>
+</body>
+</html>

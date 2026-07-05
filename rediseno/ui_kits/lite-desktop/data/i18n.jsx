@@ -197,7 +197,7 @@ const I18N_EN = {
   'Ej: Traspaso a ahorros': 'e.g. Transfer to savings',
   'Total (suma de ítems)': 'Total (sum of items)', 'Cuenta de origen': 'Source account',
   'Sin categoría': 'No category', 'Repartir por %': 'Split by %', 'Sin cántaro': 'No jar',
-  'Cántaro (opcional)': 'Jar (optional)', 'Cántaro': 'Jar', 'Proveedor': 'Provider', 'Sin proveedor': 'No provider',
+  'Cántaro (opcional)': 'Jar (optional)', 'Cántaro': 'Jar', 'Proveedor': 'Provider', 'Sin proveedor': 'No provider', 'Crear proveedor': 'Create provider',
   'Pago múltiple': 'Multiple payment', 'Varias cuentas': 'Several accounts',
   'Detalle / factura': 'Detail / invoice', 'Ítems + impuestos': 'Items + taxes',
   'Afecta el saldo': 'Affects balance', 'Desactiva para movimientos informativos': 'Turn off for informational entries',

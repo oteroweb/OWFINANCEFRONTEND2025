@@ -79,14 +79,65 @@ function ActiveChip({ label, icon, dot, locked, onClear }) {
   );
 }
 
+/* chip de categoría dentro de un grupo de cántaro (icono + nombre + monto) */
+function CatChip({ cat, color, active, onToggle }) {
+  const [hov, setHov] = React.useState(false);
+  const tint = (p) => `color-mix(in srgb, ${color} ${p}%, var(--surface-1))`;
+  return (
+    <button
+      onClick={onToggle}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      title={cat.count + (cat.count === 1 ? ' movimiento' : ' movimientos')}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+        padding: '8px 13px', borderRadius: 'var(--radius-pill)', border: '1px solid',
+        borderColor: active ? 'transparent' : tint(22),
+        background: active ? tint(20) : hov ? tint(12) : tint(8),
+        color: 'var(--fg-1)', fontFamily: 'var(--font-body)', fontSize: 13,
+        fontWeight: active ? 700 : 500, transition: 'background 130ms',
+      }}>
+      <span className="material-icons" style={{ fontSize: 15, color }}>{cat.icon}</span>
+      <span style={{ whiteSpace: 'nowrap' }}>{cat.name}</span>
+      <span style={{ fontFamily: 'var(--font-money)', fontSize: 12, fontWeight: 600, color: 'var(--fg-2)', whiteSpace: 'nowrap' }}>{window.fmtAbs(cat.amount)}</span>
+      {active && <span className="material-icons" style={{ fontSize: 14, color }}>check</span>}
+    </button>
+  );
+}
+
+/* pool de CATEGORÍAS agrupado por cántaro (diseño unificado aprobado) */
+function CatPoolGrouped({ catPool, selCats, toggleCat }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px 28px', width: '100%' }}>
+      {catPool.map(g => (
+        <div key={g.key}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 9 }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: g.color, flexShrink: 0 }}></span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700, letterSpacing: '.05em', color: g.color }}>{g.short}</span>
+            {g.pct != null && <span style={{ fontFamily: 'var(--font-money)', fontSize: 10.5, color: 'var(--fg-3)' }}>{g.pct}%</span>}
+            <span style={{ flex: 1, height: 1, background: 'var(--border-hairline)' }}></span>
+            <span style={{ fontFamily: 'var(--font-money)', fontSize: 13, fontWeight: 700, color: 'var(--fg-1)', whiteSpace: 'nowrap' }}>{window.fmtAbs(g.total)}</span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {g.cats.map(c => (
+              <CatChip key={c.name} cat={c} color={g.color}
+                active={selCats.includes(c.name)} onToggle={() => toggleCat(c.name)} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TxPoolsHeader({
   monthLabel, type, setType,
-  cats, jars, selCats, selJars, toggleCat, toggleJar, clearFilters, hasFilters,
+  cats, catPool, catCount, jars, selCats, selJars, toggleCat, toggleJar, clearFilters, hasFilters,
 }) {
   const typeMeta = { all: null, income: { label: 'Ingresos', icon: 'arrow_downward' }, expense: { label: 'Gastos', icon: 'arrow_outward' } };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+    <div className="pools-grid">
 
       {/* ── Pool 1 · Filtros activos ───────────────────────────── */}
       <PoolShell icon="filter_alt" title="Filtros activos" hint={hasFilters ? '' : 'sólo el mes'}
@@ -122,11 +173,13 @@ function TxPoolsHeader({
       </PoolShell>
 
       {/* ── Pool 2 · Categorías ────────────────────────────────── */}
-      <PoolShell icon="sell" title="Categorías" hint="clic para filtrar" count={cats.length}>
-        {cats.map(([name, n]) => (
-          <PickChip key={name} label={name} icon={window.CAT_ICON[name] || 'label'} count={n}
-            active={selCats.includes(name)} onToggle={() => toggleCat(name)} />
-        ))}
+      <PoolShell icon="sell" title="Categorías" hint="clic para filtrar" count={catCount != null ? catCount : cats.length}>
+        {catPool && catPool.length
+          ? <CatPoolGrouped catPool={catPool} selCats={selCats} toggleCat={toggleCat} />
+          : cats.map(([name, n]) => (
+              <PickChip key={name} label={name} icon={window.CAT_ICON[name] || 'label'} count={n}
+                active={selCats.includes(name)} onToggle={() => toggleCat(name)} />
+            ))}
       </PoolShell>
 
       {/* ── Pool 3 · Cántaros ──────────────────────────────────── */}
@@ -140,4 +193,4 @@ function TxPoolsHeader({
   );
 }
 
-Object.assign(window, { TxPoolsHeader, PoolShell, PickChip, ActiveChip, ACCENT });
+Object.assign(window, { TxPoolsHeader, PoolShell, PickChip, ActiveChip, CatChip, CatPoolGrouped, ACCENT });
