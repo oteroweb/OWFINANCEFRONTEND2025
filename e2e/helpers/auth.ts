@@ -3,54 +3,75 @@ import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
-export const TEST_USER = {
-  email: process.env.PLAYWRIGHT_TEST_EMAIL ?? 'user@demo.com',
-  password: process.env.PLAYWRIGHT_TEST_PASSWORD ?? 'S$ratoga.1990',
-};
-
-// Must match the path written by e2e/global-setup.ts (one level up from this helpers/ dir)
-const AUTH_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.auth.json');
+const AUTH_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const API_BASE = 'https://owfinances.com/api/v1';
 
-// Read auth from file (written by global-setup). Falls back to direct API call if file missing.
-async function getAuth(): Promise<{ token: string; user: unknown; role: string }> {
-  if (existsSync(AUTH_FILE)) {
-    return JSON.parse(readFileSync(AUTH_FILE, 'utf8')) as { token: string; user: unknown; role: string };
-  }
-  // Fallback: direct API call (may hit rate limiting if run in parallel)
-  const email = TEST_USER.email;
-  const password = TEST_USER.password;
+export const USERS = {
+  /** Lite plan, 1 cuenta USD — tests base (default si no se especifica) */
+  lite: {
+    email: process.env.PLAYWRIGHT_TEST_EMAIL ?? 'usertestlite@demo.com',
+    password: process.env.PLAYWRIGHT_TEST_PASSWORD ?? 'S$ratoga.1990',
+    authFile: '.auth.lite.json',
+  },
+  /** Pro plan, 2 cuentas USD+VES — tests Pro + multi-moneda */
+  pro: {
+    email: 'usertestpro@demo.com',
+    password: 'S$ratoga.1990',
+    authFile: '.auth.pro.json',
+  },
+} as const;
+
+export type UserKey = keyof typeof USERS;
+
+async function fetchAuth(email: string, password: string) {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  const body = (await res.json()) as { token: string; role: string; data: unknown };
-  if (!body.token) throw new Error(`Login failed: ${JSON.stringify(body)}`);
-  return { token: body.token, user: body.data, role: body.role };
+  const body = (await res.json()) as { token?: string; role?: string; data?: unknown; message?: string };
+  if (!body.token) throw new Error(`Login failed for ${email}: ${body.message ?? JSON.stringify(body)}`);
+  return { token: body.token, user: body.data, role: body.role ?? 'user' };
 }
 
-// NOTE: vueRouterBase='/' — SPA is at http://localhost:3000/ not /app/.
-// Browser-form login is blocked by CORS (localhost origin rejected by prod API).
-// Token is obtained server-side (no CORS) and injected into localStorage.
-export async function login(page: Page) {
-  if (!process.env.PLAYWRIGHT_TEST_EMAIL) return; // no-op if no credentials
+function getAuthFile(userKey: UserKey): string {
+  return path.join(AUTH_DIR, USERS[userKey].authFile);
+}
 
-  const auth = await getAuth();
+function readCachedAuth(userKey: UserKey) {
+  const file = getAuthFile(userKey);
+  if (existsSync(file)) {
+    return JSON.parse(readFileSync(file, 'utf8')) as { token: string; user: unknown; role: string };
+  }
+  return null;
+}
 
-  // Inject token into localStorage so router guard picks it up on next navigation.
-  // Use '/' relative path — Playwright resolves against baseURL (localhost or prod).
+/**
+ * Login a specific user (lite | pro).
+ * Reads from cached .auth.<user>.json written by global-setup, or fetches fresh token.
+ */
+export async function login(page: Page, userKey: UserKey = 'lite') {
+  const user = USERS[userKey];
+  if (!user) throw new Error(`Unknown userKey: ${userKey}`);
+
+  let auth = readCachedAuth(userKey);
+  if (!auth) {
+    auth = await fetchAuth(user.email, user.password);
+  }
+
   await page.goto('/');
   await page.evaluate(
-    ({ token, user, role }) => {
+    ({ token, userData, role }) => {
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('role', role);
     },
-    auth,
+    { token: auth.token, userData: auth.user, role: auth.role },
   );
 
-  // Navigate to app — router guard calls loadFromStorage() and authorizes
   await page.goto('/user');
   await page.waitForURL(/\/user/, { timeout: 15000 });
 }
+
+/** Alias legacy — mantiene compatibilidad con tests que no pasan userKey */
+export const TEST_USER = USERS.lite;

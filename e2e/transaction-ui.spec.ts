@@ -8,7 +8,7 @@
  *   npx playwright test e2e/transaction-ui.spec.ts --config playwright.prod.config.cjs
  */
 import { test, expect, type Page } from '@playwright/test';
-import { login } from './helpers/auth';
+import { login, type UserKey } from './helpers/auth';
 
 const SKIP_MSG = 'Set PLAYWRIGHT_TEST_EMAIL + PLAYWRIGHT_TEST_PASSWORD to run';
 
@@ -90,13 +90,11 @@ async function waitForClose(page: Page) {
 
 test.describe('SmartTransactionModal — UI flows', () => {
   test.beforeEach(async ({ page }) => {
-    if (!process.env.PLAYWRIGHT_TEST_EMAIL) {
-      test.skip(true, SKIP_MSG);
-    }
-    await login(page);
+    // Default: lite user. Pro tests call login('pro') themselves.
+    await login(page, 'lite');
     await page.goto('/user/home');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000); // let Pinia stores hydrate
+    await page.waitForTimeout(1000);
   });
 
   // ── CASO UI-1: Gasto simple ─────────────────────────────────────────────
@@ -153,16 +151,11 @@ test.describe('SmartTransactionModal — UI flows', () => {
 
   // ── CASO UI-4: Factura multi-artículo (Pro) ─────────────────────────────
   test('UI-4 Factura multi-artículo con categoría por item (Pro)', async ({ page }) => {
-    // Activar Pro mode si no está activo
-    const isPro = await page.evaluate(() => {
-      const app = (document.querySelector('#q-app') as { __vue_app__?: { config: { globalProperties: { $pinia?: { _s: Map<string, { settings?: { layout_mode?: string } }> } } } } })?.__vue_app__;
-      const auth = app?.config?.globalProperties?.$pinia?._s?.get('auth');
-      return auth?.settings?.layout_mode === 'pro';
-    });
-
-    if (!isPro) {
-      test.skip(true, 'Pro mode not active for this user — skipping items panel test');
-    }
+    // Usar usuario Pro — tiene layout_mode=pro y 2 cuentas (USD+VES)
+    await login(page, 'pro');
+    await page.goto('/user/home');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     await openModal(page, 'expense');
     await fillAmount(page, 85);
@@ -196,15 +189,11 @@ test.describe('SmartTransactionModal — UI flows', () => {
 
   // ── CASO UI-5: Split pago (Pro) ─────────────────────────────────────────
   test('UI-5 Split pago multi-cuenta (Pro)', async ({ page }) => {
-    const isPro = await page.evaluate(() => {
-      const app = (document.querySelector('#q-app') as { __vue_app__?: { config: { globalProperties: { $pinia?: { _s: Map<string, { settings?: { layout_mode?: string } }> } } } } })?.__vue_app__;
-      const auth = app?.config?.globalProperties?.$pinia?._s?.get('auth');
-      return auth?.settings?.layout_mode === 'pro';
-    });
-
-    if (!isPro) {
-      test.skip(true, 'Pro mode not active for this user — skipping split test');
-    }
+    // Usar usuario Pro
+    await login(page, 'pro');
+    await page.goto('/user/home');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1000);
 
     await openModal(page, 'expense');
     await fillAmount(page, 50);

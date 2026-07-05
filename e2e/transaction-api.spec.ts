@@ -105,10 +105,11 @@ async function resolveTagIds(
 }
 
 test.beforeAll(async ({ request }) => {
-  test.skip(!process.env.PLAYWRIGHT_TEST_EMAIL, 'Set PLAYWRIGHT_TEST_EMAIL + PLAYWRIGHT_TEST_PASSWORD');
-
-  // Token from global-setup file or fresh login
+  // Token from global-setup cache (.auth.json) or env-based login
   const stored = getStoredToken();
+  const hasCredentials = !!process.env.PLAYWRIGHT_TEST_EMAIL || !!stored;
+  test.skip(!hasCredentials, 'No auth available — run global-setup or set PLAYWRIGHT_TEST_EMAIL');
+
   if (stored) {
     TOKEN = stored;
   } else {
