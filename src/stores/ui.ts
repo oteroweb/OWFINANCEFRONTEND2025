@@ -14,7 +14,7 @@ export const useUiStore = defineStore('ui', {
     // Smart Transaction Modal
     showSmartModal: false as boolean,
     smartModalTab: 'write' as 'write' | 'voice' | 'photo' | 'autoai',
-    smartModalType: 'expense' as 'expense' | 'income' | 'transfer',
+    smartModalType: 'expense' as 'expense' | 'income' | 'transfer' | 'ajuste',
     hideValues: localStorage.getItem('ow_hide_values') === 'true',
     jarStatus: {
       totalAvailable: 0,
@@ -50,7 +50,7 @@ export const useUiStore = defineStore('ui', {
         jarCount: Number(payload.jarCount || 0),
       };
     },
-    openSmartModal(tab: 'write' | 'voice' | 'photo' | 'autoai' = 'write', type: 'expense' | 'income' | 'transfer' = 'expense') {
+    openSmartModal(tab: 'write' | 'voice' | 'photo' | 'autoai' = 'write', type: 'expense' | 'income' | 'transfer' | 'ajuste' = 'expense') {
       this.smartModalTab = tab;
       this.smartModalType = type;
       this.showSmartModal = true;
