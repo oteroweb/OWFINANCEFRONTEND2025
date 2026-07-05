@@ -55,7 +55,7 @@
           <label class="stm-label">Monto</label>
           <div class="stm-amount-row">
             <q-select v-model="form.currency" :options="currencyOptions" emit-value map-options dense outlined
-              class="stm-currency-select" />
+              :disable="!!form.account_id" class="stm-currency-select" />
             <input v-model.number="form.amount" type="number" step="0.01" min="0"
               placeholder="0.00" class="stm-amount-input" />
           </div>
@@ -339,6 +339,7 @@ import { ref, computed, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
+import { useTransactionsStore } from 'stores/transactions';
 import { api } from 'src/boot/axios';
 import { useTransactionTypesStore } from 'stores/transactionTypes';
 import { useTagsStore } from 'stores/tags';
@@ -355,6 +356,7 @@ const emit = defineEmits<{ saved: [] }>();
 const $q = useQuasar();
 const ui = useUiStore();
 const auth = useAuthStore();
+const txStore = useTransactionsStore();
 const ttypes = useTransactionTypesStore();
 const tagsStore = useTagsStore();
 
@@ -522,6 +524,13 @@ const accountOptions = computed(() =>
     value: a.id,
   }))
 );
+
+// La moneda del monto queda fija a la moneda de la cuenta seleccionada.
+watch(() => form.value.account_id, (accountId) => {
+  if (!accountId) return;
+  const acc = ((auth.user?.accounts ?? []) as unknown as UserAccount[]).find(a => a.id === accountId);
+  if (acc?.currency?.code) form.value.currency = acc.currency.code;
+});
 
 // ── Categories ────────────────────────────────────────────────────────────
 interface Category { id: number; name: string }
@@ -731,7 +740,13 @@ function onShow() {
   saveError.value = null;
 
   if (!form.value.account_id && accountOptions.value.length) {
-    form.value.account_id = accountOptions.value[0]!.value;
+    const selectedIds = txStore.selectedAccountIds;
+    const filteredAccountId = Array.isArray(selectedIds) && selectedIds.length === 1
+      ? Number(selectedIds[0])
+      : null;
+    const matchesOption = filteredAccountId !== null
+      && accountOptions.value.some(o => o.value === filteredAccountId);
+    form.value.account_id = matchesOption ? filteredAccountId : accountOptions.value[0]!.value;
   }
 
   void ttypes.fetchTransactionTypes();

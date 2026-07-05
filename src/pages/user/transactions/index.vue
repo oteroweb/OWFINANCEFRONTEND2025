@@ -1108,7 +1108,7 @@
           <q-separator />
           <!-- VIEW Footer: Edit / Duplicate / Delete -->
           <q-card-actions class="tx-detail-modal__footer" align="right">
-            <q-btn flat icon="edit" label="Editar" color="primary" @click="txDetailMode = 'edit'" />
+            <q-btn flat icon="edit" label="Editar" color="primary" @click="txDetailStartEdit" />
             <q-btn flat icon="content_copy" label="Duplicar" color="secondary" @click="txDetailStartDuplicate" />
             <q-btn flat icon="delete" label="Eliminar" color="negative" @click="txDetailMode = 'delete'" />
           </q-card-actions>
@@ -3745,6 +3745,12 @@ function txDetailShow(row: AnyRecord) {
   txDetailMode.value = 'view';
   txDetailOpen.value = true;
   void txDetailLoadOptions();
+}
+
+function txDetailStartEdit() {
+  if (!txDetailRow.value) return;
+  txDetailFillForm(txDetailRow.value);
+  txDetailMode.value = 'edit';
 }
 
 function txDetailStartDuplicate() {
