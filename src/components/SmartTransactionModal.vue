@@ -163,36 +163,61 @@
 
           <!-- Comisión panel -->
           <div v-if="proPanel === 'comision'" class="stm-pro-panel">
-            <div class="stm-row-2">
-              <div class="stm-field">
-                <label class="stm-label">Tipo</label>
-                <q-select v-model="comision.tipo" :options="comisionTipos" emit-value map-options dense outlined />
-              </div>
-              <div class="stm-field">
-                <label class="stm-label">{{ comision.tipo === 'porcentaje' ? 'Porcentaje %' : 'Monto fijo' }}</label>
-                <input v-model.number="comision.valor" type="number" class="stm-text-input" min="0" />
-              </div>
+            <!-- Selector de tipo: cards -->
+            <div class="stm-comm-types">
+              <button v-for="ct in comisionTipos" :key="ct.value"
+                class="stm-comm-type" :class="{ 'stm-comm-type--active': comision.tipo === ct.value }"
+                @click="comision.tipo = ct.value">
+                <span class="material-icons">{{ ct.icon }}</span>
+                <span>{{ ct.label }}</span>
+              </button>
             </div>
-            <div v-if="comisionCalculada > 0" class="stm-pro-summary">
-              Comisión: <strong>{{ formatMoney(comisionCalculada) }}</strong>
-              — Total: <strong>{{ formatMoney((form.amount ?? 0) + comisionCalculada) }}</strong>
+            <!-- Input según tipo -->
+            <div v-if="comision.tipo === 'fijo'" class="stm-comm-input-row">
+              <span class="stm-comm-sym">$</span>
+              <input v-model.number="comision.valor" type="number" inputmode="decimal" class="stm-text-input stm-text-input--money" min="0" placeholder="0.00" />
+              <span class="stm-comm-hint">monto fijo</span>
+            </div>
+            <div v-else-if="comision.tipo === 'porcentaje'" class="stm-comm-input-row">
+              <input v-model.number="comision.valor" type="number" inputmode="decimal" class="stm-text-input stm-text-input--money" min="0" placeholder="1.50" />
+              <span class="stm-comm-sym">%</span>
+            </div>
+            <div v-else class="stm-comm-pagomovil">
+              <span class="material-icons" style="font-size:17px;color:var(--info-fg)">smartphone</span>
+              <span>Tarifa P2P <strong>0.30%</strong> · mín. Bs 2 · BCV</span>
+            </div>
+            <!-- Resultado -->
+            <div v-if="comisionCalculada > 0" class="stm-comm-result">
+              <span>Comisión ≈ <strong>{{ formatMoney(comisionCalculada) }}</strong></span>
+              <span>Total <strong>{{ formatMoney((form.amount ?? 0) + comisionCalculada) }}</strong></span>
             </div>
           </div>
 
           <!-- Split panel -->
           <div v-if="proPanel === 'split'" class="stm-pro-panel">
-            <div v-for="(pago, i) in splitPagos" :key="i" class="stm-row-2 stm-split-row">
-              <div class="stm-field">
-                <label class="stm-label">Cuenta {{ i + 1 }}</label>
-                <q-select v-model="pago.account_id" :options="accountOptions" emit-value map-options dense outlined clearable placeholder="Seleccionar…" />
+            <div v-for="(pago, i) in splitPagos" :key="i" class="stm-split-row">
+              <div class="stm-split-row__fields">
+                <div class="stm-field" style="flex:2">
+                  <label class="stm-label">Cuenta {{ i + 1 }}</label>
+                  <q-select v-model="pago.account_id" :options="accountOptions" emit-value map-options dense outlined clearable placeholder="Seleccionar…" />
+                </div>
+                <div class="stm-field" style="flex:1">
+                  <label class="stm-label">Monto</label>
+                  <input v-model.number="pago.amount" type="number" class="stm-text-input" min="0" />
+                </div>
+                <button v-if="splitPagos.length > 2" class="stm-pro-rm" style="margin-top:20px" @click="splitPagos.splice(i, 1)">
+                  <span class="material-icons" style="font-size:16px">close</span>
+                </button>
               </div>
-              <div class="stm-field">
-                <label class="stm-label">Monto</label>
-                <input v-model.number="pago.amount" type="number" class="stm-text-input" min="0" />
+              <!-- Tasa cross-currency: visible si la cuenta tiene moneda distinta a USD -->
+              <div v-if="splitAccountCurrency(pago.account_id) && splitAccountCurrency(pago.account_id) !== 'USD'" class="stm-split-rate">
+                <span class="material-icons" style="font-size:14px;color:var(--fg-3)">currency_exchange</span>
+                <span class="stm-label" style="margin:0">Tasa {{ splitAccountCurrency(pago.account_id) }}/USD</span>
+                <input v-model.number="pago.rate" type="number" inputmode="decimal" class="stm-text-input stm-text-input--rate" min="0" step="0.01" placeholder="1.00" />
+                <span v-if="pago.rate && pago.amount" class="stm-split-rate__equiv">
+                  ≈ {{ formatMoney(pago.amount / pago.rate) }} USD
+                </span>
               </div>
-              <button v-if="splitPagos.length > 2" class="stm-pro-rm" @click="splitPagos.splice(i, 1)">
-                <span class="material-icons" style="font-size:16px">close</span>
-              </button>
             </div>
             <div class="stm-pro-summary">
               Suma: <strong>{{ formatMoney(splitTotal) }}</strong>
@@ -200,7 +225,7 @@
                 / {{ formatMoney(form.amount ?? 0) }}
               </span>
             </div>
-            <button class="stm-pro-add" @click="splitPagos.push({ account_id: null, amount: 0 })">
+            <button class="stm-pro-add" @click="splitPagos.push({ account_id: null, amount: 0, rate: 1 })">
               <span class="material-icons" style="font-size:15px">add</span> Agregar cuenta
             </button>
           </div>
@@ -474,23 +499,24 @@ function toggleProPanel(panel: ProPanel) {
 
 // Comisión
 const comisionTipos = [
-  { label: 'Monto fijo ($)', value: 'fijo' },
-  { label: 'Porcentaje (%)', value: 'porcentaje' },
-  { label: 'Pago móvil BCV (0.30%)', value: 'bcv' },
+  { label: 'Pago móvil', value: 'pagomovil', icon: 'smartphone' },
+  { label: 'Porcentaje', value: 'porcentaje', icon: 'percent' },
+  { label: 'Monto fijo', value: 'fijo',       icon: 'attach_money' },
 ];
-const comision = ref({ tipo: 'porcentaje', valor: 0 });
+const comision = ref({ tipo: 'pagomovil', valor: 0 });
+const PAGOMOVIL_PCT = 0.30;
 const comisionCalculada = computed(() => {
   const base = Math.abs(form.value.amount ?? 0);
   if (comision.value.tipo === 'fijo')       return comision.value.valor;
   if (comision.value.tipo === 'porcentaje') return (base * comision.value.valor) / 100;
-  if (comision.value.tipo === 'bcv')        return (base * 0.30) / 100;
+  if (comision.value.tipo === 'pagomovil')  return (base * PAGOMOVIL_PCT) / 100;
   return 0;
 });
 
 // Split
-const splitPagos = ref<{ account_id: number | null; amount: number }[]>([
-  { account_id: null, amount: 0 },
-  { account_id: null, amount: 0 },
+const splitPagos = ref<{ account_id: number | null; amount: number; rate: number }[]>([
+  { account_id: null, amount: 0, rate: 1 },
+  { account_id: null, amount: 0, rate: 1 },
 ]);
 const splitTotal = computed(() => splitPagos.value.reduce((s, p) => s + (p.amount ?? 0), 0));
 
@@ -524,6 +550,13 @@ const accountOptions = computed(() =>
     value: a.id,
   }))
 );
+
+// Devuelve la moneda de una cuenta del split (para mostrar campo tasa).
+function splitAccountCurrency(accountId: number | null): string | null {
+  if (!accountId) return null;
+  const acc = ((auth.user?.accounts ?? []) as unknown as UserAccount[]).find(a => a.id === accountId);
+  return acc?.currency?.code ?? null;
+}
 
 // La moneda del monto queda fija a la moneda de la cuenta seleccionada.
 watch(() => form.value.account_id, (accountId) => {
@@ -584,7 +617,7 @@ async function save() {
   if (isProMode.value && proPanel.value === 'split' && splitPagos.value.some(p => p.account_id)) {
     payments = splitPagos.value
       .filter(p => p.account_id && p.amount)
-      .map(p => ({ account_id: p.account_id, amount: p.amount }));
+      .map(p => ({ account_id: p.account_id, amount: p.amount, rate: p.rate ?? 1 }));
   } else {
     payments = [{ account_id: form.value.account_id, amount }];
   }
@@ -1202,9 +1235,124 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   margin-bottom: 2px;
 }
 
+/* Comisión cards */
+.stm-comm-types {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.stm-comm-type {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 1px solid var(--stm-border);
+  border-radius: 10px;
+  background: var(--surface-1);
+  color: var(--fg-2);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms;
+  .material-icons { font-size: 19px; }
+  &:hover { background: var(--surface-2); }
+}
+.stm-comm-type--active {
+  border-color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 10%, var(--surface-1));
+  color: var(--brand-primary);
+  font-weight: 700;
+}
+.stm-comm-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  background: var(--surface-1);
+  border: 1px solid var(--stm-border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.stm-comm-sym {
+  font-family: var(--font-money, monospace);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--fg-3);
+}
+.stm-comm-hint {
+  font-size: 11px;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+.stm-text-input--money {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-money, monospace);
+  color: var(--fg-1);
+  min-width: 0;
+}
+.stm-comm-pagomovil {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 13px;
+  border-radius: 8px;
+  background: var(--info-soft, #EFF6FF);
+  color: var(--fg-1);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.stm-comm-result {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--fg-2);
+  border-top: 1px solid var(--stm-border);
+  padding-top: 10px;
+  strong { font-family: var(--font-money, monospace); color: var(--fg-1); }
+}
+
+/* Split con tasa cross-currency */
 .stm-split-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--stm-border) 50%, transparent);
+  &:last-of-type { border-bottom: none; }
+}
+.stm-split-row__fields {
+  display: flex;
   align-items: flex-end;
-  gap: 6px !important;
+  gap: 6px;
+}
+.stm-split-rate {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--brand-primary) 6%, var(--surface-1));
+  border: 1px dashed color-mix(in srgb, var(--brand-primary) 25%, transparent);
+  font-size: 12px;
+  color: var(--fg-2);
+}
+.stm-text-input--rate {
+  width: 80px;
+  flex-shrink: 0;
+}
+.stm-split-rate__equiv {
+  font-size: 11.5px;
+  font-family: var(--font-money, monospace);
+  color: var(--brand-primary);
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .stm-items-block {
