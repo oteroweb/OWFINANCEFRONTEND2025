@@ -58,6 +58,10 @@ export function useTransactionForm() {
   function reset() { form.value = initialForm(); }
 
   // ===== Transaction Types =====
+  // Sentinel usado para el 4to tipo "Ajuste" (OWF-186). No corresponde a un transaction_type_id
+  // real del backend: el ajuste de saldo se envía por un endpoint dedicado
+  // (POST /accounts/{id}/adjust-balance), no como una transacción normal.
+  const ADJUSTMENT_TYPE_ID = '__adjustment__';
   const ttOptions = ref<{ label: string; value: string }[]>([]);
   async function loadTransactionTypes() {
   // fetchTransactionTypes está definido en el store; usamos as unknown para evitar any directo
@@ -68,10 +72,14 @@ export function useTransactionForm() {
     const income = bySlug('income') || byName('ingreso');
     const expense = bySlug('expense') || byName('egreso');
     const transfer = bySlug('transfer') || byName('transfer') || byName('transferencia');
+    // Ajuste: preferir un tipo real del backend si existe (slug/nombre "adjustment"/"ajuste");
+    // si no existe, usar el sentinel local para no bloquear la funcionalidad en el frontend.
+    const adjustmentBackend = bySlug('adjustment') || byName('ajuste');
     const optsLocal: { label: string; value: string }[] = [];
     if (income) optsLocal.push({ label: income.name, value: income.id });
     if (expense) optsLocal.push({ label: expense.name, value: expense.id });
     if (transfer) optsLocal.push({ label: transfer.name, value: transfer.id });
+    optsLocal.push({ label: 'Ajuste', value: adjustmentBackend ? adjustmentBackend.id : ADJUSTMENT_TYPE_ID });
     ttOptions.value = optsLocal;
     if (!form.value.transaction_type_id && income) form.value.transaction_type_id = income.id;
   }
@@ -342,6 +350,7 @@ export function useTransactionForm() {
     includeInBalance,
     reset,
     ttOptions,
+    ADJUSTMENT_TYPE_ID,
     loadTransactionTypes,
     providerOptions,
     providerLabel,
