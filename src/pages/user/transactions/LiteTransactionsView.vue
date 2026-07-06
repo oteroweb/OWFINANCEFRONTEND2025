@@ -175,6 +175,20 @@
           <div class="tx-info">
             <span class="tx-name">{{ tx.name }}</span>
             <span class="tx-meta">{{ tx.category }} · {{ formatDateShort(tx.date) }}</span>
+            <div v-if="tx.tags && tx.tags.length" class="tx-tags-row">
+              <span
+                v-for="tag in tx.tags.slice(0, 3)"
+                :key="tag.id"
+                class="tx-tag-chip"
+                :style="{ background: `color-mix(in srgb, ${tag.color} 12%, var(--surface-1))`, color: `color-mix(in srgb, ${tag.color} 72%, var(--fg-1))`, borderColor: `color-mix(in srgb, ${tag.color} 34%, var(--border-hairline))` }"
+              >
+                <q-icon :name="tag.icon || 'sell'" size="12px" :style="{ color: tag.color }" />
+                {{ tag.name }}
+              </span>
+              <span v-if="tx.tags.length > 3" class="tx-tag-chip tx-tag-chip--more">
+                +{{ tx.tags.length - 3 }}
+              </span>
+            </div>
           </div>
           <span class="tx-tag">{{ tx.jarName || 'General' }}</span>
           <span class="tx-amount" :style="{ color: tx.type === 'income' ? 'var(--income-fg)' : 'var(--expense-fg)' }">
@@ -230,6 +244,21 @@
               <q-icon name="calendar_today" size="19px" class="tx-detail-row__icon" />
               <span class="tx-detail-row__key">Fecha</span>
               <span class="tx-detail-row__val">{{ formatDateShort(detailTx.date) }}</span>
+            </div>
+            <div v-if="detailTx.tags && detailTx.tags.length" class="tx-detail-row tx-detail-row--tags">
+              <q-icon name="sell" size="19px" class="tx-detail-row__icon" />
+              <span class="tx-detail-row__key">Etiquetas</span>
+              <div class="tx-detail-row__val tx-detail-tags">
+                <span
+                  v-for="tag in detailTx.tags"
+                  :key="tag.id"
+                  class="tx-tag-chip"
+                  :style="{ background: `color-mix(in srgb, ${tag.color} 12%, var(--surface-1))`, color: `color-mix(in srgb, ${tag.color} 72%, var(--fg-1))`, borderColor: `color-mix(in srgb, ${tag.color} 34%, var(--border-hairline))` }"
+                >
+                  <q-icon :name="tag.icon || 'sell'" size="12px" :style="{ color: tag.color }" />
+                  {{ tag.name }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -665,6 +694,7 @@ async function loadTransactions() {
         jar_slug: (catRel?.['jar_slug'] as string | null | undefined) ?? null,
         jarName: (typeof tx['jar_name'] === 'string' ? tx['jar_name'] : undefined) || (jarRel ? jarRel['name'] as string | undefined : undefined),
         jarColor: (typeof tx['jar_color'] === 'string' ? tx['jar_color'] : undefined) || (jarRel ? jarRel['color'] as string | undefined : undefined),
+        tags: Array.isArray(tx['tags']) ? tx['tags'] : [],
       };
     });
   } catch (err) {
@@ -1072,6 +1102,42 @@ onUnmounted(() => {
   background: var(--surface-2);
   color: var(--fg-2);
   white-space: nowrap;
+}
+
+.tx-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.tx-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px 2px 5px;
+  border-radius: var(--radius-pill);
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.tx-tag-chip--more {
+  background: var(--surface-2) !important;
+  color: var(--fg-2) !important;
+  border-color: var(--border-hairline) !important;
+}
+
+.tx-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tx-detail-row--tags .tx-detail-row__val {
+  flex: 1;
 }
 
 .tx-amount {

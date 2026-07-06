@@ -37,3 +37,4 @@ yarn-error.log*
 /test-results
 /playwright-report-prod
 e2e/.auth*.json
+Paseo-*.dmg
