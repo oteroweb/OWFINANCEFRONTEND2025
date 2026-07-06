@@ -75,7 +75,7 @@
           </template>
         </div>
         <div class="hero-actions">
-          <q-btn color="primary" icon="add" label="Nueva transaccion" @click="ui.openNewTransactionDialog()" />
+          <q-btn color="primary" icon="add" label="Nueva transaccion" @click="ui.openSmartModal('write', 'expense')" />
           <q-btn flat color="primary" icon="refresh" label="Recargar" :loading="loading" @click="loadData" />
         </div>
       </section>

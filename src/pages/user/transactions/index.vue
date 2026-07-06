@@ -539,7 +539,7 @@
                   text-color="positive"
                   icon="trending_up"
                   label="Ingreso"
-                  @click="ui.openNewTransactionDialog('income')"
+                  @click="ui.openSmartModal('write', 'income')"
                 />
                 <q-btn
                   unelevated
@@ -547,7 +547,7 @@
                   text-color="negative"
                   icon="trending_down"
                   label="Egreso"
-                  @click="ui.openNewTransactionDialog('expense')"
+                  @click="ui.openSmartModal('write', 'expense')"
                 />
                 <q-btn
                   unelevated
@@ -555,7 +555,7 @@
                   text-color="primary"
                   icon="swap_horiz"
                   label="Transferencia"
-                  @click="ui.openNewTransactionDialog('transfer')"
+                  @click="ui.openSmartModal('write', 'transfer')"
                 />
                 <q-btn
                   outline
@@ -1020,7 +1020,7 @@
     </template><!-- end legacy template -->
 
     <!-- Dialogs shared by all layouts (Pro + Legacy) -->
-    <!-- Diálogos: usar genérico solo para EDITAR; para NUEVA transacción se usa TransactionCreateDialog (en UserLayout) -->
+    <!-- Diálogos: TransactionFormDialog se usa solo para EDITAR; para NUEVA transacción se usa SmartTransactionModal (global, en AppShell) -->
     <TransactionFormDialog
       v-model="ui.showDialogEditTransaction"
       :id="ui.editTransactionId ?? null"
@@ -2886,13 +2886,12 @@ watch(
   { deep: false }
 );
 
-// Cuando se cierra el diálogo de nueva transacción (TransactionCreateDialog), refrescar la tabla
-watch(
-  () => ui.showDialogNewTransaction,
-  (open, prev) => {
-    if (prev === true && open === false) void runFetch(true);
-  }
-);
+// Cuando se guarda una transacción vía SmartTransactionModal (evento global emitido por AppShell), refrescar la tabla
+const onSmartModalSaved = () => void runFetch(true);
+window.addEventListener('owf:transaction-saved', onSmartModalSaved);
+onBeforeUnmount(() => {
+  window.removeEventListener('owf:transaction-saved', onSmartModalSaved);
+});
 
 // Si el usuario usa el filtro de "Cuenta" del formulario, reflejamos en el sidebar.
 watch(
@@ -3590,7 +3589,7 @@ function removeFilterChip(key: string): void {
 
 // ===== Métodos faltantes referenciados en template =====
 function openNewFab(): void {
-  ui.openNewTransactionDialog();
+  ui.openSmartModal('write', 'expense');
 }
 function handleBulkImported(count: number): void {
   showBulkImport.value = false;

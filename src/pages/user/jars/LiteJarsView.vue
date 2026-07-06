@@ -69,7 +69,7 @@
         <h2>Tus cántaros están vacíos</h2>
         <p>Registra un ingreso para distribuirlo, o crea tu primer cántaro.</p>
         <div class="cm-empty__actions">
-          <button class="cm-add-btn" @click="ui.openNewTransactionDialog('income')">+ Registrar ingreso</button>
+          <button class="cm-add-btn" @click="ui.openSmartModal('write', 'income')">+ Registrar ingreso</button>
           <button class="cm-ghost-btn" @click="openAddSheet">Crear cántaro</button>
         </div>
       </div>
@@ -369,7 +369,7 @@ function openDetail(jar: JarItem) {
 // Acción rápida: abre el modal global de transacción con el tipo prefijado
 function quickAction(kind: 'income' | 'expense') {
   showDetail.value = false;
-  ui.openNewTransactionDialog(kind);
+  ui.openSmartModal('write', kind);
 }
 
 // ── Edit ─────────────────────────────────────────────────────────────────────
