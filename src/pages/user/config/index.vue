@@ -53,6 +53,15 @@
           <div class="apref__toggle" :class="{ 'apref__toggle--on': ui.hideValues }" />
         </div>
 
+        <div class="apref__row" @click="ui.togglePrivacyLock()">
+          <span class="material-icons apref__row-icon">lock</span>
+          <div class="apref__row-text">
+            <span>Privacidad de montos</span>
+            <span class="apref__row-hint">{{ ui.privacyLockEnabled ? 'Pide huella/rostro/contraseña para ver saldos' : 'Desactivado' }}</span>
+          </div>
+          <div class="apref__toggle" :class="{ 'apref__toggle--on': ui.privacyLockEnabled }" />
+        </div>
+
         <div class="apref__row" @click="toggleNotif('overBudget')">
           <span class="material-icons apref__row-icon">account_balance_wallet</span>
           <div class="apref__row-text">

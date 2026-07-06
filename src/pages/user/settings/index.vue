@@ -100,6 +100,25 @@
             </q-item-section>
           </q-item>
           <q-separator inset />
+          <!-- Privacidad de montos: pide huella/cara/contraseña para revelar -->
+          <q-item class="settings-item" clickable @click="ui.togglePrivacyLock()">
+            <q-item-section avatar>
+              <q-icon name="lock" size="20px" class="settings-item__icon" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="settings-item__label">Privacidad de montos</q-item-label>
+              <q-item-label caption class="settings-item__hint">Pide huella, rostro o contraseña para ver tus saldos</q-item-label>
+            </q-item-section>
+            <q-item-section side>
+              <q-toggle
+                :model-value="ui.privacyLockEnabled"
+                :color="activeLayoutMode === 'pro' ? 'blue' : 'primary'"
+                dense
+                @update:model-value="ui.togglePrivacyLock()"
+              />
+            </q-item-section>
+          </q-item>
+          <q-separator inset />
           <!-- Divisa predeterminada -->
           <q-item clickable class="settings-item" @click="router.push('/user/accounts')">
             <q-item-section avatar>
