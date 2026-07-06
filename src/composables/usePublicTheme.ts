@@ -1,31 +1,22 @@
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
+import { Dark } from 'quasar';
 
 const KEY = 'ow-theme';
-const isDark = ref(false);
+// El boot file `src/boot/theme.ts` ya aplicó Dark.set()/data-theme antes del
+// primer render (desde localStorage o el color-scheme del dispositivo).
+const isDark = ref(Dark.isActive);
 
 function applyTheme(dark: boolean) {
-  const theme = dark ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', theme);
+  Dark.set(dark);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   try {
-    localStorage.setItem(KEY, theme);
+    localStorage.setItem(KEY, dark ? 'dark' : 'light');
   } catch {
     // storage may be unavailable
   }
 }
 
 export function usePublicTheme() {
-  onMounted(() => {
-    try {
-      const saved = localStorage.getItem(KEY);
-      if (saved === 'dark' || saved === 'light') {
-        isDark.value = saved === 'dark';
-        applyTheme(isDark.value);
-      }
-  } catch {
-    // ignore
-  }
-  });
-
   function toggleTheme() {
     isDark.value = !isDark.value;
     applyTheme(isDark.value);

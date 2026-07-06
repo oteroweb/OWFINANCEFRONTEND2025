@@ -1,7 +1,7 @@
 <template>
   <div class="public-layout">
-    <!-- Header -->
-    <header class="nav">
+    <!-- Header (oculto en postura Mobile solo para el entry-gate en '/') -->
+    <header v-if="!hideChrome" class="nav">
       <div class="wrap nav-inner">
         <router-link class="nav-logo" to="/" aria-label="OW Finance — inicio">
           <svg viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg" height="26">
@@ -50,7 +50,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer v-if="!hideChrome" class="footer">
       <div class="wrap">
         <div class="footer-grid">
           <div class="footer-brand">
@@ -62,13 +62,9 @@
             </router-link>
             <p>Finanzas personales calmadas. Reparte, ahorra y entiende tu dinero — en Lite o en Pro.</p>
             <div class="app-downloads">
-              <a href="https://appfinanzasdev.blockshift.website/downloads/owfinance-dev.apk" target="_blank" rel="noopener" aria-label="Descargar APK Dev (Beta)">
+              <a href="https://owfinances.com/downloads/" target="_blank" rel="noopener" aria-label="Descargar app Android">
                 <span class="material-icons">android</span>
-                Android DEV
-              </a>
-              <a href="https://appfinanzas.blockshift.website/downloads/owfinance-stage.apk" target="_blank" rel="noopener" aria-label="Descargar APK Stage">
-                <span class="material-icons">android</span>
-                Android Stage
+                Descargar Android
               </a>
             </div>
           </div>
@@ -107,14 +103,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { usePublicTheme } from 'src/composables/usePublicTheme'
 
 const router = useRouter()
 const route = useRoute()
+const $q = useQuasar()
 const { isDark, toggleTheme } = usePublicTheme()
 const mobileMenuOpen = ref(false)
+
+// Postura Mobile: el entry-gate en '/' es full-screen sin nav/footer de
+// marketing. Las demás rutas públicas (/funciones, /planes, /matriz) son
+// exclusivas del sitio web y conservan su chrome también en mobile-web.
+const isMobile = computed(() => $q.platform.is.mobile || $q.screen.lt.md)
+const hideChrome = computed(() => isMobile.value && route.path === '/')
 
 function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value

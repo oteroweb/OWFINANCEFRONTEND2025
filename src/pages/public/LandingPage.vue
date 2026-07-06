@@ -1,5 +1,6 @@
 <template>
-  <div>
+  <LandingHeroMobile v-if="isMobile" />
+  <div v-else>
     <!-- ===================== HERO ===================== -->
     <section class="section" style="padding-top: 72px; padding-bottom: 64px">
       <div class="wrap">
@@ -383,5 +384,10 @@
 </template>
 
 <script setup lang="ts">
-// LandingPage — pure static marketing page; no logic needed
+import { computed } from 'vue';
+import { useQuasar } from 'quasar';
+import LandingHeroMobile from './LandingHeroMobile.vue';
+
+const $q = useQuasar();
+const isMobile = computed(() => $q.platform.is.mobile || $q.screen.lt.md);
 </script>

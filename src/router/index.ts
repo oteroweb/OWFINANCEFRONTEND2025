@@ -1,5 +1,6 @@
 import { route } from 'quasar/wrappers'
 import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
+import { Capacitor } from '@capacitor/core'
 import routes from './routes'
 import { useAuthStore } from 'stores/auth'
 
@@ -41,6 +42,12 @@ export default route(function () {
       } else if (auth.role === 'user') {
         return next('/user/home')
       }
+      return next('/login')
+    }
+
+    // App nativa (Capacitor): la landing de marketing es del sitio web, no del
+    // app instalado — sin sesión, la primera pantalla es directamente el login.
+    if (to.path === '/' && !auth.isLoggedIn && Capacitor.isNativePlatform()) {
       return next('/login')
     }
 

@@ -17,6 +17,7 @@
     "postinstall": "quasar prepare"
   },
   "dependencies": {
+    "@capacitor/status-bar": "^7.0.6",
     "@quasar/extras": "^1.16.4",
     "@sentry/vue": "^10.59.0",
     "axios": "^1.2.1",

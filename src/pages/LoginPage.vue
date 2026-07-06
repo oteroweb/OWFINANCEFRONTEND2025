@@ -1,5 +1,6 @@
 <template>
-  <div class="auth-split">
+  <LoginMobileView v-if="isMobile" />
+  <div v-else class="auth-split">
     <!-- LEFT BRAND -->
     <aside class="auth-brand">
       <router-link class="logo-row" to="/" aria-label="OW Finance">
@@ -120,11 +121,8 @@
           <!-- App Download -->
           <div class="divider">Descarga la app</div>
           <div class="app-downloads" style="display: flex; gap: 10px; margin-top: 12px">
-            <a class="btn" style="flex: 1; font-size: 13px" href="https://appfinanzasdev.blockshift.website/downloads/owfinance-dev.apk" target="_blank" rel="noopener">
-              <span class="material-icons" style="font-size: 18px; color: var(--info)">android</span>DEV (Beta)
-            </a>
-            <a class="btn" style="flex: 1; font-size: 13px" href="https://appfinanzas.blockshift.website/downloads/owfinance-stage.apk" target="_blank" rel="noopener">
-              <span class="material-icons" style="font-size: 18px; color: var(--brand-primary)">android</span>Stage
+            <a class="btn" style="flex: 1; font-size: 13px" href="https://owfinances.com/downloads/" target="_blank" rel="noopener">
+              <span class="material-icons" style="font-size: 18px; color: var(--brand-primary)">android</span>Descargar APK
             </a>
           </div>
         </div>
@@ -142,8 +140,10 @@ import { useAuthStore } from 'stores/auth';
 import { useBiometric } from 'src/composables/useBiometric';
 import { api } from 'boot/axios';
 import { usePublicTheme } from 'src/composables/usePublicTheme';
+import LoginMobileView from './LoginMobileView.vue';
 
 const $q = useQuasar();
+const isMobile = computed(() => $q.platform.is.mobile || $q.screen.lt.md);
 const { t } = useI18n();
 
 const email = ref('');
