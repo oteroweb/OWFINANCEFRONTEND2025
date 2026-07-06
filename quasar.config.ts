@@ -48,7 +48,7 @@ export default defineConfig((ctx) => {
       },
 
       vueRouterMode: isMobile ? 'hash' : 'history',
-      vueRouterBase: '/',
+      vueRouterBase: isMobile ? '/' : '/app/',
       // vueDevtools,
       // vueOptionsAPI: false,
 
