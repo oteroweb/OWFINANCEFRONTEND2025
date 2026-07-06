@@ -6,6 +6,7 @@ export interface CatalogCategory {
   name: string;
   icon: string | null;
   jar_slug: string | null;
+  assigned_jar_id: number | null;
   active: number | boolean;
   user_id: number | null;
   type: string | null;
@@ -68,14 +69,28 @@ export function jarNameForSlug(slug: string | null | undefined): string | null {
 }
 
 /**
- * Find the user's actual jar from their jar list by matching jar_slug.
+ * Find the user's actual jar from their jar list for a given category.
  * userJars: array of { id, name, color, icon, percent } from auth store or jars store.
  */
 export function jarForCategory(
   categoryId: number | null | undefined,
   userJars: JarRef[],
 ): JarRef | null {
-  const slug = jarSlugForCategory(categoryId);
+  if (!categoryId) return null;
+  const cat = _categories.value.find(c => c.id === categoryId);
+  if (!cat) return null;
+
+  // Match directo por id (jar_category real) — funciona aunque el usuario haya
+  // renombrado sus cántaros. Es la fuente de verdad, igual que en la vista Cántaros.
+  if (cat.assigned_jar_id != null) {
+    const byId = userJars.find(j => j.id === cat.assigned_jar_id);
+    if (byId) return byId;
+  }
+
+  // Fallback legado: slug → nombre canónico → match por nombre. Solo cubre
+  // cántaros con el nombre por defecto (sin renombrar) y categorías base
+  // sin asignación explícita en jar_category.
+  const slug = cat.jar_slug;
   if (!slug) return null;
   const canonicalName = JAR_SLUG_NAMES[slug];
   if (!canonicalName) return null;

@@ -99,6 +99,8 @@
             :key="tx.id"
             class="tx-dense"
             :class="{ 'tx-dense--first': i === 0 }"
+            style="cursor: pointer;"
+            @click="router.push({ path: '/user/transactions', query: { editTx: String(tx.id) } })"
           >
             <div class="tx-dense__icon" :class="tx.type === 'income' ? 'tx-dense__icon--income' : 'tx-dense__icon--expense'">
               <q-icon :name="tx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="16px" />

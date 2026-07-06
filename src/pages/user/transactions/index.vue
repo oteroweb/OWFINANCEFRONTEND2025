@@ -2808,6 +2808,28 @@ onMounted(async () => {
   await runFetch(true);
   visibleColumnNames.value = columns.value.filter((c) => c.name !== 'actions').map((c) => c.name);
 
+  // OWF-199: abrir directo el detalle/edición cuando se llega desde "Movimientos
+  // recientes" del Home (Lite/Pro) con ?editTx=<id>
+  const editTxId = route.query.editTx;
+  if (editTxId) {
+    const idNum = Number(Array.isArray(editTxId) ? editTxId[0] : editTxId);
+    if (Number.isFinite(idNum)) {
+      const found = rows.value.find((r) => Number(r['id']) === idNum);
+      if (found) {
+        edit(found);
+      } else {
+        try {
+          const res = await api.get(`/transactions/${idNum}`);
+          const tx = (res.data?.data ?? null) as Row | null;
+          if (tx) edit(tx);
+        } catch (e) {
+          console.error('No se pudo cargar la transacción para editar:', e);
+        }
+      }
+    }
+    void $router.replace({ path: '/user/transactions' });
+  }
+
   // Cargar cuentas disponibles para AccountFilter (Pro mode)
   void fetchAvailableAccounts();
 

@@ -240,7 +240,7 @@
             v-for="tx in recentTransactions.slice(0, txLimit)"
             :key="tx.id"
             class="lite-home__tx"
-            @click="router.push('/user/transactions')"
+            @click="router.push({ path: '/user/transactions', query: { editTx: String(tx.id) } })"
           >
             <div class="lite-home__tx-icon" :class="{ 'lite-home__tx-icon--income': tx.type === 'income' }">
               <q-icon :name="tx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="16px" />
