@@ -101,12 +101,18 @@ $accent:    $brand-accent;
 //  · la carga de la familia Outfit (Satoshi + DM Sans/Manrope/Inter
 //    ya se cargan en design-system.css), para que el preset `outfit`
 //    tenga la fuente disponible sin romper render.
-//  · el bloque :root que sobrescribe los tokens runtime con el preset
-//    elegido, ganando sobre design-system.css por orden de carga.
+//  · el bloque de tokens runtime con el preset elegido, ganando sobre
+//    design-system.css por orden de carga.
 // La familia Outfit se carga en app.scss (top-level @import url, donde
-// CSS lo permite). Este mixin solo emite el bloque :root del preset.
+// CSS lo permite). Este mixin solo emite el bloque del preset.
+//
+// IMPORTANTE: el selector debe ser [data-theme="light"] y NO el `:root`
+// desnudo. `:root` matchea siempre (también con data-theme="dark"), y al
+// tener la misma especificidad que `[data-theme="dark"]` mientras se carga
+// después (app.scss > design-system.css), ganaba SIEMPRE — el brand-primary
+// quedaba fijo en el tono claro sin importar el toggle de modo oscuro.
 @mixin emit-theme {
-  :root {
+  [data-theme="light"] {
     // Marca → tokens DS canónicos
     --brand-primary:       #{$brand-primary};
     --brand-primary-hover: #{$brand-hover};
