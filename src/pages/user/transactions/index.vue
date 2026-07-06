@@ -103,7 +103,7 @@
             <div class="pro-tx__amt-presets">
               <button v-for="p in proAmtPresets" :key="p.id"
                 class="pro-tx__amt-preset"
-                :class="{ 'pro-tx__amt-preset--active': proAmtMin === p.min && proAmtMax === p.max && p.id !== 'any' }"
+                :class="{ 'pro-tx__amt-preset--active': proAmtMin === p.min && proAmtMax === p.max }"
                 @click="proAmtMin = p.min; proAmtMax = p.max">
                 {{ p.label }}
               </button>
