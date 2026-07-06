@@ -85,14 +85,28 @@
               "{{ filters.search }}"
               <span class="material-icons" style="font-size:14px;opacity:.7;cursor:pointer">close</span>
             </span>
+            <!-- Monto activo -->
+            <span v-if="proAmtMin || proAmtMax" class="tx-pool__chip" @click="proAmtMin = ''; proAmtMax = ''">
+              <span class="material-icons" style="font-size:13px">payments</span>
+              {{ proAmtMin ? '≥$' + proAmtMin : '' }}{{ proAmtMin && proAmtMax ? ' · ' : '' }}{{ proAmtMax ? '≤$' + proAmtMax : '' }}
+              <span class="material-icons" style="font-size:14px;opacity:.7;cursor:pointer">close</span>
+            </span>
           </div>
-          <!-- Footer: type toggle + clear -->
+          <!-- Footer: type toggle + amount presets + clear -->
           <div class="tx-pool__footer">
             <div class="tx-pool__type-seg">
               <button v-for="t in proTypeOptions" :key="t.id"
                 class="tx-pool__type-btn"
                 :class="{ 'tx-pool__type-btn--active': proType === t.id }"
                 @click="proType = t.id">{{ t.label }}</button>
+            </div>
+            <div class="pro-tx__amt-presets">
+              <button v-for="p in proAmtPresets" :key="p.id"
+                class="pro-tx__amt-preset"
+                :class="{ 'pro-tx__amt-preset--active': proAmtMin === p.min && proAmtMax === p.max && p.id !== 'any' }"
+                @click="proAmtMin = p.min; proAmtMax = p.max">
+                {{ p.label }}
+              </button>
             </div>
             <button v-if="proPoolHasFilters" class="tx-pool__clear-btn" @click="clearProFilters">
               <span class="material-icons" style="font-size:14px">filter_alt_off</span>
@@ -3976,6 +3990,12 @@ const proJarTags = computed(() => {
     .map(([name, v]) => ({ name, color: v.color, count: v.count }))
     .sort((a, b) => b.count - a.count);
 });
+
+const proAmtPresets = [
+  { id: 'lt50',   label: '< $50',      min: '',   max: '50'  },
+  { id: '50-200', label: '$50–$200',   min: '50', max: '200' },
+  { id: 'gt200',  label: '> $200',     min: '200', max: ''   },
+] as const;
 
 const proPoolHasFilters = computed(() =>
   proType.value !== 'all' ||
