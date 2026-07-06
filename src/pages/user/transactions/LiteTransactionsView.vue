@@ -341,6 +341,7 @@ import {
   jarForCategory,
   getCachedJars,
 } from 'src/utils/txCatalog';
+import type { Tag } from 'stores/tags';
 
 defineOptions({ name: 'LiteTransactionsView' });
 
@@ -371,6 +372,7 @@ interface TxItem {
   jarName?: string | undefined;
   jarColor?: string | undefined;
   jar_slug?: string | null;
+  tags?: Tag[];
 }
 
 interface TxOption {
