@@ -5,11 +5,15 @@
       <h1 class="t-h1" style="margin: 6px 0 0">Notificaciones</h1>
     </div>
 
-    <p v-if="!notifications.length" class="notif-page__empty">
+    <div v-if="loading" class="notif-page__loading">
+      <q-spinner size="28px" color="primary" />
+    </div>
+
+    <p v-else-if="!notifications.length" class="notif-page__empty">
       Sin notificaciones recientes
     </p>
 
-    <div v-else class="notif-page__list">
+    <div v-else-if="notifications.length" class="notif-page__list">
       <div
         v-for="n in notifications"
         :key="n.id"
@@ -32,7 +36,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { api } from 'src/boot/axios';
 
 defineOptions({ name: 'NotificationsPage' });
 
@@ -48,15 +53,19 @@ interface Notif {
   unread: boolean;
 }
 
-// OWF-177: conectar a /api/v1/notifications cuando el endpoint exista
-const notifications = ref<Notif[]>([
-  { id: 1, icon: 'credit_card',   tone: 'expense', title: 'Cuota Cashea por vencer',       body: 'iPhone 15 · $148.50 vence en 2 días.',                   time: 'Hace 2 h',  unread: true  },
-  { id: 2, icon: 'savings',       tone: 'info',    title: 'Dinero ocioso detectado',       body: 'Tienes $1,240 sin asignar a ningún cántaro hace 9 días.', time: 'Hace 5 h',  unread: true  },
-  { id: 3, icon: 'auto_awesome',  tone: 'income',  title: '¡Meta de sueño más cerca!',     body: 'Vacaciones Margarita llegó al 72% de tu objetivo.',        time: 'Ayer',      unread: false },
-  { id: 4, icon: 'trending_up',   tone: 'warning', title: 'Cántaro Diversión al 90%',     body: 'Has usado $270 de $300 este mes.',                         time: 'Hace 2 d',  unread: false },
-  { id: 5, icon: 'arrow_downward',tone: 'income',  title: 'Pago recibido',                 body: 'Banesco · +$820.00 acreditado a Cuenta principal.',        time: 'Hace 3 d',  unread: false },
-  { id: 6, icon: 'receipt_long',  tone: 'info',    title: 'Tu resumen semanal está listo', body: 'Gastaste 8% menos que la semana pasada.',                  time: 'Hace 4 d',  unread: false },
-]);
+const notifications = ref<Notif[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const res = await api.get<{ data: Notif[] }>('/notifications');
+    notifications.value = res.data.data;
+  } catch {
+    notifications.value = [];
+  } finally {
+    loading.value = false;
+  }
+});
 
 function markRead(id: number) {
   const n = notifications.value.find(x => x.id === id);
@@ -80,6 +89,12 @@ function markRead(id: number) {
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--fg-3, #94a3b8);
+}
+
+.notif-page__loading {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
 }
 
 .notif-page__empty {

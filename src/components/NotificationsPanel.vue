@@ -11,8 +11,13 @@
       >
         <NpHeader :unread-count="unreadCount" @mark-all="markAllRead" />
         <div class="np-list">
-          <NpRow v-for="n in items" :key="n.id" :item="n" @read="readOne(n.id)" />
-          <NpFooter @close="emit('close')" />
+          <div v-if="loading" class="np-loading">
+            <q-spinner size="20px" color="primary" />
+          </div>
+          <template v-else>
+            <NpRow v-for="n in items" :key="n.id" :item="n" @read="readOne(n.id)" />
+          </template>
+          <NpFooter @close="emit('close')" :on-view-all="viewAll" />
         </div>
       </div>
     </transition>
@@ -28,7 +33,12 @@
           <div class="np-sheet__handle" />
           <NpHeader :unread-count="unreadCount" @mark-all="markAllRead" />
           <div class="np-list np-list--sheet">
-            <NpRow v-for="n in items" :key="n.id" :item="n" @read="readOne(n.id)" />
+            <div v-if="loading" class="np-loading">
+              <q-spinner size="20px" color="primary" />
+            </div>
+            <template v-else>
+              <NpRow v-for="n in items" :key="n.id" :item="n" @read="readOne(n.id)" />
+            </template>
             <NpFooter @close="emit('close')" :on-view-all="viewAll" />
           </div>
         </div>
@@ -41,6 +51,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
+import { api } from 'src/boot/axios';
 
 defineOptions({ name: 'NotificationsPanel' });
 
@@ -64,19 +75,22 @@ interface Notif {
   unread: boolean;
 }
 
-// OWF-177: conectar a /api/v1/notifications cuando el endpoint exista
-const SEED: Notif[] = [
-  { id: 1, icon: 'credit_card',   tone: 'expense', title: 'Cuota Cashea por vencer',       body: 'iPhone 15 · $148.50 vence en 2 días.',              time: 'Hace 2 h',  unread: true  },
-  { id: 2, icon: 'savings',       tone: 'info',    title: 'Dinero ocioso detectado',       body: 'Tienes $1,240 sin asignar a ningún cántaro hace 9 días.', time: 'Hace 5 h', unread: true  },
-  { id: 3, icon: 'auto_awesome',  tone: 'income',  title: '¡Meta de sueño más cerca!',     body: 'Vacaciones Margarita llegó al 72% de tu objetivo.',   time: 'Ayer',      unread: false },
-  { id: 4, icon: 'trending_up',   tone: 'warning', title: 'Cántaro Diversión al 90%',     body: 'Has usado $270 de $300 este mes.',                    time: 'Hace 2 d',  unread: false },
-  { id: 5, icon: 'arrow_downward',tone: 'income',  title: 'Pago recibido',                 body: 'Banesco · +$820.00 acreditado a Cuenta principal.',   time: 'Hace 3 d',  unread: false },
-  { id: 6, icon: 'receipt_long',  tone: 'info',    title: 'Tu resumen semanal está listo', body: 'Gastaste 8% menos que la semana pasada.',             time: 'Hace 4 d',  unread: false },
-];
-
-const items = ref<Notif[]>(SEED.map(n => ({ ...n })));
+const items = ref<Notif[]>([]);
+const loading = ref(false);
 
 const unreadCount = computed(() => items.value.filter(n => n.unread).length);
+
+async function loadNotifications() {
+  loading.value = true;
+  try {
+    const res = await api.get<{ data: Notif[] }>('/notifications');
+    items.value = res.data.data;
+  } catch {
+    items.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
 
 function markAllRead() {
   items.value = items.value.map(n => ({ ...n, unread: false }));
@@ -101,7 +115,7 @@ function handleEscape(e: KeyboardEvent) {
 
 watch(() => props.show, (v) => {
   if (v) {
-    items.value = SEED.map(n => ({ ...n }));
+    void loadNotifications();
     setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
     }, 0);
@@ -255,6 +269,12 @@ export default {};
   overflow-y: auto;
   flex: 1;
   &--sheet { max-height: 70vh; }
+}
+
+.np-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
 }
 
 // ── Transitions ──
