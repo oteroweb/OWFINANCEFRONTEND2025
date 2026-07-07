@@ -168,6 +168,11 @@
       </button>
     </div>
 
+    <!-- Backdrop for mobile panel -->
+    <transition name="ap-backdrop">
+      <div v-if="showAccountsPanel" class="ap-backdrop" @click="showAccountsPanel = false" />
+    </transition>
+
     <!-- Accounts Panel -->
     <transition name="ap-slide">
       <aside v-if="showAccountsPanel" class="ap-panel">
@@ -1015,6 +1020,20 @@ onMounted(() => {
   }
 }
 
+// ── Accounts Panel backdrop (mobile) ──
+.ap-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: rgba(0, 0, 0, 0.38);
+  display: none;
+}
+
+.ap-backdrop-enter-active,
+.ap-backdrop-leave-active { transition: opacity 200ms; }
+.ap-backdrop-enter-from,
+.ap-backdrop-leave-to    { opacity: 0; }
+
 // ── Accounts Panel ──
 .ap-panel {
   width: 280px;
@@ -1201,7 +1220,10 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
-  // OWF-173-GAP2: overlay mobile para AccountsPanel
+  .ap-backdrop {
+    display: block;
+  }
+
   .ap-panel {
     position: fixed;
     top: 0;
@@ -1218,6 +1240,13 @@ onMounted(() => {
     top: 16px;
     right: 16px;
     z-index: 210;
+  }
+}
+
+@media (max-width: 480px) {
+  .ap-panel {
+    width: 100vw;
+    border-left: none;
   }
 }
 

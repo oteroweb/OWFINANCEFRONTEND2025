@@ -26,6 +26,9 @@
         <div class="ob__phase-label">{{ PHASES[phaseIndex] ?? '' }}</div>
       </template>
 
+      <!-- Content row: body + right-column plan panel (desktop only) -->
+      <div class="ob__content-row">
+
       <!-- Body -->
       <div class="ob__body" :class="{ 'ob__body--centered': isEdge }">
 
@@ -233,7 +236,27 @@
           </div>
         </template>
 
+      </div><!-- /ob__body -->
+
+      <!-- Desktop right column: plan preview -->
+      <div v-if="!isEdge" class="ob__side">
+        <div class="ob__side-eyebrow">
+          <q-icon name="auto_awesome" size="14px" style="color: var(--brand-primary)" />
+          Tu plan se forma
+        </div>
+        <template v-if="planSlug">
+          <div class="ob__side-plan-card">
+            <div class="ob__side-plan-label">Plan sugerido</div>
+            <div class="ob__side-plan-name">{{ planSlug }}</div>
+          </div>
+        </template>
+        <div v-else class="ob__side-empty">
+          <q-icon name="savings" size="30px" style="color: var(--fg-3); margin-bottom: 8px" />
+          <span>Tus respuestas definirán tu plan</span>
+        </div>
       </div>
+
+      </div><!-- /ob__content-row -->
 
       <!-- Footer nav (only on data steps) -->
       <div v-if="!isEdge" class="ob__footer">
@@ -544,8 +567,6 @@ const ChipField = defineComponent({
   padding: 20px;
 }
 
-// OWF-175: layout 2-col pendiente — refactor estructural requerido
-// (topbar/body/footer en columna única impide grid sin reestructurar el DOM)
 .ob {
   width: min(540px, 100vw - 40px);
   max-height: calc(100vh - 60px);
@@ -559,6 +580,85 @@ const ChipField = defineComponent({
   @media (min-width: 768px) {
     width: min(680px, 100vw - 40px);
   }
+
+  @media (min-width: 840px) {
+    width: min(860px, 100vw - 40px);
+  }
+}
+
+/* ── OWF-175: 2-col layout at ≥840px ──────────────────────────────── */
+.ob__content-row {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ob__side {
+  display: none;
+
+  @media (min-width: 840px) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 220px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-hairline);
+    padding: 24px 18px;
+    background: var(--surface-2);
+    overflow-y: auto;
+  }
+}
+
+.ob__side-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.ob__side-plan-card {
+  padding: 14px 14px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--brand-primary) 8%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ob__side-plan-label {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--brand-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ob__side-plan-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg-1);
+}
+
+.ob__side-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 8px;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--fg-3);
+  line-height: 1.5;
 }
 
 /* ── Topbar ───────────────────────────────────────────────────────── */
