@@ -517,7 +517,7 @@ import CategorySelector from 'src/components/CategorySelector.vue';
 import TfReviewCard from 'src/components/TfReviewCard.vue';
 import JarPercentSplitInfo from 'src/components/JarPercentSplitInfo.vue';
 import { useUserRates } from 'src/composables/useUserRates';
-import { jarForCategory, getCachedJars } from 'src/utils/txCatalog';
+import { jarForCategory, getCachedJars, loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
 
 defineOptions({ name: 'SmartTransactionModal' });
 
@@ -1093,6 +1093,7 @@ function onShow() {
   void ttypes.fetchTransactionTypes();
   void loadCategories();
   void tagsStore.fetchTags();
+  void Promise.all([loadCategoriesWithJars(), loadUserJars()]);
 }
 
 function onHide() {
