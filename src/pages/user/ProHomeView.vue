@@ -1263,6 +1263,11 @@ onMounted(() => {
   .mid-row {
     grid-template-columns: 1fr;
   }
+
+  // OWF-173-GAP2: AccountsPanel no existe en spec mobile — ocultar toggle
+  .ap-toggle {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
