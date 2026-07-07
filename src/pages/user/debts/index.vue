@@ -13,36 +13,25 @@
       </button>
     </div>
 
-    <!-- Summary card -->
+    <!-- Summary card (alineado a rediseno DebtSummaryCard) -->
     <div v-if="debts.length" class="debts-summary-card">
-      <div class="debts-summary-card__left">
-        <div class="debts-summary-card__eyebrow">Total pendiente · USD</div>
-        <div class="debts-summary-card__amount">
-          <span v-if="ui.hideValues" class="debts-summary-card__amount">$ ••••••</span>
-          <span v-else>$ {{ fmtN(meta.total_balance) }}</span>
-        </div>
-        <div class="debts-summary-card__sub">
-          <span v-if="meta.late_count" class="debts-status-badge debts-status-badge--late">
-            <q-icon name="warning" size="14px" />
-            {{ meta.late_count }} atrasada{{ meta.late_count > 1 ? 's' : '' }}
-          </span>
-          <span v-else class="debts-status-badge debts-status-badge--ok">
-            <q-icon name="check_circle" size="14px" />
-            Todo al día
-          </span>
-          · {{ debts.length }} planes · {{ meta.cashea_count }} en Cashea
-        </div>
-        <div class="debts-summary-card__sub" style="margin-top:4px">
-          Próximas cuotas (30 días): <strong>{{ ui.hideValues ? '$ ••••••' : '$ ' + fmtN(meta.total_monthly) }}</strong>
-        </div>
+      <div class="debts-summary-card__eyebrow">Total pendiente · USD</div>
+      <div class="debts-summary-card__amount">
+        {{ ui.hideValues ? '$ ••••••' : '$ ' + fmtN(meta.total_balance) }}
       </div>
-      <div class="debts-summary-card__actions">
-        <button class="debts-btn debts-btn--ghost" @click="openPayDialog()">
-          <q-icon name="payments" size="17px" /> Pagar cuota
-        </button>
-        <button class="debts-btn debts-btn--primary" @click="openForm(null)">
-          <q-icon name="add" size="17px" /> Nuevo plan
-        </button>
+      <!-- Stats row con separador blanco (rediseno: gap 22, borderTop) -->
+      <div class="debts-summary-card__stats">
+        <div class="debts-summary-card__stat">
+          <span class="debts-summary-card__stat-label">Próx. cuotas · 30d</span>
+          <span class="debts-summary-card__stat-val">{{ ui.hideValues ? '$ ••••' : '$ ' + fmtN(meta.total_monthly) }}</span>
+        </div>
+        <div class="debts-summary-card__stat">
+          <span class="debts-summary-card__stat-label">Estado</span>
+          <span class="debts-summary-card__stat-val"
+            :style="{ color: meta.late_count > 0 ? '#FCA5A5' : '#86EFAC' }">
+            {{ meta.late_count > 0 ? `${meta.late_count} atrasada${meta.late_count > 1 ? 's' : ''}` : 'Todo al día' }}
+          </span>
+        </div>
       </div>
     </div>
 
@@ -81,6 +70,16 @@
         <DebtCard v-for="d in otherDebts" :key="d.id" :debt="d"
           @pay="openPayDialog(d)" @edit="openForm(d)" @delete="confirmDelete(d)" />
       </div>
+    </div>
+
+    <!-- Action buttons (debts exist, after the list — rediseno DebtsScreen pattern) -->
+    <div v-if="debts.length && !loading" class="debts-actions-row">
+      <button class="debts-btn debts-btn--ghost debts-btn--full" @click="openPayDialog()">
+        <q-icon name="payments" size="17px" /> Pagar cuota
+      </button>
+      <button class="debts-btn debts-btn--primary debts-btn--full" @click="openForm(null)">
+        <q-icon name="add" size="17px" /> Nuevo plan
+      </button>
     </div>
 
     <!-- Add / Edit dialog -->
@@ -444,22 +443,19 @@ function confirmDelete(debt: Debt) {
 .debts-summary-card {
   background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
   border-radius: var(--radius-xl, 20px);
-  padding: 22px 24px;
+  padding: 18px 20px;
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 28px;
-  box-shadow: 0 8px 28px rgba(239, 68, 68, 0.3);
+  flex-direction: column;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.28);
 
   &__eyebrow {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: rgba(255,255,255,0.7);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 
   &__amount {
@@ -470,16 +466,46 @@ function confirmDelete(debt: Debt) {
     line-height: 1;
     letter-spacing: -0.5px;
     font-variant-numeric: tabular-nums;
-    margin-bottom: 12px;
   }
 
-  &__sub {
-    font-size: 12px;
-    color: rgba(255,255,255,0.85);
+  &__stats {
+    display: flex;
+    gap: 22px;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.18);
   }
 
-  &__actions { display: flex; gap: 8px; align-items: flex-end; }
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.6);
+  }
+
+  &__stat-val {
+    font-family: var(--font-money, monospace);
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
 }
+
+.debts-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.debts-btn--full { flex: 1; justify-content: center; }
 
 // ── Groups ──
 .debts-lists { display: flex; flex-direction: column; gap: 28px; }
