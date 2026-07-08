@@ -53,15 +53,6 @@
           <div class="apref__toggle" :class="{ 'apref__toggle--on': ui.hideValues }" />
         </div>
 
-        <div class="apref__row" @click="ui.togglePrivacyLock()">
-          <span class="material-icons apref__row-icon">lock</span>
-          <div class="apref__row-text">
-            <span>Privacidad de montos</span>
-            <span class="apref__row-hint">{{ ui.privacyLockEnabled ? 'Pide huella/rostro/contraseña para ver saldos' : 'Desactivado' }}</span>
-          </div>
-          <div class="apref__toggle" :class="{ 'apref__toggle--on': ui.privacyLockEnabled }" />
-        </div>
-
         <div class="apref__row" @click="toggleNotif('overBudget')">
           <span class="material-icons apref__row-icon">account_balance_wallet</span>
           <div class="apref__row-text">
@@ -179,6 +170,29 @@
           </div>
           <q-icon name="chevron_right" size="18px" />
         </button>
+        <div class="lite-config__nav-item lite-config__nav-item--toggle" @click="ui.togglePrivacyLock()">
+          <q-icon name="shield" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">Pedir confirmación para ver saldos</span>
+            <span class="lite-config__nav-hint">{{ ui.privacyLockEnabled ? 'Huella/rostro/contraseña o PIN' : 'Desactivado' }}</span>
+          </div>
+          <div class="apref__toggle" :class="{ 'apref__toggle--on': ui.privacyLockEnabled }" />
+        </div>
+        <button class="lite-config__nav-item" @click="openPinDialog">
+          <q-icon name="pin" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">{{ hasPinConfigured ? 'Cambiar PIN' : 'Configurar PIN' }}</span>
+            <span class="lite-config__nav-hint">{{ hasPinConfigured ? 'Configurado — alternativa rápida a tu contraseña' : 'Desbloqueo rápido sin escribir tu contraseña' }}</span>
+          </div>
+          <q-icon name="chevron_right" size="18px" />
+        </button>
+        <button v-if="hasPinConfigured" class="lite-config__nav-item" @click="promptRemovePin">
+          <q-icon name="pin_off" size="20px" color="negative" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label" style="color: var(--expense-fg, #b91c1c)">Eliminar PIN</span>
+            <span class="lite-config__nav-hint">Quita el desbloqueo rápido</span>
+          </div>
+        </button>
       </div>
 
       <!-- ── Cerrar sesión ────────────────────────────────────────── -->
@@ -194,6 +208,53 @@
 
       <OnboardingFlow v-model="showOnboarding" />
     </template>
+
+    <!-- Diálogo compartido: configurar/cambiar PIN de seguridad -->
+    <q-dialog v-model="showPinDialog" persistent>
+      <q-card style="min-width: 320px; max-width: 400px">
+        <q-card-section>
+          <div class="text-h6">{{ hasPinConfigured ? 'Cambiar PIN' : 'Configurar PIN' }}</div>
+          <div class="text-caption text-grey-7">
+            El PIN es una alternativa rápida a tu contraseña para revelar saldos.
+          </div>
+        </q-card-section>
+        <q-card-section class="q-gutter-md">
+          <q-input
+            v-model="pinDialogPassword"
+            type="password"
+            label="Tu contraseña actual"
+            outlined
+            dense
+            autocomplete="current-password"
+          />
+          <q-input
+            v-model="pinDialogPin"
+            type="password"
+            inputmode="numeric"
+            maxlength="6"
+            label="Nuevo PIN (4-6 dígitos)"
+            outlined
+            dense
+          />
+          <q-input
+            v-model="pinDialogPinConfirm"
+            type="password"
+            inputmode="numeric"
+            maxlength="6"
+            label="Confirmar PIN"
+            outlined
+            dense
+          />
+          <q-banner v-if="pinDialogError" class="bg-red-1 text-red-9" dense rounded>
+            {{ pinDialogError }}
+          </q-banner>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" @click="showPinDialog = false" />
+          <q-btn color="primary" label="Guardar" :loading="pinDialogSaving" @click="submitPinDialog" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <q-card flat :bordered="false" :class="isLiteLayout ? 'lite-config__card' : 'pro-config__card'">
       <q-tabs v-if="!isLiteLayout" v-model="tab" dense class="text-primary" align="left" inline-label>
@@ -299,6 +360,41 @@
                       <q-icon name="check_circle" />
                     </template>
                   </q-input>
+                </div>
+              </div>
+            </q-card>
+
+            <!-- Privacidad y PIN -->
+            <q-card flat bordered class="q-pa-md">
+              <div class="text-subtitle1 q-mb-sm">
+                <q-icon name="shield" class="q-mr-sm" />
+                Privacidad y PIN
+              </div>
+              <div class="row items-center justify-between q-mb-md">
+                <div>
+                  <div class="text-body2">Pedir confirmación para ver saldos</div>
+                  <div class="text-caption text-grey-7">
+                    {{ ui.privacyLockEnabled ? 'Pide huella/rostro/contraseña (o PIN) para revelar montos' : 'Desactivado' }}
+                  </div>
+                </div>
+                <q-toggle v-model="ui.privacyLockEnabled" color="primary" @update:model-value="ui.togglePrivacyLock()" />
+              </div>
+              <q-separator class="q-mb-md" />
+              <div class="row items-center justify-between">
+                <div>
+                  <div class="text-body2">PIN de acceso rápido</div>
+                  <div class="text-caption text-grey-7">
+                    {{ hasPinConfigured ? 'Configurado — alternativa rápida a tu contraseña' : 'No configurado' }}
+                  </div>
+                </div>
+                <div class="q-gutter-sm">
+                  <q-btn
+                    outline
+                    color="primary"
+                    :label="hasPinConfigured ? 'Cambiar PIN' : 'Configurar PIN'"
+                    @click="openPinDialog"
+                  />
+                  <q-btn v-if="hasPinConfigured" flat color="negative" label="Eliminar" @click="promptRemovePin" />
                 </div>
               </div>
             </q-card>
@@ -1097,6 +1193,73 @@ const avatarPreview = ref<string | null>(null);
 
 const saving = ref(false);
 
+// ----- Seguridad: PIN de acceso rápido -----
+const hasPinConfigured = ref<boolean | null>(null);
+const showPinDialog = ref(false);
+const pinDialogPassword = ref('');
+const pinDialogPin = ref('');
+const pinDialogPinConfirm = ref('');
+const pinDialogSaving = ref(false);
+const pinDialogError = ref('');
+
+async function refreshPinStatus() {
+  hasPinConfigured.value = await ui.refreshPinStatus();
+}
+
+function openPinDialog() {
+  pinDialogPassword.value = '';
+  pinDialogPin.value = '';
+  pinDialogPinConfirm.value = '';
+  pinDialogError.value = '';
+  showPinDialog.value = true;
+}
+
+async function submitPinDialog() {
+  pinDialogError.value = '';
+  if (!/^[0-9]{4,6}$/.test(pinDialogPin.value)) {
+    pinDialogError.value = 'El PIN debe tener entre 4 y 6 dígitos.';
+    return;
+  }
+  if (pinDialogPin.value !== pinDialogPinConfirm.value) {
+    pinDialogError.value = 'Los PIN no coinciden.';
+    return;
+  }
+  pinDialogSaving.value = true;
+  try {
+    const { setPin } = await import('src/composables/useSecurityPin');
+    await setPin(pinDialogPin.value, pinDialogPassword.value);
+    showPinDialog.value = false;
+    await refreshPinStatus();
+    $q.notify({ message: 'PIN configurado correctamente', color: 'positive' });
+  } catch (err: unknown) {
+    const e = err as { response?: { data?: { message?: string } } };
+    pinDialogError.value = e.response?.data?.message ?? 'No se pudo configurar el PIN.';
+  } finally {
+    pinDialogSaving.value = false;
+  }
+}
+
+function promptRemovePin() {
+  $q.dialog({
+    title: 'Eliminar PIN',
+    message: 'Ingresá tu contraseña para eliminar el PIN de seguridad.',
+    prompt: { model: '', type: 'password', isValid: (v: string) => v.length > 0 },
+    cancel: true,
+    persistent: true,
+  }).onOk((pwd: string) => {
+    void (async () => {
+      try {
+        const { removePin } = await import('src/composables/useSecurityPin');
+        await removePin(pwd);
+        await refreshPinStatus();
+        $q.notify({ message: 'PIN eliminado', color: 'positive' });
+      } catch {
+        $q.notify({ message: 'No se pudo eliminar el PIN. Verificá tu contraseña.', color: 'negative' });
+      }
+    })();
+  });
+}
+
 // ----- Categories Tree -----
 type CategoryNode = {
   id: number | string;
@@ -1787,6 +1950,7 @@ async function loadFinanceTab() {
 
 onMounted(async () => {
   loadNotifPrefs();
+  void refreshPinStatus();
   // Cargar monedas al entrar a la pestaña perfil o si ya está activa
   if (tab.value === 'profile') void ensureCurrenciesLoaded();
   if (tab.value === 'finance') void loadFinanceTab();

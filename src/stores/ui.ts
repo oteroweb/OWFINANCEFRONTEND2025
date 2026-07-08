@@ -28,6 +28,33 @@ async function verifyBiometric(): Promise<boolean> {
   }
 }
 
+function verifyPinDialog(): Promise<boolean> {
+  return new Promise((resolve) => {
+    Dialog.create({
+      title: 'Ingresá tu PIN',
+      message: 'Confirmá tu PIN de seguridad para ver tus montos.',
+      prompt: {
+        model: '',
+        type: 'password',
+        isValid: (v: string) => /^[0-9]{4,6}$/.test(v),
+      },
+      cancel: true,
+      persistent: true,
+    })
+      .onOk((pin: string) => {
+        void (async () => {
+          try {
+            const { verifyPin } = await import('src/composables/useSecurityPin');
+            resolve(await verifyPin(pin));
+          } catch {
+            resolve(false);
+          }
+        })();
+      })
+      .onCancel(() => resolve(false));
+  });
+}
+
 function verifyPassword(): Promise<boolean> {
   return new Promise((resolve) => {
     Dialog.create({
@@ -79,6 +106,7 @@ export const useUiStore = defineStore('ui', {
     smartModalType: 'expense' as 'expense' | 'income' | 'transfer' | 'ajuste',
     hideValues: readPrivacyLock() ? true : localStorage.getItem(HIDE_KEY) === 'true',
     privacyLockEnabled: readPrivacyLock(),
+    hasPin: null as boolean | null,
     jarStatus: {
       totalAvailable: 0,
       totalAllocated: 0,
@@ -102,9 +130,23 @@ export const useUiStore = defineStore('ui', {
       this.hideValues = true;
       localStorage.setItem(HIDE_KEY, 'true');
     },
+    async refreshPinStatus() {
+      try {
+        const { fetchPinStatus } = await import('src/composables/useSecurityPin');
+        this.hasPin = await fetchPinStatus();
+      } catch {
+        this.hasPin = false;
+      }
+      return this.hasPin;
+    },
     async revealValues() {
       if (this.privacyLockEnabled) {
-        const ok = (await verifyBiometric()) || (await verifyPassword());
+        let ok = await verifyBiometric();
+        if (!ok) {
+          if (this.hasPin === null) await this.refreshPinStatus();
+          if (this.hasPin) ok = await verifyPinDialog();
+        }
+        if (!ok) ok = await verifyPassword();
         if (!ok) return;
       }
       this.hideValues = false;
