@@ -328,7 +328,7 @@ async function loadTx(id: number) {
       if (a.color !== undefined) opt.color = a.color;
       return opt;
     });
-  } catch (e) {
+  } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar la transacción' });
     isOpen.value = false;
   } finally {
