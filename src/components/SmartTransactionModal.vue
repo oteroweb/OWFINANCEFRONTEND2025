@@ -787,7 +787,11 @@ const transferConvertedAmount = computed(() => {
   const amt = Number(form.value.amount || 0);
   const r = Number(transferRate.value || 0);
   if (!r) return amt;
-  return amt * r;
+  // Rate is always "non-USD per 1 USD" (e.g. 737 VES/USD).
+  // FROM=VES → TO=USD: divide by rate (18430 / 737 = 25)
+  // FROM=USD → TO=VES: multiply by rate (25 * 737 = 18430)
+  const fromIsUSD = (transferFromCurrency.value || '').toUpperCase() === 'USD';
+  return fromIsUSD ? amt * r : amt / r;
 });
 
 // ── Categories ────────────────────────────────────────────────────────────
@@ -906,9 +910,22 @@ async function save() {
     };
 
     if (form.value.type === 'transfer') {
-      payload.account_from_id = form.value.account_from_id;
-      payload.account_to_id = form.value.account_to_id;
-      payload.amount = Math.abs(rawAmt);
+      const tRate = Number(transferRate.value || 1);
+      const fromAmt = Math.abs(rawAmt); // amount in FROM account's currency
+      const fromIsUSD = (transferFromCurrency.value || '').toUpperCase() === 'USD';
+      // transactions.amount is always the USD equivalent
+      const usdAmt = (transferIsCrossCurrency.value && tRate > 0)
+        ? (fromIsUSD ? fromAmt : fromAmt / tRate)
+        : fromAmt;
+      // TO payment amount in TO account's currency
+      const toAmt = (transferIsCrossCurrency.value && tRate > 0)
+        ? (fromIsUSD ? fromAmt * tRate : fromAmt / tRate)
+        : fromAmt;
+      payload.amount = usdAmt;
+      payload.payments = [
+        { account_id: form.value.account_from_id, amount: -fromAmt, rate: tRate },
+        { account_id: form.value.account_to_id,   amount:  toAmt,   rate: tRate },
+      ];
       if (transferIsCrossCurrency.value) payload.rate = transferRate.value;
     } else {
       // Pro: determinar payments (split o pago simple)
