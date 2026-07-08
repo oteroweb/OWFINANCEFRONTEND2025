@@ -1126,6 +1126,7 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   border-radius: var(--radius-xl, 20px);
   width: 100%;
   max-width: 560px;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1153,6 +1154,7 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   justify-content: space-between;
   align-items: flex-start;
   padding: 20px 22px 12px;
+  flex-shrink: 0;
 }
 
 .stm-eyebrow {
@@ -1188,6 +1190,7 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   gap: 5px;
   padding: 0 22px 14px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .stm-tab {
@@ -1236,6 +1239,8 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   display: flex;
   flex-direction: column;
   gap: 14px;
+  overflow-y: auto;
+  flex: 1;
 
   &--centered {
     align-items: center;
