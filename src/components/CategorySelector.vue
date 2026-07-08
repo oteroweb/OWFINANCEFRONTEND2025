@@ -131,7 +131,7 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import {
   loadCategoriesWithJars, loadUserJars,
-  getCachedCategories, getCachedJars,
+  getCachedCategories,
   type CatalogCategory, type JarRef,
   JAR_SLUG_NAMES,
 } from 'src/utils/txCatalog';
