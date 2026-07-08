@@ -5,6 +5,112 @@
         <span class="t-eyebrow">Sistema</span>
         <h1 class="t-h1" style="margin: 4px 0 20px;">Configuración</h1>
       </div>
+
+      <!-- ── Aplicación (unificado con Lite) ─────────────────────── -->
+      <div class="q-gutter-md q-mb-lg">
+        <q-card flat bordered class="q-pa-md">
+          <div class="text-subtitle1 q-mb-md">
+            <q-icon name="tune" class="q-mr-sm" />
+            Aplicación
+          </div>
+          <div class="row q-col-gutter-md items-center q-mb-md">
+            <div class="col-12 col-sm-6">
+              <div class="text-body2">Modo de la app</div>
+              <div class="text-caption text-grey-7">Pro · panel completo multi-cuenta</div>
+            </div>
+            <div class="col-12 col-sm-6 row justify-end">
+              <q-btn-toggle
+                :model-value="activeLayoutMode"
+                toggle-color="primary"
+                :options="[{ label: 'Lite', value: 'lite' }, { label: 'Pro', value: 'pro' }]"
+                @update:model-value="switchMode"
+              />
+            </div>
+          </div>
+          <q-separator class="q-mb-md" />
+          <div class="row q-col-gutter-md items-center q-mb-md">
+            <div class="col-12 col-sm-6">
+              <div class="text-body2">Idioma</div>
+              <div class="text-caption text-grey-7">Interfaz y formatos</div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-select
+                v-model="appLang"
+                :options="langOptions"
+                emit-value
+                map-options
+                dense
+                outlined
+                @update:model-value="onLangChange"
+              />
+            </div>
+          </div>
+          <q-separator class="q-mb-md" />
+          <div class="row items-center justify-between q-mb-md">
+            <div>
+              <div class="text-body2">Ocultar saldos por defecto</div>
+              <div class="text-caption text-grey-7">{{ ui.hideValues ? 'Activado' : 'Desactivado' }}</div>
+            </div>
+            <q-toggle :model-value="ui.hideValues" color="primary" @update:model-value="ui.toggleHideValues()" />
+          </div>
+          <q-separator class="q-mb-md" />
+          <div class="row items-center justify-between" style="cursor:pointer" @click="router.push('/user/accounts')">
+            <div>
+              <div class="text-body2">Divisa predeterminada</div>
+              <div class="text-caption text-grey-7">Gestionar en Cuentas</div>
+            </div>
+            <q-icon name="chevron_right" size="18px" color="grey-7" />
+          </div>
+        </q-card>
+
+        <!-- ── Seguridad (unificado con Lite) ─────────────────────── -->
+        <q-card flat bordered class="q-pa-md">
+          <div class="text-subtitle1 q-mb-md">
+            <q-icon name="shield" class="q-mr-sm" />
+            Seguridad
+          </div>
+          <div class="row items-center justify-between q-mb-md">
+            <div>
+              <div class="text-body2">Pedir confirmación para ver saldos</div>
+              <div class="text-caption text-grey-7">
+                {{ ui.privacyLockEnabled ? 'Pide huella/rostro/contraseña (o PIN) para revelar montos' : 'Desactivado' }}
+              </div>
+            </div>
+            <q-toggle v-model="ui.privacyLockEnabled" color="primary" @update:model-value="ui.togglePrivacyLock()" />
+          </div>
+          <q-separator class="q-mb-md" />
+          <div class="row items-center justify-between">
+            <div>
+              <div class="text-body2">PIN de acceso rápido</div>
+              <div class="text-caption text-grey-7">
+                {{ hasPinConfigured ? 'Configurado — alternativa rápida a tu contraseña' : 'No configurado' }}
+              </div>
+            </div>
+            <div class="q-gutter-sm">
+              <q-btn
+                outline
+                color="primary"
+                :label="hasPinConfigured ? 'Cambiar PIN' : 'Configurar PIN'"
+                @click="openPinDialog"
+              />
+              <q-btn v-if="hasPinConfigured" flat color="negative" label="Eliminar" @click="promptRemovePin" />
+            </div>
+          </div>
+        </q-card>
+
+        <!-- ── Tasas de Cambio (Pro) ───────────────────────────────── -->
+        <div>
+          <div class="row items-center q-gutter-sm q-mb-sm">
+            <span class="t-eyebrow">Tasas de cambio</span>
+            <span class="text-caption text-grey-7" style="font-style: italic">
+              · BCV oficial + tasa del momento · se aplican en todo Pro
+            </span>
+          </div>
+          <q-card flat bordered>
+            <ExchangeRatesTable />
+          </q-card>
+        </div>
+      </div>
     </template>
     <template v-else>
       <div class="lite-config__header">
@@ -360,41 +466,6 @@
                       <q-icon name="check_circle" />
                     </template>
                   </q-input>
-                </div>
-              </div>
-            </q-card>
-
-            <!-- Privacidad y PIN -->
-            <q-card flat bordered class="q-pa-md">
-              <div class="text-subtitle1 q-mb-sm">
-                <q-icon name="shield" class="q-mr-sm" />
-                Privacidad y PIN
-              </div>
-              <div class="row items-center justify-between q-mb-md">
-                <div>
-                  <div class="text-body2">Pedir confirmación para ver saldos</div>
-                  <div class="text-caption text-grey-7">
-                    {{ ui.privacyLockEnabled ? 'Pide huella/rostro/contraseña (o PIN) para revelar montos' : 'Desactivado' }}
-                  </div>
-                </div>
-                <q-toggle v-model="ui.privacyLockEnabled" color="primary" @update:model-value="ui.togglePrivacyLock()" />
-              </div>
-              <q-separator class="q-mb-md" />
-              <div class="row items-center justify-between">
-                <div>
-                  <div class="text-body2">PIN de acceso rápido</div>
-                  <div class="text-caption text-grey-7">
-                    {{ hasPinConfigured ? 'Configurado — alternativa rápida a tu contraseña' : 'No configurado' }}
-                  </div>
-                </div>
-                <div class="q-gutter-sm">
-                  <q-btn
-                    outline
-                    color="primary"
-                    :label="hasPinConfigured ? 'Cambiar PIN' : 'Configurar PIN'"
-                    @click="openPinDialog"
-                  />
-                  <q-btn v-if="hasPinConfigured" flat color="negative" label="Eliminar" @click="promptRemovePin" />
                 </div>
               </div>
             </q-card>
@@ -886,6 +957,7 @@ import OnboardingFlow from 'src/components/OnboardingFlow.vue';
 import CrudPage from 'components/CrudPage.vue';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import AccountsTree from 'components/AccountsTree.vue';
+import ExchangeRatesTable from 'components/ExchangeRatesTable.vue';
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
 import { defaultAvatarUrl } from '../config';
