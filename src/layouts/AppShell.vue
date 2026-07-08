@@ -139,7 +139,8 @@
     />
 
     <!-- ═══ OVERLAYS GLOBALES ══════════════════════════════════════════════ -->
-    <QuickActionSheet v-model="quickAddOpen" />
+    <QuickActionSheet v-if="isMobile" v-model="quickAddOpen" />
+    <DesktopQuickModal v-else v-model="quickAddOpen" />
 
     <!-- Smart Transaction Modal — global, disponible desde cualquier pantalla -->
     <SmartTransactionModal @saved="onTransactionSaved" />
@@ -177,6 +178,7 @@ import LiteFloatingBottomNav from 'components/liquid/LiteFloatingBottomNav.vue';
 import BottomNavMobile from 'components/liquid/BottomNavMobile.vue';
 import ExpandedNavigationMenuLight from 'components/liquid/ExpandedNavigationMenuLight.vue';
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
+import DesktopQuickModal from 'components/liquid/DesktopQuickModal.vue';
 import SmartTransactionModal from 'components/SmartTransactionModal.vue';
 import OnboardingFlow from 'components/OnboardingFlow.vue';
 import NotificationsPanel from 'components/NotificationsPanel.vue';
