@@ -240,7 +240,7 @@
             v-for="tx in recentTransactions.slice(0, txLimit)"
             :key="tx.id"
             class="lite-home__tx"
-            @click="router.push({ path: '/user/transactions', query: { editTx: String(tx.id) } })"
+            @click="openEditTx(tx.id)"
           >
             <div class="lite-home__tx-icon" :class="{ 'lite-home__tx-icon--income': tx.type === 'income' }">
               <q-icon :name="tx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="16px" />
@@ -259,16 +259,25 @@
         </div>
       </section>
     </div>
+
+    <TxDetailModal
+      v-model="showEditDialog"
+      :tx-id="editTxId"
+      layout-mode="lite"
+      @saved="loadRecentTransactions"
+      @deleted="loadRecentTransactions"
+    />
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
+import TxDetailModal from 'components/TxDetailModal.vue';
 
 defineOptions({ name: 'LiteHomeView' });
 
@@ -339,6 +348,17 @@ interface TxItem {
 }
 const recentTransactions = ref<TxItem[]>([]);
 const transactionsLoading = ref(false);
+const editTxId = ref<number | null>(null);
+const showEditDialog = ref(false);
+
+function openEditTx(id: number) {
+  editTxId.value = id;
+  showEditDialog.value = true;
+}
+
+watch(showEditDialog, (v) => {
+  if (!v) editTxId.value = null;
+});
 
 // ─── Computed ───────────────────────────────────────────────────────
 const netAmount = computed(() => monthlyIncome.value - monthlyExpense.value);

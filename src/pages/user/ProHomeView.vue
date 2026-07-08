@@ -240,7 +240,13 @@
     </transition>
     </div>
 
-    <TransactionFormDialog v-model="showEditDialog" :id="editTxId" />
+    <TxDetailModal
+      v-model="showEditDialog"
+      :tx-id="editTxId"
+      layout-mode="pro"
+      @saved="loadRecentTransactions"
+      @deleted="loadRecentTransactions"
+    />
   </q-page>
 </template>
 
@@ -249,7 +255,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
-import { TransactionFormDialog } from 'components';
+import { TxDetailModal } from 'components';
 
 defineOptions({ name: 'ProHomeView' });
 
@@ -408,10 +414,7 @@ function openEditTx(id: number) {
 }
 
 watch(showEditDialog, (v) => {
-  if (!v) {
-    editTxId.value = null;
-    void loadRecentTransactions();
-  }
+  if (!v) editTxId.value = null;
 });
 
 function formatMoney(n: number): string {
