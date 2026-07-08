@@ -136,6 +136,9 @@ import {
   JAR_SLUG_NAMES,
 } from 'src/utils/txCatalog';
 
+// reactive jar cache so computed properties re-run when jars load
+const _cachedJars = ref<JarRef[]>([]);
+
 // ── props / emits ────────────────────────────────────────────────────────────
 const props = withDefaults(defineProps<{
   modelValue: number | null | undefined;
@@ -156,13 +159,14 @@ const popoverStyle = ref<Record<string, string>>({});
 
 // ── data ─────────────────────────────────────────────────────────────────────
 onMounted(async () => {
-  await Promise.all([loadCategoriesWithJars(), loadUserJars()]);
+  const [, jars] = await Promise.all([loadCategoriesWithJars(), loadUserJars()]);
+  _cachedJars.value = jars;
   document.addEventListener('mousedown', onOutsideClick);
 });
 onBeforeUnmount(() => document.removeEventListener('mousedown', onOutsideClick));
 
-// ── jar color helpers ─────────────────────────────────────────────────────────
-const JAR_COLORS: Record<string, string> = {
+// ── jar color/label helpers — use real jar data, fall back to legacy slug map ──
+const FALLBACK_SLUG_COLORS: Record<string, string> = {
   necesidades: '#2d4da6',
   diversion:   '#f59e0b',
   ahorro:      '#10b981',
@@ -170,10 +174,27 @@ const JAR_COLORS: Record<string, string> = {
   reservas:    '#64748b',
 };
 
+function jarForCat(cat: CatalogCategory): JarRef | null {
+  const jars = _cachedJars.value;
+  if (cat.assigned_jar_id != null) {
+    return jars.find(j => j.id === cat.assigned_jar_id) ?? null;
+  }
+  if (cat.jar_slug) {
+    const canonicalName = JAR_SLUG_NAMES[cat.jar_slug];
+    if (canonicalName) return jars.find(j => j.name === canonicalName) ?? null;
+  }
+  return null;
+}
+
 function jarColorForCat(cat: CatalogCategory): string {
-  return cat.jar_slug ? (JAR_COLORS[cat.jar_slug] ?? 'var(--fg-3)') : 'var(--fg-3)';
+  const jar = jarForCat(cat);
+  if (jar?.color) return jar.color;
+  if (cat.jar_slug && FALLBACK_SLUG_COLORS[cat.jar_slug]) return FALLBACK_SLUG_COLORS[cat.jar_slug]!;
+  return 'var(--fg-3)';
 }
 function jarLabelForCat(cat: CatalogCategory): string | null {
+  const jar = jarForCat(cat);
+  if (jar) return jar.name;
   return cat.jar_slug ? (JAR_SLUG_NAMES[cat.jar_slug] ?? null) : null;
 }
 function tint(color: string, pct: number): string {
@@ -199,6 +220,8 @@ const selectedCat = computed(() =>
 const selectedJarColor = computed(() =>
   selectedCat.value ? jarColorForCat(selectedCat.value) : 'var(--fg-3)'
 );
+// re-trigger color when jars load
+watch(_cachedJars, () => { /* triggers recompute of selectedJarColor */ });
 
 interface JarGroup {
   jarSlug: string;
@@ -209,27 +232,46 @@ interface JarGroup {
 }
 
 const groupedCats = computed<JarGroup[]>(() => {
-  const jars: JarRef[] = getCachedJars();
-  const slugs = Object.keys(JAR_COLORS);
+  const jars = _cachedJars.value;
   const groups: JarGroup[] = [];
-  for (const slug of slugs) {
-    const cats = allCats.value.filter(c => c.jar_slug === slug);
+
+  for (const jar of jars) {
+    // Categories assigned to this jar (by id = authoritative, or by slug fallback)
+    const cats = allCats.value.filter(c => {
+      if (c.assigned_jar_id != null) return c.assigned_jar_id === jar.id;
+      // Slug fallback: canonical jar name matches
+      if (c.jar_slug) {
+        const canonicalName = JAR_SLUG_NAMES[c.jar_slug];
+        return canonicalName === jar.name;
+      }
+      return false;
+    });
     if (!cats.length) continue;
-    const jar = jars.find(j => j.name === JAR_SLUG_NAMES[slug]);
     groups.push({
-      jarSlug: slug,
-      label: JAR_SLUG_NAMES[slug] ?? slug,
-      color: JAR_COLORS[slug] ?? 'var(--fg-3)',
-      percent: jar?.percent ?? 0,
+      jarSlug: String(jar.id),
+      label: jar.name,
+      color: jar.color ?? FALLBACK_SLUG_COLORS[
+        Object.entries(JAR_SLUG_NAMES).find(([, n]) => n === jar.name)?.[0] ?? ''
+      ] ?? 'var(--fg-3)',
+      percent: jar.percent ?? 0,
       cats,
     });
   }
   return groups;
 });
 
-const ungroupedCats = computed(() =>
-  allCats.value.filter(c => !c.jar_slug)
-);
+// Categories not matched to any jar
+const ungroupedCats = computed(() => {
+  const jars = _cachedJars.value;
+  return allCats.value.filter(c => {
+    if (c.assigned_jar_id != null) return !jars.some(j => j.id === c.assigned_jar_id);
+    if (c.jar_slug) {
+      const canonicalName = JAR_SLUG_NAMES[c.jar_slug];
+      return !jars.some(j => j.name === canonicalName);
+    }
+    return true;
+  });
+});
 
 const filteredCats = computed(() => {
   const q = query.value.trim().toLowerCase();
