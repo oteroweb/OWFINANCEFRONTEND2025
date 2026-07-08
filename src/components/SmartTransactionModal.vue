@@ -10,7 +10,7 @@
       <!-- Header -->
       <div class="stm-header">
         <div>
-          <div class="stm-eyebrow">Nuevo movimiento</div>
+          <div class="stm-eyebrow">Nuevo movimiento · {{ isProMode ? 'Pro' : 'Lite' }}</div>
           <div class="stm-title">{{ tab === 'write' ? '¿Qué pasó con tu dinero?' : tabConfig[tab].title }}</div>
         </div>
         <button class="stm-close" @click="show = false" aria-label="Cerrar">
@@ -22,7 +22,7 @@
       <div class="stm-tabs">
         <button v-for="m in methods" :key="m.id"
           class="stm-tab" :class="{ 'stm-tab--active': tab === m.id }"
-          @click="tab = m.id; aiPrefill = null; aiSource = null">
+          @click="selectMethod(m.id)">
           <q-icon :name="m.icon" size="16px" />
           {{ m.label }}
         </button>
@@ -187,18 +187,15 @@
         </div>
         <div v-if="isLiteLayout && form.type === 'income' && !itemsOn" class="stm-field">
           <label class="stm-label">Fecha</label>
-          <div class="stm-date-shortcuts">
-            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'today' }" @click="setDateShortcut(0); customDateOpen = false">
-              <q-icon name="today" size="14px" /> Hoy
-            </button>
-            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'yesterday' }" @click="setDateShortcut(-1); customDateOpen = false">
-              <q-icon name="history" size="14px" /> Ayer
-            </button>
-            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'custom' }" @click="customDateOpen = true">
-              <q-icon name="calendar_month" size="14px" /> Otra fecha…
-            </button>
-          </div>
-          <input v-if="dateChipActive === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
+          <q-select
+            :model-value="dateShortcut"
+            :options="dateShortcutOptions"
+            emit-value map-options dense outlined
+            @update:model-value="onDateShortcutChange"
+          >
+            <template v-slot:prepend><q-icon :name="dateShortcutOptions.find(o => o.value === dateShortcut)?.icon" /></template>
+          </q-select>
+          <input v-if="dateShortcut === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
         </div>
 
         <!-- OWF-187: reparto automático por cántaros porcentuales (Lite + Ingreso) -->
@@ -226,36 +223,30 @@
           </div>
           <div v-if="!(isLiteLayout && form.type === 'income')" class="stm-field">
             <label class="stm-label">Fecha</label>
-            <div class="stm-date-shortcuts">
-              <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'today' }" @click="setDateShortcut(0); customDateOpen = false">
-                <q-icon name="today" size="14px" /> Hoy
-              </button>
-              <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'yesterday' }" @click="setDateShortcut(-1); customDateOpen = false">
-                <q-icon name="history" size="14px" /> Ayer
-              </button>
-              <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'custom' }" @click="customDateOpen = true">
-                <q-icon name="calendar_month" size="14px" /> Otra fecha…
-              </button>
-            </div>
-            <input v-if="dateChipActive === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
+            <q-select
+              :model-value="dateShortcut"
+              :options="dateShortcutOptions"
+              emit-value map-options dense outlined
+              @update:model-value="onDateShortcutChange"
+            >
+              <template v-slot:prepend><q-icon :name="dateShortcutOptions.find(o => o.value === dateShortcut)?.icon" /></template>
+            </q-select>
+            <input v-if="dateShortcut === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
           </div>
         </div>
 
         <!-- Transfer / Ajuste: fecha en fila propia -->
         <div class="stm-field" v-if="form.type === 'transfer'">
           <label class="stm-label">Fecha</label>
-          <div class="stm-date-shortcuts">
-            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'today' }" @click="setDateShortcut(0); customDateOpen = false">
-              <q-icon name="today" size="14px" /> Hoy
-            </button>
-            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'yesterday' }" @click="setDateShortcut(-1); customDateOpen = false">
-              <q-icon name="history" size="14px" /> Ayer
-            </button>
-            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'custom' }" @click="customDateOpen = true">
-              <q-icon name="calendar_month" size="14px" /> Otra fecha…
-            </button>
-          </div>
-          <input v-if="dateChipActive === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
+          <q-select
+            :model-value="dateShortcut"
+            :options="dateShortcutOptions"
+            emit-value map-options dense outlined
+            @update:model-value="onDateShortcutChange"
+          >
+            <template v-slot:prepend><q-icon :name="dateShortcutOptions.find(o => o.value === dateShortcut)?.icon" /></template>
+          </q-select>
+          <input v-if="dateShortcut === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
         </div>
 
         <!-- Etiquetas -->
@@ -541,6 +532,14 @@
 
     </div>
   </q-dialog>
+
+  <!-- OWF-275: Carga masiva — overlay independiente (el dialog legacy no emite 'close'
+       de forma confiable desde su propio botón X, así que no se anida como tab-content). -->
+  <TransactionBulkImportDialog
+    v-if="showBulkImport"
+    @close="showBulkImport = false"
+    @imported="onBulkImported"
+  />
 </template>
 
 <script setup lang="ts">
@@ -558,6 +557,7 @@ import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
 import CategorySelector from 'src/components/CategorySelector.vue';
 import TfReviewCard from 'src/components/TfReviewCard.vue';
 import JarPercentSplitInfo from 'src/components/JarPercentSplitInfo.vue';
+import TransactionBulkImportDialog from 'src/components/TransactionBulkImportDialog.vue';
 import { useUserRates } from 'src/composables/useUserRates';
 import { jarForCategory, getCachedJars, loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
 
@@ -584,6 +584,7 @@ const methods = [
   { id: 'voice'  as const, icon: 'mic',           label: 'Voz' },
   { id: 'photo'  as const, icon: 'receipt_long',  label: 'Foto' },
   { id: 'autoai' as const, icon: 'auto_awesome',  label: 'Auto IA' },
+  { id: 'bulk'   as const, icon: 'upload_file',   label: 'Carga masiva' },
 ];
 
 const tabConfig = {
@@ -591,6 +592,27 @@ const tabConfig = {
   photo:  { title: 'Sube un comprobante' },
   autoai: { title: 'Describe con texto libre' },
 };
+
+// OWF-275: "Carga masiva" delega en TransactionBulkImportDialog como overlay
+// independiente (no como tab-content — ver nota junto al template).
+const showBulkImport = ref(false);
+function selectMethod(id: typeof methods[number]['id']) {
+  if (id === 'bulk') {
+    openBulkImport();
+    return;
+  }
+  tab.value = id;
+  aiPrefill.value = null;
+  aiSource.value = null;
+}
+function openBulkImport() {
+  show.value = false;
+  showBulkImport.value = true;
+}
+function onBulkImported() {
+  showBulkImport.value = false;
+  emit('saved');
+}
 
 const types = [
   { id: 'expense'  as const, label: 'Gasto',      icon: 'arrow_outward'  },
@@ -609,30 +631,26 @@ const now = () => {
   return d.toISOString().slice(0, 16);
 };
 
-// OWF-247: atajos de fecha (Hoy/Ayer/Personalizada) en vez de forzar siempre el date-picker nativo.
+// OWF-247/276: atajo de fecha (Hoy/Ayer/Otra fecha…) como UN solo Picker (q-select),
+// igual estilo que el resto de los selects del formulario — no chips separados.
 function localDateTimeString(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-function isSameLocalDay(iso: string, dayOffset: number) {
-  if (!iso) return false;
-  const target = new Date();
-  target.setDate(target.getDate() + dayOffset);
-  const [datePart] = iso.split('T');
-  return datePart === `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
-}
-function setDateShortcut(dayOffset: number) {
+type DateShortcut = 'today' | 'yesterday' | 'custom';
+const dateShortcut = ref<DateShortcut>('today');
+const dateShortcutOptions: { label: string; value: DateShortcut; icon: string }[] = [
+  { label: 'Hoy', value: 'today', icon: 'today' },
+  { label: 'Ayer', value: 'yesterday', icon: 'history' },
+  { label: 'Otra fecha…', value: 'custom', icon: 'calendar_month' },
+];
+function onDateShortcutChange(value: DateShortcut) {
+  dateShortcut.value = value;
+  if (value === 'custom') return;
   const d = new Date();
-  d.setDate(d.getDate() + dayOffset);
+  d.setDate(d.getDate() + (value === 'yesterday' ? -1 : 0));
   form.value.date = localDateTimeString(d);
 }
-const customDateOpen = ref(false);
-const dateChipActive = computed<'today' | 'yesterday' | 'custom'>(() => {
-  if (customDateOpen.value) return 'custom';
-  if (isSameLocalDay(form.value.date, 0)) return 'today';
-  if (isSameLocalDay(form.value.date, -1)) return 'yesterday';
-  return 'custom';
-});
 
 const form = ref({
   type: 'expense' as 'expense' | 'income' | 'transfer' | 'ajuste',
@@ -1214,6 +1232,27 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 </script>
 
 <style scoped lang="scss">
+// OWF-277: campos tipo-select (Cuenta/Categoría/Proveedor/Fecha) con look "filled"
+// (ícono+valor+chevron, sin borde visible) más cercano al diseño que el outlined default de Quasar.
+:deep(.stm-body .q-field--outlined .q-field__control) {
+  background: var(--surface-2, #f1f5f9);
+  border-radius: var(--radius-md, 12px);
+
+  &:before {
+    border: none;
+  }
+  &:after {
+    border: none;
+  }
+}
+:deep(.stm-body .q-field--outlined.q-field--focused .q-field__control) {
+  background: var(--surface-1, #fff);
+
+  &:before {
+    border: 1px solid var(--brand-primary, #3b82f6);
+  }
+}
+
 .stm-wrap {
   background: var(--surface-1, #fff);
   border-radius: var(--radius-xl, 20px);
@@ -1851,34 +1890,6 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   padding: 4px 8px;
   font-size: 12px;
   min-height: unset;
-}
-
-// OWF-247: atajos de fecha (Hoy/Ayer/Personalizada)
-.stm-date-shortcuts {
-  display: flex;
-  gap: 6px;
-}
-
-.stm-date-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border-hairline, #e2e8f0);
-  background: transparent;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--fg-2, #64748b);
-  cursor: pointer;
-  transition: all 120ms;
-
-  &--active {
-    background: var(--brand-primary-soft, rgba(59, 130, 246, 0.12));
-    border-color: var(--brand-primary, #3b82f6);
-    color: var(--brand-primary, #3b82f6);
-    font-weight: 700;
-  }
 }
 
 // OWF-243: total de ítems en lugar del campo Monto
