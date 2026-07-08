@@ -4,9 +4,9 @@
     persistent
     transition-show="slide-up"
     transition-hide="slide-down"
-    maximized
+    :maximized="$q.screen.lt.md"
   >
-    <q-card class="column" style="height: 100%">
+    <q-card class="column" :style="$q.screen.lt.md ? 'height: 100%' : 'height: 92vh; width: 92vw; max-width: 1400px'">
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6">Carga Masiva de Transacciones</div>
         <q-space />
@@ -1233,7 +1233,7 @@ import { useTransactionForm } from 'src/composables/useTransactionForm'
 import { useAuthStore } from 'src/stores/auth'
 import { api } from 'boot/axios'
 import { read as xlsxRead, utils as xlsxUtils } from 'xlsx'
-import { Notify } from 'quasar'
+import { Notify, useQuasar } from 'quasar'
 
 interface BulkResult {
   total: number
@@ -1285,6 +1285,7 @@ const emit = defineEmits<{
   (e: 'imported', count: number): void
 }>()
 
+const $q = useQuasar()
 const transactionsStore = useTransactionsStore()
 const authStore = useAuthStore()
 
@@ -1333,12 +1334,10 @@ const selectedAccount = computed(() => {
   return allAccounts.value.find((a: { id: number; name: string; currencyCode?: string; currencyId?: number | null }) => a.id === selectedAccountId.value)
 })
 const needsRateForSelectedAccount = computed(() => {
-  // Check if account currency is not the default user currency
-  // In a real implementation, we'd check user.default_currency_id or user.currency_code
+  // Requiere tasa solo si la moneda de la cuenta difiere de la moneda base del usuario
   const code = selectedAccount.value?.currencyCode
   if (!code) return false
-  const nonRateCurrencies = ['USD', 'ARS', 'EUR', 'GBP', 'COP', 'MXN', 'BRL', 'CLP', 'PEN', 'UYU']
-  return !nonRateCurrencies.includes(code)
+  return code.toUpperCase() !== authStore.defaultCurrencyCode.toUpperCase()
 })
 
 // Detect if a value looks like a rate (e.g. VEF/USD) rather than a transaction amount
