@@ -101,7 +101,7 @@
           </div>
           <div class="stm-field">
             <label class="stm-label">Hacia</label>
-            <q-select v-model="form.account_to_id" :options="accountOptions" emit-value map-options dense outlined
+            <q-select v-model="form.account_to_id" :options="accountToOptions" emit-value map-options dense outlined
               placeholder="Cuenta destino…">
               <template v-slot:prepend><q-icon name="arrow_downward" color="positive" /></template>
             </q-select>
@@ -130,8 +130,8 @@
 
         <!-- Gasto / Ingreso -->
         <template v-else>
-          <!-- Amount -->
-          <div class="stm-field">
+          <!-- Amount (oculto en modo Items: OWF-243, el monto sale de la suma de líneas) -->
+          <div v-if="!itemsOn" class="stm-field">
             <label class="stm-label">Monto</label>
             <div class="stm-amount-row">
               <q-select v-model="form.currency" :options="currencyOptions" emit-value map-options dense outlined
@@ -139,6 +139,10 @@
               <input v-model.number="form.amount" type="number" step="0.01" min="0"
                 placeholder="0.00" class="stm-amount-input" />
             </div>
+          </div>
+          <div v-else class="stm-items-total-banner">
+            <span class="stm-label">Total (suma de ítems)</span>
+            <span class="stm-items-total-banner__amount">{{ formatMoney(itemsTotal) }}</span>
           </div>
 
           <!-- OWF-179: tasa paralelo (actual) + tasa oficial (BCV) lado a lado si la moneda de la cuenta != USD -->
@@ -163,24 +167,38 @@
           </div>
         </template>
 
-        <!-- OWF-180: Cuenta en fila propia a todo lo ancho (no existe id estable de cántaro para acompañarla) -->
-        <div class="stm-field" v-if="form.type !== 'ajuste' && form.type !== 'transfer'">
+        <!-- OWF-180/242: Cuenta en fila propia (oculta si split está activo — se usa el editor multi-cuenta) -->
+        <div class="stm-field" v-if="form.type !== 'ajuste' && form.type !== 'transfer' && !splitOn">
           <label class="stm-label">Cuenta</label>
           <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
             placeholder="Seleccionar…" />
         </div>
 
-        <!-- OWF-188: Lite + Ingreso → Categoría (opcional) comparte fila con Fecha -->
-        <div v-if="form.type !== 'ajuste' && form.type !== 'transfer'" :class="isLiteLayout && form.type === 'income' ? 'stm-row-2' : ''">
+        <!-- OWF-188/244/266: Categoría + Cántaro lado a lado (ocultos en modo Items: se gestionan por línea) -->
+        <div v-if="form.type !== 'ajuste' && form.type !== 'transfer' && !itemsOn" class="stm-row-2">
           <div class="stm-field">
             <label class="stm-label">Categoría <span class="stm-label--opt">(opcional)</span></label>
             <CategorySelector v-model="form.category_id" allow-null placeholder="Sin categoría" />
+          </div>
+          <div class="stm-field">
+            <label class="stm-label">Cántaro</label>
             <AnchoredJarChip :category-id="form.category_id" class="stm-jar-chip" />
           </div>
-          <div v-if="isLiteLayout && form.type === 'income'" class="stm-field">
-            <label class="stm-label">Fecha y hora</label>
-            <input v-model="form.date" type="datetime-local" class="stm-text-input" />
+        </div>
+        <div v-if="isLiteLayout && form.type === 'income' && !itemsOn" class="stm-field">
+          <label class="stm-label">Fecha</label>
+          <div class="stm-date-shortcuts">
+            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'today' }" @click="setDateShortcut(0); customDateOpen = false">
+              <q-icon name="today" size="14px" /> Hoy
+            </button>
+            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'yesterday' }" @click="setDateShortcut(-1); customDateOpen = false">
+              <q-icon name="history" size="14px" /> Ayer
+            </button>
+            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'custom' }" @click="customDateOpen = true">
+              <q-icon name="calendar_month" size="14px" /> Otra fecha…
+            </button>
           </div>
+          <input v-if="dateChipActive === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
         </div>
 
         <!-- OWF-187: reparto automático por cántaros porcentuales (Lite + Ingreso) -->
@@ -207,15 +225,37 @@
             </q-select>
           </div>
           <div v-if="!(isLiteLayout && form.type === 'income')" class="stm-field">
-            <label class="stm-label">Fecha y hora</label>
-            <input v-model="form.date" type="datetime-local" class="stm-text-input" />
+            <label class="stm-label">Fecha</label>
+            <div class="stm-date-shortcuts">
+              <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'today' }" @click="setDateShortcut(0); customDateOpen = false">
+                <q-icon name="today" size="14px" /> Hoy
+              </button>
+              <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'yesterday' }" @click="setDateShortcut(-1); customDateOpen = false">
+                <q-icon name="history" size="14px" /> Ayer
+              </button>
+              <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'custom' }" @click="customDateOpen = true">
+                <q-icon name="calendar_month" size="14px" /> Otra fecha…
+              </button>
+            </div>
+            <input v-if="dateChipActive === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
           </div>
         </div>
 
         <!-- Transfer / Ajuste: fecha en fila propia -->
         <div class="stm-field" v-if="form.type === 'transfer'">
-          <label class="stm-label">Fecha y hora</label>
-          <input v-model="form.date" type="datetime-local" class="stm-text-input" />
+          <label class="stm-label">Fecha</label>
+          <div class="stm-date-shortcuts">
+            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'today' }" @click="setDateShortcut(0); customDateOpen = false">
+              <q-icon name="today" size="14px" /> Hoy
+            </button>
+            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'yesterday' }" @click="setDateShortcut(-1); customDateOpen = false">
+              <q-icon name="history" size="14px" /> Ayer
+            </button>
+            <button type="button" class="stm-date-chip" :class="{ 'stm-date-chip--active': dateChipActive === 'custom' }" @click="customDateOpen = true">
+              <q-icon name="calendar_month" size="14px" /> Otra fecha…
+            </button>
+          </div>
+          <input v-if="dateChipActive === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
         </div>
 
         <!-- Etiquetas -->
@@ -264,17 +304,19 @@
 
         <!-- Pro features (solo layout_mode=pro) -->
         <template v-if="isProMode && form.type !== 'ajuste'">
-          <!-- OWF-182: reemplaza el patrón de 3 botones por switches q-toggle; preserva las tablas subyacentes (split/items) -->
-          <div class="stm-row-2">
+          <!-- OWF-182/246: switches split/items — el diseño solo los prevé en Gasto/Ingreso, no en Transferencia -->
+          <div v-if="form.type !== 'transfer'" class="stm-row-2">
             <q-toggle
               :model-value="proPanel === 'split'"
               label="Pago múltiple"
+              icon="call_split"
               color="primary"
               @update:model-value="(v) => toggleProPanel(v ? 'split' : null)"
             />
             <q-toggle
               :model-value="proPanel === 'items'"
               label="Detalle/factura"
+              icon="receipt_long"
               color="primary"
               @update:model-value="(v) => toggleProPanel(v ? 'items' : null)"
             />
@@ -567,6 +609,31 @@ const now = () => {
   return d.toISOString().slice(0, 16);
 };
 
+// OWF-247: atajos de fecha (Hoy/Ayer/Personalizada) en vez de forzar siempre el date-picker nativo.
+function localDateTimeString(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function isSameLocalDay(iso: string, dayOffset: number) {
+  if (!iso) return false;
+  const target = new Date();
+  target.setDate(target.getDate() + dayOffset);
+  const [datePart] = iso.split('T');
+  return datePart === `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
+}
+function setDateShortcut(dayOffset: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  form.value.date = localDateTimeString(d);
+}
+const customDateOpen = ref(false);
+const dateChipActive = computed<'today' | 'yesterday' | 'custom'>(() => {
+  if (customDateOpen.value) return 'custom';
+  if (isSameLocalDay(form.value.date, 0)) return 'today';
+  if (isSameLocalDay(form.value.date, -1)) return 'yesterday';
+  return 'custom';
+});
+
 const form = ref({
   type: 'expense' as 'expense' | 'income' | 'transfer' | 'ajuste',
   amount: null as number | null,
@@ -647,6 +714,18 @@ function toggleProPanel(panel: ProPanel) {
   proPanel.value = proPanel.value === panel ? null : panel;
 }
 
+// OWF-243/244: items (factura) reemplaza monto+categoría principales por su propio detalle.
+const itemsOn = computed(() => isProMode.value && proPanel.value === 'items');
+// OWF-242: split reemplaza la cuenta simple por el editor multi-cuenta.
+const splitOn = computed(() => isProMode.value && proPanel.value === 'split');
+
+// OWF-246: el diseño solo prevé Comisión en Transferencia — split/items no aplican ahí.
+watch(() => form.value.type, (type) => {
+  if (type === 'transfer' && (proPanel.value === 'split' || proPanel.value === 'items')) {
+    proPanel.value = null;
+  }
+});
+
 // Comisión
 const comisionTipos = [
   { label: 'Pago móvil', value: 'pagomovil', icon: 'smartphone' },
@@ -714,6 +793,16 @@ const accountOptions = computed(() =>
   }))
 );
 
+// OWF-241: "Hacia" no debe ofrecer la misma cuenta ya elegida como "Desde".
+const accountToOptions = computed(() =>
+  accountOptions.value.filter((o) => o.value !== form.value.account_from_id)
+);
+watch(() => form.value.account_from_id, (fromId) => {
+  if (fromId != null && form.value.account_to_id === fromId) {
+    form.value.account_to_id = null;
+  }
+});
+
 // Devuelve la moneda de una cuenta del split (para mostrar campo tasa).
 function splitAccountCurrency(accountId: number | null): string | null {
   return findAccountById(accountId)?.currency?.code ?? null;
@@ -745,6 +834,7 @@ const rateParalelo = ref<number | null>(null);
 const rateOficial = ref<number | null>(null);
 const showDualRates = computed(() => {
   if (form.value.type === 'transfer' || form.value.type === 'ajuste') return false;
+  if (splitOn.value || itemsOn.value) return false; // OWF-245: no aplica con split/items activos
   const code = (findAccountById(form.value.account_id)?.currency?.code || form.value.currency || '').toUpperCase();
   return !!code && code !== 'USD';
 });
@@ -895,7 +985,8 @@ async function save() {
     }
 
     const typeId = typeIdFor.value[form.value.type] ?? null;
-    const rawAmt = form.value.amount ?? 0;
+    // OWF-243: en modo items el monto real es la suma de las líneas, no el campo Monto (oculto).
+    const rawAmt = itemsOn.value ? itemsTotal.value : (form.value.amount ?? 0);
     const amount = form.value.type === 'expense' ? -Math.abs(rawAmt) : Math.abs(rawAmt);
 
     const derivedJar = jarForCategory(form.value.category_id ?? null, getCachedJars());
@@ -952,10 +1043,12 @@ async function save() {
           })
         : undefined;
 
-      // Pro: monto final con comisión
-      const finalAmount = (isProMode.value && proPanel.value === 'comision' && comisionCalculada.value > 0)
-        ? (form.value.amount ?? 0) + comisionCalculada.value
-        : form.value.amount;
+      // Pro: monto final — items suma sus líneas, comisión se suma al monto base
+      const finalAmount = itemsOn.value
+        ? itemsTotal.value
+        : (isProMode.value && proPanel.value === 'comision' && comisionCalculada.value > 0)
+          ? (form.value.amount ?? 0) + comisionCalculada.value
+          : form.value.amount;
 
       payload.amount = finalAmount;
       payload.category_id = form.value.category_id ?? null;
@@ -1758,5 +1851,50 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   padding: 4px 8px;
   font-size: 12px;
   min-height: unset;
+}
+
+// OWF-247: atajos de fecha (Hoy/Ayer/Personalizada)
+.stm-date-shortcuts {
+  display: flex;
+  gap: 6px;
+}
+
+.stm-date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline, #e2e8f0);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-2, #64748b);
+  cursor: pointer;
+  transition: all 120ms;
+
+  &--active {
+    background: var(--brand-primary-soft, rgba(59, 130, 246, 0.12));
+    border-color: var(--brand-primary, #3b82f6);
+    color: var(--brand-primary, #3b82f6);
+    font-weight: 700;
+  }
+}
+
+// OWF-243: total de ítems en lugar del campo Monto
+.stm-items-total-banner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface-2, #f1f5f9);
+
+  &__amount {
+    font-family: var(--font-money, inherit);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--fg-1, #0f172a);
+  }
 }
 </style>
