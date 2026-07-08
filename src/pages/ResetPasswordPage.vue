@@ -53,6 +53,19 @@
               </template>
             </q-input>
 
+            <div v-if="password.length > 0" class="pw-strength">
+              <div class="pw-strength__bar">
+                <div
+                  v-for="i in 4"
+                  :key="i"
+                  class="pw-strength__seg"
+                  :class="{ 'pw-strength__seg--active': i <= pwStrength.score }"
+                  :style="i <= pwStrength.score ? { background: pwStrength.color } : {}"
+                />
+              </div>
+              <span class="pw-strength__label" :style="{ color: pwStrength.color }">{{ pwStrength.label }}</span>
+            </div>
+
             <q-input
               v-model="passwordConfirm"
               :type="showPwd ? 'text' : 'password'"
@@ -99,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from 'boot/axios';
 
@@ -113,6 +126,18 @@ const loading         = ref(false);
 const done            = ref(false);
 const tokenFromUrl    = ref('');
 const errors = ref<{ password?: string; confirm?: string; global?: string }>({});
+
+const pwStrength = computed(() => {
+  const p = password.value;
+  let score = 0;
+  if (p.length >= 8) score++;
+  if (/[A-Z]/.test(p)) score++;
+  if (/[0-9]/.test(p)) score++;
+  if (/[^A-Za-z0-9]/.test(p)) score++;
+  const labels = ['Muy débil', 'Débil', 'Aceptable', 'Fuerte'];
+  const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
+  return { score, label: labels[score - 1] ?? 'Muy débil', color: colors[score - 1] ?? '#ef4444' };
+});
 
 onMounted(() => {
   // Laravel sends: /reset-password?token=xxx&email=yyy
@@ -161,4 +186,33 @@ async function submit() {
 .auth-sent__icon { font-size: 48px; margin-bottom: 8px; }
 .auth-banner { font-size: 13px; }
 .auth-banner--error { background: rgba(239,68,68,.08); color: #dc2626; }
+
+.pw-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+
+.pw-strength__bar {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.pw-strength__seg {
+  height: 4px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--surface-3, #e5e7eb);
+  transition: background 200ms;
+}
+
+.pw-strength__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 200ms;
+}
 </style>

@@ -54,7 +54,7 @@
 
         <!-- Success state -->
         <div v-else class="auth-sent">
-          <div class="auth-sent__icon">✉️</div>
+          <q-icon name="mail" size="48px" color="primary" class="auth-sent__icon" />
           <h2 class="auth-form-title">Revisa tu correo</h2>
           <p class="auth-form-sub">
             Si <strong>{{ email }}</strong> está registrado, recibirás el enlace en los próximos minutos.
