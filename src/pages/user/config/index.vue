@@ -1758,7 +1758,8 @@ async function ensureCurrenciesLoaded() {
       const uid = getInitialCurrencyId();
       selectedCurrencyId.value = typeof uid === 'number' ? uid : null;
     }
-  } catch {
+  } catch (e) {
+    console.error('[config] Error cargando monedas:', e);
     Notify.create({ type: 'negative', message: 'Error cargando monedas' });
   } finally {
     currencyLoading.value = false;
