@@ -100,7 +100,7 @@
             class="tx-dense"
             :class="{ 'tx-dense--first': i === 0 }"
             style="cursor: pointer;"
-            @click="router.push({ path: '/user/transactions', query: { editTx: String(tx.id) } })"
+            @click="openEditTx(tx.id)"
           >
             <div class="tx-dense__icon" :class="tx.type === 'income' ? 'tx-dense__icon--income' : 'tx-dense__icon--expense'">
               <q-icon :name="tx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="16px" />
@@ -239,14 +239,17 @@
       </aside>
     </transition>
     </div>
+
+    <TransactionFormDialog v-model="showEditDialog" :id="editTxId" />
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
+import { TransactionFormDialog } from 'components';
 
 defineOptions({ name: 'ProHomeView' });
 
@@ -396,6 +399,20 @@ interface TxItem {
   type: 'income' | 'expense';
 }
 const recentTransactions = ref<TxItem[]>([]);
+const editTxId = ref<number | null>(null);
+const showEditDialog = ref(false);
+
+function openEditTx(id: number) {
+  editTxId.value = id;
+  showEditDialog.value = true;
+}
+
+watch(showEditDialog, (v) => {
+  if (!v) {
+    editTxId.value = null;
+    void loadRecentTransactions();
+  }
+});
 
 function formatMoney(n: number): string {
   const abs = Math.abs(n);
