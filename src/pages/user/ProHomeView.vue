@@ -10,7 +10,7 @@
       <!-- Mobile balance hero card (hidden on desktop) -->
       <div class="mobile-balance-card">
         <div class="mobile-balance-card__top">
-          <span class="mobile-balance-card__label">Disponible · USD</span>
+          <span class="mobile-balance-card__label">Disponible · {{ currencyCode }}</span>
           <span class="mobile-balance-card__badge">PRO</span>
         </div>
         <span class="mobile-balance-card__amount">
@@ -185,7 +185,7 @@
         <!-- Accounts section -->
         <template v-if="apSection === 'accounts'">
           <div class="ap-panel__total">
-            <span class="t-eyebrow" style="margin-bottom:4px;display:block">Patrimonio neto · USD</span>
+            <span class="t-eyebrow" style="margin-bottom:4px;display:block">Patrimonio neto · {{ currencyCode }}</span>
             <span class="ap-panel__total-amount">{{ isHidden ? '$ ••••••' : formatMoney(accountsNetTotal) }}</span>
           </div>
           <div class="ap-panel__divider" />
@@ -216,7 +216,7 @@
         <!-- Debts section -->
         <template v-else>
           <div class="ap-panel__total">
-            <span class="t-eyebrow" style="margin-bottom:4px;display:block">Deuda total · USD</span>
+            <span class="t-eyebrow" style="margin-bottom:4px;display:block">Deuda total · {{ currencyCode }}</span>
             <span class="ap-panel__total-amount" style="color: var(--expense-fg)">{{ isHidden ? '$ ••••••' : formatMoney(debtsTotal) }}</span>
           </div>
           <div class="ap-panel__divider" />
@@ -255,6 +255,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
+import { useAuthStore } from 'stores/auth';
 import { TxDetailModal } from 'components';
 
 defineOptions({ name: 'ProHomeView' });
@@ -263,6 +264,7 @@ defineOptions({ name: 'ProHomeView' });
 
 const router = useRouter();
 const ui = useUiStore();
+const authStore = useAuthStore();
 const isHidden = computed(() => ui.hideValues);
 
 interface Kpi {
@@ -278,53 +280,68 @@ interface Kpi {
   valueColor?: string;
 }
 
-const kpis = computed<Kpi[]>(() => [
-  {
-    label: 'Disponible',
-    value: balanceSummary.value.total_global_balance,
-    icon: 'account_balance',
-    color: 'var(--info)',
-    softColor: 'var(--info-soft)',
-    delta: '+4.2%',
-    deltaColor: 'var(--income-fg)',
-    deltaSoft: 'var(--income-soft)',
-    valueColor: 'var(--fg-1)',
-  },
-  {
-    label: 'Ingresos · mes',
-    value: monthlyIncome.value,
-    icon: 'arrow_downward',
-    color: 'var(--income)',
-    softColor: 'var(--income-soft)',
-    delta: '+8.1%',
-    deltaColor: 'var(--income-fg)',
-    deltaSoft: 'var(--income-soft)',
-    valueColor: 'var(--income-fg)',
-  },
-  {
-    label: 'Gastos · mes',
-    value: -monthlyExpense.value,
-    icon: 'arrow_outward',
-    color: 'var(--expense)',
-    softColor: 'var(--expense-soft)',
-    delta: '-2.3%',
-    deltaColor: 'var(--expense-fg)',
-    deltaSoft: 'var(--expense-soft)',
-    valueColor: 'var(--expense-fg)',
-  },
-  {
-    label: 'Tasa de ahorro',
-    value: 0,
-    text: savingsRate.value,
-    icon: 'trending_up',
-    color: 'var(--income)',
-    softColor: 'var(--income-soft)',
-    delta: 'Meta: 40%',
-    deltaColor: 'var(--income-fg)',
-    deltaSoft: 'var(--income-soft)',
-    valueColor: 'var(--fg-1)',
-  },
-]);
+const kpis = computed<Kpi[]>(() => {
+  const fmtDelta = (val: number | null): string => {
+    if (val === null) return '—';
+    const sign = val >= 0 ? '+' : '';
+    return `${sign}${val.toFixed(1)}%`;
+  };
+  const incomeDelta = prevIncome.value > 0
+    ? ((monthlyIncome.value - prevIncome.value) / prevIncome.value) * 100
+    : null;
+  const expenseDelta = prevExpense.value > 0
+    ? ((monthlyExpense.value - prevExpense.value) / prevExpense.value) * 100
+    : null;
+  const savingsNum = parseFloat(savingsRate.value) || 0;
+
+  return [
+    {
+      label: 'Disponible',
+      value: balanceSummary.value.total_global_balance,
+      icon: 'account_balance',
+      color: 'var(--info)',
+      softColor: 'var(--info-soft)',
+      delta: fmtDelta(monthlyDelta.value),
+      deltaColor: (monthlyDelta.value ?? 0) >= 0 ? 'var(--income-fg)' : 'var(--expense-fg)',
+      deltaSoft: (monthlyDelta.value ?? 0) >= 0 ? 'var(--income-soft)' : 'var(--expense-soft)',
+      valueColor: 'var(--fg-1)',
+    },
+    {
+      label: 'Ingresos · mes',
+      value: monthlyIncome.value,
+      icon: 'arrow_downward',
+      color: 'var(--income)',
+      softColor: 'var(--income-soft)',
+      delta: fmtDelta(incomeDelta),
+      deltaColor: (incomeDelta ?? 0) >= 0 ? 'var(--income-fg)' : 'var(--expense-fg)',
+      deltaSoft: (incomeDelta ?? 0) >= 0 ? 'var(--income-soft)' : 'var(--expense-soft)',
+      valueColor: 'var(--income-fg)',
+    },
+    {
+      label: 'Gastos · mes',
+      value: -monthlyExpense.value,
+      icon: 'arrow_outward',
+      color: 'var(--expense)',
+      softColor: 'var(--expense-soft)',
+      delta: fmtDelta(expenseDelta),
+      deltaColor: (expenseDelta ?? 0) <= 0 ? 'var(--income-fg)' : 'var(--expense-fg)',
+      deltaSoft: (expenseDelta ?? 0) <= 0 ? 'var(--income-soft)' : 'var(--expense-soft)',
+      valueColor: 'var(--expense-fg)',
+    },
+    {
+      label: 'Tasa de ahorro',
+      value: 0,
+      text: savingsRate.value,
+      icon: 'trending_up',
+      color: 'var(--income)',
+      softColor: 'var(--income-soft)',
+      delta: 'Meta: 40%',
+      deltaColor: savingsNum >= 40 ? 'var(--income-fg)' : 'var(--expense-fg)',
+      deltaSoft: savingsNum >= 40 ? 'var(--income-soft)' : 'var(--expense-soft)',
+      valueColor: 'var(--fg-1)',
+    },
+  ];
+});
 
 // ── Accounts Panel state ───────────────────────────────────────────────
 const showAccountsPanel = ref(false);
@@ -378,8 +395,13 @@ async function loadAccountsPanel() {
 const balanceSummary = ref({ total_all: 0, total_global_balance: 0 });
 const monthlyIncome = ref(0);
 const monthlyExpense = ref(0);
+const monthlyDelta = ref<number | null>(null);
+const prevIncome = ref(0);
+const prevExpense = ref(0);
 const savingsRate = ref('0%');
 const aiHint = ref('Tu tasa de ahorro es saludable. Revisa los movimientos recientes para optimizar.');
+
+const currencyCode = computed(() => authStore.defaultCurrencyCode);
 
 const mobileBalanceStats = computed(() => {
   const net = monthlyIncome.value - monthlyExpense.value;
@@ -402,7 +424,7 @@ interface TxItem {
   amount: number;
   date: string;
   category: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'transfer';
 }
 const recentTransactions = ref<TxItem[]>([]);
 const editTxId = ref<number | null>(null);
@@ -432,11 +454,13 @@ function formatDateShort(dateStr: string | Date): string {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-function classifyTx(tx: Record<string, unknown>, amount: number): 'income' | 'expense' {
+function classifyTx(tx: Record<string, unknown>, amount: number): 'income' | 'expense' | 'transfer' {
   const rawType = tx.transaction_type as Record<string, unknown> | undefined;
   const name = typeof rawType?.name === 'string' ? rawType.name.toLowerCase() : '';
   const slug = typeof rawType?.slug === 'string' ? rawType.slug.toLowerCase() : '';
+  const id = Number(tx.transaction_type_id ?? rawType?.id ?? 0);
   const typeText = `${name} ${slug}`;
+  if (id === 4 || typeText.includes('transfer') || typeText.includes('traspaso')) return 'transfer';
   if (typeText.includes('income') || typeText.includes('ingreso')) return 'income';
   if (typeText.includes('expense') || typeText.includes('gasto')) return 'expense';
   return amount >= 0 ? 'income' : 'expense';
@@ -461,15 +485,26 @@ async function loadBalanceSummary() {
 
 async function loadMonthSummary() {
   const now = new Date();
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const params = {
     period: 'month',
     year: String(now.getFullYear()),
     month: String(now.getMonth() + 1),
     per_page: '500',
   };
+  const paramsPrev = {
+    period: 'month',
+    year: String(prevDate.getFullYear()),
+    month: String(prevDate.getMonth() + 1),
+    per_page: '500',
+  };
   try {
-    const res = await api.get('/transactions', { params });
-    const data = res.data?.data;
+    const [resNow, resPrev] = await Promise.allSettled([
+      api.get('/transactions', { params }),
+      api.get('/transactions', { params: paramsPrev }),
+    ]);
+
+    const data = resNow.status === 'fulfilled' ? resNow.value.data?.data : null;
     const list: Record<string, unknown>[] = Array.isArray(data) ? data : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[]) : [];
 
     let income = 0;
@@ -479,6 +514,7 @@ async function loadMonthSummary() {
       const amount = Number(tx.amount ?? 0);
       const absAmount = Math.abs(amount);
       const txClass = classifyTx(tx, amount);
+      if (txClass === 'transfer') continue;
       if (txClass === 'income') income += absAmount;
       if (txClass === 'expense') {
         expense += absAmount;
@@ -499,6 +535,28 @@ async function loadMonthSummary() {
       amount: amt,
       pct: Math.max(5, Math.round((amt / maxCat) * 100)),
     }));
+
+    // Real MoM deltas (matching LiteHomeView logic)
+    if (resPrev.status === 'fulfilled') {
+      const dataPrev = resPrev.value.data?.data;
+      const listPrev: Record<string, unknown>[] = Array.isArray(dataPrev) ? dataPrev : Array.isArray(dataPrev?.data) ? (dataPrev.data as Record<string, unknown>[]) : [];
+      let incPrev = 0, expPrev = 0;
+      for (const tx of listPrev) {
+        const amt = Math.abs(Number(tx.amount ?? 0));
+        const cls = classifyTx(tx, Number(tx.amount ?? 0));
+        if (cls === 'transfer') continue;
+        if (cls === 'income') incPrev += amt;
+        if (cls === 'expense') expPrev += amt;
+      }
+      prevIncome.value = incPrev;
+      prevExpense.value = expPrev;
+
+      const netNow = income - expense;
+      const netPrev = incPrev - expPrev;
+      monthlyDelta.value = netPrev !== 0 ? ((netNow - netPrev) / Math.abs(netPrev)) * 100 : null;
+    } else {
+      monthlyDelta.value = null;
+    }
   } catch (err) {
     console.warn('[ProHome] Month summary error:', err);
   }
@@ -559,7 +617,10 @@ async function loadRecentTransactions() {
       return db.localeCompare(da);
     });
 
-    recentTransactions.value = sortedList.slice(0, 6).map((tx) => {
+    recentTransactions.value = sortedList.filter((tx) => {
+    const amt = Number(tx.amount ?? 0);
+    return classifyTx(tx, amt) !== 'transfer';
+  }).slice(0, 6).map((tx) => {
       const amount = Number(tx.amount ?? 0);
       return {
         id: Number(tx.id),

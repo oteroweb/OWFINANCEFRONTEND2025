@@ -251,6 +251,7 @@ const NAV_ITEMS = [
   { id: 'transactions', label: 'Transacciones',  icon: 'receipt_long', route: '/user/transactions' },
   { id: 'analisis',     label: 'Análisis',       icon: 'donut_small',  route: '/user/expense-analysis' },
   { id: 'jars',         label: 'Cántaros',       icon: 'savings',      route: '/user/jars' },
+  { id: 'finance',      label: 'Perfil financiero', icon: 'insights',     route: '/user/financial-profile' },
   { id: 'dreams',       label: 'Sueños',         icon: 'auto_awesome', route: '/user/dreams' },
   { id: 'debts',        label: 'Deudas',         icon: 'credit_card',  route: '/user/debts' },
   { id: 'asesor',       label: 'Asesor IA',      icon: 'smart_toy',    route: '/user/asesor' },
@@ -262,6 +263,7 @@ const currentTab = computed(() => {
   if (p.includes('/transactions'))                       return 'transactions';
   if (p.includes('/expense-analysis'))                   return 'analisis';
   if (p.includes('/jars'))                               return 'jars';
+  if (p.includes('/financial-profile'))                    return 'finance';
   if (p.includes('/dreams'))                             return 'dreams';
   if (p.includes('/debts'))                              return 'debts';
   if (p.includes('/asesor'))                             return 'asesor';

@@ -282,6 +282,7 @@ import TxDetailModal from 'components/TxDetailModal.vue';
 defineOptions({ name: 'LiteHomeView' });
 
 const router = useRouter();
+const authStore = useAuthStore();
 const $q = useQuasar();
 const ui = useUiStore();
 const auth = useAuthStore();
@@ -292,7 +293,7 @@ const emit = defineEmits<{ 'quick-add': [] }>();
 // ─── State ──────────────────────────────────────────────────────────
 const balanceSummary = ref({ total_all: 0, total_global_balance: 0 });
 const balanceLoading = ref(false);
-const currencySymbol = ref('$');
+const currencySymbol = computed(() => { const c = authStore.defaultCurrencyCode; return c === 'VES' ? 'Bs' : c === 'EUR' ? '€' : c === 'COP' ? '$' : '$'; });
 const monthlyIncome = ref(0);
 const monthlyExpense = ref(0);
 const monthlyDelta = ref<number | null>(null);
