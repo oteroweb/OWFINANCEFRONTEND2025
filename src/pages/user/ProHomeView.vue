@@ -118,42 +118,7 @@
       </div>
 
       <!-- Exchange Rates Widget -->
-      <div v-if="userRates.length" class="pro-card er-card">
-        <div class="pro-card__header" style="margin-bottom: 0;">
-          <div>
-            <span class="t-h3">Tipos de cambio</span>
-            <p class="er-card__hint">Tasa manual · 1 USD =</p>
-          </div>
-        </div>
-        <div>
-          <div
-            v-for="(rate, i) in userRates"
-            :key="rate.id"
-            class="er-row"
-            :class="{ 'er-row--first': i === 0 }"
-          >
-            <div class="er-row__flag">{{ rate.currency?.code?.slice(0, 2) }}</div>
-            <div class="er-row__info">
-              <span class="er-row__code">{{ rate.currency?.code }}</span>
-              <span class="er-row__name">{{ rate.currency?.name }}</span>
-            </div>
-            <span class="er-row__eq">1 USD =</span>
-            <div class="er-row__input-wrap" :class="{ 'er-row__input-wrap--focus': rateEditId === rate.id }">
-              <input
-                type="number"
-                min="0"
-                step="any"
-                class="er-row__input"
-                :value="rate.current_rate"
-                @focus="rateEditId = rate.id"
-                @blur="rateEditId = null"
-                @change="updateRate(rate, ($event.target as HTMLInputElement).valueAsNumber)"
-              />
-              <span class="er-row__code-suffix">{{ rate.currency?.code }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ExchangeRatesTable />
 
       <!-- AI advisor strip -->
       <button class="pro-advisor-strip" @click="goToAsesor">
@@ -257,6 +222,7 @@ import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
 import { TxDetailModal } from 'components';
+import ExchangeRatesTable from 'components/ExchangeRatesTable.vue';
 
 defineOptions({ name: 'ProHomeView' });
 
@@ -636,50 +602,12 @@ async function loadRecentTransactions() {
   }
 }
 
-// ── Exchange Rates ─────────────────────────────────────────────────────
-interface UserRate {
-  id: number;
-  currency_id: number;
-  currency?: { id: number; name: string; code: string };
-  current_rate: number;
-  is_current: boolean;
-  is_official: boolean;
-}
-
-const userRates = ref<UserRate[]>([]);
-const rateEditId = ref<number | null>(null);
-
-async function loadUserRates() {
-  try {
-    const res = await api.get('/user_currencies', { params: { per_page: 50 } });
-    const compact = res.data?.rates;
-    if (Array.isArray(compact) && compact.length) {
-      userRates.value = compact as UserRate[];
-      return;
-    }
-    const raw = res.data?.data?.data || res.data?.data || [];
-    userRates.value = Array.isArray(raw) ? (raw as UserRate[]) : [];
-  } catch { /* silent */ }
-}
-
-async function updateRate(rate: UserRate, newVal: number) {
-  if (!isFinite(newVal) || newVal <= 0) return;
-  const prev = rate.current_rate;
-  rate.current_rate = newVal;
-  try {
-    await api.put(`/user_currencies/${rate.id}`, { current_rate: newVal, is_current: true });
-  } catch {
-    rate.current_rate = prev;
-  }
-}
-
 onMounted(() => {
   void Promise.all([
     loadBalanceSummary(),
     loadMonthSummary(),
     loadJars(),
     loadRecentTransactions(),
-    loadUserRates(),
     loadAccountsPanel(),
   ]);
 });

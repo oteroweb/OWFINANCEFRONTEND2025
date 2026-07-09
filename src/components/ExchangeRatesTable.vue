@@ -50,9 +50,8 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, onMounted } from 'vue';
-import { api } from 'boot/axios';
-import { useAuthStore } from 'stores/auth';
+import { computed, onMounted } from 'vue';
+import { useUserCurrenciesStore } from 'stores/useUserCurrencies';
 
 interface RateDef { code: string; name: string; flag: string }
 
@@ -64,74 +63,26 @@ const RATE_DEFS: RateDef[] = [
   { code: 'PEN', name: 'Sol peruano', flag: 'PE' },
 ];
 
-interface UserCurrencyRow {
-  id: number;
-  currency_id: number;
-  current_rate: number;
-  is_official: boolean;
-  updated_at: string;
-  currency: { code: string };
-}
-
 interface RateCell { value: number | null; id: number | null }
 interface RateRowState { official: RateCell; current: RateCell; deltaPct: number | null }
 
-const auth = useAuthStore();
-const rowsByCode = reactive<Record<string, RateRowState>>({});
-const currencyIdByCode: Record<string, number> = {};
+const store = useUserCurrenciesStore();
 
-async function loadCurrencyCatalog() {
-  try {
-    const res = await api.get<{ data: Array<{ id: number; code: string }> }>('/currencies', {
-      params: { per_page: 200 },
-    });
-    for (const c of res.data.data ?? []) {
-      currencyIdByCode[c.code.toUpperCase()] = c.id;
-    }
-  } catch {
-    // Silencioso
+// Maps store.rates (UserCurrency shape) to the RateRowState shape the template expects.
+const rowsByCode = computed<Record<string, RateRowState>>(() => {
+  const result: Record<string, RateRowState> = {};
+  for (const def of RATE_DEFS) {
+    const r = store.rates[def.code];
+    const off = r?.official_rate ?? null;
+    const cur = r?.current_rate ?? null;
+    result[def.code] = {
+      official: { value: off, id: r?.id ?? null },
+      current: { value: cur, id: r?.id ?? null },
+      deltaPct: off && cur && off > 0 ? ((cur - off) / off) * 100 : null,
+    };
   }
-}
-
-function emptyCell(): RateCell {
-  return { value: null, id: null };
-}
-
-function computeDelta(state: RateRowState) {
-  const off = state.official.value;
-  const cur = state.current.value;
-  state.deltaPct = off && cur && off > 0 ? ((cur - off) / off) * 100 : null;
-}
-
-async function loadRates() {
-  RATE_DEFS.forEach((d) => {
-    rowsByCode[d.code] = { official: emptyCell(), current: emptyCell(), deltaPct: null };
-  });
-  const userId = auth.user?.id;
-  if (!userId) return;
-  try {
-    const res = await api.get<{ data: { data: UserCurrencyRow[] } }>('/user_currencies', {
-      params: { user_id: userId, is_current: true, per_page: 200 },
-    });
-    const rows = res.data.data?.data ?? [];
-    for (const code of Object.keys(rowsByCode)) {
-      const state = rowsByCode[code];
-      if (!state) continue;
-      const forCode = rows.filter((r) => r.currency?.code?.toUpperCase() === code);
-      const latest = (official: boolean) =>
-        forCode
-          .filter((r) => !!r.is_official === official)
-          .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0];
-      const officialRow = latest(true);
-      const currentRow = latest(false);
-      if (officialRow) state.official = { value: Number(officialRow.current_rate), id: officialRow.id };
-      if (currentRow) state.current = { value: Number(currentRow.current_rate), id: currentRow.id };
-      computeDelta(state);
-    }
-  } catch {
-    // Silencioso — widget best-effort, igual que ExchangeRatesWidget
-  }
-}
+  return result;
+});
 
 function deltaClass(pct: number) {
   return pct >= 0 ? 'ert__delta--up' : 'ert__delta--down';
@@ -140,32 +91,11 @@ function deltaClass(pct: number) {
 async function onEdit(code: string, column: 'official' | 'current', raw: string) {
   const val = parseFloat(raw);
   if (isNaN(val) || val <= 0) return;
-  const userId = auth.user?.id;
-  if (!userId) return;
-
-  const currencyId = currencyIdByCode[code];
-  if (!currencyId) return;
-
-  try {
-    await api.post('/user_currencies', {
-      user_id: userId,
-      currency_id: currencyId,
-      current_rate: val,
-      is_current: true,
-      is_official: column === 'official',
-    });
-    const state = rowsByCode[code];
-    if (!state) return;
-    state[column].value = val;
-    computeDelta(state);
-  } catch {
-    // Silencioso
-  }
+  await store.onEdit(code, column, val);
 }
 
 onMounted(() => {
-  void loadCurrencyCatalog();
-  void loadRates();
+  void store.fetchAll();
 });
 </script>
 

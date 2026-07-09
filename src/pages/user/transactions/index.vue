@@ -1290,6 +1290,7 @@ import LiteTransactionsView from './LiteTransactionsView.vue';
 import PeriodNavigator from 'components/PeriodNavigator.vue';
 import { usePeriodStore } from 'stores/period';
 import { useUiStore } from 'stores/ui';
+import { useUserCurrenciesStore } from 'stores/useUserCurrencies';
 import {
   layoutModeOptions,
   normalizeLayoutMode,
@@ -1307,6 +1308,7 @@ const defaultCurrencyCode = computed(() => authStore.defaultCurrencyCode);
 const txStore = useTransactionsStore();
 const ui = useUiStore();
 const periodStore = usePeriodStore();
+const currenciesStore = useUserCurrenciesStore();
 const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(authStore.settings?.layout_mode ?? authStore.user?.layout_mode));
 const fallbackLayoutModeOption: LayoutModeOption = {
   label: 'Pro',
@@ -4103,35 +4105,8 @@ type RateMap = Record<string, { current: number | '' } | number | ''>;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ratesExpanded = ref(false);
 
-// Load from authStore.user on mount; shape-tolerant
-const proRates = ref<RateMap>({});
-
 function loadProRatesFromUser(): void {
-  const u = (authStore as unknown as Record<string, unknown>)['user'] as Record<string, unknown> | undefined;
-  if (!u) return;
-  const out: RateMap = {};
-  const pushList = (arr: unknown) => {
-    if (!Array.isArray(arr)) return;
-    for (const it of arr) {
-      if (!it || typeof it !== 'object') continue;
-      const obj = it as Record<string, unknown>;
-      const cur = obj['currency'] as Record<string, unknown> | undefined;
-      const codeRaw = cur && typeof cur === 'object' ? cur['code'] : obj['code'];
-      const code = typeof codeRaw === 'string' && codeRaw ? codeRaw.toUpperCase() : null;
-      const rate = Number(obj['current_rate']);
-      if (!code) continue;
-      const existing = out[code];
-      if (existing && typeof existing === 'object') {
-        (existing as { current: number | '' }).current = Number.isFinite(rate) && rate > 0 ? rate : '';
-      } else {
-        out[code] = { current: Number.isFinite(rate) && rate > 0 ? rate : '' };
-      }
-    }
-  };
-  pushList(u['current_currency_rates']);
-  pushList(u['rates']);
-  pushList(u['currency_rates']);
-  proRates.value = out;
+  void currenciesStore.fetchAll();
 }
 
 // ===== AccountsPanel for Transactions (Pro mode) =====
@@ -4416,41 +4391,12 @@ function txJarColor(row: Row): string {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function onProRatesChange(newRates: RateMap): Promise<void> {
-  // Optimistically update local state
-  proRates.value = newRates;
-  // Persist each changed rate via PUT /user_currencies/:id
-  const uid = authStore.user && typeof (authStore.user as Record<string, unknown>)['id'] === 'number'
-    ? (authStore.user as Record<string, unknown>)['id'] as number
-    : null;
-  if (!uid) return;
   for (const [code, val] of Object.entries(newRates)) {
     const rateNum = typeof val === 'object' && val !== null
       ? Number((val as { current: number | '' }).current)
       : Number(val);
     if (!Number.isFinite(rateNum) || rateNum <= 0) continue;
-    try {
-      // Find user_currency id for this code
-      const u = (authStore as unknown as Record<string, unknown>)['user'] as Record<string, unknown> | undefined;
-      const lists = ['current_currency_rates', 'rates', 'currency_rates'];
-      let ucId: number | null = null;
-      for (const key of lists) {
-        const arr = u && Array.isArray(u[key]) ? u[key] as Array<Record<string, unknown>> : [];
-        for (const it of arr) {
-          const cur = it['currency'] as Record<string, unknown> | undefined;
-          const codeRaw = cur && typeof cur === 'object' ? cur['code'] : it['code'];
-          if (typeof codeRaw === 'string' && codeRaw.toUpperCase() === code) {
-            const n = Number(it['id']);
-            if (Number.isFinite(n)) { ucId = n; break; }
-          }
-        }
-        if (ucId) break;
-      }
-      if (ucId) {
-        await api.put(`/user_currencies/${ucId}`, { current_rate: rateNum });
-      }
-    } catch {
-      // silently ignore — the local value stays updated
-    }
+    await currenciesStore.onEdit(code, 'current', rateNum);
   }
 }
 

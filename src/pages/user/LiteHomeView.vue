@@ -83,6 +83,62 @@
         </template>
       </section>
 
+      <!-- Expected Monthly Income -->
+      <section class="lite-home__section">
+        <div class="lite-home__section-header">
+          <h2 class="t-h2">Ingreso esperado</h2>
+          <button
+            v-if="!editingExpectedIncome"
+            class="lite-home__icon-btn"
+            title="Editar ingreso esperado"
+            @click="startEditExpectedIncome"
+          >
+            <q-icon name="edit" size="18px" />
+          </button>
+        </div>
+        <div class="lite-home__income-card">
+          <template v-if="!editingExpectedIncome">
+            <div class="lite-home__income-display">
+              <span class="t-eyebrow">Mensual · {{ currencySymbol }}</span>
+              <span class="t-amount-lg">
+                {{ expectedIncome > 0 ? (isHidden ? '••••••' : formatMoney(expectedIncome)) : '—' }}
+              </span>
+              <span v-if="expectedIncome === 0" class="t-body-sm lite-home__income-hint">
+                Configura tu ingreso para ver proyecciones en cántaros
+              </span>
+            </div>
+          </template>
+          <template v-else>
+            <div class="lite-home__income-edit">
+              <q-input
+                v-model.number="newExpectedIncome"
+                type="number"
+                outlined
+                dense
+                :prefix="currencySymbol"
+                min="0"
+                autofocus
+                style="flex: 1;"
+                @keyup.enter="void saveExpectedIncome()"
+                @keyup.escape="cancelEditExpectedIncome"
+              />
+              <div class="lite-home__income-edit-btns">
+                <q-btn
+                  flat dense round icon="check" color="positive" size="sm"
+                  :loading="savingExpectedIncome"
+                  @click="void saveExpectedIncome()"
+                />
+                <q-btn
+                  flat dense round icon="close" color="negative" size="sm"
+                  :disable="savingExpectedIncome"
+                  @click="cancelEditExpectedIncome"
+                />
+              </div>
+            </div>
+          </template>
+        </div>
+      </section>
+
       <!-- Jars Preview (spec: JarsRow — up to 4 jars, horizontal scroll on mobile) -->
       <section class="lite-home__section">
         <div class="lite-home__section-header">
@@ -360,6 +416,36 @@ function openEditTx(id: number) {
 watch(showEditDialog, (v) => {
   if (!v) editTxId.value = null;
 });
+
+// ─── Expected Monthly Income ─────────────────────────────────────────
+const expectedIncome = ref<number>(Number(authStore.user?.monthly_income ?? 0));
+const editingExpectedIncome = ref(false);
+const newExpectedIncome = ref<number>(0);
+const savingExpectedIncome = ref(false);
+
+function startEditExpectedIncome() {
+  newExpectedIncome.value = expectedIncome.value;
+  editingExpectedIncome.value = true;
+}
+
+function cancelEditExpectedIncome() {
+  editingExpectedIncome.value = false;
+}
+
+async function saveExpectedIncome() {
+  savingExpectedIncome.value = true;
+  try {
+    await api.put('/user/profile', { monthly_income: newExpectedIncome.value });
+    expectedIncome.value = newExpectedIncome.value;
+    if (authStore.user) authStore.user.monthly_income = newExpectedIncome.value;
+    editingExpectedIncome.value = false;
+    $q.notify({ type: 'positive', message: 'Ingreso actualizado', timeout: 2000 });
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo guardar el ingreso' });
+  } finally {
+    savingExpectedIncome.value = false;
+  }
+}
 
 // ─── Computed ───────────────────────────────────────────────────────
 const netAmount = computed(() => monthlyIncome.value - monthlyExpense.value);
@@ -878,6 +964,41 @@ onMounted(() => {
     font-weight: 700;
     color: var(--fg-1);
     font-variant-numeric: tabular-nums;
+  }
+
+  &__income-card {
+    background: var(--surface-1);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__income-display {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  &__income-hint {
+    color: var(--fg-3);
+    margin-top: 2px;
+  }
+
+  &__income-edit {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+  }
+
+  &__income-edit-btns {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
   }
 
   &__transactions {
