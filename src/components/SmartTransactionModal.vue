@@ -88,11 +88,6 @@
             </div>
           </div>
           <div class="stm-field">
-            <label class="stm-label">Concepto <span class="stm-label--opt">(opcional)</span></label>
-            <input v-model="form.name" type="text" placeholder="Ej: Ahorro del mes…"
-              class="stm-text-input" />
-          </div>
-          <div class="stm-field">
             <label class="stm-label">Desde</label>
             <q-select v-model="form.account_from_id" :options="accountOptions" emit-value map-options dense outlined
               placeholder="Cuenta origen…">
@@ -106,12 +101,12 @@
               <template v-slot:prepend><q-icon name="arrow_downward" color="positive" /></template>
             </q-select>
           </div>
-          <!-- OWF-185: panel de cruce de monedas si origen y destino difieren -->
-          <div v-if="transferIsCrossCurrency" class="stm-pro-panel">
+          <!-- OWF-185/250/251: panel de cruce de monedas si origen y destino difieren -->
+          <div v-if="transferIsCrossCurrency" class="stm-cross-currency-panel">
             <div class="row items-center q-gutter-xs">
               <q-icon name="currency_exchange" size="16px" />
               <span class="text-caption text-weight-medium">
-                {{ transferFromCurrency }} → {{ transferToCurrency }}
+                Cruce de moneda · {{ transferFromCurrency }} → {{ transferToCurrency }}
               </span>
             </div>
             <div class="stm-field" style="margin-top:8px">
@@ -120,11 +115,14 @@
                 placeholder="0.0000" class="stm-text-input" />
             </div>
             <div v-if="transferRate && form.amount" class="stm-comm-result">
-              <span>
-                {{ transferFromCurrency }} {{ formatMoney(form.amount) }} ≈
-                {{ transferToCurrency }} {{ formatMoney(transferConvertedAmount) }}
-              </span>
+              <span>Envías {{ transferFromCurrency }} {{ formatMoney(form.amount) }}</span>
+              <span>Llega {{ transferToCurrency }} {{ formatMoney(transferConvertedAmount) }}</span>
             </div>
+          </div>
+          <div class="stm-field">
+            <label class="stm-label">Concepto <span class="stm-label--opt">(opcional)</span></label>
+            <input v-model="form.name" type="text" placeholder="Ej: Ahorro del mes…"
+              class="stm-text-input" />
           </div>
         </template>
 
@@ -288,11 +286,6 @@
           </div>
         </div>
 
-        <!-- OWF-183: Afecta el saldo de la cuenta -->
-        <div class="stm-field stm-field--toggle-row">
-          <q-toggle v-model="includeInBalance" color="primary" label="Afecta el saldo de la cuenta" />
-        </div>
-
         <!-- Pro features (solo layout_mode=pro) -->
         <template v-if="isProMode && form.type !== 'ajuste'">
           <!-- OWF-182/246: switches split/items — el diseño solo los prevé en Gasto/Ingreso, no en Transferencia -->
@@ -313,9 +306,13 @@
             />
           </div>
           <div class="stm-pro-toggles">
-            <button class="stm-pro-toggle" :class="{ 'stm-pro-toggle--on': proPanel === 'comision' }" @click="toggleProPanel('comision')">
-              <span class="material-icons" style="font-size:16px">percent</span> Comisión
-            </button>
+            <q-toggle
+              :model-value="proPanel === 'comision'"
+              label="Comisión"
+              icon="percent"
+              color="primary"
+              @update:model-value="(v) => toggleProPanel(v ? 'comision' : null)"
+            />
           </div>
 
           <!-- Comisión panel -->
@@ -411,6 +408,11 @@
             </button>
           </div>
         </template>
+
+        <!-- OWF-183/254: Afecta el saldo — al final de la rama gasto/ingreso Pro -->
+        <div class="stm-field stm-field--toggle-row">
+          <q-toggle v-model="includeInBalance" color="primary" label="Afecta el saldo de la cuenta" />
+        </div>
 
         <!-- OWF-184: preview en lenguaje natural + validaciones + estados draft/valid/error -->
         <TfReviewCard
@@ -1667,6 +1669,19 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   gap: 10px;
 }
 
+.stm-cross-currency-panel {
+  padding: 12px;
+  background: color-mix(in srgb, #8B5CF6 8%, var(--surface-1, #fff));
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #8B5CF6 30%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .text-caption { color: #8B5CF6; font-weight: 600; }
+  .stm-label { color: color-mix(in srgb, #8B5CF6 70%, var(--fg-2, #64748b)); }
+}
+
 .stm-pro-summary {
   font-size: 12.5px;
   color: var(--fg-2, #64748b);
@@ -1854,9 +1869,12 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 // ── Tags ────────────────────────────────────────────────────────────────────
 .stm-tags-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   align-items: center;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 2px;
 }
 
 .stm-tag-chip {
