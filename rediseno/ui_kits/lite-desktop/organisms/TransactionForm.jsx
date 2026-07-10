@@ -8,7 +8,7 @@
  * Props: mode('lite'|'pro') · type · prefill · rates · onClose · onSubmit
  * ──────────────────────────────────────────────────────────────────────── */
 /* global React */
-const { useState: useTfState, useMemo: useTfMemo } = React;
+const { useState: useTfState, useMemo: useTfMemo, useRef: useTfRef } = React;
 
 function tfMoney(n, sym = '$') {
   const v = Math.abs(Number(n) || 0);
@@ -102,7 +102,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   const [type,      setType]      = useTfState(initialType === 'income' ? 'income' : initialType === 'transfer' ? 'transfer' : initialType === 'ajuste' ? 'ajuste' : 'expense');
   const [concept,   setConcept]   = useTfState(prefill?.merchant || '');
   const [amount,    setAmount]    = useTfState(prefill?.amount || '');
-  const [currency,  setCurrency]  = useTfState(prefill?.currency || 'USD');
+  const [attachment, setAttachment] = useTfState(null); // { name, url }
   const [dateLabel, setDateLabel] = useTfState('Hoy');
   const [categoryId,setCategoryId]= useTfState(null);
   const [jarId,     setJarId]     = useTfState(isLite ? 'j1' : null);
@@ -118,8 +118,14 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   // advanced
   const [splitOn, setSplitOn] = useTfState(false);
   const [itemsOn, setItemsOn] = useTfState(false);
+  const [shareOn, setShareOn] = useTfState(false);
   const [payments, setPayments] = useTfState([{ accountId: 1, amount: '', rate: 1 }, { accountId: 4, amount: '', rate: RATES.VES.current }]);
   const [items, setItems] = useTfState([]);
+  const [shares, setShares] = useTfState([{ categoryId: null, accountId: 1 }, { categoryId: null, accountId: 1 }]);
+  // los toggles avanzados son mutuamente excluyentes (uno a la vez)
+  const setSplitOnEx = (v) => { setSplitOn(v); if (v) { setItemsOn(false); setShareOn(false); } };
+  const setItemsOnEx = (v) => { setItemsOn(v); if (v) { setSplitOn(false); setShareOn(false); } };
+  const setShareOnEx = (v) => { setShareOn(v); if (v) { setSplitOn(false); setItemsOn(false); } };
   // ajuste
   const [targetBalance, setTargetBalance] = useTfState('');
   // comisión (Venezuela: fija / pago móvil / porcentaje)
@@ -146,11 +152,16 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
   const selAccount = acc.find(a => a.id === accountId);
   const selTo = acc.find(a => a.id === toAccountId);
   const userSym = window.CURRENCIES.USD.symbol;
+  // La moneda del movimiento NO se elige a mano: la define la cuenta de origen.
+  const currency = selAccount?.currency || 'USD';
 
   // ---- derived ----
   const itemsTotal = useTfMemo(() => items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.amount) || 0), 0), [items]);
   const splitTotal = useTfMemo(() => payments.reduce((s, p) => s + (Number(p.amount) || 0) / (Number(p.rate) || 1), 0), [payments]);
   const effectiveAmount = itemsOn ? itemsTotal : (Number(amount) || 0);
+  const shareCountN = shares.length || 1;
+  const shareEach = shareOn ? effectiveAmount / shareCountN : 0;
+  const shareIncomplete = shareOn && shares.some(s => s.categoryId == null);
 
   // cross-currency conversion preview (amount typed in `currency` → USD base)
   const rateForCur = (RATES[currency]?.current) || 1;
@@ -173,7 +184,7 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
 
   const buildPayload = () => {
     const txType = window.TX_TYPES.find(t => t.slug === type);
-    const base = { name: concept || (type === 'income' ? 'Ingreso' : 'Movimiento'), transaction_type_id: txType?.id, date: dateLabel === 'Hoy' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : dateLabel, include_in_balance: includeBal };
+    const base = { name: concept || (type === 'income' ? 'Ingreso' : 'Movimiento'), transaction_type_id: txType?.id, date: dateLabel === 'Hoy' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : dateLabel, include_in_balance: includeBal, attachment_name: attachment?.name || null };
     if (isLite) return { ...base, amount: txType.sign * effectiveAmount, jar_id: jarForCategory(categoryId)?.id || null, category_id: categoryId, provider_id: providerId, tags };
     if (type === 'transfer') return { ...base, amount: Number(amount) || 0, commission: commObj, tags, payments: [ { account_id: accountId, amount: -(Number(amount) || 0), rate: 1 }, { account_id: toAccountId, amount: xferArrives, rate: xferCross ? +xferRate.toFixed(4) : 1 } ] };
     if (type === 'ajuste') return { name: concept || 'Ajuste manual', transaction_type_id: txType?.id, account_id: accountId, target_balance: Number(targetBalance) || 0, include_in_balance: includeBal };
@@ -181,9 +192,15 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
     const sign = type === 'income' ? 1 : -1;
     const pay = splitOn
       ? payments.map(p => ({ account_id: p.accountId, amount: sign * (Number(p.amount) || 0), rate: Number(p.rate) || 1 }))
+      : shareOn
+      ? shares.map(s => ({ account_id: s.accountId, amount: sign * shareEach, rate: 1 }))
       : [{ account_id: accountId, amount: sign * (currency === selAccount?.currency ? effectiveAmount : effectiveAmount), rate: currency === 'USD' ? 1 : rateForCur, rate_is_current: currency !== 'USD' }];
-    const it = itemsOn ? items.map(i => ({ name: i.name, quantity: Number(i.qty) || 1, amount: Number(i.amount) || 0, tax_id: i.taxId, jar_id: jarForCategory(i.categoryId)?.id || null, category_id: i.categoryId })) : [{ name: concept || 'Movimiento', amount: effectiveAmount, category_id: categoryId, jar_id: jarForCategory(categoryId)?.id || null }];
-    return { ...base, amount: sign * effectiveAmount, provider_id: providerId, tags, category_id: categoryId, jar_id: jarForCategory(categoryId)?.id || null, commission: commObj, payments: pay, items: it };
+    const it = itemsOn
+      ? items.map(i => ({ name: i.name, quantity: Number(i.qty) || 1, amount: Number(i.amount) || 0, tax_id: i.taxId, jar_id: jarForCategory(i.categoryId)?.id || null, category_id: i.categoryId }))
+      : shareOn
+      ? shares.map(s => ({ name: concept || 'Gasto compartido', amount: shareEach, category_id: s.categoryId, jar_id: jarForCategory(s.categoryId)?.id || null }))
+      : [{ name: concept || 'Movimiento', amount: effectiveAmount, category_id: categoryId, jar_id: jarForCategory(categoryId)?.id || null }];
+    return { ...base, amount: sign * effectiveAmount, provider_id: providerId, tags, category_id: shareOn ? null : categoryId, jar_id: shareOn ? null : (jarForCategory(categoryId)?.id || null), commission: commObj, payments: pay, items: it };
   };
   const payload = buildPayload();
 
@@ -200,6 +217,8 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
     jar: (jarForCategory(categoryId) || {}).name ? t((jarForCategory(categoryId)).name) : null,
     itemsCount: itemsOn ? items.length : 1,
     splitCount: splitOn ? payments.length : 1,
+    shareCount: shareOn ? shares.length : 1,
+    shareIncomplete,
     splitBalanced: true,
     commission: commOn ? commAmount : 0,
     targetBalance: Number(targetBalance) || 0,
@@ -355,8 +374,17 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
       {/* ───────── INGRESO / GASTO ───────── */}
       {(type === 'expense' || type === 'income') && (
         <>
+          {/* account / split / gasto compartido — PRIMERO: es lo primero a elegir */}
+          {!splitOn && !shareOn ? (
+            <Field label={t("Cuenta de origen")} required>
+              <Picker value={accountId} onChange={setAccountId} options={accountOpts} searchable />
+            </Field>
+          ) : splitOn ? (
+            <TfPaymentsEditor payments={payments} setPayments={setPayments} accountOpts={accountOpts} accounts={acc} total={splitTotal} />
+          ) : null}
+
           {!itemsOn && (
-            <MoneyInput value={amount} onChange={setAmount} currency={currency} onCurrency={setCurrency} currencies={['USD', 'EUR', 'VES']} accent={accent} autoFocus />
+            <MoneyInput value={amount} onChange={setAmount} currency={currency} accent={accent} autoFocus />
           )}
           {itemsOn && (
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }}>
@@ -370,17 +398,8 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
             <TfRateBreakdown foreignAmount={effectiveAmount} currency={currency} rates={RATES} />
           )}
 
-          {/* account / split */}
-          {!splitOn ? (
-            <Field label={t("Cuenta de origen")} required>
-              <Picker value={accountId} onChange={setAccountId} options={accountOpts} searchable />
-            </Field>
-          ) : (
-            <TfPaymentsEditor payments={payments} setPayments={setPayments} accountOpts={accountOpts} accounts={acc} total={splitTotal} />
-          )}
-
           {/* category → cántaro anclado (el cántaro entra por la categoría, no se elige) */}
-          {!itemsOn && (
+          {!itemsOn && !shareOn && (
             <div style={{ display: 'flex', flexDirection: rowDir, gap: G, alignItems: 'flex-start' }}>
               <Field label="Categoría" style={{ flex: 1 }}>
                 <CategorySelector value={categoryId} onChange={setCategoryId} kind="expense" allowNull placeholder={t("Categoría")} />
@@ -393,6 +412,9 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
 
           {/* items editor */}
           {itemsOn && <TfItemsEditor items={items} setItems={setItems} taxOpts={itemTaxOpts} jarOpts={jarOpts} catOpts={catOpts} />}
+
+          {/* gasto compartido — reparte el monto equitativamente entre categorías (y cuentas) */}
+          {shareOn && <TfShareEditor shares={shares} setShares={setShares} accountOpts={accountOpts} totalAmount={effectiveAmount} />}
 
           {/* provider + date */}
           <div style={{ display: 'flex', flexDirection: rowDir, gap: G }}>
@@ -409,12 +431,16 @@ function TransactionForm({ mode = 'pro', type: initialType = 'expense', prefill 
 
           {/* advanced toggles */}
           <div style={{ display: 'flex', flexDirection: rowDir, gap: G }}>
-            <Switch on={splitOn} onChange={setSplitOn} icon="call_split" label={t("Pago múltiple")} sub={t("Varias cuentas")} />
-            <Switch on={itemsOn} onChange={setItemsOn} icon="receipt_long" label={t("Detalle / factura")} sub={t("Ítems + impuestos")} />
+            <Switch on={splitOn} onChange={setSplitOnEx} icon="call_split" label={t("Pago múltiple")} sub={t("Varias cuentas")} />
+            <Switch on={itemsOn} onChange={setItemsOnEx} icon="receipt_long" label={t("Detalle / factura")} sub={t("Ítems + impuestos")} />
+            <Switch on={shareOn} onChange={setShareOnEx} icon="groups" label={t("Gasto compartido")} sub={t("Divide entre categorías")} />
           </div>
 
           <TfCommission on={commOn} setOn={setCommOn} kind={commKind} setKind={setCommKind} value={commValue} setValue={setCommValue} amount={commAmount} base={commBase} currency={commCurrency} accent={accent} />
           <Switch on={includeBal} onChange={setIncludeBal} icon="account_balance_wallet" label={t("Afecta el saldo")} sub={t("Desactiva para movimientos informativos")} />
+
+          {/* adjuntar foto / soporte — casi al fondo */}
+          <TfAttachment file={attachment} setFile={setAttachment} />
         </>
       )}
 
@@ -760,6 +786,83 @@ function TfPaymentsEditor({ payments, setPayments, accountOpts, accounts, total 
         );
       })}
       <button type="button" onClick={add} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 5, border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--brand-primary)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, padding: '4px 0' }}><span className="material-icons" style={{ fontSize: 16 }}>add</span>{t("Añadir cuenta")}</button>
+    </div>
+  );
+}
+
+/* ---------- Gasto compartido ("vaca") — reparte el monto EQUITATIVAMENTE
+ * entre N categorías (opcionalmente cada parte con su propia cuenta).
+ * Ej: Salida al cine $600 entre 3 → $200 c/u, cada parte a su categoría.
+ * ------------------------------------------------------------------------ */
+function TfShareEditor({ shares, setShares, accountOpts, totalAmount }) {
+  const upd = (i, k, v) => setShares(shares.map((s, idx) => idx === i ? { ...s, [k]: v } : s));
+  const add = () => setShares([...shares, { categoryId: null, accountId: shares[0]?.accountId || accountOpts[0].value }]);
+  const rm = (i) => setShares(shares.filter((_, idx) => idx !== i));
+  const n = shares.length || 1;
+  const each = (Number(totalAmount) || 0) / n;
+  const mini = { fontFamily: 'var(--font-body)', fontSize: 10.5, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--fg-3)' };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--fg-2)' }}>{t("Gasto compartido")} · {n} {n === 1 ? t('parte') : t('partes')}</span>
+        <span style={{ fontFamily: 'var(--font-money)', fontSize: 13, fontWeight: 700, color: 'var(--fg-1)' }}>{tfMoney(each)} {t('c/u')}</span>
+      </div>
+      {shares.map((s, i) => {
+        const jar = jarForCategory(s.categoryId);
+        return (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 9, padding: 11, borderRadius: 'var(--radius-sm)', background: 'var(--surface-1)', boxShadow: 'var(--shadow-card)' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ ...mini, display: 'block', marginBottom: 4 }}>{t('Categoría')}</span>
+                <CategorySelector value={s.categoryId} onChange={v => upd(i, 'categoryId', v)} kind="expense" allowNull placeholder={t("Categoría")} />
+              </div>
+              {shares.length > 2 && <button type="button" onClick={() => rm(i)} title={t('Quitar parte')} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex', flexShrink: 0, marginTop: 18 }}><span className="material-icons" style={{ fontSize: 18 }}>close</span></button>}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ ...mini, display: 'block', marginBottom: 4 }}>{t('Cuenta')}</span>
+                <Picker value={s.accountId} onChange={v => upd(i, 'accountId', v)} options={accountOpts} searchable />
+              </div>
+              <div style={{ flexShrink: 0, textAlign: 'right', minWidth: 80 }}>
+                <div style={mini}>{t('Parte')}</div>
+                <div style={{ fontFamily: 'var(--font-money)', fontWeight: 700, fontSize: 15, color: 'var(--fg-1)', marginTop: 4 }}>{tfMoney(each)}</div>
+              </div>
+            </div>
+            {jar && <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-2)' }}><span style={{ width: 7, height: 7, borderRadius: 2, background: jar.color, flexShrink: 0 }} />{t(jar.name)}</div>}
+          </div>
+        );
+      })}
+      <button type="button" onClick={add} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 5, border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--brand-primary)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, padding: '4px 0' }}><span className="material-icons" style={{ fontSize: 16 }}>add</span>{t("Añadir parte")}</button>
+    </div>
+  );
+}
+
+/* ---------- Adjuntar foto / soporte (recibo, comprobante) ---------- */
+function TfAttachment({ file, setFile }) {
+  const inputRef = useTfRef(null);
+  const pick = () => inputRef.current && inputRef.current.click();
+  const onFile = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    setFile({ name: f.name, url: URL.createObjectURL(f) });
+  };
+  return (
+    <div>
+      <span style={{ display: 'block', fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--fg-2)', marginBottom: 7 }}>{t('Foto / soporte')} <span style={{ fontWeight: 400, color: 'var(--fg-3)' }}>({t('opcional')})</span></span>
+      <input ref={inputRef} type="file" accept="image/*,.pdf" onChange={onFile} style={{ display: 'none' }} />
+      {!file ? (
+        <button type="button" onClick={pick} style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '13px 15px', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-hairline)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--fg-2)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600 }}>
+          <span className="material-icons" style={{ fontSize: 19, color: 'var(--fg-3)' }}>add_a_photo</span>
+          {t('Adjuntar foto o comprobante')}
+        </button>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-hairline)', background: 'var(--surface-1)' }}>
+          <img src={file.url} alt={file.name} style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'cover', flexShrink: 0, background: 'var(--surface-2)' }} />
+          <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--fg-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+          <button type="button" onClick={pick} title={t('Cambiar')} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex' }}><span className="material-icons" style={{ fontSize: 18 }}>edit</span></button>
+          <button type="button" onClick={() => setFile(null)} title={t('Quitar')} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex' }}><span className="material-icons" style={{ fontSize: 18 }}>close</span></button>
+        </div>
+      )}
     </div>
   );
 }
