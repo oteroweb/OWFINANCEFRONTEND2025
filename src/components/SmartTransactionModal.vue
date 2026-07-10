@@ -78,28 +78,39 @@
 
         <!-- Transfer: Desde → Hacia -->
         <template v-else-if="form.type === 'transfer'">
-          <div class="stm-field">
-            <label class="stm-label">Monto</label>
-            <div class="stm-amount-row">
-              <q-select v-model="form.currency" :options="currencyOptions" emit-value map-options dense outlined
-                :disable="!!form.account_id" class="stm-currency-select" />
-              <input v-model.number="form.amount" type="number" step="0.01" min="0"
-                placeholder="0.00" class="stm-amount-input" />
+          <!-- OWF-280: Amount hero con currency pills -->
+          <div class="stm-amount-field">
+            <span class="stm-amount-sym">$</span>
+            <input v-model.number="form.amount" type="number" step="0.01" min="0"
+              placeholder="0.00" class="stm-amount-hero" />
+            <div v-if="currencyOptions.length > 1" class="stm-currency-pills">
+              <button v-for="c in currencyOptions" :key="c.value" type="button"
+                class="stm-currency-pill"
+                :class="{ 'stm-currency-pill--active': form.currency === c.value }"
+                @click="form.account_from_id ? undefined : (form.currency = c.value)">
+                {{ c.value }}
+              </button>
             </div>
           </div>
-          <div class="stm-field">
-            <label class="stm-label">Desde</label>
-            <q-select v-model="form.account_from_id" :options="accountOptions" emit-value map-options dense outlined
-              placeholder="Cuenta origen…">
-              <template v-slot:prepend><q-icon name="arrow_upward" color="negative" /></template>
-            </q-select>
-          </div>
-          <div class="stm-field">
-            <label class="stm-label">Hacia</label>
-            <q-select v-model="form.account_to_id" :options="accountToOptions" emit-value map-options dense outlined
-              placeholder="Cuenta destino…">
-              <template v-slot:prepend><q-icon name="arrow_downward" color="positive" /></template>
-            </q-select>
+          <!-- OWF-281: Desde → Hacia side-by-side con flecha -->
+          <div class="stm-transfer-accounts">
+            <div class="stm-field">
+              <label class="stm-label">Desde (origen) <span class="stm-label--req">*</span></label>
+              <q-select v-model="form.account_from_id" :options="accountOptions" emit-value map-options dense outlined
+                placeholder="Cuenta origen…">
+                <template v-slot:prepend><q-icon name="arrow_upward" color="negative" /></template>
+              </q-select>
+            </div>
+            <div class="stm-transfer-arrow">
+              <q-icon name="arrow_forward" size="20px" />
+            </div>
+            <div class="stm-field">
+              <label class="stm-label">Hacia (destino) <span class="stm-label--req">*</span></label>
+              <q-select v-model="form.account_to_id" :options="accountToOptions" emit-value map-options dense outlined
+                placeholder="Cuenta destino…">
+                <template v-slot:prepend><q-icon name="arrow_downward" color="positive" /></template>
+              </q-select>
+            </div>
           </div>
           <!-- OWF-185/250/251: panel de cruce de monedas si origen y destino difieren -->
           <div v-if="transferIsCrossCurrency" class="stm-cross-currency-panel">
@@ -123,14 +134,18 @@
 
         <!-- Gasto / Ingreso -->
         <template v-else>
-          <!-- Amount (oculto en modo Items: OWF-243, el monto sale de la suma de líneas) -->
-          <div v-if="!itemsOn" class="stm-field">
-            <label class="stm-label">Monto</label>
-            <div class="stm-amount-row">
-              <q-select v-model="form.currency" :options="currencyOptions" emit-value map-options dense outlined
-                :disable="!!form.account_id" class="stm-currency-select" />
-              <input v-model.number="form.amount" type="number" step="0.01" min="0"
-                placeholder="0.00" class="stm-amount-input" />
+          <!-- OWF-280: Amount hero con currency pills -->
+          <div v-if="!itemsOn" class="stm-amount-field">
+            <span class="stm-amount-sym">$</span>
+            <input v-model.number="form.amount" type="number" step="0.01" min="0"
+              placeholder="0.00" class="stm-amount-hero" />
+            <div v-if="currencyOptions.length > 1" class="stm-currency-pills">
+              <button v-for="c in currencyOptions" :key="c.value" type="button"
+                class="stm-currency-pill"
+                :class="{ 'stm-currency-pill--active': form.currency === c.value }"
+                @click="form.account_id ? undefined : (form.currency = c.value)">
+                {{ c.value }}
+              </button>
             </div>
           </div>
           <div v-else class="stm-items-total-banner">
@@ -160,9 +175,9 @@
           </div>
         </template>
 
-        <!-- OWF-180/242: Cuenta en fila propia (oculta si split está activo — se usa el editor multi-cuenta) -->
+        <!-- OWF-180/242/282: Cuenta en fila propia (oculta si split está activo — se usa el editor multi-cuenta) -->
         <div class="stm-field" v-if="form.type !== 'ajuste' && form.type !== 'transfer' && !splitOn">
-          <label class="stm-label">Cuenta</label>
+          <label class="stm-label">Cuenta de origen <span class="stm-label--req">*</span></label>
           <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
             placeholder="Seleccionar…" />
         </div>
@@ -1487,15 +1502,106 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   color: var(--fg-2, #64748b);
   margin-bottom: 5px;
   &--opt { font-weight: 400; color: var(--fg-3, #94a3b8); }
+  &--req { color: var(--expense, #ef4444); font-weight: 700; }
 }
 
+// ── OWF-280: Amount hero con currency pills ──
+.stm-amount-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-hairline, #e2e8f0);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-2, #f8fafc);
+  transition: border-color 140ms, background 140ms;
+
+  &:focus-within {
+    border-color: var(--brand-primary, #2d4da6);
+    background: var(--surface-1, #fff);
+  }
+}
+
+.stm-amount-sym {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--fg-2, #64748b);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.stm-amount-hero {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-body, sans-serif);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--fg-1, #0f172a);
+  line-height: 1;
+  padding: 0;
+
+  &::placeholder { color: var(--fg-3, #94a3b8); }
+}
+
+.stm-currency-pills {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.stm-currency-pill {
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  color: var(--fg-2, #64748b);
+  transition: all 140ms;
+  line-height: 1;
+
+  &--active {
+    background: var(--brand-primary, #2d4da6);
+    color: #fff;
+  }
+
+  &:hover:not(.stm-currency-pill--active) {
+    background: var(--surface-3, #e2e8f0);
+  }
+}
+
+// ── OWF-281: Transfer Desde → Hacia side-by-side ──
+.stm-transfer-accounts {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+
+  > .stm-field { flex: 1; min-width: 0; }
+}
+
+.stm-transfer-arrow {
+  flex-shrink: 0;
+  padding-bottom: 10px;
+  color: var(--fg-3, #94a3b8);
+}
+
+@media (max-width: 480px) {
+  .stm-transfer-accounts {
+    flex-direction: column;
+    .stm-transfer-arrow { display: none; }
+  }
+}
+
+// ── Legacy (kept for items-total-banner usage) ──
 .stm-amount-row {
   display: flex;
   gap: 6px;
   align-items: stretch;
 }
-
-.stm-currency-select { width: 90px; flex-shrink: 0; }
 
 .stm-amount-input, .stm-text-input {
   flex: 1;
