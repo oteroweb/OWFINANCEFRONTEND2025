@@ -54,6 +54,22 @@
             <q-toggle :model-value="ui.hideValues" color="primary" @update:model-value="ui.toggleHideValues()" />
           </div>
           <q-separator class="q-mb-md" />
+          <div class="row items-center justify-between q-mb-md">
+            <div>
+              <div class="text-body2">Tema</div>
+              <div class="text-caption text-grey-7">{{ isDark ? 'Oscuro' : 'Claro' }}</div>
+            </div>
+            <q-toggle :model-value="isDark" color="primary" @update:model-value="toggleTheme()" />
+          </div>
+          <q-separator class="q-mb-md" />
+          <div class="row items-center justify-between q-mb-md">
+            <div>
+              <div class="text-body2">Presupuesto estricto</div>
+              <div class="text-caption text-grey-7">Alertas cuando superas el límite del cántaro</div>
+            </div>
+            <q-toggle :model-value="notifPrefs.overBudget" color="primary" @update:model-value="toggleNotif('overBudget')" />
+          </div>
+          <q-separator class="q-mb-md" />
           <div class="row items-center justify-between" style="cursor:pointer" @click="router.push('/user/accounts')">
             <div>
               <div class="text-body2">Divisa predeterminada</div>
@@ -98,6 +114,29 @@
           </div>
         </q-card>
 
+        <!-- ── Notificaciones (Pro) ──────────────────────────────────── -->
+        <q-card flat bordered class="q-pa-md">
+          <div class="text-subtitle1 q-mb-md">
+            <q-icon name="notifications" class="q-mr-sm" />
+            Notificaciones
+          </div>
+          <div class="row items-center justify-between q-mb-md">
+            <div>
+              <div class="text-body2">Resumen semanal</div>
+              <div class="text-caption text-grey-7">Un email cada lunes con tu balance</div>
+            </div>
+            <q-toggle :model-value="notifPrefs.weekDigest" color="primary" @update:model-value="toggleNotif('weekDigest')" />
+          </div>
+          <q-separator class="q-mb-md" />
+          <div class="row items-center justify-between">
+            <div>
+              <div class="text-body2">Alertas de dinero ocioso</div>
+              <div class="text-caption text-grey-7">Cuando un cántaro no se mueve</div>
+            </div>
+            <q-toggle :model-value="notifPrefs.idleAlerts" color="primary" @update:model-value="toggleNotif('idleAlerts')" />
+          </div>
+        </q-card>
+
         <!-- ── Tasas de Cambio (Pro) ───────────────────────────────── -->
         <div>
           <div class="row items-center q-gutter-sm q-mb-sm">
@@ -110,6 +149,11 @@
             <ExchangeRatesTable />
           </q-card>
         </div>
+      </div>
+
+      <!-- ── Cerrar sesión (Pro) ────────────────────────────────────── -->
+      <div class="row justify-end q-mt-sm">
+        <q-btn flat color="negative" icon="logout" label="Cerrar sesión" @click="handleLogout" />
       </div>
     </template>
     <template v-else>
@@ -430,75 +474,7 @@
             </q-card>
 
             <!-- Seguridad -->
-            <q-card flat bordered class="q-pa-md">
-              <div class="text-subtitle1 q-mb-sm">
-                <q-icon name="lock" class="q-mr-sm" />
-                Cambiar Contraseña
-              </div>
-              <div class="text-caption text-grey-7 q-mb-md">
-                Deja estos campos vacíos si no deseas cambiar tu contraseña
-              </div>
-              <div class="row q-col-gutter-md">
-                <div class="col-12 col-sm-6">
-                  <q-input
-                    v-model="password"
-                    label="Nueva contraseña"
-                    type="password"
-                    outlined
-                    dense
-                  >
-                    <template #prepend>
-                      <q-icon name="vpn_key" />
-                    </template>
-                    <template #hint> Mínimo 8 caracteres </template>
-                  </q-input>
-                </div>
-                <div class="col-12 col-sm-6">
-                  <q-input
-                    v-model="passwordConfirm"
-                    label="Confirmar contraseña"
-                    type="password"
-                    outlined
-                    dense
-                    :rules="[(v) => !password || v === password || 'Las contraseñas no coinciden']"
-                  >
-                    <template #prepend>
-                      <q-icon name="check_circle" />
-                    </template>
-                  </q-input>
-                </div>
-              </div>
-            </q-card>
-
-            <!-- Experiencia Visual (Layout Mode) -->
-            <q-card flat bordered class="q-pa-md">
-              <div class="text-subtitle1 q-mb-sm">
-                <q-icon name="dashboard_customize" class="q-mr-sm" />
-                Experiencia Visual
-              </div>
-              <div class="text-caption text-grey-7 q-mb-md">
-                Elige la interfaz que mejor se adapte a ti. Versión Lite (Rápida intuitiva y móvil) o Versión Pro (Analítica y datos detallados de desktop).
-              </div>
-              <div class="row q-col-gutter-md">
-                <div class="col-12 col-sm-6">
-                  <q-select
-                    v-model="layoutModeModel"
-                    :options="layoutOptions"
-                    emit-value
-                    map-options
-                    label="Modo de Interfaz"
-                    outlined
-                    dense
-                  />
-                </div>
-              </div>
-              <q-banner v-if="layoutModeChanged" class="bg-amber-1 text-amber-9 q-mt-md" dense rounded>
-                <template #avatar>
-                  <q-icon name="warning" color="amber" />
-                </template>
-                Al guardar tus preferencias, la aplicación forzará una recarga completa para asegurar un rendimiento óptimo de tus finanzas.
-              </q-banner>
-            </q-card>
+            <ChangePasswordCard />
 
             <!-- Botón de guardar -->
             <div class="row justify-end q-gutter-sm">
@@ -954,6 +930,7 @@
 import { ref, computed, onMounted, watch, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import OnboardingFlow from 'src/components/OnboardingFlow.vue';
+import ChangePasswordCard from 'src/components/ChangePasswordCard.vue';
 import CrudPage from 'components/CrudPage.vue';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import AccountsTree from 'components/AccountsTree.vue';
@@ -1242,21 +1219,9 @@ function deleteRate(rate: UserRate) {
   });
 }
 
-const layoutOptions = [
-  { label: 'Lite (Móvil)', value: 'lite' },
-  { label: 'Pro (Escritorio)', value: 'pro' },
-  { label: 'Legacy (Antiguo)', value: 'legacy' }
-];
-const initialLayoutMode = auth.settings?.layout_mode || 'legacy';
-const layoutModeModel = ref(initialLayoutMode);
-const layoutModeChanged = computed(() => layoutModeModel.value !== initialLayoutMode);
-
-
 const name = ref(auth.user?.name || '');
 const email = ref(auth.user?.email || '');
 const monthlyIncome = ref(auth.user?.monthly_income || 0);
-const password = ref('');
-const passwordConfirm = ref('');
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const avatarUrl = computed(() => defaultAvatarUrl);
@@ -2069,8 +2034,6 @@ function resetForm() {
   name.value = auth.user?.name || '';
   email.value = auth.user?.email || '';
   monthlyIncome.value = auth.user?.monthly_income || 0;
-  password.value = '';
-  passwordConfirm.value = '';
   avatarFile.value = null;
   avatarPreview.value = null;
   selectedCurrencyId.value = getInitialCurrencyId();
@@ -2082,10 +2045,6 @@ async function saveProfile() {
       Notify.create({ type: 'warning', message: 'Nombre y correo son requeridos' });
       return;
     }
-    if (password.value && password.value !== passwordConfirm.value) {
-      Notify.create({ type: 'warning', message: 'Las contraseñas no coinciden' });
-      return;
-    }
     saving.value = true;
 
     // Update profile basic data
@@ -2093,7 +2052,6 @@ async function saveProfile() {
       name: name.value,
       email: email.value,
       monthly_income: monthlyIncome.value || 0,
-      ...(password.value ? { password: password.value } : {}),
       ...(typeof selectedCurrencyId.value === 'number'
         ? { currency_id: selectedCurrencyId.value }
         : {}),
@@ -2129,25 +2087,7 @@ async function saveProfile() {
       localStorage.setItem('user', JSON.stringify(auth.user));
     }
 
-    // Guardar preferencia de Layout Mode
-    if (layoutModeChanged.value) {
-      const respLayout = await api.put('/user/settings', {
-        layout_mode: layoutModeModel.value
-      });
-      if (respLayout.data?.data) {
-        auth.settings = { ...auth.settings, ...respLayout.data.data };
-        localStorage.setItem('settings', JSON.stringify(auth.settings));
-      }
-    }
-
     Notify.create({ type: 'positive', message: 'Perfil actualizado' });
-    
-    // Si el modo de visualización cambió, forzamos recarga para levantar el nuevo router sin problemas de memoria
-    if (layoutModeChanged.value) {
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    }
   } catch (e: unknown) {
     const msg = (e as { message?: string })?.message || 'Error al guardar';
     Notify.create({ type: 'negative', message: msg });

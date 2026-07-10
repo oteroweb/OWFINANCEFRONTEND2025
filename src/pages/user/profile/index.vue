@@ -122,28 +122,7 @@
       </div>
 
       <!-- Seguridad card -->
-      <div class="profile-page__card">
-        <div class="profile-page__section-title">Seguridad</div>
-        <div class="profile-page__fields">
-          <div class="profile-page__field">
-            <label class="profile-page__label">Nueva contraseña</label>
-            <q-input
-              v-model="form.password"
-              :type="showPwd ? 'text' : 'password'"
-              outlined dense
-              placeholder="Dejar vacío para no cambiar"
-            >
-              <template #append>
-                <q-icon
-                  :name="showPwd ? 'visibility_off' : 'visibility'"
-                  class="cursor-pointer"
-                  @click="showPwd = !showPwd"
-                />
-              </template>
-            </q-input>
-          </div>
-        </div>
-      </div>
+      <ChangePasswordCard />
 
       <!-- Financial profile link -->
       <button type="button" class="profile-page__fp-link" @click="void router.push('/user/financial-profile')">
@@ -167,6 +146,7 @@ import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
 import { useAuthStore } from 'stores/auth';
+import ChangePasswordCard from 'src/components/ChangePasswordCard.vue';
 
 defineOptions({ name: 'UserProfilePage' });
 
@@ -175,7 +155,6 @@ const $q = useQuasar();
 const auth = useAuthStore();
 
 const saving = ref(false);
-const showPwd = ref(false);
 
 const countryOptions = [
   { value: 'VE', label: '🇻🇪 Venezuela' },
@@ -195,14 +174,13 @@ const form = ref({
   country: '',
   monthly_income: 0,
   birthdate: '',
-  password: '',
 });
 
 // 8-field completeness bar matching spec (name, email, phone, occupation, city, country, birthdate, monthly_income)
 const completenessFields = ['name', 'email', 'phone', 'occupation', 'city', 'country', 'birthdate', 'monthly_income'] as const;
 const pct = computed(() => {
   const filled = completenessFields.filter(k => {
-    const v = form.value[k as keyof typeof form.value];
+    const v = form.value[k];
     return v !== null && v !== '' && v !== 0;
   }).length;
   return Math.round((filled / completenessFields.length) * 100);
@@ -240,11 +218,9 @@ async function save() {
       monthly_income: form.value.monthly_income,
       birthdate: form.value.birthdate || null,
     };
-    if (form.value.password) payload.password = form.value.password;
 
     await api.put('/user/profile', payload);
     if (auth.user) auth.user.name = form.value.name;
-    form.value.password = '';
     $q.notify({ type: 'positive', message: 'Perfil actualizado' });
   } catch (e: unknown) {
     const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Error al guardar';
