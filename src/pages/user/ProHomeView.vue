@@ -7,6 +7,19 @@
 
     <div class="pro-page__layout" :class="{ 'pro-page__layout--panel': showAccountsPanel }">
     <div class="pro-page__container">
+      <!-- Greeting + Notificaciones (OWF-227) -->
+      <div class="pro-greeting">
+        <div class="pro-greeting__left">
+          <span class="t-eyebrow">Hola,</span>
+          <span class="pro-greeting__name">{{ firstName }}</span>
+        </div>
+        <div class="pro-greeting__actions">
+          <button class="pro-icon-btn" title="Notificaciones" @click="router.push('/user/notifications')">
+            <q-icon name="notifications" size="22px" />
+          </button>
+        </div>
+      </div>
+
       <!-- Mobile balance hero card (hidden on desktop) -->
       <div class="mobile-balance-card">
         <div class="mobile-balance-card__top">
@@ -46,6 +59,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Timestamp asOf (OWF-228) -->
+      <p v-if="lastUpdated" class="pro-as-of">Actualizado · {{ lastUpdated }}</p>
 
       <!-- Mid row -->
       <div class="mid-row">
@@ -120,6 +136,41 @@
       <!-- Exchange Rates Widget -->
       <ExchangeRatesTable />
 
+      <!-- Sueños preview (OWF-229) -->
+      <div>
+        <div class="pro-card__header" style="margin-bottom: 12px;">
+          <span class="t-h3">Sueños</span>
+          <button class="ghost-btn" @click="router.push('/user/dreams')">Ver todos</button>
+        </div>
+        <div v-if="dreamsLoading" class="pro-card" style="min-height: 80px;" />
+        <div v-else-if="dreamsPreview.length === 0" class="pro-card" style="display: flex; align-items: center; gap: 12px; color: var(--fg-3);">
+          <q-icon name="star_outline" size="28px" color="grey-5" />
+          <span class="t-body-sm">Sin sueños registrados.</span>
+        </div>
+        <div v-else class="home-dreams">
+          <div
+            v-for="dream in dreamsPreview"
+            :key="dream.id"
+            class="home-dream-card"
+            @click="router.push('/user/dreams')"
+          >
+            <div class="home-dream-card__top">
+              <span class="home-dream-card__name">{{ dream.name }}</span>
+              <span class="home-dream-card__pct">{{ dream.progress }}%</span>
+            </div>
+            <div class="home-dream-card__bar">
+              <div class="home-dream-card__fill" :style="{ width: `${dream.progress}%` }" />
+            </div>
+            <div class="home-dream-card__amounts">
+              <span class="t-body-sm" style="color: var(--income-fg);">
+                {{ isHidden ? '••••••' : formatMoney(dream.current_amount) }}
+              </span>
+              <span class="t-body-sm">/ {{ isHidden ? '••••••' : formatMoney(dream.target_amount) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- AI advisor strip -->
       <button class="pro-advisor-strip" @click="goToAsesor">
         <div class="pro-advisor-strip__icon">
@@ -192,7 +243,7 @@
               </div>
               <div class="ap-row__info">
                 <span class="ap-row__name">{{ debt.name }}</span>
-                <span class="ap-row__sub" :style="{ color: debt.dueColor }">Próx. {{ isHidden ? '••••••' : formatMoney(debt.next_payment) }}</span>
+                <span class="ap-row__sub" :style="{ color: debtStatusColor(debt.status) }">Próx. {{ isHidden ? '••••••' : formatMoney(debt.next_payment) }}</span>
               </div>
               <div class="ap-row__right">
                 <span class="ap-row__balance" style="color: var(--expense-fg)">{{ isHidden ? '••••••' : formatMoney(debt.balance) }}</span>
@@ -232,6 +283,8 @@ const router = useRouter();
 const ui = useUiStore();
 const authStore = useAuthStore();
 const isHidden = computed(() => ui.hideValues);
+const firstName = computed(() => (authStore.user?.name || '').split(' ')[0] || 'tú');
+const lastUpdated = ref<string | null>(null);
 
 interface Kpi {
   label: string;
@@ -315,7 +368,7 @@ const apSection = ref<'accounts' | 'debts'>('accounts');
 const accountsLoading = ref(false);
 
 interface AccountItem { id: number; name: string; short: string; type: string; currency: string; balance: number; color: string }
-interface DebtItem { id: number; name: string; balance: number; next_payment: number; dueColor: string }
+interface DebtItem { id: number; name: string; balance: number; next_payment: number; status: string }
 
 const accountsList = ref<AccountItem[]>([]);
 const debtsList = ref<DebtItem[]>([]);
@@ -350,7 +403,7 @@ async function loadAccountsPanel() {
         name: (d.name as string) || 'Deuda',
         balance: Number(d.balance ?? d.total_amount ?? 0),
         next_payment: Number(d.next_payment ?? d.monthly_payment ?? 0),
-        dueColor: 'var(--expense-fg)',
+        status: typeof d.status === 'string' ? d.status : 'on-track',
       }));
     }
   } catch { /* silent */ } finally {
@@ -383,6 +436,16 @@ const spendingBreakdown = ref<SpendingItem[]>([]);
 
 interface JarSummary { id: number; name: string; balance: number; progress: number; barColor: string }
 const jarSummary = ref<JarSummary[]>([]);
+
+interface DreamItem {
+  id: number;
+  name: string;
+  current_amount: number;
+  target_amount: number;
+  progress: number;
+}
+const dreamsPreview = ref<DreamItem[]>([]);
+const dreamsLoading = ref(false);
 
 interface TxItem {
   id: number;
@@ -434,6 +497,12 @@ function classifyTx(tx: Record<string, unknown>, amount: number): 'income' | 'ex
 
 function goToAsesor() {
   void router.push('/user/asesor');
+}
+
+function debtStatusColor(status: string): string {
+  if (status === 'late') return 'var(--expense-fg)';
+  if (status === 'due-soon') return 'var(--warning-fg)';
+  return 'var(--income-fg)';
 }
 
 async function loadBalanceSummary() {
@@ -523,6 +592,7 @@ async function loadMonthSummary() {
     } else {
       monthlyDelta.value = null;
     }
+    lastUpdated.value = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
   } catch (err) {
     console.warn('[ProHome] Month summary error:', err);
   }
@@ -602,6 +672,22 @@ async function loadRecentTransactions() {
   }
 }
 
+async function loadDreams() {
+  dreamsLoading.value = true;
+  try {
+    const res = await api.get('/dreams', { params: { per_page: 3, sort_by: 'progress', descending: 'false' } });
+    const raw = res.data?.data?.data ?? res.data?.data ?? res.data ?? [];
+    dreamsPreview.value = (Array.isArray(raw) ? raw : []).slice(0, 3).map((d: Record<string, unknown>) => ({
+      id: Number(d.id),
+      name: typeof d.name === 'string' ? d.name : '',
+      current_amount: Number(d.current_amount ?? d.amount ?? 0),
+      target_amount: Number(d.target_amount ?? d.goal ?? 0),
+      progress: Number(d.progress ?? 0),
+    }));
+  } catch { /* silent */ }
+  finally { dreamsLoading.value = false; }
+}
+
 onMounted(() => {
   void Promise.all([
     loadBalanceSummary(),
@@ -609,6 +695,7 @@ onMounted(() => {
     loadJars(),
     loadRecentTransactions(),
     loadAccountsPanel(),
+    loadDreams(),
   ]);
 });
 </script>
@@ -1384,6 +1471,120 @@ onMounted(() => {
 
   &__code-suffix {
     font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--fg-2);
+  }
+}
+
+// ── Greeting (OWF-227) ──
+.pro-greeting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &__left {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  &__name {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--fg-1);
+    line-height: 1.2;
+    text-transform: capitalize;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 4px;
+  }
+}
+
+.pro-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--fg-2);
+  transition: background 0.15s;
+  &:hover { background: var(--surface-2); }
+}
+
+// ── Timestamp (OWF-228) ──
+.pro-as-of {
+  margin: -16px 0 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-3);
+  letter-spacing: 0.02em;
+}
+
+// ── Dreams preview (OWF-229) ──
+.home-dreams {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-dream-card {
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 150ms;
+  &:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__name {
+    font-family: var(--font-display, sans-serif);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg-1);
+  }
+
+  &__pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.1);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  &__bar {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #8b5cf6, #ec4899);
+    transition: width 500ms ease-out;
+  }
+
+  &__amounts {
+    display: flex;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
   }
 }
 </style>
