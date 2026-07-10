@@ -80,6 +80,7 @@
               </span>
             </div>
           </div>
+          <q-btn flat dense size="sm" color="primary" label="Configurar ingreso mensual" icon="settings" class="q-mt-sm" @click="openIncomeDialog" />
         </template>
       </section>
 
@@ -323,6 +324,19 @@
       @saved="loadRecentTransactions"
       @deleted="loadRecentTransactions"
     />
+
+    <q-dialog v-model="incomeDialog">
+      <q-card style="min-width: 300px;">
+        <q-card-section><div class="text-h6">Ingreso mensual</div></q-card-section>
+        <q-card-section>
+          <q-input v-model.number="incomeDialogValue" type="number" outlined dense label="Ingreso mensual" autofocus @keyup.enter="void saveIncomeDialog()" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" v-close-popup />
+          <q-btn flat label="Guardar" color="primary" :loading="savingIncome" @click="void saveIncomeDialog()" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -416,6 +430,31 @@ function openEditTx(id: number) {
 watch(showEditDialog, (v) => {
   if (!v) editTxId.value = null;
 });
+
+// ─── Income dialog ──────────────────────────────────────────────────
+const incomeDialog = ref(false);
+const incomeDialogValue = ref<number>(0);
+const savingIncome = ref(false);
+
+function openIncomeDialog() {
+  incomeDialogValue.value = Number(authStore.user?.monthly_income ?? 0);
+  incomeDialog.value = true;
+}
+
+async function saveIncomeDialog() {
+  savingIncome.value = true;
+  try {
+    await api.put('/user', { monthly_income: incomeDialogValue.value });
+    if (authStore.user) authStore.user.monthly_income = incomeDialogValue.value;
+    expectedIncome.value = incomeDialogValue.value;
+    incomeDialog.value = false;
+    $q.notify({ type: 'positive', message: 'Ingreso actualizado', timeout: 2000 });
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo guardar' });
+  } finally {
+    savingIncome.value = false;
+  }
+}
 
 // ─── Expected Monthly Income ─────────────────────────────────────────
 const expectedIncome = ref<number>(Number(authStore.user?.monthly_income ?? 0));

@@ -50,10 +50,10 @@
           </button>
         </div>
 
-        <!-- OWF-186: Ajuste — Cuenta + Saldo objetivo + diferencia + Motivo (a nivel de cuenta) -->
+        <!-- OWF-186/256/257/258: Ajuste — Cuenta a ajustar + Saldo objetivo + Se creará un ajuste + Motivo -->
         <template v-if="form.type === 'ajuste'">
           <div class="stm-field">
-            <label class="stm-label">Cuenta</label>
+            <label class="stm-label">Cuenta a ajustar</label>
             <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
               placeholder="Seleccionar…" />
           </div>
@@ -63,10 +63,10 @@
               placeholder="0.00" class="stm-amount-input" />
           </div>
           <div v-if="adjusteTargetBalance != null && form.account_id" class="stm-ai-banner">
-            <q-icon name="info_outline" size="16px" />
+            <q-icon :name="adjusteDiff >= 0 ? 'trending_up' : 'trending_down'" size="16px" />
             <span>
               Saldo actual: {{ adjusteCurrencySymbol }}{{ Number(adjusteCurrentBalance).toFixed(2) }} →
-              diferencia: <strong>{{ adjusteDiff >= 0 ? '+' : '' }}{{ adjusteDiff.toFixed(2) }}</strong>
+              Se creará un ajuste de <strong>{{ adjusteDiff >= 0 ? '+' : '' }}{{ adjusteDiff.toFixed(2) }}</strong>
             </span>
           </div>
           <div class="stm-field">
@@ -118,11 +118,6 @@
               <span>Envías {{ transferFromCurrency }} {{ formatMoney(form.amount) }}</span>
               <span>Llega {{ transferToCurrency }} {{ formatMoney(transferConvertedAmount) }}</span>
             </div>
-          </div>
-          <div class="stm-field">
-            <label class="stm-label">Concepto <span class="stm-label--opt">(opcional)</span></label>
-            <input v-model="form.name" type="text" placeholder="Ej: Ahorro del mes…"
-              class="stm-text-input" />
           </div>
         </template>
 
@@ -288,36 +283,56 @@
 
         <!-- Pro features (solo layout_mode=pro) -->
         <template v-if="isProMode && form.type !== 'ajuste'">
-          <!-- OWF-182/246: switches split/items — el diseño solo los prevé en Gasto/Ingreso, no en Transferencia -->
-          <div v-if="form.type !== 'transfer'" class="stm-row-2">
-            <q-toggle
-              :model-value="proPanel === 'split'"
-              label="Pago múltiple"
-              icon="call_split"
-              color="primary"
-              @update:model-value="(v) => toggleProPanel(v ? 'split' : null)"
-            />
-            <q-toggle
-              :model-value="proPanel === 'items'"
-              label="Detalle/factura"
-              icon="receipt_long"
-              color="primary"
-              @update:model-value="(v) => toggleProPanel(v ? 'items' : null)"
-            />
-          </div>
-          <div class="stm-pro-toggles">
-            <q-toggle
-              :model-value="proPanel === 'comision'"
-              label="Comisión"
-              icon="percent"
-              color="primary"
-              @update:model-value="(v) => toggleProPanel(v ? 'comision' : null)"
-            />
+          <!-- OWF-253: card-row toggles unificados (Gasto/Ingreso: 4 opciones; Transferencia: solo Comisión) -->
+          <div class="stm-pro-card-toggles">
+            <button v-if="form.type !== 'transfer'" type="button"
+              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'split' }"
+              @click="toggleProPanel(proPanel === 'split' ? null : 'split')">
+              <span class="stm-pro-card-toggle__icon"><q-icon name="call_split" size="18px" /></span>
+              <span class="stm-pro-card-toggle__texts">
+                <span class="stm-pro-card-toggle__label">Pago múltiple</span>
+                <span class="stm-pro-card-toggle__sub">Varias cuentas</span>
+              </span>
+              <q-toggle :model-value="proPanel === 'split'" color="primary" dense @click.stop
+                @update:model-value="(v) => toggleProPanel(v ? 'split' : null)" />
+            </button>
+            <button v-if="form.type !== 'transfer'" type="button"
+              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'items' }"
+              @click="toggleProPanel(proPanel === 'items' ? null : 'items')">
+              <span class="stm-pro-card-toggle__icon"><q-icon name="receipt_long" size="18px" /></span>
+              <span class="stm-pro-card-toggle__texts">
+                <span class="stm-pro-card-toggle__label">Detalle / factura</span>
+                <span class="stm-pro-card-toggle__sub">Ítems + impuestos</span>
+              </span>
+              <q-toggle :model-value="proPanel === 'items'" color="primary" dense @click.stop
+                @update:model-value="(v) => toggleProPanel(v ? 'items' : null)" />
+            </button>
+            <button v-if="form.type !== 'transfer'" type="button"
+              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'shared' }"
+              @click="toggleProPanel(proPanel === 'shared' ? null : 'shared')">
+              <span class="stm-pro-card-toggle__icon"><q-icon name="pie_chart_outline" size="18px" /></span>
+              <span class="stm-pro-card-toggle__texts">
+                <span class="stm-pro-card-toggle__label">Gasto compartido</span>
+                <span class="stm-pro-card-toggle__sub">Divide entre categorías</span>
+              </span>
+              <q-toggle :model-value="proPanel === 'shared'" color="primary" dense @click.stop
+                @update:model-value="(v) => toggleProPanel(v ? 'shared' : null)" />
+            </button>
+            <button type="button"
+              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'comision' }"
+              @click="toggleProPanel(proPanel === 'comision' ? null : 'comision')">
+              <span class="stm-pro-card-toggle__icon"><q-icon name="percent" size="18px" /></span>
+              <span class="stm-pro-card-toggle__texts">
+                <span class="stm-pro-card-toggle__label">Cobrar comisión</span>
+                <span class="stm-pro-card-toggle__sub">Pago móvil, fija o porcentaje</span>
+              </span>
+              <q-toggle :model-value="proPanel === 'comision'" color="primary" dense @click.stop
+                @update:model-value="(v) => toggleProPanel(v ? 'comision' : null)" />
+            </button>
           </div>
 
           <!-- Comisión panel -->
           <div v-if="proPanel === 'comision'" class="stm-pro-panel">
-            <!-- Selector de tipo: cards -->
             <div class="stm-comm-types">
               <button v-for="ct in comisionTipos" :key="ct.value"
                 class="stm-comm-type" :class="{ 'stm-comm-type--active': comision.tipo === ct.value }"
@@ -326,7 +341,6 @@
                 <span>{{ ct.label }}</span>
               </button>
             </div>
-            <!-- Input según tipo -->
             <div v-if="comision.tipo === 'fijo'" class="stm-comm-input-row">
               <span class="stm-comm-sym">$</span>
               <input v-model.number="comision.valor" type="number" inputmode="decimal" class="stm-text-input stm-text-input--money" min="0" placeholder="0.00" />
@@ -340,7 +354,6 @@
               <span class="material-icons" style="font-size:17px;color:var(--info-fg)">smartphone</span>
               <span>Tarifa P2P <strong>0.30%</strong> · mín. Bs 2 · BCV</span>
             </div>
-            <!-- Resultado -->
             <div v-if="comisionCalculada > 0" class="stm-comm-result">
               <span>Comisión ≈ <strong>{{ formatMoney(comisionCalculada) }}</strong></span>
               <span>Total <strong>{{ formatMoney((form.amount ?? 0) + comisionCalculada) }}</strong></span>
@@ -363,7 +376,6 @@
                   <span class="material-icons" style="font-size:16px">close</span>
                 </button>
               </div>
-              <!-- Tasa cross-currency: visible si la cuenta tiene moneda distinta a USD -->
               <div v-if="splitAccountCurrency(pago.account_id) && splitAccountCurrency(pago.account_id) !== 'USD'" class="stm-split-rate">
                 <span class="material-icons" style="font-size:14px;color:var(--fg-3)">currency_exchange</span>
                 <span class="stm-label" style="margin:0">Tasa {{ splitAccountCurrency(pago.account_id) }}/USD</span>
@@ -407,12 +419,54 @@
               <span class="material-icons" style="font-size:15px">add</span> Agregar artículo
             </button>
           </div>
+
+          <!-- Gasto compartido panel -->
+          <div v-if="proPanel === 'shared'" class="stm-pro-panel">
+            <div v-for="(sc, i) in sharedCats" :key="i" class="stm-split-row__fields" style="margin-bottom:8px">
+              <div class="stm-field" style="flex:2">
+                <label class="stm-label">Categoría {{ i + 1 }}</label>
+                <CategorySelector v-model="sc.category_id" allow-null placeholder="Sin categoría" />
+              </div>
+              <div class="stm-field" style="flex:1">
+                <label class="stm-label">Monto</label>
+                <input v-model.number="sc.amount" type="number" class="stm-text-input" min="0" placeholder="0.00" />
+              </div>
+              <button v-if="sharedCats.length > 2" class="stm-pro-rm" style="margin-top:20px" @click="sharedCats.splice(i, 1)">
+                <span class="material-icons" style="font-size:16px">close</span>
+              </button>
+            </div>
+            <div class="stm-pro-summary">
+              Suma: <strong>{{ formatMoney(sharedTotal) }}</strong>
+              <span :style="{ color: Math.abs(sharedTotal - (form.amount ?? 0)) < 0.01 ? '#10b981' : '#ef4444' }">
+                / {{ formatMoney(form.amount ?? 0) }}
+              </span>
+            </div>
+            <button class="stm-pro-add" @click="sharedCats.push({ category_id: null, amount: 0 })">
+              <span class="material-icons" style="font-size:15px">add</span> Agregar categoría
+            </button>
+          </div>
         </template>
 
-        <!-- OWF-183/254: Afecta el saldo — al final de la rama gasto/ingreso Pro -->
-        <div class="stm-field stm-field--toggle-row">
-          <q-toggle v-model="includeInBalance" color="primary" label="Afecta el saldo de la cuenta" />
+        <!-- OWF-248: Concepto de Transferencia al fondo (después de Pro features) -->
+        <div v-if="form.type === 'transfer'" class="stm-field">
+          <label class="stm-label">Concepto <span class="stm-label--opt">(opcional)</span></label>
+          <input v-model="form.name" type="text" placeholder="Ej: Ahorro del mes…" class="stm-text-input" />
         </div>
+
+        <!-- OWF-254/263: Afecta el saldo — card con subtítulo, al fondo -->
+        <button type="button"
+          class="stm-pro-card-toggle stm-pro-card-toggle--balance"
+          :class="{ 'stm-pro-card-toggle--on': includeInBalance }"
+          @click="includeInBalance = !includeInBalance">
+          <span class="stm-pro-card-toggle__icon">
+            <q-icon name="account_balance_wallet" size="18px" />
+          </span>
+          <span class="stm-pro-card-toggle__texts">
+            <span class="stm-pro-card-toggle__label">Afecta el saldo</span>
+            <span class="stm-pro-card-toggle__sub">Desactiva para movimientos informativos</span>
+          </span>
+          <q-toggle v-model="includeInBalance" color="primary" dense @click.stop />
+        </button>
 
         <!-- OWF-184: preview en lenguaje natural + validaciones + estados draft/valid/error -->
         <TfReviewCard
@@ -727,7 +781,7 @@ const isProMode = computed(() =>
   (auth.settings?.layout_mode ?? auth.user?.layout_mode) === 'pro'
 );
 
-type ProPanel = 'comision' | 'split' | 'items' | null;
+type ProPanel = 'comision' | 'split' | 'items' | 'shared' | null;
 const proPanel = ref<ProPanel>(null);
 
 function toggleProPanel(panel: ProPanel) {
@@ -739,9 +793,9 @@ const itemsOn = computed(() => isProMode.value && proPanel.value === 'items');
 // OWF-242: split reemplaza la cuenta simple por el editor multi-cuenta.
 const splitOn = computed(() => isProMode.value && proPanel.value === 'split');
 
-// OWF-246: el diseño solo prevé Comisión en Transferencia — split/items no aplican ahí.
+// OWF-246: split/items/shared no aplican en Transferencia — solo Comisión.
 watch(() => form.value.type, (type) => {
-  if (type === 'transfer' && (proPanel.value === 'split' || proPanel.value === 'items')) {
+  if (type === 'transfer' && (proPanel.value === 'split' || proPanel.value === 'items' || proPanel.value === 'shared')) {
     proPanel.value = null;
   }
 });
@@ -776,6 +830,13 @@ const facturaItems = ref<{ name: string; quantity: number; price: number; catego
 const itemsTotal = computed(() =>
   facturaItems.value.reduce((s, it) => s + (it.quantity ?? 0) * (it.price ?? 0), 0)
 );
+
+// Gasto compartido (divide entre categorías)
+const sharedCats = ref<{ category_id: number | null; amount: number }[]>([
+  { category_id: null, amount: 0 },
+  { category_id: null, amount: 0 },
+]);
+const sharedTotal = computed(() => sharedCats.value.reduce((s, c) => s + (c.amount ?? 0), 0));
 
 function formatMoney(n: number) {
   return `$ ${Math.abs(n).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1209,6 +1270,7 @@ function onShow() {
   rateOficial.value = null;
   transferRate.value = null;
   proPanel.value = null;
+  sharedCats.value = [{ category_id: null, amount: 0 }, { category_id: null, amount: 0 }];
 
   if (!form.value.account_id && accountOptions.value.length) {
     const selectedIds = txStore.selectedAccountIds;
@@ -1632,30 +1694,78 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 }
 
 // ── Pro features ────────────────────────────────────────────────────────────
-.stm-pro-toggles {
+.stm-pro-card-toggles {
   display: flex;
-  gap: 8px;
-  padding: 0 4px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.stm-pro-toggle {
-  display: inline-flex;
+.stm-pro-card-toggle {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1.5px solid var(--border-hairline, #e2e8f0);
-  background: var(--surface-2, #f8fafc);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--fg-2, #64748b);
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border-hairline, #e2e8f0);
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface-1, #fff);
   cursor: pointer;
-  transition: all 120ms;
+  text-align: left;
+  transition: all 140ms ease;
+
+  &:hover { background: var(--surface-2, #f8fafc); }
 
   &--on {
-    background: var(--brand-primary, #2d4da6);
-    border-color: var(--brand-primary, #2d4da6);
-    color: #fff;
+    border-color: color-mix(in srgb, var(--brand-primary) 35%, transparent);
+    background: color-mix(in srgb, var(--brand-primary) 4%, var(--surface-1));
+  }
+
+  &--balance {
+    border-color: var(--border-hairline, #e2e8f0);
+    &.stm-pro-card-toggle--on {
+      border-color: color-mix(in srgb, var(--brand-primary) 30%, transparent);
+      background: color-mix(in srgb, var(--brand-primary) 4%, var(--surface-1));
+    }
+  }
+
+  &__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm, 8px);
+    background: var(--surface-2, #f1f5f9);
+    color: var(--fg-2, #64748b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 140ms;
+  }
+
+  &--on &__icon {
+    background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+    color: var(--brand-primary);
+  }
+
+  &__texts {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-family: var(--font-body, sans-serif);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--fg-1, #0f172a);
+    line-height: 1.3;
+  }
+
+  &__sub {
+    font-family: var(--font-body, sans-serif);
+    font-size: 11.5px;
+    color: var(--fg-3, #94a3b8);
   }
 }
 
