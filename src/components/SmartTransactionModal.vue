@@ -134,19 +134,18 @@
 
         <!-- Gasto / Ingreso -->
         <template v-else>
-          <!-- OWF-280: Amount hero con currency pills -->
+          <!-- Cuenta primero: define la moneda del movimiento (ya no se elige a mano) -->
+          <div class="stm-field" v-if="!splitOn">
+            <label class="stm-label">Cuenta de origen <span class="stm-label--req">*</span></label>
+            <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
+              placeholder="Seleccionar…" />
+          </div>
+
+          <!-- OWF-280: Amount hero -->
           <div v-if="!itemsOn" class="stm-amount-field">
             <span class="stm-amount-sym">$</span>
             <input v-model.number="form.amount" type="number" step="0.01" min="0"
               placeholder="0.00" class="stm-amount-hero" />
-            <div v-if="currencyOptions.length > 1" class="stm-currency-pills">
-              <button v-for="c in currencyOptions" :key="c.value" type="button"
-                class="stm-currency-pill"
-                :class="{ 'stm-currency-pill--active': form.currency === c.value }"
-                @click="form.account_id ? undefined : (form.currency = c.value)">
-                {{ c.value }}
-              </button>
-            </div>
           </div>
           <div v-else class="stm-items-total-banner">
             <span class="stm-label">Total (suma de ítems)</span>
@@ -174,13 +173,6 @@
               class="stm-text-input" />
           </div>
         </template>
-
-        <!-- OWF-180/242/282: Cuenta en fila propia (oculta si split está activo — se usa el editor multi-cuenta) -->
-        <div class="stm-field" v-if="form.type !== 'ajuste' && form.type !== 'transfer' && !splitOn">
-          <label class="stm-label">Cuenta de origen <span class="stm-label--req">*</span></label>
-          <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
-            placeholder="Seleccionar…" />
-        </div>
 
         <!-- OWF-188/244/266: Categoría + Cántaro lado a lado (ocultos en modo Items: se gestionan por línea) -->
         <div v-if="form.type !== 'ajuste' && form.type !== 'transfer' && !itemsOn" class="stm-row-2">
@@ -483,6 +475,23 @@
           <q-toggle v-model="includeInBalance" color="primary" dense @click.stop />
         </button>
 
+        <!-- Adjuntar foto / soporte (recibo, comprobante) — UI-only, ver OWF-283 para wiring de subida real -->
+        <div v-if="form.type === 'expense' || form.type === 'income'">
+          <label class="stm-label">Foto / soporte <span class="stm-label--opt">(opcional)</span></label>
+          <input ref="attachmentInput" type="file" accept="image/*,.pdf" class="stm-attachment-input-hidden"
+            @change="onAttachmentPicked" />
+          <button v-if="!attachment" type="button" class="stm-attachment-picker" @click="attachmentInput?.click()">
+            <q-icon name="add_a_photo" size="19px" />
+            Adjuntar foto o comprobante
+          </button>
+          <div v-else class="stm-attachment-preview">
+            <img v-if="attachment.url" :src="attachment.url" :alt="attachment.name" />
+            <span class="stm-attachment-preview__name">{{ attachment.name }}</span>
+            <button type="button" @click="attachmentInput?.click()" title="Cambiar"><q-icon name="edit" size="18px" /></button>
+            <button type="button" @click="attachment = null" title="Quitar"><q-icon name="close" size="18px" /></button>
+          </div>
+        </div>
+
         <!-- OWF-184: preview en lenguaje natural + validaciones + estados draft/valid/error -->
         <TfReviewCard
           :type-label="typeLabelForReview"
@@ -742,6 +751,15 @@ const saveError = ref<string | null>(null);
 
 // OWF-183: si la transacción afecta o no el saldo agregado de la cuenta
 const includeInBalance = ref(true);
+
+// OWF-283: adjunto de foto/soporte — UI-only por ahora, sin endpoint de subida real
+const attachmentInput = ref<HTMLInputElement | null>(null);
+const attachment = ref<{ name: string; url: string } | null>(null);
+function onAttachmentPicked(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  attachment.value = { name: file.name, url: URL.createObjectURL(file) };
+}
 
 // ── Provider search ──────────────────────────────────────────────────────────
 interface Provider { id: number; name: string }
@@ -1651,6 +1669,26 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   box-sizing: border-box;
   &:focus { border-color: var(--brand-primary); background: var(--surface-1, #fff); }
   &::placeholder { color: var(--fg-3, #94a3b8); }
+}
+
+// ── Adjunto foto/soporte ──
+.stm-attachment-input-hidden { display: none; }
+.stm-attachment-picker {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 13px 15px; border-radius: var(--radius-md, 10px);
+  border: 1px dashed var(--border-hairline, #cbd5e1);
+  background: var(--surface-2, #f8fafc); cursor: pointer;
+  color: var(--fg-2, #475569); font-size: 12.5px; font-weight: 600;
+  &:hover { background: var(--surface-1, #fff); }
+}
+.stm-attachment-preview {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border-hairline, #cbd5e1);
+  background: var(--surface-1, #fff);
+  img { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--surface-2, #f8fafc); }
+  &__name { flex: 1; min-width: 0; font-size: 12.5px; color: var(--fg-1, #1e293b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button { border: 0; background: transparent; cursor: pointer; color: var(--fg-3, #94a3b8); display: flex; }
 }
 
 // ── Error ──
