@@ -1,0 +1,652 @@
+{
+  "$comment": "Valores de muestra hand-authored para generate-fixtures.mjs. Los NOMBRES de campo deben existir en las interfaces TS reales (el script valida y falla si no). Coherencia interna: account_id/category_id/provider_id/tag ids referencian filas de este mismo archivo; jar_id de cada tx = assigned_jar_id de su categoría (regla cántaro←categoría).",
+  "jars": [
+    {
+      "id": 1,
+      "name": "Necesidades básicas",
+      "color": "#1E3A8A",
+      "icon": "home",
+      "percent": 55
+    },
+    {
+      "id": 2,
+      "name": "Diversión",
+      "color": "#F59E0B",
+      "icon": "celebration",
+      "percent": 10
+    },
+    {
+      "id": 3,
+      "name": "Ahorro",
+      "color": "#10B981",
+      "icon": "savings",
+      "percent": 10
+    },
+    {
+      "id": 4,
+      "name": "Educación",
+      "color": "#0EA5E9",
+      "icon": "school",
+      "percent": 10
+    },
+    {
+      "id": 5,
+      "name": "Reservas",
+      "color": "#8B5CF6",
+      "icon": "shield",
+      "percent": 10
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Vivienda",
+      "icon": "home",
+      "jar_slug": "necesidades",
+      "assigned_jar_id": 1,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 2,
+      "name": "Supermercado",
+      "icon": "shopping_cart",
+      "jar_slug": "necesidades",
+      "assigned_jar_id": 1,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 3,
+      "name": "Transporte",
+      "icon": "directions_car",
+      "jar_slug": "necesidades",
+      "assigned_jar_id": 1,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 4,
+      "name": "Salud",
+      "icon": "favorite",
+      "jar_slug": "necesidades",
+      "assigned_jar_id": 1,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 6,
+      "name": "Restaurantes",
+      "icon": "restaurant",
+      "jar_slug": "diversion",
+      "assigned_jar_id": 2,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 7,
+      "name": "Entretenimiento",
+      "icon": "sports_esports",
+      "jar_slug": "diversion",
+      "assigned_jar_id": 2,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 10,
+      "name": "Educación",
+      "icon": "school",
+      "jar_slug": "educacion",
+      "assigned_jar_id": 4,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 11,
+      "name": "Inversión",
+      "icon": "trending_up",
+      "jar_slug": "ahorro",
+      "assigned_jar_id": 3,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 12,
+      "name": "Otros",
+      "icon": "category",
+      "jar_slug": "reservas",
+      "assigned_jar_id": 5,
+      "active": 1,
+      "user_id": null,
+      "type": "expense",
+      "parent_id": null
+    },
+    {
+      "id": 20,
+      "name": "Salario",
+      "icon": "payments",
+      "jar_slug": null,
+      "assigned_jar_id": null,
+      "active": 1,
+      "user_id": null,
+      "type": "income",
+      "parent_id": null
+    },
+    {
+      "id": 21,
+      "name": "Freelance",
+      "icon": "work",
+      "jar_slug": null,
+      "assigned_jar_id": null,
+      "active": 1,
+      "user_id": null,
+      "type": "income",
+      "parent_id": null
+    }
+  ],
+  "accounts": [
+    {
+      "id": 1,
+      "name": "BofA · Corriente",
+      "isDefault": true,
+      "balance": 3420.5,
+      "currencySymbol": "$",
+      "currencyCode": "USD",
+      "currencyId": 1
+    },
+    {
+      "id": 2,
+      "name": "BofA · Ahorros",
+      "isDefault": false,
+      "balance": 12480.0,
+      "currencySymbol": "$",
+      "currencyCode": "USD",
+      "currencyId": 1
+    },
+    {
+      "id": 3,
+      "name": "Efectivo USD",
+      "isDefault": false,
+      "balance": 340.0,
+      "currencySymbol": "$",
+      "currencyCode": "USD",
+      "currencyId": 1
+    },
+    {
+      "id": 4,
+      "name": "Mercantil",
+      "isDefault": false,
+      "balance": 48500.0,
+      "currencySymbol": "Bs.",
+      "currencyCode": "VES",
+      "currencyId": 2
+    },
+    {
+      "id": 5,
+      "name": "Banco de Venezuela",
+      "isDefault": false,
+      "balance": 21300.0,
+      "currencySymbol": "Bs.",
+      "currencyCode": "VES",
+      "currencyId": 2
+    },
+    {
+      "id": 6,
+      "name": "Revolut EUR",
+      "isDefault": false,
+      "balance": 950.75,
+      "currencySymbol": "€",
+      "currencyCode": "EUR",
+      "currencyId": 3
+    }
+  ],
+  "providers": [
+    {
+      "id": 1,
+      "name": "Whole Foods Market"
+    },
+    {
+      "id": 2,
+      "name": "Uber"
+    },
+    {
+      "id": 3,
+      "name": "Netflix"
+    },
+    {
+      "id": 4,
+      "name": "Farmatodo",
+      "address": "C.C. Sambil, Caracas"
+    },
+    {
+      "id": 5,
+      "name": "ACME Corp"
+    },
+    {
+      "id": 6,
+      "name": "Inmobiliaria Ávila",
+      "address": "Av. Francisco de Miranda, Caracas"
+    },
+    {
+      "id": 7,
+      "name": "Restaurante La Esquina"
+    }
+  ],
+  "tags": [
+    {
+      "id": 1,
+      "slug": "comision",
+      "name": "Comisión",
+      "icon": "toll",
+      "color": "#F59E0B",
+      "type": "system",
+      "description": "Cargo o comisión bancaria asociada al movimiento"
+    },
+    {
+      "id": 2,
+      "slug": "pago_movil",
+      "name": "Pago móvil",
+      "icon": "smartphone",
+      "color": "#0EA5E9",
+      "type": "system",
+      "description": "Operación realizada por Pago Móvil P2P"
+    },
+    {
+      "id": 3,
+      "slug": "impulso",
+      "name": "Impulso",
+      "icon": "bolt",
+      "color": "#EF4444",
+      "type": "system",
+      "description": "Compra impulsiva, fuera del plan"
+    },
+    {
+      "id": 4,
+      "slug": "planificado",
+      "name": "Planificado",
+      "icon": "event_available",
+      "color": "#10B981",
+      "type": "system",
+      "description": "Gasto previsto dentro de tu presupuesto"
+    },
+    {
+      "id": 5,
+      "slug": "recurrente",
+      "name": "Recurrente",
+      "icon": "autorenew",
+      "color": "#3B82F6",
+      "type": "system",
+      "description": "Se repite cada período (suscripción, servicio)"
+    },
+    {
+      "id": 6,
+      "slug": "transferencia_interna",
+      "name": "Interna",
+      "icon": "sync_alt",
+      "color": "#8B5CF6",
+      "type": "system",
+      "description": "Movimiento entre tus propias cuentas"
+    },
+    {
+      "id": 7,
+      "slug": "trabajo",
+      "name": "Trabajo",
+      "icon": "work",
+      "color": "#0EA5E9",
+      "type": "user",
+      "description": "Gasto reembolsable de trabajo"
+    },
+    {
+      "id": 8,
+      "slug": "viaje",
+      "name": "Viaje",
+      "icon": "flight",
+      "color": "#14B8A6",
+      "type": "user",
+      "description": "Relacionado con un viaje"
+    }
+  ],
+  "transactions": [
+    {
+      "id": 101,
+      "name": "Sueldo · ACME Corp",
+      "amount": 3200.0,
+      "amount_tax": 0,
+      "description": "Nómina de julio",
+      "date": "2026-07-01",
+      "active": true,
+      "provider_id": 5,
+      "rate_id": 1,
+      "transaction_type_id": "1",
+      "user_id": 7,
+      "account_id": 1,
+      "category_id": 20,
+      "jar_id": null,
+      "account": {
+        "id": 1,
+        "name": "BofA · Corriente"
+      },
+      "category": {
+        "id": 20,
+        "name": "Salario",
+        "icon": "payments",
+        "jar_slug": null
+      },
+      "jar": null,
+      "tags": []
+    },
+    {
+      "id": 102,
+      "name": "Alquiler · julio",
+      "amount": -1450.0,
+      "amount_tax": 0,
+      "description": "Alquiler mensual del apartamento",
+      "date": "2026-07-01",
+      "active": true,
+      "provider_id": 6,
+      "rate_id": 1,
+      "transaction_type_id": "2",
+      "user_id": 7,
+      "account_id": 1,
+      "category_id": 1,
+      "jar_id": 1,
+      "account": {
+        "id": 1,
+        "name": "BofA · Corriente"
+      },
+      "category": {
+        "id": 1,
+        "name": "Vivienda",
+        "icon": "home",
+        "jar_slug": "necesidades"
+      },
+      "jar": {
+        "id": 1,
+        "name": "Necesidades básicas",
+        "color": "#1E3A8A",
+        "icon": "home"
+      },
+      "tags": [
+        {
+          "id": 4,
+          "slug": "planificado",
+          "name": "Planificado",
+          "icon": "event_available",
+          "color": "#10B981",
+          "type": "system"
+        },
+        {
+          "id": 5,
+          "slug": "recurrente",
+          "name": "Recurrente",
+          "icon": "autorenew",
+          "color": "#3B82F6",
+          "type": "system"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "name": "Freelance · factura 042",
+      "amount": 720.0,
+      "amount_tax": 0,
+      "description": "Diseño de landing para cliente",
+      "date": "2026-07-02",
+      "active": true,
+      "provider_id": 5,
+      "rate_id": 1,
+      "transaction_type_id": "1",
+      "user_id": 7,
+      "account_id": 2,
+      "category_id": 21,
+      "jar_id": null,
+      "account": {
+        "id": 2,
+        "name": "BofA · Ahorros"
+      },
+      "category": {
+        "id": 21,
+        "name": "Freelance",
+        "icon": "work",
+        "jar_slug": null
+      },
+      "jar": null,
+      "tags": [
+        {
+          "id": 7,
+          "slug": "trabajo",
+          "name": "Trabajo",
+          "icon": "work",
+          "color": "#0EA5E9",
+          "type": "user"
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "name": "Farmatodo · mensual",
+      "amount": -4640.0,
+      "amount_tax": 0,
+      "description": "Medicinas y farmacia (Bs.)",
+      "date": "2026-07-03",
+      "active": true,
+      "provider_id": 4,
+      "rate_id": 2,
+      "transaction_type_id": "2",
+      "user_id": 7,
+      "account_id": 4,
+      "category_id": 4,
+      "jar_id": 1,
+      "account": {
+        "id": 4,
+        "name": "Mercantil"
+      },
+      "category": {
+        "id": 4,
+        "name": "Salud",
+        "icon": "favorite",
+        "jar_slug": "necesidades"
+      },
+      "jar": {
+        "id": 1,
+        "name": "Necesidades básicas",
+        "color": "#1E3A8A",
+        "icon": "home"
+      },
+      "tags": [
+        {
+          "id": 2,
+          "slug": "pago_movil",
+          "name": "Pago móvil",
+          "icon": "smartphone",
+          "color": "#0EA5E9",
+          "type": "system"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "name": "La Esquina · cena",
+      "amount": -48.0,
+      "amount_tax": 7.68,
+      "description": "Cena con amigos",
+      "date": "2026-07-04",
+      "active": true,
+      "provider_id": 7,
+      "rate_id": 1,
+      "transaction_type_id": "2",
+      "user_id": 7,
+      "account_id": 3,
+      "category_id": 6,
+      "jar_id": 2,
+      "account": {
+        "id": 3,
+        "name": "Efectivo USD"
+      },
+      "category": {
+        "id": 6,
+        "name": "Restaurantes",
+        "icon": "restaurant",
+        "jar_slug": "diversion"
+      },
+      "jar": {
+        "id": 2,
+        "name": "Diversión",
+        "color": "#F59E0B",
+        "icon": "celebration"
+      },
+      "tags": [
+        {
+          "id": 3,
+          "slug": "impulso",
+          "name": "Impulso",
+          "icon": "bolt",
+          "color": "#EF4444",
+          "type": "system"
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "name": "Netflix",
+      "amount": -15.99,
+      "amount_tax": 0,
+      "description": "Suscripción mensual (EUR)",
+      "date": "2026-07-05",
+      "active": true,
+      "provider_id": 3,
+      "rate_id": 3,
+      "transaction_type_id": "2",
+      "user_id": 7,
+      "account_id": 6,
+      "category_id": 7,
+      "jar_id": 2,
+      "account": {
+        "id": 6,
+        "name": "Revolut EUR"
+      },
+      "category": {
+        "id": 7,
+        "name": "Entretenimiento",
+        "icon": "sports_esports",
+        "jar_slug": "diversion"
+      },
+      "jar": {
+        "id": 2,
+        "name": "Diversión",
+        "color": "#F59E0B",
+        "icon": "celebration"
+      },
+      "tags": [
+        {
+          "id": 5,
+          "slug": "recurrente",
+          "name": "Recurrente",
+          "icon": "autorenew",
+          "color": "#3B82F6",
+          "type": "system"
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "name": "Whole Foods Market",
+      "amount": -84.12,
+      "amount_tax": 11.6,
+      "description": "Mercado semanal",
+      "date": "2026-07-06",
+      "active": true,
+      "provider_id": 1,
+      "rate_id": 1,
+      "transaction_type_id": "2",
+      "user_id": 7,
+      "account_id": 1,
+      "category_id": 2,
+      "jar_id": 1,
+      "account": {
+        "id": 1,
+        "name": "BofA · Corriente"
+      },
+      "category": {
+        "id": 2,
+        "name": "Supermercado",
+        "icon": "shopping_cart",
+        "jar_slug": "necesidades"
+      },
+      "jar": {
+        "id": 1,
+        "name": "Necesidades básicas",
+        "color": "#1E3A8A",
+        "icon": "home"
+      },
+      "tags": [
+        {
+          "id": 4,
+          "slug": "planificado",
+          "name": "Planificado",
+          "icon": "event_available",
+          "color": "#10B981",
+          "type": "system"
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "name": "Uber · al aeropuerto",
+      "amount": -32.6,
+      "amount_tax": 0,
+      "description": "Traslado al aeropuerto",
+      "date": "2026-07-07",
+      "active": true,
+      "provider_id": 2,
+      "rate_id": 1,
+      "transaction_type_id": "2",
+      "user_id": 7,
+      "account_id": 3,
+      "category_id": 3,
+      "jar_id": 1,
+      "account": {
+        "id": 3,
+        "name": "Efectivo USD"
+      },
+      "category": {
+        "id": 3,
+        "name": "Transporte",
+        "icon": "directions_car",
+        "jar_slug": "necesidades"
+      },
+      "jar": {
+        "id": 1,
+        "name": "Necesidades básicas",
+        "color": "#1E3A8A",
+        "icon": "home"
+      },
+      "tags": [
+        {
+          "id": 8,
+          "slug": "viaje",
+          "name": "Viaje",
+          "icon": "flight",
+          "color": "#14B8A6",
+          "type": "user"
+        }
+      ]
+    }
+  ]
+}
