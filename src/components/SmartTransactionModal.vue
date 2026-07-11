@@ -290,9 +290,9 @@
 
         <!-- Pro features (solo layout_mode=pro) -->
         <template v-if="isProMode && form.type !== 'ajuste'">
-          <!-- OWF-253: card-row toggles unificados (Gasto/Ingreso: 4 opciones; Transferencia: solo Comisión) -->
-          <div class="stm-pro-card-toggles">
-            <button v-if="form.type !== 'transfer'" type="button"
+          <!-- OWF-253/286: card-row toggles — fila en desktop (rowDir='row' en rediseno), columna en mobile -->
+          <div v-if="form.type !== 'transfer'" class="stm-pro-card-toggles">
+            <button type="button"
               class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'split' }"
               @click="toggleProPanel(proPanel === 'split' ? null : 'split')">
               <span class="stm-pro-card-toggle__icon"><q-icon name="call_split" size="18px" /></span>
@@ -303,7 +303,7 @@
               <q-toggle :model-value="proPanel === 'split'" color="primary" dense @click.stop
                 @update:model-value="(v) => toggleProPanel(v ? 'split' : null)" />
             </button>
-            <button v-if="form.type !== 'transfer'" type="button"
+            <button type="button"
               class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'items' }"
               @click="toggleProPanel(proPanel === 'items' ? null : 'items')">
               <span class="stm-pro-card-toggle__icon"><q-icon name="receipt_long" size="18px" /></span>
@@ -314,7 +314,7 @@
               <q-toggle :model-value="proPanel === 'items'" color="primary" dense @click.stop
                 @update:model-value="(v) => toggleProPanel(v ? 'items' : null)" />
             </button>
-            <button v-if="form.type !== 'transfer'" type="button"
+            <button type="button"
               class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'shared' }"
               @click="toggleProPanel(proPanel === 'shared' ? null : 'shared')">
               <span class="stm-pro-card-toggle__icon"><q-icon name="pie_chart_outline" size="18px" /></span>
@@ -325,18 +325,20 @@
               <q-toggle :model-value="proPanel === 'shared'" color="primary" dense @click.stop
                 @update:model-value="(v) => toggleProPanel(v ? 'shared' : null)" />
             </button>
-            <button type="button"
-              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'comision' }"
-              @click="toggleProPanel(proPanel === 'comision' ? null : 'comision')">
-              <span class="stm-pro-card-toggle__icon"><q-icon name="percent" size="18px" /></span>
-              <span class="stm-pro-card-toggle__texts">
-                <span class="stm-pro-card-toggle__label">Cobrar comisión</span>
-                <span class="stm-pro-card-toggle__sub">Pago móvil, fija o porcentaje</span>
-              </span>
-              <q-toggle :model-value="proPanel === 'comision'" color="primary" dense @click.stop
-                @update:model-value="(v) => toggleProPanel(v ? 'comision' : null)" />
-            </button>
           </div>
+
+          <!-- OWF-286: Cobrar comisión — separado del grupo de 3, siempre su propia fila (matches TfCommission en rediseno) -->
+          <button type="button"
+            class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'comision' }"
+            @click="toggleProPanel(proPanel === 'comision' ? null : 'comision')">
+            <span class="stm-pro-card-toggle__icon"><q-icon name="percent" size="18px" /></span>
+            <span class="stm-pro-card-toggle__texts">
+              <span class="stm-pro-card-toggle__label">Cobrar comisión</span>
+              <span class="stm-pro-card-toggle__sub">Pago móvil, fija o porcentaje</span>
+            </span>
+            <q-toggle :model-value="proPanel === 'comision'" color="primary" dense @click.stop
+              @update:model-value="(v) => toggleProPanel(v ? 'comision' : null)" />
+          </button>
 
           <!-- Comisión panel -->
           <div v-if="proPanel === 'comision'" class="stm-pro-panel">
@@ -1838,10 +1840,14 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 }
 
 // ── Pro features ────────────────────────────────────────────────────────────
+// OWF-286: fila en desktop (3 columnas, como rowDir='row' en rediseno), columna en mobile
 .stm-pro-card-toggles {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 6px;
+
+  .stm-wrap--mobile & { flex-direction: column; flex-wrap: nowrap; }
 }
 
 .stm-pro-card-toggle {
@@ -1850,6 +1856,11 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   gap: 12px;
   width: 100%;
   padding: 12px 14px;
+
+  .stm-pro-card-toggles & {
+    flex: 1 1 140px;
+    width: auto;
+  }
   border: 1px solid var(--border-hairline, #e2e8f0);
   border-radius: var(--radius-md, 12px);
   background: var(--surface-1, #fff);
