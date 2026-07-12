@@ -57,8 +57,9 @@ if (CHECK_MODE) {
     console.error('ERROR --check: rediseno/SYNC_MANIFEST.json no existe — correr el script sin --check y commitear.');
     process.exit(1);
   }
-  const current = fs.readFileSync(OUT, 'utf8');
-  if (current !== rendered) {
+  // Normalizar CRLF: un checkout con autocrlf no debe hacer fallar el gate.
+  const current = fs.readFileSync(OUT, 'utf8').replace(/\r\n/g, '\n');
+  if (current !== rendered.replace(/\r\n/g, '\n')) {
     const prev = JSON.parse(current).files ?? {};
     const next = manifest.files;
     for (const p of Object.keys(next)) {

@@ -44,21 +44,29 @@ for (const v of views) {
 
   if (!STATUSES.has(v.status)) errors.push(`${tag} status inválido "${v.status}" — válidos: ${[...STATUSES].join(', ')}`);
 
-  for (const dp of v.designPaths ?? []) {
-    if (!fs.existsSync(path.join(REDISENO, dp))) errors.push(`${tag} designPath no existe en el espejo: rediseno/${dp}`);
+  const designPaths = v.designPaths ?? [];
+  if (!Array.isArray(designPaths)) errors.push(`${tag} designPaths debe ser un array`);
+  else {
+    for (const dp of designPaths) {
+      if (!fs.existsSync(path.join(REDISENO, dp))) errors.push(`${tag} designPath no existe en el espejo: rediseno/${dp}`);
+    }
+    if (!designPaths.length) errors.push(`${tag} sin designPaths`);
   }
-  if (!(v.designPaths ?? []).length) errors.push(`${tag} sin designPaths`);
 
-  for (const vp of v.vuePaths ?? []) {
-    if (!fs.existsSync(path.join(REPO_ROOT, vp))) errors.push(`${tag} vuePath no existe en el repo: ${vp}`);
-  }
-  if (['accepted-ported', 'superseded-by-vue'].includes(v.status) && !(v.vuePaths ?? []).length) {
-    errors.push(`${tag} status "${v.status}" exige al menos un vuePath`);
+  const vuePaths = v.vuePaths ?? [];
+  if (!Array.isArray(vuePaths)) errors.push(`${tag} vuePaths debe ser un array`);
+  else {
+    for (const vp of vuePaths) {
+      if (!fs.existsSync(path.join(REPO_ROOT, vp))) errors.push(`${tag} vuePath no existe en el repo: ${vp}`);
+    }
+    if (['accepted-ported', 'superseded-by-vue'].includes(v.status) && !vuePaths.length) {
+      errors.push(`${tag} status "${v.status}" exige al menos un vuePath`);
+    }
   }
 
   if (v.status?.startsWith('divergent')) {
     if (!/^D-\d{3}$/.test(v.decision ?? '')) errors.push(`${tag} status divergente exige decision "D-XXX"`);
-    else if (!decisions.includes(`## ${v.decision} `) && !decisions.includes(`## ${v.decision} —`)) {
+    else if (!new RegExp(`^##\\s+${v.decision}\\b`, 'm').test(decisions)) {
       errors.push(`${tag} decision ${v.decision} no tiene asiento en DECISIONS.md`);
     }
   }

@@ -665,8 +665,8 @@
       "bytes": 645
     },
     "tools/check-views.mjs": {
-      "sha256": "7c6945b65802f2c9ebb0e0a87601272097f29429843d460c67e3aa6280614d77",
-      "bytes": 3655
+      "sha256": "6f8d98b1f2c1c727d767584293a7d0f26086697a67dacfd365aaae5dcecfcf86",
+      "bytes": 3887
     },
     "tools/design-diff.mjs": {
       "sha256": "c75de6c6e2bcbc9bb619834c7070e6fea4260c7d94b1d44bb68cd750f1c4f8ad",
@@ -685,8 +685,8 @@
       "bytes": 612
     },
     "tools/sync-manifest.mjs": {
-      "sha256": "ef11dd5e492b9e038f79ff89a19f39baa5df67d45638dfab509fa27088a5b293",
-      "bytes": 3421
+      "sha256": "5aae8dc0f2ce4ebd6849114890654c9b0075433e5896cfc246ac538acf10abc7",
+      "bytes": 3544
     },
     "tx-catalog.js": {
       "sha256": "58957ac653eba7434414919f0edc029b60ea22ad90007dc22736cf83f9ea0e08",
