@@ -615,7 +615,7 @@ async function loadJars() {
           const balance = Number(bal.available_balance || 0);
           const progress = assigned > 0 ? Math.min(100, Math.round((assigned - balance) / assigned * 100)) : 0;
           const tone = (jar.tone as string) || 'neutral';
-          const barColor = tone === 'warn' ? 'var(--warning)' : tone === 'income' ? 'var(--income)' : 'var(--info)';
+          const barColor = (jar.color as string) || (tone === 'warn' ? 'var(--warning)' : tone === 'income' ? 'var(--income)' : 'var(--info)');
           return {
             id: jarId,
             name: typeof jar.name === 'string' ? jar.name : 'Cántaro',
