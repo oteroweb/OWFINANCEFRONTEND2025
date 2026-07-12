@@ -214,8 +214,14 @@
         <div v-if="form.type !== 'ajuste' && form.type !== 'transfer'"
           :class="(isLiteLayout && form.type === 'income') ? '' : 'stm-row-2'">
           <div class="stm-field">
-            <label class="stm-label">Proveedor / Comercio <span class="stm-label--opt">(opcional)</span></label>
+            <div class="stm-field__head">
+              <label class="stm-label">Proveedor / Comercio <span class="stm-label--opt">(opcional)</span></label>
+              <button v-if="!showNewProviderForm" type="button" class="stm-inline-add" @click="showNewProviderForm = true; newProviderName = providerSearchTerm">
+                <q-icon name="add" size="13px" /> Nuevo proveedor
+              </button>
+            </div>
             <q-select
+              v-if="!showNewProviderForm"
               v-model="form.provider_id"
               :options="providerOptions"
               emit-value map-options
@@ -229,6 +235,16 @@
             >
               <template v-slot:prepend><q-icon name="storefront" /></template>
             </q-select>
+            <div v-else class="stm-new-tag-form">
+              <input v-model="newProviderName" class="stm-text-input stm-text-input--flex" placeholder="Nombre del proveedor" @keydown.enter.prevent="createProvider" />
+              <button type="button" class="stm-btn stm-btn--primary stm-btn--xs" :disabled="!newProviderName.trim() || creatingProvider" @click="createProvider">
+                <q-spinner v-if="creatingProvider" size="13px" color="white" />
+                <q-icon v-else name="check" size="14px" />
+              </button>
+              <button type="button" class="stm-btn stm-btn--ghost stm-btn--xs" @click="showNewProviderForm = false; newProviderName = ''">
+                <q-icon name="close" size="14px" />
+              </button>
+            </div>
           </div>
           <div v-if="!(isLiteLayout && form.type === 'income')" class="stm-field">
             <label class="stm-label">Fecha</label>
@@ -788,8 +804,10 @@ function onAttachmentPicked(e: Event) {
 // ── Provider search ──────────────────────────────────────────────────────────
 interface Provider { id: number; name: string }
 const providerOptions = ref<Provider[]>([])
+const providerSearchTerm = ref('')
 
 async function filterProviders(val: string, update: (fn: () => void) => void) {
+  providerSearchTerm.value = val
   if (!val.trim()) {
     update(() => { providerOptions.value = [] })
     return
@@ -801,6 +819,29 @@ async function filterProviders(val: string, update: (fn: () => void) => void) {
     update(() => { providerOptions.value = list })
   } catch {
     update(() => { providerOptions.value = [] })
+  }
+}
+
+// OWF-264: crear proveedor nuevo directamente desde el formulario.
+const showNewProviderForm = ref(false)
+const newProviderName = ref('')
+const creatingProvider = ref(false)
+
+async function createProvider() {
+  const name = newProviderName.value.trim()
+  if (!name || creatingProvider.value) return
+  creatingProvider.value = true
+  try {
+    const res = await api.post<{ data: Provider }>('/providers', { name })
+    const created = res.data.data
+    providerOptions.value = [created, ...providerOptions.value]
+    form.value.provider_id = created.id
+    newProviderName.value = ''
+    showNewProviderForm.value = false
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo crear el proveedor. Intenta de nuevo.' })
+  } finally {
+    creatingProvider.value = false
   }
 }
 
@@ -1555,6 +1596,30 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   margin-bottom: 5px;
   &--opt { font-weight: 400; color: var(--fg-3, #94a3b8); }
   &--req { color: var(--expense, #ef4444); font-weight: 700; }
+}
+
+// OWF-264: header de field con acción "+ Nuevo proveedor" inline
+.stm-field__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+
+  .stm-label { margin-bottom: 5px; }
+}
+
+.stm-inline-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--brand-primary, #3b82f6);
+  white-space: nowrap;
 }
 
 .stm-rate-equiv {

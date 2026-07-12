@@ -13,18 +13,27 @@
             <q-icon name="tune" class="q-mr-sm" />
             Aplicación
           </div>
-          <div class="row q-col-gutter-md items-center q-mb-md">
-            <div class="col-12 col-sm-6">
-              <div class="text-body2">Modo de la app</div>
-              <div class="text-caption text-grey-7">Pro · panel completo multi-cuenta</div>
-            </div>
-            <div class="col-12 col-sm-6 row justify-end">
-              <q-btn-toggle
-                :model-value="activeLayoutMode"
-                toggle-color="primary"
-                :options="[{ label: 'Lite', value: 'lite' }, { label: 'Pro', value: 'pro' }]"
-                @update:model-value="switchMode"
-              />
+          <div class="q-mb-md">
+            <div class="text-body2 q-mb-sm">Modo de la app</div>
+            <div class="apref__mode-row">
+              <button
+                class="apref__mode-btn"
+                :class="{ 'apref__mode-btn--active': activeLayoutMode === 'lite' }"
+                @click="switchMode('lite')"
+              >
+                <span class="material-icons">phone_iphone</span>
+                <span>Lite</span>
+                <span class="apref__mode-sub">Simple y rápido</span>
+              </button>
+              <button
+                class="apref__mode-btn"
+                :class="{ 'apref__mode-btn--active': activeLayoutMode === 'pro' }"
+                @click="switchMode('pro')"
+              >
+                <span class="material-icons">desktop_mac</span>
+                <span>Pro</span>
+                <span class="apref__mode-sub">Sidebar + análisis</span>
+              </button>
             </div>
           </div>
           <q-separator class="q-mb-md" />
@@ -74,6 +83,14 @@
             <div>
               <div class="text-body2">Divisa predeterminada</div>
               <div class="text-caption text-grey-7">Gestionar en Cuentas</div>
+            </div>
+            <q-icon name="chevron_right" size="18px" color="grey-7" />
+          </div>
+          <q-separator class="q-mb-md" />
+          <div class="row items-center justify-between" style="cursor:pointer" @click="router.push('/user/home')">
+            <div>
+              <div class="text-body2">Pantalla de inicio</div>
+              <div class="text-caption text-grey-7">Ir a Inicio</div>
             </div>
             <q-icon name="chevron_right" size="18px" color="grey-7" />
           </div>
