@@ -243,7 +243,7 @@
               </div>
               <div class="ap-row__info">
                 <span class="ap-row__name">{{ debt.name }}</span>
-                <span class="ap-row__sub" :style="{ color: debtStatusColor(debt.status) }">Próx. {{ isHidden ? '••••••' : formatMoney(debt.next_payment) }}</span>
+                <span class="ap-row__sub" :style="{ color: debtStatusColor(debt.status) }">{{ debt.status === 'late' ? 'Atrasada' : debt.status === 'due-soon' ? 'Por vencer' : 'Al día' }}</span>
               </div>
               <div class="ap-row__right">
                 <span class="ap-row__balance" style="color: var(--expense-fg)">{{ isHidden ? '••••••' : formatMoney(debt.balance) }}</span>
