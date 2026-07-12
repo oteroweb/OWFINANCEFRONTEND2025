@@ -151,6 +151,12 @@ CSS puras. Estado = `useState` plano (sección 3).
 ---
 
 **Mantenimiento**: este archivo y `data/sample-data.contract.js` se regeneran/validan con
-`node rediseno/tools/generate-fixtures.mjs` (gate: `--check`). Si las interfaces TS del
-frontend cambian, correr el script (falla si los seeds quedaron stale) y volver a subir
-AMBOS archivos al proyecto `rediseno` de Claude Design (canal DesignSync MCP).
+`node rediseno/tools/generate-fixtures.mjs` (gate: `--check`, corre en CI —
+`.github/workflows/design-contract.yml`). Si las interfaces TS del frontend cambian,
+correr el script (falla si los seeds quedaron stale) y volver a subir AMBOS archivos al
+proyecto `rediseno` de Claude Design (canal DesignSync MCP, ciclo `/rediseno-sync`).
+
+**Este contrato fija las shapes.** El comportamiento de negocio canónico está en
+`BEHAVIOR.md`; las divergencias adjudicadas, en `DECISIONS.md`; el estado de cada vista
+(portada / pendiente / divergente), en `views-registry.json`; el protocolo de
+sincronización con el espejo git, en `_sync/SYNC_PROTOCOL.md`.

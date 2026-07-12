@@ -38,3 +38,6 @@ yarn-error.log*
 /playwright-report-prod
 e2e/.auth*.json
 Paseo-*.dmg
+
+# rediseno sync: staging de pulls del proyecto Claude Design (nunca se commitea)
+rediseno/.sync-staging/

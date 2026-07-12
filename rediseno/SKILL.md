@@ -35,6 +35,26 @@ If the user invokes this skill with **no other guidance**:
 - Ask 3–5 clarifying questions (route, light/dark, what data, audience).
 - Then act as an expert designer who outputs HTML artifacts or production-ready snippets.
 
+## Sincronización con el frontend Vue (OBLIGATORIO)
+
+Este proyecto tiene un espejo git (`rediseno/` en OWFinanceFrontend2025). El canal de
+sincronización vive en `_sync/` — protocolo completo en `_sync/SYNC_PROTOCOL.md`.
+
+1. **Antes de generar o modificar componentes**: leer `DESIGN_CONTRACT.md` (shapes de
+   datos reales — nunca inventar campos), `BEHAVIOR.md` (mecánicas de negocio fijas:
+   el cántaro SIEMPRE se deriva de la categoría, gasto compartido híbrido, etc.),
+   `DECISIONS.md` (adjudicaciones vigentes) y `data/sample-data.contract.js` (fixtures
+   `window.SAMPLE_*` obligatorios).
+2. **Después de CUALQUIER cambio de archivos**: agregar una línea a
+   `_sync/CHANGELOG.jsonl` con formato
+   `{"ts":"<ISO>","who":"design","files":["path1"],"note":"qué y por qué"}`.
+   Sin esto, el espejo no puede detectar el cambio de forma barata.
+3. **Antes de rediseñar una vista** con estado `accepted-ported` o `superseded-by-vue`
+   en `views-registry.json`: proponerlo (entrada de changelog con `"proposal": true`),
+   no bifurcar en silencio — ya hubo divergencias costosas (ver DECISIONS.md D-001).
+4. **Nunca editar**: `_sync/MANIFEST.json`, `data/sample-data.contract.js`,
+   `views-registry.json`, `DECISIONS.md` (esos los escribe el lado repo).
+
 ## Don'ts
 
 - Don't introduce cyan as the primary CTA color in Lite contexts — it's the supporting info accent only.

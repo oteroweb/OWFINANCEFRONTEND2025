@@ -1,0 +1,34 @@
+name: design-contract
+
+# Gate del flujo Claude Design ↔ Vue:
+#   - los fixtures del contrato siguen calzando con las interfaces TS reales
+#   - el manifest del espejo rediseno/ está al día con su contenido
+#   - el registro de vistas es consistente (y ninguna divergencia quedó sin adjudicar)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # generate-fixtures.mjs solo necesita el paquete typescript, no todo el árbol.
+      - name: Instalar typescript (versión del proyecto)
+        run: npm install --no-save typescript@"$(node -p "require('./package.json').devDependencies.typescript")"
+
+      - name: Contrato de fixtures vs interfaces TS reales
+        run: node rediseno/tools/generate-fixtures.mjs --check
+
+      - name: Manifest del espejo al día
+        run: node rediseno/tools/sync-manifest.mjs --check
+
+      - name: Registro de vistas consistente
+        run: node rediseno/tools/check-views.mjs

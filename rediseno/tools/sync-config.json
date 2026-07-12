@@ -1,0 +1,17 @@
+{
+  "$comment": "Configuración del ciclo de sincronización rediseno/ ↔ proyecto Claude Design. Consumida por sync-manifest.mjs y design-diff.mjs.",
+  "repoOnly": [
+    "tools/",
+    "INSTRUCTIVO.md",
+    "PLAN_TRANSACCIONES_REDISENO.md",
+    "SYNC_MANIFEST.json",
+    "SYNC_REPORT.md",
+    ".sync-staging/"
+  ],
+  "remoteOnly": [
+    ".thumbnail",
+    "_sync/MANIFEST.json",
+    "uploads/"
+  ],
+  "$remoteOnlyNote": "_sync/MANIFEST.json solo existe remoto (es copia del SYNC_MANIFEST.json local — copiarlo al espejo sería circular). uploads/ son pegados efímeros del canvas de diseño, no se espejan."
+}

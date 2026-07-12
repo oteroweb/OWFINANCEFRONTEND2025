@@ -1,0 +1,130 @@
+{
+  "$comment": "Registro unificado de vistas: qué pieza del diseño corresponde a qué componente Vue y en qué estado está. Validado por tools/check-views.mjs (CI). Estados: accepted-ported (portada y estable — la versión Vue es la verdad), accepted-pending-port (aceptada, port pendiente), design-only (no se porta), superseded-by-vue (el diseño quedó atrás a propósito; su copia es referencia histórica), divergent-pending-decision (colisión sin adjudicar — PROHIBIDO portar), divergent-adjudicated (decisión tomada en DECISIONS.md, convergencia de código pendiente), unreviewed (inventariada, estado por confirmar).",
+  "views": [
+    {
+      "id": "tx-catalog",
+      "concept": "Catálogo canónico de cántaros + categorías (jarForCategory)",
+      "designPaths": ["tx-catalog.js"],
+      "vuePaths": ["src/utils/txCatalog.ts"],
+      "status": "accepted-ported"
+    },
+    {
+      "id": "anchored-jar-chip",
+      "concept": "Chip de cántaro anclado a la categoría (candado, read-only)",
+      "designPaths": ["ui_kits/lite-desktop/organisms/TransactionForm.jsx", "ui_kits/mobile/components/TransactionFormSheet.jsx"],
+      "vuePaths": ["src/components/AnchoredJarChip.vue"],
+      "status": "accepted-ported"
+    },
+    {
+      "id": "transaction-form-desktop",
+      "concept": "Formulario de alta de transacción desktop (Lite + Pro)",
+      "designPaths": ["ui_kits/lite-desktop/organisms/TransactionForm.jsx"],
+      "vuePaths": ["src/components/SmartTransactionModal.vue"],
+      "status": "accepted-ported"
+    },
+    {
+      "id": "smart-quick-modal",
+      "concept": "SmartModal / QuickAdd global",
+      "designPaths": ["ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx", "ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx"],
+      "vuePaths": ["src/components/SmartTransactionModal.vue"],
+      "status": "accepted-ported"
+    },
+    {
+      "id": "shared-expense",
+      "concept": "Gasto compartido ('vaca') — reparto entre categorías",
+      "designPaths": ["ui_kits/lite-desktop/organisms/TransactionForm.jsx"],
+      "vuePaths": ["src/components/SmartTransactionModal.vue"],
+      "status": "divergent-adjudicated",
+      "decision": "D-001",
+      "notes": "Canónico: híbrido equitativo-por-defecto + edición manual. Diseño y Vue convergen (acciones en DECISIONS.md)."
+    },
+    {
+      "id": "attachment-field",
+      "concept": "Adjunto de foto/soporte en el formulario de transacción",
+      "designPaths": ["ui_kits/lite-desktop/organisms/TransactionForm.jsx"],
+      "vuePaths": ["src/components/SmartTransactionModal.vue"],
+      "status": "divergent-adjudicated",
+      "decision": "D-002",
+      "notes": "UI-only hasta OWF-283 (endpoint de subida)."
+    },
+    {
+      "id": "transaction-form-mobile",
+      "concept": "Formulario de alta mobile (bottom sheet)",
+      "designPaths": ["ui_kits/mobile/components/TransactionFormSheet.jsx"],
+      "vuePaths": ["src/components/TransactionForm.vue"],
+      "status": "accepted-ported"
+    },
+    {
+      "id": "transaction-detail-desktop",
+      "concept": "Modal de detalle/edición de transacción desktop",
+      "designPaths": ["ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx"],
+      "vuePaths": [],
+      "status": "unreviewed",
+      "notes": "INSTRUCTIVO.md lo mapea a src/components/TransactionEditDialog.vue, que YA NO EXISTE en el repo. Confirmar destino real (¿TransactionFormDialog.vue?) y actualizar."
+    },
+    {
+      "id": "transaction-detail-mobile",
+      "concept": "Detail sheet mobile",
+      "designPaths": ["ui_kits/mobile/components/TransactionDetailSheet.jsx"],
+      "vuePaths": [],
+      "status": "unreviewed"
+    },
+    {
+      "id": "transactions-view",
+      "concept": "Vista de transacciones (desktop + mobile)",
+      "designPaths": ["ui_kits/lite-desktop/templates/TransactionsRoute.jsx", "ui_kits/mobile/screens/TransactionsScreen.jsx"],
+      "vuePaths": ["src/pages/user/transactions/LiteTransactionsView.vue"],
+      "status": "accepted-ported"
+    },
+    {
+      "id": "jars-view",
+      "concept": "Vista de cántaros",
+      "designPaths": ["ui_kits/lite-desktop/templates/JarsRoute.jsx", "cantaros-mobile/"],
+      "vuePaths": ["src/pages/user/jars/LiteJarsView.vue"],
+      "status": "unreviewed"
+    },
+    {
+      "id": "home-lite",
+      "concept": "Home Lite desktop",
+      "designPaths": ["ui_kits/lite-desktop/templates/HomeRoute.jsx"],
+      "vuePaths": ["src/pages/user/LiteHomeView.vue"],
+      "status": "unreviewed"
+    },
+    {
+      "id": "home-pro",
+      "concept": "Home Pro desktop",
+      "designPaths": ["ui_kits/lite-desktop/templates/ProHomeRoute.jsx"],
+      "vuePaths": ["src/pages/user/ProHomeView.vue"],
+      "status": "unreviewed"
+    },
+    {
+      "id": "onboarding",
+      "concept": "Flujo de onboarding (desktop + mobile)",
+      "designPaths": ["onboarding/"],
+      "vuePaths": [],
+      "status": "unreviewed"
+    },
+    {
+      "id": "landing",
+      "concept": "Landing pública",
+      "designPaths": ["OW Finance - Landing.html"],
+      "vuePaths": ["src/pages/public/LandingPage.vue"],
+      "status": "unreviewed"
+    },
+    {
+      "id": "ds-primitives",
+      "concept": "Primitivos del design system (botones, chips, cards) + previews",
+      "designPaths": ["components/", "preview/"],
+      "vuePaths": [],
+      "status": "design-only",
+      "notes": "Referencia visual/tokens; en Vue se implementan con Quasar, no se portan 1:1."
+    },
+    {
+      "id": "archivo",
+      "concept": "Material archivado del diseño",
+      "designPaths": ["_archivo/"],
+      "vuePaths": [],
+      "status": "design-only"
+    }
+  ]
+}
