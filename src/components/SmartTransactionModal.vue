@@ -152,17 +152,26 @@
             <span class="stm-items-total-banner__amount">{{ formatMoney(itemsTotal) }}</span>
           </div>
 
-          <!-- OWF-179: tasa paralelo (actual) + tasa oficial (BCV) lado a lado si la moneda de la cuenta != USD -->
+          <!-- OWF-179/259: tasa paralelo (actual) + tasa oficial (BCV) lado a lado + equiv USD -->
           <div v-if="showDualRates" class="stm-row-2">
             <div class="stm-field">
               <label class="stm-label">Tasa paralelo (actual)</label>
               <input v-model.number="rateParalelo" type="number" step="0.0001" min="0"
                 placeholder="0.0000" class="stm-text-input" />
+              <span v-if="rateParalelo && rateParalelo > 0 && form.amount" class="stm-rate-equiv">
+                ≈ ${{ ((form.amount ?? 0) / rateParalelo).toFixed(2) }} USD
+              </span>
             </div>
             <div class="stm-field">
-              <label class="stm-label">Tasa oficial (BCV)</label>
+              <label class="stm-label">
+                Tasa oficial (BCV)
+                <span class="stm-badge-hoy">hoy</span>
+              </label>
               <input v-model.number="rateOficial" type="number" step="0.0001" min="0"
                 placeholder="0.0000" class="stm-text-input" />
+              <span v-if="rateOficial && rateOficial > 0 && form.amount" class="stm-rate-equiv">
+                ≈ ${{ ((form.amount ?? 0) / rateOficial).toFixed(2) }} USD
+              </span>
             </div>
           </div>
 
@@ -412,6 +421,7 @@
                 <input v-model="item.name" class="stm-text-input stm-text-input--flex" placeholder="Artículo" />
                 <input v-model.number="item.quantity" type="number" class="stm-text-input stm-text-input--qty" min="1" placeholder="Qty" />
                 <input v-model.number="item.price" type="number" class="stm-text-input stm-text-input--price" min="0" placeholder="Precio" />
+                <input v-model.number="item.tax" type="number" class="stm-text-input stm-text-input--tax" min="0" max="100" placeholder="IVA%" title="Impuesto %" />
                 <button class="stm-pro-rm" @click="facturaItems.splice(i, 1)">
                   <span class="material-icons" style="font-size:16px">close</span>
                 </button>
@@ -424,7 +434,7 @@
             <div class="stm-pro-summary">
               Total artículos: <strong>{{ formatMoney(itemsTotal) }}</strong>
             </div>
-            <button class="stm-pro-add" @click="facturaItems.push({ name: '', quantity: 1, price: 0, category_id: null })">
+            <button class="stm-pro-add" @click="facturaItems.push({ name: '', quantity: 1, price: 0, tax: 0, category_id: null })">
               <span class="material-icons" style="font-size:15px">add</span> Agregar artículo
             </button>
           </div>
@@ -510,6 +520,7 @@
           :adjuste-target-balance="adjusteTargetBalance"
           :adjuste-motivo="adjusteMotivo"
           :validation-errors="reviewValidationErrors"
+          :debug-payload="debugPayloadPreview"
         />
 
         <!-- Error -->
@@ -518,10 +529,11 @@
         <!-- Actions -->
         <div class="stm-footer">
           <button class="stm-btn stm-btn--ghost" @click="show = false">Cancelar</button>
-          <button class="stm-btn stm-btn--primary" :disabled="saving || !canSave" @click="save">
+          <button class="stm-btn stm-btn--primary" :class="{ 'stm-btn--success': savedFlash }" :disabled="saving || !canSave || savedFlash" @click="save">
             <q-spinner v-if="saving" size="16px" color="white" />
+            <q-icon v-else-if="savedFlash" name="check_circle" size="18px" />
             <q-icon v-else name="check" size="18px" />
-            {{ saving ? 'Guardando…' : 'Guardar' }}
+            {{ saving ? 'Guardando…' : savedFlash ? 'Registrado' : 'Guardar' }}
           </button>
         </div>
       </div>
@@ -748,8 +760,18 @@ const form = ref({
   tags: [] as number[],
 });
 
-const saving    = ref(false);
-const saveError = ref<string | null>(null);
+const saving     = ref(false);
+const savedFlash = ref(false);
+const saveError  = ref<string | null>(null);
+
+function emitSavedWithFlash() {
+  savedFlash.value = true;
+  emit('saved');
+  setTimeout(() => {
+    savedFlash.value = false;
+    ui.closeSmartModal();
+  }, 800);
+}
 
 // OWF-183: si la transacción afecta o no el saldo agregado de la cuenta
 const includeInBalance = ref(true);
@@ -859,11 +881,11 @@ const splitPagos = ref<{ account_id: number | null; amount: number; rate: number
 const splitTotal = computed(() => splitPagos.value.reduce((s, p) => s + (p.amount ?? 0), 0));
 
 // Items / factura
-const facturaItems = ref<{ name: string; quantity: number; price: number; category_id: number | null }[]>([
-  { name: '', quantity: 1, price: 0, category_id: null },
+const facturaItems = ref<{ name: string; quantity: number; price: number; tax: number; category_id: number | null }[]>([
+  { name: '', quantity: 1, price: 0, tax: 0, category_id: null },
 ]);
 const itemsTotal = computed(() =>
-  facturaItems.value.reduce((s, it) => s + (it.quantity ?? 0) * (it.price ?? 0), 0)
+  facturaItems.value.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.price) || 0) * (1 + (Number(it.tax) || 0) / 100), 0)
 );
 
 // Gasto compartido (divide entre categorías)
@@ -1030,6 +1052,17 @@ const typeIdFor = computed(() => {
 
 // ── OWF-184: TfReviewCard — helpers de preview y validación ───────────────
 const typeLabelForReview = computed(() => types.find(t => t.id === form.value.type)?.label ?? '');
+const debugPayloadPreview = computed(() => ({
+  type: form.value.type,
+  amount: form.value.amount,
+  name: form.value.name,
+  category_id: form.value.category_id,
+  account_id: form.value.account_id,
+  account_from_id: form.value.account_from_id,
+  account_to_id: form.value.account_to_id,
+  date: form.value.date,
+  tags: form.value.tags,
+}));
 const categoryName = computed(() => categories.value.find(c => c.id === form.value.category_id)?.name ?? null);
 const accountName = computed(() => findAccountById(form.value.account_id)?.name ?? null);
 const fromAccountName = computed(() => findAccountById(form.value.account_from_id)?.name ?? null);
@@ -1095,8 +1128,7 @@ async function save() {
     if (form.value.type === 'ajuste') {
       await saveAdjuste();
       $q.notify({ type: 'positive', message: 'Saldo ajustado' });
-      emit('saved');
-      ui.closeSmartModal();
+      emitSavedWithFlash();
       return;
     }
 
@@ -1152,7 +1184,8 @@ async function save() {
             return {
               name: it.name,
               quantity: it.quantity,
-              amount: it.quantity * it.price,
+              amount: (Number(it.quantity) || 0) * (Number(it.price) || 0) * (1 + (Number(it.tax) || 0) / 100),
+              tax_rate: Number(it.tax) || 0,
               category_id: it.category_id ?? null,
               jar_id: itemJar?.id ?? null,
             };
@@ -1183,8 +1216,7 @@ async function save() {
       await persistOfficialRateIfNeeded();
     }
     $q.notify({ type: 'positive', message: 'Movimiento guardado' });
-    emit('saved');
-    ui.closeSmartModal();
+    emitSavedWithFlash();
   } catch (err: unknown) {
     const e = err as { response?: { data?: { message?: string } } };
     saveError.value = e?.response?.data?.message ?? 'Error al guardar. Intenta de nuevo.';
@@ -1525,6 +1557,27 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   &--req { color: var(--expense, #ef4444); font-weight: 700; }
 }
 
+.stm-rate-equiv {
+  font-size: 11px;
+  color: var(--fg-3, #94a3b8);
+  margin-top: 3px;
+  display: block;
+}
+
+.stm-badge-hoy {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--income-soft, rgba(16,185,129,.15));
+  color: var(--income-fg, #059669);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 // ── OWF-280: Amount hero con currency pills ──
 .stm-amount-field {
   display: flex;
@@ -1742,6 +1795,11 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
     background: linear-gradient(90deg, #7c3aed, #2563eb);
     color: #fff;
     &:disabled { opacity: .5; cursor: not-allowed; }
+  }
+
+  &--success {
+    background: var(--income, #10b981) !important;
+    box-shadow: 0 4px 14px rgba(16,185,129,.3) !important;
   }
 }
 
@@ -2128,6 +2186,7 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 .stm-text-input--flex  { flex: 1; min-width: 0; }
 .stm-text-input--qty   { width: 56px; flex-shrink: 0; }
 .stm-text-input--price { width: 80px; flex-shrink: 0; }
+.stm-text-input--tax   { width: 58px; flex-shrink: 0; }
 
 .stm-jar-chip { margin-top: 8px; }
 

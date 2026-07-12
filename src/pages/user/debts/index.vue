@@ -212,6 +212,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
@@ -219,8 +220,9 @@ import DebtCard from './DebtCard.vue';
 
 defineOptions({ name: 'DebtsPage' });
 
-const $q  = useQuasar();
-const ui  = useUiStore();
+const $q    = useQuasar();
+const ui    = useUiStore();
+const route = useRoute();
 
 // ── Types ────────────────────────────────────────────────────────────────
 interface Debt {
@@ -316,7 +318,10 @@ async function loadDebts() {
   finally { loading.value = false; }
 }
 
-onMounted(() => void loadDebts());
+onMounted(async () => {
+  await loadDebts();
+  if (route.query.quickAction === 'pay') openPayDialog();
+});
 
 // ── Form open/save ────────────────────────────────────────────────────────
 function openForm(debt: Debt | null) {

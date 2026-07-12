@@ -19,11 +19,18 @@
         {{ err }}
       </li>
     </ul>
+    <div v-if="debugPayload != null" class="tf-review-card__debug">
+      <button class="tf-review-card__debug-btn" @click="showPayload = !showPayload">
+        <q-icon :name="showPayload ? 'expand_less' : 'expand_more'" size="14px" />
+        Ver payload
+      </button>
+      <pre v-if="showPayload" class="tf-review-card__debug-pre">{{ JSON.stringify(debugPayload, null, 2) }}</pre>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface Props {
   typeLabel: string;
@@ -40,11 +47,14 @@ interface Props {
   adjusteTargetBalance?: number | null;
   adjusteMotivo?: string;
   validationErrors: string[];
+  debugPayload?: unknown;
 }
 
 defineOptions({ name: 'TfReviewCard' });
 
 const props = defineProps<Props>();
+
+const showPayload = ref(false);
 
 type ReviewState = 'draft' | 'valid' | 'error';
 
@@ -143,5 +153,33 @@ const summaryText = computed(() => {
 .tf-review-card__errors {
   margin: 0;
   padding-left: 18px;
+}
+.tf-review-card__debug {
+  margin-top: 10px;
+  border-top: 1px dashed rgba(0,0,0,.1);
+  padding-top: 6px;
+}
+.tf-review-card__debug-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: #64748b;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  &:hover { color: #334155; }
+}
+.tf-review-card__debug-pre {
+  margin: 6px 0 0;
+  font-size: 10.5px;
+  background: rgba(0,0,0,.04);
+  border-radius: 6px;
+  padding: 8px;
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 200px;
+  overflow-y: auto;
 }
 </style>

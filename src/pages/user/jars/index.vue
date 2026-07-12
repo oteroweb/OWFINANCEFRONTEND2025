@@ -1242,7 +1242,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from 'stores/auth';
 import { usePeriodStore } from 'stores/period';
-import { useQuasar } from 'quasar';
+import { useQuasar, Notify } from 'quasar';
 import { useI18n } from 'vue-i18n';
 import { api } from 'boot/axios';
 import { useJarsStore } from 'stores/jars';
@@ -3372,6 +3372,10 @@ function onTransactionsChangedEvent() {
 
 onMounted(() => {
   applyPeriodFromQuery();
+
+  if (route.query.quickAction === 'deposit') {
+    Notify.create({ type: 'info', icon: 'savings', message: 'Seleccioná un jar para hacer tu aporte', timeout: 4000 });
+  }
 
   // Listen for transaction create/update/delete events
   window.addEventListener('ow:transactions:changed', onTransactionsChangedEvent);
