@@ -885,7 +885,7 @@ const facturaItems = ref<{ name: string; quantity: number; price: number; tax: n
   { name: '', quantity: 1, price: 0, tax: 0, category_id: null },
 ]);
 const itemsTotal = computed(() =>
-  facturaItems.value.reduce((s, it) => s + (it.quantity ?? 0) * (it.price ?? 0) * (1 + (it.tax ?? 0) / 100), 0)
+  facturaItems.value.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.price) || 0) * (1 + (Number(it.tax) || 0) / 100), 0)
 );
 
 // Gasto compartido (divide entre categorías)
@@ -1184,8 +1184,8 @@ async function save() {
             return {
               name: it.name,
               quantity: it.quantity,
-              amount: it.quantity * it.price * (1 + (it.tax ?? 0) / 100),
-              tax_rate: it.tax ?? 0,
+              amount: (Number(it.quantity) || 0) * (Number(it.price) || 0) * (1 + (Number(it.tax) || 0) / 100),
+              tax_rate: Number(it.tax) || 0,
               category_id: it.category_id ?? null,
               jar_id: itemJar?.id ?? null,
             };
