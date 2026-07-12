@@ -260,6 +260,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { Notify } from 'quasar'
 import { useQuasar } from 'quasar'
 import { useDreamsStore, type Dream } from 'src/stores/dreams'
 import { useUiStore } from 'stores/ui'
@@ -269,6 +271,7 @@ defineOptions({ name: 'DreamsPage' })
 const $q = useQuasar()
 const store = useDreamsStore()
 const ui = useUiStore()
+const route = useRoute()
 
 const COLORS = ['#2D4DA6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#F97316']
 
@@ -277,6 +280,9 @@ const meta = store.$state.meta ? ref(store.$state.meta) : ref(null as null | typ
 onMounted(async () => {
   await store.fetchAll()
   meta.value = store.meta
+  if (route.query.quickAction === 'contribute') {
+    Notify.create({ type: 'info', icon: 'auto_awesome', message: 'Seleccioná un sueño para hacer tu aporte', timeout: 4000 })
+  }
 })
 
 // ── Format ──────────────────────────────────────────────

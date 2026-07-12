@@ -162,10 +162,16 @@ function choose(methodId: MethodId) {
   onClose();
 }
 
+const PLAN_ACTIONS: Record<PlanId, string> = {
+  debt: 'pay',
+  dream: 'contribute',
+  jar: 'deposit',
+};
+
 async function choosePlan(planId: PlanId) {
   const plan = PLANS.find((p) => p.id === planId);
   onClose();
-  if (plan) await router.push(plan.route);
+  if (plan) await router.push({ path: plan.route, query: { quickAction: PLAN_ACTIONS[planId] } });
 }
 
 async function openAI() {
