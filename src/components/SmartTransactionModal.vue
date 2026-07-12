@@ -55,7 +55,29 @@
           <div class="stm-field">
             <label class="stm-label">Cuenta a ajustar</label>
             <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
-              placeholder="Seleccionar…" />
+              placeholder="Seleccionar…">
+              <template v-slot:selected-item="scope">
+                <span class="stm-acct-line">
+                  <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                  <span class="stm-acct-name">{{ scope.opt.label }}<template v-if="scope.opt.currencyCode"> · {{ scope.opt.currencyCode }}</template></span>
+                  <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                </span>
+              </template>
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section side>
+                    <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.label }}</q-item-label>
+                    <q-item-label caption>{{ scope.opt.currencyCode }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
           </div>
           <div class="stm-field">
             <label class="stm-label">Saldo objetivo</label>
@@ -99,6 +121,20 @@
               <q-select v-model="form.account_from_id" :options="accountOptions" emit-value map-options dense outlined
                 placeholder="Cuenta origen…">
                 <template v-slot:prepend><q-icon name="arrow_upward" color="negative" /></template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section side>
+                      <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.label }}</q-item-label>
+                      <q-item-label caption>{{ scope.opt.currencyCode }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                    </q-item-section>
+                  </q-item>
+                </template>
               </q-select>
             </div>
             <div class="stm-transfer-arrow">
@@ -109,6 +145,20 @@
               <q-select v-model="form.account_to_id" :options="accountToOptions" emit-value map-options dense outlined
                 placeholder="Cuenta destino…">
                 <template v-slot:prepend><q-icon name="arrow_downward" color="positive" /></template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section side>
+                      <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.label }}</q-item-label>
+                      <q-item-label caption>{{ scope.opt.currencyCode }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                    </q-item-section>
+                  </q-item>
+                </template>
               </q-select>
             </div>
           </div>
@@ -135,10 +185,33 @@
         <!-- Gasto / Ingreso -->
         <template v-else>
           <!-- Cuenta primero: define la moneda del movimiento (ya no se elige a mano) -->
+          <!-- OWF-296: punto de color + nombre · moneda + saldo a la derecha (como Picker del rediseño) -->
           <div class="stm-field" v-if="!splitOn">
             <label class="stm-label">Cuenta de origen <span class="stm-label--req">*</span></label>
             <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
-              placeholder="Seleccionar…" />
+              placeholder="Seleccionar…">
+              <template v-slot:selected-item="scope">
+                <span class="stm-acct-line">
+                  <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                  <span class="stm-acct-name">{{ scope.opt.label }}<template v-if="scope.opt.currencyCode"> · {{ scope.opt.currencyCode }}</template></span>
+                  <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                </span>
+              </template>
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section side>
+                    <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt.label }}</q-item-label>
+                    <q-item-label caption>{{ scope.opt.currencyCode }}</q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                  </q-item-section>
+                </q-item>
+              </template>
+            </q-select>
           </div>
 
           <!-- OWF-280: Amount hero -->
@@ -192,6 +265,8 @@
           <div class="stm-field">
             <label class="stm-label">Cántaro</label>
             <AnchoredJarChip :category-id="form.category_id" class="stm-jar-chip" />
+            <!-- OWF-296: hint como en el rediseño (Field hint="Anclado a la categoría") -->
+            <span class="stm-hint">Anclado a la categoría</span>
           </div>
         </div>
         <div v-if="isLiteLayout && form.type === 'income' && !itemsOn" class="stm-field">
@@ -220,6 +295,7 @@
                 <q-icon name="add" size="13px" /> Nuevo proveedor
               </button>
             </div>
+            <!-- OWF-296: "Sin proveedor" como valor default visible (rediseño: provOpts[0] = { value:null, label:'Sin proveedor', icon:'block' }) -->
             <q-select
               v-if="!showNewProviderForm"
               v-model="form.provider_id"
@@ -228,12 +304,12 @@
               use-input
               clearable
               dense outlined
-              placeholder="Buscar proveedor…"
+              :display-value="providerDisplayValue"
               option-value="id"
               option-label="name"
               @filter="filterProviders"
             >
-              <template v-slot:prepend><q-icon name="storefront" /></template>
+              <template v-slot:prepend><q-icon :name="form.provider_id != null ? 'storefront' : 'block'" /></template>
             </q-select>
             <div v-else class="stm-new-tag-form">
               <input v-model="newProviderName" class="stm-text-input stm-text-input--flex" placeholder="Nombre del proveedor" @keydown.enter.prevent="createProvider" />
@@ -274,22 +350,29 @@
           <input v-if="dateShortcut === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
         </div>
 
-        <!-- Etiquetas -->
+        <!-- Etiquetas — OWF-296: header "ETIQUETAS" + hint contextual + chips con color semántico
+             siempre visible (rediseño TfTags: borde color-mix 34%, fondo 7%, activo = fondo pleno) -->
         <div class="stm-field">
-          <label class="stm-label">Etiquetas <span class="stm-label--opt">(opcional)</span></label>
+          <div class="stm-tags-head">
+            <label class="stm-label stm-label--tags">Etiquetas</label>
+            <span class="stm-tags-hint">{{ tagsHint }}</span>
+          </div>
           <div class="stm-tags-row">
             <button
               v-for="tag in visibleTags"
               :key="tag.id"
               type="button"
+              :title="tag.description ?? ''"
               class="stm-tag-chip"
               :class="{ 'stm-tag-chip--active': form.tags.includes(tag.id) }"
-              :style="form.tags.includes(tag.id)
-                ? { background: `color-mix(in srgb, ${tag.color} 18%, transparent)`, borderColor: tag.color, color: tag.color }
-                : {}"
+              :style="tagChipStyle(tag)"
               @click="toggleTag(tag.id)"
+              @mouseenter="hoveredTagId = tag.id"
+              @mouseleave="hoveredTagId = null"
+              @focus="hoveredTagId = tag.id"
+              @blur="hoveredTagId = null"
             >
-              <span class="material-icons" style="font-size:14px">{{ tag.icon }}</span>
+              <span class="material-icons" style="font-size:15px" :style="{ color: form.tags.includes(tag.id) ? '#fff' : tagColor(tag) }">{{ tag.icon }}</span>
               {{ tag.name }}
             </button>
             <button
@@ -520,7 +603,8 @@
           </div>
         </div>
 
-        <!-- OWF-184: preview en lenguaje natural + validaciones + estados draft/valid/error -->
+        <!-- OWF-184: preview en lenguaje natural + validaciones + estados draft/valid/error
+             OWF-296: look del rediseño (ojo + eyebrow "VAS A REGISTRAR" + fraseo de tx-summary.js) -->
         <TfReviewCard
           :type-label="typeLabelForReview"
           :is-adjuste="form.type === 'ajuste'"
@@ -537,6 +621,11 @@
           :adjuste-motivo="adjusteMotivo"
           :validation-errors="reviewValidationErrors"
           :debug-payload="debugPayloadPreview"
+          :accent="typeAccent"
+          :currency-symbol="reviewCurrencySymbol"
+          :jar-name="jarNameForReview"
+          :cross-arrives-amount="form.type === 'transfer' && transferIsCrossCurrency && transferRate ? transferConvertedAmount : null"
+          :to-currency-symbol="toAccountCurrencySymbol"
         />
 
         <!-- Error -->
@@ -822,6 +911,16 @@ async function filterProviders(val: string, update: (fn: () => void) => void) {
   }
 }
 
+// OWF-296: "Sin proveedor" como valor default visible (rediseño). Se cachea el nombre
+// del proveedor elegido porque providerOptions se vacía entre búsquedas.
+const selectedProviderName = ref<string | null>(null)
+watch(() => form.value.provider_id, (id) => {
+  if (id == null) { selectedProviderName.value = null; return }
+  const p = providerOptions.value.find(pp => pp.id === id)
+  if (p) selectedProviderName.value = p.name
+})
+const providerDisplayValue = computed(() => selectedProviderName.value ?? 'Sin proveedor')
+
 // OWF-264: crear proveedor nuevo directamente desde el formulario.
 const showNewProviderForm = ref(false)
 const newProviderName = ref('')
@@ -863,6 +962,32 @@ function toggleTag(id: number) {
   if (idx === -1) form.value.tags.push(id)
   else form.value.tags.splice(idx, 1)
 }
+
+// OWF-296: chips con color semántico + hint contextual (rediseño TfTags)
+const hoveredTagId = ref<number | null>(null)
+
+function tagColor(tag: { color?: string | null }) {
+  return tag.color || 'var(--brand-primary)'
+}
+
+function tagChipStyle(tag: { id: number; color?: string | null }) {
+  const c = tagColor(tag)
+  return form.value.tags.includes(tag.id)
+    ? { background: c, borderColor: c, color: '#fff' }
+    : {
+        background: `color-mix(in srgb, ${c} 7%, var(--surface-1))`,
+        borderColor: `color-mix(in srgb, ${c} 34%, var(--border-hairline))`,
+        color: 'var(--fg-1)',
+      }
+}
+
+const tagsHint = computed(() => {
+  const hovered = visibleTags.value.find(t => t.id === hoveredTagId.value)
+  if (hovered?.description) return hovered.description
+  const n = form.value.tags.length
+  if (n) return `${n} ${n === 1 ? 'seleccionada' : 'seleccionadas'}`
+  return 'Toca para clasificar el movimiento'
+})
 
 const showNewTagForm = ref(false)
 const newTagName = ref('')
@@ -956,6 +1081,7 @@ interface UserAccount {
   name: string;
   balance?: number;
   balance_cached?: number;
+  color?: string | null;
   currency?: { id?: number; code?: string; symbol?: string };
 }
 function allUserAccounts(): UserAccount[] {
@@ -965,10 +1091,20 @@ function findAccountById(id: number | null | undefined): UserAccount | undefined
   if (!id) return undefined;
   return allUserAccounts().find(a => a.id === id);
 }
+// OWF-296: saldo formateado como tfMoney del rediseño (NBSP entre símbolo y cifra)
+function formatBalance(n: number, sym: string) {
+  return `${sym}\u00A0${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+// OWF-296: opciones enriquecidas (color + moneda + saldo) para el selector estilo Picker del rediseño.
+// Nota: `accounts` no tiene columna color en el backend hoy — fallback var(--brand-primary),
+// mismo patrón que AccountFilterWidget (`acct.color || 'var(--brand-primary)'`).
 const accountOptions = computed(() =>
   allUserAccounts().map((a) => ({
-    label: `${a.name}${a.currency?.code ? ` (${a.currency.code})` : ''}`,
+    label: a.name,
     value: a.id,
+    color: a.color || null,
+    currencyCode: a.currency?.code ?? '',
+    balanceLabel: formatBalance(Number(a.balance ?? a.balance_cached ?? 0), a.currency?.symbol || '$'),
   }))
 );
 
@@ -1093,6 +1229,19 @@ const typeIdFor = computed(() => {
 
 // ── OWF-184: TfReviewCard — helpers de preview y validación ───────────────
 const typeLabelForReview = computed(() => types.find(t => t.id === form.value.type)?.label ?? '');
+// OWF-296: accent por tipo (mismos colores que .stm-type-btn--active) + datos para el
+// fraseo de tx-summary.js del rediseño (símbolo real de la cuenta + cántaro anclado).
+const typeAccent = computed(() => (
+  { expense: '#ef4444', income: '#10b981', transfer: '#8b5cf6', ajuste: '#f59e0b' }[form.value.type]
+));
+const reviewCurrencySymbol = computed(() => {
+  const acc = form.value.type === 'transfer'
+    ? findAccountById(form.value.account_from_id)
+    : findAccountById(form.value.account_id);
+  return acc?.currency?.symbol || '$';
+});
+const toAccountCurrencySymbol = computed(() => findAccountById(form.value.account_to_id)?.currency?.symbol || '$');
+const jarNameForReview = computed(() => jarForCategory(form.value.category_id ?? null, getCachedJars())?.name ?? null);
 const debugPayloadPreview = computed(() => ({
   type: form.value.type,
   amount: form.value.amount,
@@ -1629,6 +1778,49 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   display: block;
 }
 
+// OWF-296: hint bajo un campo (rediseño: Field hint)
+.stm-hint {
+  display: block;
+  font-size: 11.5px;
+  color: var(--fg-3, #94a3b8);
+  margin-top: 4px;
+}
+
+// OWF-296: selector de cuenta estilo Picker del rediseño (dot 9px radius 3 + saldo tabular a la derecha)
+.stm-acct-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.stm-acct-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+}
+
+.stm-acct-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg-1, #0f172a);
+}
+
+.stm-acct-balance {
+  font-family: var(--font-money, monospace);
+  font-size: 12px;
+  color: var(--fg-2, #64748b);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .stm-badge-hoy {
   display: inline-block;
   font-size: 9px;
@@ -1963,14 +2155,15 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 }
 
 // ── Pro features ────────────────────────────────────────────────────────────
-// OWF-286: fila en desktop (3 columnas, como rowDir='row' en rediseno), columna en mobile
+// OWF-286/296: SIEMPRE 3 columnas en desktop (rowDir='row' en rediseno). Con flex
+// `1 1 140px` el min-content de cada card (icono + q-toggle) superaba el ancho
+// disponible y la fila se partía en 2+1 — grid con minmax(0,1fr) fuerza 3 columnas.
 .stm-pro-card-toggles {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 
-  .stm-wrap--mobile & { flex-direction: column; flex-wrap: nowrap; }
+  .stm-wrap--mobile & { display: flex; flex-direction: column; }
 }
 
 .stm-pro-card-toggle {
@@ -1981,8 +2174,17 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   padding: 12px 14px;
 
   .stm-pro-card-toggles & {
-    flex: 1 1 140px;
     width: auto;
+    min-width: 0;
+    gap: 8px;
+    padding: 10px 10px;
+
+    .stm-pro-card-toggle__icon { width: 28px; height: 28px; }
+    .stm-pro-card-toggle__sub {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
   border: 1px solid var(--border-hairline, #e2e8f0);
   border-radius: var(--radius-md, 12px);
@@ -2255,33 +2457,60 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 
 .stm-jar-chip { margin-top: 8px; }
 
-// ── Tags ────────────────────────────────────────────────────────────────────
+// ── Tags — OWF-296: look del rediseño TfTags ────────────────────────────────
+.stm-tags-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stm-label--tags {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--fg-3, #94a3b8);
+}
+
+.stm-tags-hint {
+  font-size: 11.5px;
+  color: var(--fg-3, #94a3b8);
+  min-height: 15px;
+  text-align: right;
+  text-wrap: pretty;
+}
+
 .stm-tags-row {
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   overflow-x: auto;
   white-space: nowrap;
-  padding-bottom: 2px;
+  padding: 2px 0 5px;
+
+  &::-webkit-scrollbar { height: 5px; }
+  &::-webkit-scrollbar-thumb { background: var(--border-hairline, #e2e8f0); border-radius: 99px; }
 }
 
 .stm-tag-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 11px;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 7px 13px 7px 10px;
   border-radius: 999px;
   border: 1px solid var(--border-hairline, #e2e8f0);
   background: transparent;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--fg-2, #64748b);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-1, #0f172a);
   cursor: pointer;
-  transition: all 120ms;
+  transition: background 140ms, border-color 140ms, color 140ms;
 
   &--active { font-weight: 700; }
-  &--add { color: var(--fg-3, #94a3b8); border-style: dashed; }
+  &--add { color: var(--fg-3, #94a3b8); border-style: dashed; padding: 7px 13px; font-weight: 600; }
   &--add:hover { color: var(--fg-2); border-color: var(--fg-3); }
 }
 
