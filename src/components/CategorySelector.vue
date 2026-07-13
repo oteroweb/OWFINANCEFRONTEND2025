@@ -20,7 +20,7 @@
     </button>
 
     <!-- Popover -->
-    <Teleport to="body">
+    <Teleport :to="teleportTarget">
       <div v-if="open" class="cat-sel__popover" :style="popoverStyle">
         <!-- Search always visible -->
         <div class="cat-sel__search-wrap">
@@ -169,8 +169,22 @@ const rootRef   = ref<HTMLElement | null>(null);
 const searchRef = ref<HTMLInputElement | null>(null);
 const popoverStyle = ref<Record<string, string>>({});
 
+// Teleporting straight to <body> escapes QDialog's DOM subtree, so Quasar's dialog
+// focus-trap treats any focus landing in the popover as "focus left the dialog" and
+// yanks it back to the dialog's own fields (search input becomes unfocusable/unclickable
+// whenever this selector is used inside a QDialog). Teleport into the dialog's own
+// `.q-dialog__inner` instead — it's `position:fixed` full-viewport, same coordinate
+// space as body, but stays inside the dialog's DOM so the focus trap leaves it alone.
+const teleportTarget = ref<string | HTMLElement>('body');
+const teleportsToFixedContainer = ref(false);
+
 // ── data ─────────────────────────────────────────────────────────────────────
 onMounted(async () => {
+  const dialogInner = rootRef.value?.closest('.q-dialog__inner') as HTMLElement | null;
+  if (dialogInner) {
+    teleportTarget.value = dialogInner;
+    teleportsToFixedContainer.value = true;
+  }
   if (!ttypes.types.length) void ttypes.fetchTransactionTypes();
   const [, jars] = await Promise.all([loadCategoriesWithJars(), loadUserJars()]);
   _cachedJars.value = jars;
@@ -326,15 +340,21 @@ function positionPopover() {
   const spaceAbove = rect.top;
   const openBelow = spaceBelow >= 320 || spaceBelow >= spaceAbove;
   const maxHeight = Math.min(420, Math.max(200, (openBelow ? spaceBelow : spaceAbove) - margin * 2));
+  // getBoundingClientRect() is always viewport-relative. When teleporting into
+  // `.q-dialog__inner` (position:fixed, same coordinate space as the viewport) the
+  // scroll offset must NOT be added — only add it for the `document.body` fallback,
+  // which participates in normal page scroll.
+  const scrollX = teleportsToFixedContainer.value ? 0 : window.scrollX;
+  const scrollY = teleportsToFixedContainer.value ? 0 : window.scrollY;
   // top is always clamped to stay within the viewport (never negative / never
   // hidden behind the fixed app header), regardless of which side it opens on.
   const top = openBelow
-    ? rect.bottom + margin + window.scrollY
-    : Math.max(margin + window.scrollY, rect.top + window.scrollY - margin - maxHeight);
+    ? rect.bottom + margin + scrollY
+    : Math.max(margin + scrollY, rect.top + scrollY - margin - maxHeight);
   popoverStyle.value = {
     position: 'absolute',
     top: `${top}px`,
-    left: `${rect.left + window.scrollX}px`,
+    left: `${rect.left + scrollX}px`,
     width: `${Math.max(rect.width, 320)}px`,
     maxHeight: `${maxHeight}px`,
     zIndex: '9999',
