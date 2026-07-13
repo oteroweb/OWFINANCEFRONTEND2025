@@ -302,15 +302,24 @@ function pick(id: number | null) {
 function positionPopover() {
   if (!rootRef.value) return;
   const rect = rootRef.value.getBoundingClientRect();
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const top = spaceBelow > 320 ? `${rect.bottom + 8 + window.scrollY}px` : `${rect.top + window.scrollY - 8}px`;
+  const margin = 8;
+  const viewportH = window.innerHeight;
+  const spaceBelow = viewportH - rect.bottom;
+  const spaceAbove = rect.top;
+  const openBelow = spaceBelow >= 320 || spaceBelow >= spaceAbove;
+  const maxHeight = Math.min(420, Math.max(200, (openBelow ? spaceBelow : spaceAbove) - margin * 2));
+  // top is always clamped to stay within the viewport (never negative / never
+  // hidden behind the fixed app header), regardless of which side it opens on.
+  const top = openBelow
+    ? rect.bottom + margin + window.scrollY
+    : Math.max(margin + window.scrollY, rect.top + window.scrollY - margin - maxHeight);
   popoverStyle.value = {
     position: 'absolute',
-    top,
+    top: `${top}px`,
     left: `${rect.left + window.scrollX}px`,
     width: `${Math.max(rect.width, 320)}px`,
+    maxHeight: `${maxHeight}px`,
     zIndex: '9999',
-    transform: spaceBelow > 320 ? 'none' : 'translateY(-100%)',
   };
 }
 
