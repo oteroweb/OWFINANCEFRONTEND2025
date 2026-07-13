@@ -5,19 +5,19 @@
     <span class="ajc__text">El cántaro entra con la categoría</span>
   </div>
 
-  <!-- Estado 2: categoría sin jar -->
-  <div v-else-if="!jar" class="ajc ajc--none">
+  <!-- Estado 2: categoría sin jar (ni real ni por slug legado) -->
+  <div v-else-if="!jar && !fallbackJarName" class="ajc ajc--none">
     <span class="material-icons ajc__icon">block</span>
     <span class="ajc__text">Esta categoría no aporta a ningún cántaro</span>
   </div>
 
-  <!-- Estado 3: jar anclado -->
+  <!-- Estado 3: jar anclado (real o por fallback de slug legado) -->
   <div v-else class="ajc ajc--jar" :style="jarStyle">
     <span class="ajc__badge" :style="badgeStyle">
-      <span class="material-icons ajc__badge-icon">{{ jar.icon ?? 'savings' }}</span>
+      <span class="material-icons ajc__badge-icon">{{ jar?.icon ?? 'savings' }}</span>
     </span>
-    <span class="ajc__name">{{ jar.name }}</span>
-    <span v-if="jar.percent" class="ajc__pct">{{ jar.percent }}%</span>
+    <span class="ajc__name">{{ jar?.name ?? fallbackJarName }}</span>
+    <span v-if="jar?.percent" class="ajc__pct">{{ jar.percent }}%</span>
     <span class="material-icons ajc__lock">lock</span>
   </div>
 </template>
@@ -29,6 +29,8 @@ import {
   loadCategoriesWithJars,
   loadUserJars,
   getCachedJars,
+  getCachedCategories,
+  JAR_SLUG_NAMES,
   type JarRef,
 } from 'src/utils/txCatalog';
 
@@ -41,16 +43,43 @@ const jar = computed<JarRef | null>(() => {
   return jarForCategory(props.categoryId, getCachedJars());
 });
 
+// OWF: cuando la categoría no tiene un jar real asignado (assigned_jar_id null / sin
+// cántaro con ese nombre en la cuenta) pero sí tiene un jar_slug legado, mostrar el mismo
+// nombre+color que ya usa el picker de categorías (CategorySelector.vue `jarLabelForCat`/
+// `jarColorForCat`) en vez de "no aporta a ningún cántaro" — antes el picker agrupaba la
+// categoría bajo un cántaro pero este chip decía lo contrario para la misma categoría.
+const FALLBACK_SLUG_COLORS: Record<string, string> = {
+  necesidades: '#2d4da6',
+  diversion:   '#f59e0b',
+  ahorro:      '#10b981',
+  educacion:   '#8b5cf6',
+  reservas:    '#64748b',
+};
+const category = computed(() => {
+  if (!props.categoryId) return null;
+  return getCachedCategories().find(c => c.id === props.categoryId) ?? null;
+});
+const fallbackJarName = computed(() => {
+  if (jar.value) return null;
+  const slug = category.value?.jar_slug;
+  return slug ? (JAR_SLUG_NAMES[slug] ?? null) : null;
+});
+const fallbackJarColor = computed(() => {
+  const slug = category.value?.jar_slug;
+  return slug ? (FALLBACK_SLUG_COLORS[slug] ?? null) : null;
+});
+
 const jarStyle = computed(() => {
-  if (!jar.value?.color) return {};
+  const color = jar.value?.color ?? fallbackJarColor.value;
+  if (!color) return {};
   return {
-    background: `color-mix(in srgb, ${jar.value.color} 10%, var(--surface-1, #fff))`,
-    border: `1px solid color-mix(in srgb, ${jar.value.color} 28%, transparent)`,
+    background: `color-mix(in srgb, ${color} 10%, var(--surface-1, #fff))`,
+    border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
   };
 });
 
 const badgeStyle = computed(() => ({
-  background: jar.value?.color ?? 'var(--brand-primary)',
+  background: jar.value?.color ?? fallbackJarColor.value ?? 'var(--brand-primary)',
 }));
 
 onMounted(async () => {

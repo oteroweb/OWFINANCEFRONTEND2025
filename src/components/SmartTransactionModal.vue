@@ -716,7 +716,7 @@
           :type-label="typeLabelForReview"
           :is-adjuste="form.type === 'ajuste'"
           :is-transfer="form.type === 'transfer'"
-          :amount="form.type === 'ajuste' ? adjusteDiff : form.amount"
+          :amount="form.type === 'ajuste' ? adjusteDiff : amountWithCommission"
           :name="form.name"
           :category-name="categoryName"
           :account-name="accountName"
@@ -1150,6 +1150,12 @@ const comisionCalculada = computed(() => {
   if (comision.value.tipo === 'pagomovil')  return (base * PAGOMOVIL_PCT) / 100;
   return 0;
 });
+// OWF: monto base + comisión cuando el panel "Cobrar comisión" está activo — usado tanto
+// para el preview (TfReviewCard) como para el guardado, para que ambos coincidan en TODOS
+// los tipos (antes solo se aplicaba al guardar Gasto/Ingreso; Transferir lo ignoraba por
+// completo pese a mostrar "Total" con comisión en el panel).
+const commissionActive = computed(() => isProMode.value && proPanel.value === 'comision' && comisionCalculada.value > 0);
+const amountWithCommission = computed(() => (form.value.amount ?? 0) + (commissionActive.value ? comisionCalculada.value : 0));
 
 // Split
 const splitPagos = ref<{ account_id: number | null; amount: number; rate: number }[]>([
@@ -1485,16 +1491,21 @@ async function save() {
 
     if (form.value.type === 'transfer') {
       const tRate = Number(transferRate.value || 1);
-      const fromAmt = Math.abs(rawAmt); // amount in FROM account's currency
+      const baseAmt = Math.abs(rawAmt); // monto ingresado, en la moneda de la cuenta origen
+      // OWF: la comisión (si el panel "Cobrar comisión" está activo) se descuenta de la
+      // cuenta origen igual que en Gasto/Ingreso, pero NO infla lo que recibe la cuenta
+      // destino — es un cargo del banco/plataforma sobre la transferencia, no parte del
+      // monto transferido. Antes se ignoraba por completo en Transferir.
+      const fromAmt = commissionActive.value ? baseAmt + comisionCalculada.value : baseAmt; // amount in FROM account's currency
       const fromIsUSD = (transferFromCurrency.value || '').toUpperCase() === 'USD';
       // transactions.amount is always the USD equivalent
       const usdAmt = (transferIsCrossCurrency.value && tRate > 0)
         ? (fromIsUSD ? fromAmt : fromAmt / tRate)
         : fromAmt;
-      // TO payment amount in TO account's currency
+      // TO payment amount in TO account's currency — basado en el monto SIN comisión
       const toAmt = (transferIsCrossCurrency.value && tRate > 0)
-        ? (fromIsUSD ? fromAmt * tRate : fromAmt / tRate)
-        : fromAmt;
+        ? (fromIsUSD ? baseAmt * tRate : baseAmt / tRate)
+        : baseAmt;
       payload.amount = usdAmt;
       payload.payments = [
         { account_id: form.value.account_from_id, amount: -fromAmt, rate: tRate },
@@ -1530,9 +1541,7 @@ async function save() {
       // Pro: monto final — items suma sus líneas, comisión se suma al monto base
       const finalAmount = itemsOn.value
         ? itemsTotal.value
-        : (isProMode.value && proPanel.value === 'comision' && comisionCalculada.value > 0)
-          ? (form.value.amount ?? 0) + comisionCalculada.value
-          : form.value.amount;
+        : amountWithCommission.value;
 
       payload.amount = finalAmount;
       payload.category_id = form.value.category_id ?? null;
