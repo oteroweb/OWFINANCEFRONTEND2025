@@ -1155,14 +1155,29 @@ const comisionCalculada = computed(() => {
 // los tipos (antes solo se aplicaba al guardar Gasto/Ingreso; Transferir lo ignoraba por
 // completo pese a mostrar "Total" con comisión en el panel).
 const commissionActive = computed(() => isProMode.value && proPanel.value === 'comision' && comisionCalculada.value > 0);
-const amountWithCommission = computed(() => (form.value.amount ?? 0) + (commissionActive.value ? comisionCalculada.value : 0));
+const amountWithCommission = computed(() => {
+  // OWF: en modo Items el monto real es itemsTotal (el Monto hero queda oculto) — usar
+  // form.amount aquí hacía que el preview "Vas a registrar" mostrara siempre $0.00.
+  const base = itemsOn.value ? itemsTotal.value : (form.value.amount ?? 0);
+  return base + (commissionActive.value ? comisionCalculada.value : 0);
+});
 
 // Split
 const splitPagos = ref<{ account_id: number | null; amount: number; rate: number }[]>([
   { account_id: null, amount: 0, rate: 1 },
   { account_id: null, amount: 0, rate: 1 },
 ]);
-const splitTotal = computed(() => splitPagos.value.reduce((s, p) => s + (p.amount ?? 0), 0));
+// OWF: cada fila puede estar en una moneda distinta a USD (con su propia tasa) — sumar el
+// monto crudo sin convertir mezclaba unidades (ej. 20 USD + 1500 VES = "1520", cuando el
+// equivalente real es 20 + 10 = 30 USD). El equivalente por fila ya se mostraba bien junto al
+// campo Tasa (`pago.amount / pago.rate`); `splitTotal` ahora usa la misma conversión, ya que
+// se compara contra `form.amount` (USD) tanto en la UI ("Suma") como en la validación de guardado.
+const splitTotal = computed(() => splitPagos.value.reduce((s, p) => {
+  const currency = splitAccountCurrency(p.account_id);
+  const rate = p.rate || 1;
+  const usdEquiv = (currency && currency !== 'USD' && rate > 0) ? (p.amount ?? 0) / rate : (p.amount ?? 0);
+  return s + usdEquiv;
+}, 0));
 
 // Items / factura
 const facturaItems = ref<{ name: string; quantity: number; price: number; tax: number; category_id: number | null }[]>([
@@ -1428,7 +1443,11 @@ const reviewValidationErrors = computed<string[]>(() => {
     return errs;
   }
   if (!form.value.name.trim()) errs.push('Ingresa un concepto.');
-  if (!form.value.amount || form.value.amount <= 0) errs.push('El monto debe ser mayor a cero.');
+  // OWF: en modo Items el monto real es la suma de las líneas (itemsTotal) — el campo
+  // Monto hero queda oculto y nunca se completa, así que validar contra form.amount
+  // directo bloqueaba el guardado SIEMPRE que el panel Items estuviera activo.
+  const effectiveAmount = itemsOn.value ? itemsTotal.value : form.value.amount;
+  if (!effectiveAmount || effectiveAmount <= 0) errs.push('El monto debe ser mayor a cero.');
   if (!form.value.account_id) errs.push('Selecciona una cuenta.');
   if (isProMode.value && proPanel.value === 'split' && Math.abs(splitTotal.value - (form.value.amount ?? 0)) > 0.01) {
     errs.push('La suma del pago múltiple no coincide con el monto total.');
@@ -1446,7 +1465,8 @@ const canSave = computed(() => {
       && !!form.value.amount && form.value.amount > 0
       && (!transferIsCrossCurrency.value || Number(transferRate.value || 0) > 0);
   }
-  return !!form.value.name.trim() && !!form.value.amount && form.value.amount > 0 && !!form.value.account_id;
+  const effectiveAmount = itemsOn.value ? itemsTotal.value : form.value.amount;
+  return !!form.value.name.trim() && !!effectiveAmount && effectiveAmount > 0 && !!form.value.account_id;
 });
 
 // OWF-186: Ajuste usa el endpoint dedicado POST /accounts/{id}/adjust-balance (no crea una transacción normal)
