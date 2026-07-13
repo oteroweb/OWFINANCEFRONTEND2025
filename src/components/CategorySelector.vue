@@ -225,7 +225,10 @@ function pillStyle(color: string, active: boolean) {
 const allCats = computed<CatalogCategory[]>(() => {
   const cats = getCachedCategories().filter(c => c.active);
   if (!props.kind || kindTypeId.value == null) return cats;
-  return cats.filter(c => c.transaction_type_id != null && String(c.transaction_type_id) === String(kindTypeId.value));
+  // Categorías sin transaction_type_id son legado (columna agregada nullable, sin backfill —
+  // ver migración 2025_08_25_000500) o creadas manualmente sin ese campo: se muestran siempre
+  // en vez de ocultarlas, para no dejar el selector vacío en cuentas con datos antiguos.
+  return cats.filter(c => c.transaction_type_id == null || String(c.transaction_type_id) === String(kindTypeId.value));
 });
 
 const selectedCat = computed(() =>
