@@ -54,8 +54,14 @@
         <template v-if="form.type === 'ajuste'">
           <div class="stm-field">
             <label class="stm-label">Cuenta a ajustar</label>
-            <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
+            <q-select v-model="form.account_id" :options="filteredAccountOptions" emit-value map-options dense outlined
+              use-input input-debounce="0" @filter="filterAccounts"
+              class="stm-acct-select" :class="{ 'stm-acct-select--open': openAcctSelect === 'ajuste' }"
+              @popup-show="openAcctSelect = 'ajuste'" @popup-hide="openAcctSelect = null"
               placeholder="Seleccionar…">
+              <template v-slot:no-option>
+                <q-item><q-item-section class="stm-no-results">Sin resultados</q-item-section></q-item>
+              </template>
               <template v-slot:selected-item="scope">
                 <span class="stm-acct-line">
                   <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
@@ -118,9 +124,22 @@
           <div class="stm-transfer-accounts">
             <div class="stm-field">
               <label class="stm-label">Desde (origen) <span class="stm-label--req">*</span></label>
-              <q-select v-model="form.account_from_id" :options="accountOptions" emit-value map-options dense outlined
+              <q-select v-model="form.account_from_id" :options="filteredAccountOptions" emit-value map-options dense outlined
+                use-input input-debounce="0" @filter="filterAccounts"
+                class="stm-acct-select" :class="{ 'stm-acct-select--open': openAcctSelect === 'from' }"
+                @popup-show="openAcctSelect = 'from'" @popup-hide="openAcctSelect = null"
                 placeholder="Cuenta origen…">
                 <template v-slot:prepend><q-icon name="arrow_upward" color="negative" /></template>
+                <template v-slot:no-option>
+                  <q-item><q-item-section class="stm-no-results">Sin resultados</q-item-section></q-item>
+                </template>
+                <template v-slot:selected-item="scope">
+                  <span class="stm-acct-line">
+                    <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                    <span class="stm-acct-name">{{ scope.opt.label }}<template v-if="scope.opt.currencyCode"> · {{ scope.opt.currencyCode }}</template></span>
+                    <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                  </span>
+                </template>
                 <template v-slot:option="scope">
                   <q-item v-bind="scope.itemProps">
                     <q-item-section side>
@@ -142,9 +161,22 @@
             </div>
             <div class="stm-field">
               <label class="stm-label">Hacia (destino) <span class="stm-label--req">*</span></label>
-              <q-select v-model="form.account_to_id" :options="accountToOptions" emit-value map-options dense outlined
+              <q-select v-model="form.account_to_id" :options="filteredAccountToOptions" emit-value map-options dense outlined
+                use-input input-debounce="0" @filter="filterAccounts"
+                class="stm-acct-select" :class="{ 'stm-acct-select--open': openAcctSelect === 'to' }"
+                @popup-show="openAcctSelect = 'to'" @popup-hide="openAcctSelect = null"
                 placeholder="Cuenta destino…">
                 <template v-slot:prepend><q-icon name="arrow_downward" color="positive" /></template>
+                <template v-slot:no-option>
+                  <q-item><q-item-section class="stm-no-results">Sin resultados</q-item-section></q-item>
+                </template>
+                <template v-slot:selected-item="scope">
+                  <span class="stm-acct-line">
+                    <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                    <span class="stm-acct-name">{{ scope.opt.label }}<template v-if="scope.opt.currencyCode"> · {{ scope.opt.currencyCode }}</template></span>
+                    <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                  </span>
+                </template>
                 <template v-slot:option="scope">
                   <q-item v-bind="scope.itemProps">
                     <q-item-section side>
@@ -188,8 +220,14 @@
           <!-- OWF-296: punto de color + nombre · moneda + saldo a la derecha (como Picker del rediseño) -->
           <div class="stm-field" v-if="!splitOn">
             <label class="stm-label">Cuenta de origen <span class="stm-label--req">*</span></label>
-            <q-select v-model="form.account_id" :options="accountOptions" emit-value map-options dense outlined
+            <q-select v-model="form.account_id" :options="filteredAccountOptions" emit-value map-options dense outlined
+              use-input input-debounce="0" @filter="filterAccounts"
+              class="stm-acct-select" :class="{ 'stm-acct-select--open': openAcctSelect === 'main' }"
+              @popup-show="openAcctSelect = 'main'" @popup-hide="openAcctSelect = null"
               placeholder="Seleccionar…">
+              <template v-slot:no-option>
+                <q-item><q-item-section class="stm-no-results">Sin resultados</q-item-section></q-item>
+              </template>
               <template v-slot:selected-item="scope">
                 <span class="stm-acct-line">
                   <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
@@ -278,6 +316,12 @@
             @update:model-value="onDateShortcutChange"
           >
             <template v-slot:prepend><q-icon :name="dateShortcutOptions.find(o => o.value === dateShortcut)?.icon" /></template>
+            <template v-slot:option="scope">
+              <q-item v-bind="scope.itemProps">
+                <q-item-section side><q-icon :name="scope.opt.icon" size="18px" /></q-item-section>
+                <q-item-section>{{ scope.opt.label }}</q-item-section>
+              </q-item>
+            </template>
           </q-select>
           <input v-if="dateShortcut === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
         </div>
@@ -310,6 +354,9 @@
               @filter="filterProviders"
             >
               <template v-slot:prepend><q-icon :name="form.provider_id != null ? 'storefront' : 'block'" /></template>
+              <template v-slot:no-option>
+                <q-item v-if="providerSearchTerm.trim()"><q-item-section class="stm-no-results">Sin resultados</q-item-section></q-item>
+              </template>
             </q-select>
             <div v-else class="stm-new-tag-form">
               <input v-model="newProviderName" class="stm-text-input stm-text-input--flex" placeholder="Nombre del proveedor" @keydown.enter.prevent="createProvider" />
@@ -331,6 +378,12 @@
               @update:model-value="onDateShortcutChange"
             >
               <template v-slot:prepend><q-icon :name="dateShortcutOptions.find(o => o.value === dateShortcut)?.icon" /></template>
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section side><q-icon :name="scope.opt.icon" size="18px" /></q-item-section>
+                  <q-item-section>{{ scope.opt.label }}</q-item-section>
+                </q-item>
+              </template>
             </q-select>
             <input v-if="dateShortcut === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
           </div>
@@ -346,6 +399,12 @@
             @update:model-value="onDateShortcutChange"
           >
             <template v-slot:prepend><q-icon :name="dateShortcutOptions.find(o => o.value === dateShortcut)?.icon" /></template>
+            <template v-slot:option="scope">
+              <q-item v-bind="scope.itemProps">
+                <q-item-section side><q-icon :name="scope.opt.icon" size="18px" /></q-item-section>
+                <q-item-section>{{ scope.opt.label }}</q-item-section>
+              </q-item>
+            </template>
           </q-select>
           <input v-if="dateShortcut === 'custom'" v-model="form.date" type="datetime-local" class="stm-text-input" style="margin-top:6px" />
         </div>
@@ -483,7 +542,29 @@
               <div class="stm-split-row__fields">
                 <div class="stm-field" style="flex:2">
                   <label class="stm-label">Cuenta {{ i + 1 }}</label>
-                  <q-select v-model="pago.account_id" :options="accountOptions" emit-value map-options dense outlined clearable placeholder="Seleccionar…" />
+                  <q-select v-model="pago.account_id" :options="filteredAccountOptions" emit-value map-options dense outlined clearable
+                    use-input input-debounce="0" @filter="filterAccounts"
+                    class="stm-acct-select" :class="{ 'stm-acct-select--open': openAcctSelect === `split-${i}` }"
+                    @popup-show="openAcctSelect = `split-${i}`" @popup-hide="openAcctSelect = null"
+                    placeholder="Seleccionar…">
+                    <template v-slot:no-option>
+                      <q-item><q-item-section class="stm-no-results">Sin resultados</q-item-section></q-item>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section side>
+                          <span class="stm-acct-dot" :style="{ background: scope.opt.color || 'var(--brand-primary)' }" />
+                        </q-item-section>
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                          <q-item-label caption>{{ scope.opt.currencyCode }}</q-item-label>
+                        </q-item-section>
+                        <q-item-section side>
+                          <span class="stm-acct-balance">{{ scope.opt.balanceLabel }}</span>
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
                 </div>
                 <div class="stm-field" style="flex:1">
                   <label class="stm-label">Monto</label>
@@ -743,7 +824,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { useQuasar } from 'quasar';
+import { useQuasar, type QSelect } from 'quasar';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
@@ -1112,6 +1193,39 @@ const accountOptions = computed(() =>
 const accountToOptions = computed(() =>
   accountOptions.value.filter((o) => o.value !== form.value.account_from_id)
 );
+
+// OWF-297: búsqueda en los selectores de cuenta (rediseño: TODOS los Picker de cuenta
+// llevan `searchable` — FormControls.jsx filtra por label, Enter elige el primero).
+// La needle es compartida: Quasar dispara @filter('') al abrir cada select, así que se
+// resetea sola al cambiar de selector.
+const accountNeedle = ref('');
+// Qué selector de cuenta tiene el menú abierto ('ajuste' | 'from' | 'to' | 'main' | 'split-N'):
+// mientras está abierto se oculta el dot+saldo y se expande el input de búsqueda (CSS).
+const openAcctSelect = ref<string | null>(null);
+function filterAccounts(
+  val: string,
+  update: (fn: () => void, after?: (ref: QSelect) => void) => void,
+) {
+  update(
+    () => {
+      accountNeedle.value = val.toLowerCase().trim();
+    },
+    (ref) => {
+      // Como el Picker del rediseño: al filtrar, el primer resultado queda
+      // resaltado y Enter lo selecciona.
+      if (val !== '' && filteredAccountOptions.value.length > 0) {
+        ref.setOptionIndex(-1);
+        ref.moveOptionSelection(1, true);
+      }
+    },
+  );
+}
+function applyAccountNeedle<T extends { label: string }>(opts: T[]): T[] {
+  const q = accountNeedle.value;
+  return q ? opts.filter((o) => o.label.toLowerCase().includes(q)) : opts;
+}
+const filteredAccountOptions = computed(() => applyAccountNeedle(accountOptions.value));
+const filteredAccountToOptions = computed(() => applyAccountNeedle(accountToOptions.value));
 watch(() => form.value.account_from_id, (fromId) => {
   if (fromId != null && form.value.account_to_id === fromId) {
     form.value.account_to_id = null;
@@ -1799,8 +1913,30 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   display: flex;
   align-items: center;
   gap: 9px;
-  width: 100%;
+  // OWF-297: flex en vez de width:100% para que el input de búsqueda (use-input)
+  // conviva en la misma fila con el dot+saldo sin quedar a ancho cero.
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+// OWF-297: con el menú cerrado y una cuenta elegida (q-field--float), el input de
+// búsqueda (use-input) queda colapsado para que el dot+saldo siga alineado a la
+// derecha; al abrir el menú se oculta la selección y el input toma todo el ancho.
+.stm-acct-select:not(.stm-acct-select--open).q-field--float :deep(.q-field__input) {
+  flex: 0 0 auto;
+  width: 0;
+  // Quasar trae `.q-select .q-field__input { min-width: 50px !important }`
+  min-width: 0 !important;
+  padding: 0;
+}
+.stm-acct-select--open :deep(.stm-acct-line) {
+  display: none;
+}
+
+.stm-no-results {
+  font-size: 12.5px;
+  color: var(--fg-3, #94a3b8);
+  text-align: center;
 }
 
 .stm-acct-name {
