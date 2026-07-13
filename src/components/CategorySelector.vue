@@ -135,6 +135,7 @@ import {
   type CatalogCategory, type JarRef,
   JAR_SLUG_NAMES,
 } from 'src/utils/txCatalog';
+import { useTransactionTypesStore } from 'stores/transactionTypes';
 
 // reactive jar cache so computed properties re-run when jars load
 const _cachedJars = ref<JarRef[]>([]);
@@ -144,11 +145,22 @@ const props = withDefaults(defineProps<{
   modelValue: number | null | undefined;
   placeholder?: string;
   allowNull?: boolean;
+  kind?: 'expense' | 'income' | undefined;
 }>(), {
   placeholder: 'Elige una categoría',
   allowNull: false,
 });
 const emit = defineEmits<{ (e: 'update:modelValue', v: number | null): void }>();
+
+// OWF: filtra por tipo de movimiento (rediseño: CategorySelector.jsx `kind` prop),
+// resolviendo el slug 'expense'/'income' contra el transaction_type_id real del catálogo.
+const ttypes = useTransactionTypesStore();
+const kindTypeId = computed(() => {
+  if (!props.kind) return null;
+  const needle = props.kind === 'income' ? ['income', 'ingreso'] : ['expense', 'gasto'];
+  const t = ttypes.types.find(t => needle.some(n => (t.slug ?? '').toLowerCase().includes(n)));
+  return t ? t.id : null;
+});
 
 // ── state ────────────────────────────────────────────────────────────────────
 const open      = ref(false);
@@ -159,6 +171,7 @@ const popoverStyle = ref<Record<string, string>>({});
 
 // ── data ─────────────────────────────────────────────────────────────────────
 onMounted(async () => {
+  if (!ttypes.types.length) void ttypes.fetchTransactionTypes();
   const [, jars] = await Promise.all([loadCategoriesWithJars(), loadUserJars()]);
   _cachedJars.value = jars;
   document.addEventListener('mousedown', onOutsideClick);
@@ -209,9 +222,11 @@ function pillStyle(color: string, active: boolean) {
 }
 
 // ── computed ─────────────────────────────────────────────────────────────────
-const allCats = computed<CatalogCategory[]>(() =>
-  getCachedCategories().filter(c => c.active)
-);
+const allCats = computed<CatalogCategory[]>(() => {
+  const cats = getCachedCategories().filter(c => c.active);
+  if (!props.kind || kindTypeId.value == null) return cats;
+  return cats.filter(c => c.transaction_type_id != null && String(c.transaction_type_id) === String(kindTypeId.value));
+});
 
 const selectedCat = computed(() =>
   props.modelValue != null ? allCats.value.find(c => c.id === props.modelValue) ?? null : null

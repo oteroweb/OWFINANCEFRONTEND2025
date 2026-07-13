@@ -298,7 +298,8 @@
         <div v-if="form.type !== 'ajuste' && form.type !== 'transfer' && !itemsOn" class="stm-row-2">
           <div class="stm-field">
             <label class="stm-label">Categoría <span class="stm-label--opt">(opcional)</span></label>
-            <CategorySelector v-model="form.category_id" allow-null placeholder="Sin categoría" />
+            <CategorySelector v-model="form.category_id" allow-null placeholder="Sin categoría"
+              :kind="form.type === 'income' ? 'income' : 'expense'" />
           </div>
           <div class="stm-field">
             <label class="stm-label">Cántaro</label>
@@ -630,7 +631,8 @@
                 </button>
               </div>
               <div class="stm-items-cat">
-                <CategorySelector v-model="item.category_id" allow-null placeholder="Categoría del artículo…" />
+                <CategorySelector v-model="item.category_id" allow-null placeholder="Categoría del artículo…"
+                  :kind="form.type === 'income' ? 'income' : 'expense'" />
                 <AnchoredJarChip :category-id="item.category_id" />
               </div>
             </div>
@@ -647,7 +649,8 @@
             <div v-for="(sc, i) in sharedCats" :key="i" class="stm-split-row__fields" style="margin-bottom:8px">
               <div class="stm-field" style="flex:2">
                 <label class="stm-label">Categoría {{ i + 1 }}</label>
-                <CategorySelector v-model="sc.category_id" allow-null placeholder="Sin categoría" />
+                <CategorySelector v-model="sc.category_id" allow-null placeholder="Sin categoría"
+                  :kind="form.type === 'income' ? 'income' : 'expense'" />
               </div>
               <div class="stm-field" style="flex:1">
                 <label class="stm-label">Monto</label>

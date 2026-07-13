@@ -11,6 +11,7 @@ export interface CatalogCategory {
   user_id: number | null;
   type: string | null;
   parent_id: number | null;
+  transaction_type_id: number | string | null;
 }
 
 export interface JarRef {
