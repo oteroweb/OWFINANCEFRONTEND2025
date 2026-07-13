@@ -345,7 +345,7 @@
               v-model="form.provider_id"
               :options="providerOptions"
               emit-value map-options
-              use-input
+              use-input input-debounce="0"
               clearable
               dense outlined
               :display-value="providerDisplayValue"
@@ -443,17 +443,37 @@
               <span class="material-icons" style="font-size:14px">add</span>
               Nueva etiqueta
             </button>
-            <div v-if="showNewTagForm" class="stm-new-tag-form">
-              <input v-model="newTagName" class="stm-text-input" placeholder="Nombre de etiqueta" @keydown.enter.prevent="createTag" />
-              <input v-model="newTagDescription" class="stm-text-input" placeholder="Descripción (opcional)" @keydown.enter.prevent="createTag" />
-              <div class="stm-new-tag-form__actions">
-                <button type="button" class="stm-btn stm-btn--primary stm-btn--xs" :disabled="!newTagName.trim()" @click="createTag">
-                  <q-icon name="check" size="14px" />
-                </button>
-                <button type="button" class="stm-btn stm-btn--ghost stm-btn--xs" @click="showNewTagForm = false; newTagName = ''; newTagDescription = ''">
-                  <q-icon name="close" size="14px" />
-                </button>
-              </div>
+          </div>
+          <div v-if="showNewTagForm" class="stm-new-tag-form">
+            <div class="stm-new-tag-form__row">
+              <span class="stm-new-tag-form__preview" :style="{ background: newTagColor }">
+                <span class="material-icons" style="font-size:16px; color:#fff">sell</span>
+              </span>
+              <input v-model="newTagName" class="stm-text-input stm-text-input--flex" placeholder="Nombre de la etiqueta" autofocus @keydown.enter.prevent="createTag" />
+            </div>
+            <input v-model="newTagDescription" class="stm-text-input" placeholder="Descripción (ej. Viaje relacionado con viaje)" @keydown.enter.prevent="createTag" />
+            <div class="stm-new-tag-form__swatches">
+              <button
+                v-for="c in tagPalette"
+                :key="c"
+                type="button"
+                class="stm-new-tag-form__swatch"
+                :class="{ 'stm-new-tag-form__swatch--active': newTagColor === c }"
+                :style="{ background: c }"
+                :title="c"
+                @click="newTagColor = c"
+              />
+              <button type="button" class="stm-new-tag-form__swatch stm-new-tag-form__swatch--random" title="Color al azar" @click="newTagColor = tagPalette[Math.floor(Math.random() * tagPalette.length)]">
+                <span class="material-icons" style="font-size:14px">casino</span>
+              </button>
+              <label class="stm-new-tag-form__swatch stm-new-tag-form__swatch--wheel" title="Elegir cualquier color">
+                <input v-model="newTagColor" type="color" />
+              </label>
+              <span class="stm-new-tag-form__spacer" />
+              <button type="button" class="stm-new-tag-form__cancel" @click="showNewTagForm = false; newTagName = ''; newTagDescription = ''; newTagColor = tagPalette[3]">Cancelar</button>
+              <button type="button" class="stm-new-tag-form__submit" :disabled="!newTagName.trim()" @click="createTag">
+                <q-icon name="add" size="15px" />Crear etiqueta
+              </button>
             </div>
           </div>
         </div>
@@ -981,12 +1001,9 @@ const providerSearchTerm = ref('')
 
 async function filterProviders(val: string, update: (fn: () => void) => void) {
   providerSearchTerm.value = val
-  if (!val.trim()) {
-    update(() => { providerOptions.value = [] })
-    return
-  }
   try {
-    const res = await api.get<Provider[] | { data: Provider[] }>('/providers', { params: { search: val } })
+    const params = val.trim() ? { search: val } : {}
+    const res = await api.get<Provider[] | { data: Provider[] }>('/providers', { params })
     const raw = res.data
     const list = Array.isArray(raw) ? raw : ((raw as { data: Provider[] }).data ?? [])
     update(() => { providerOptions.value = list })
@@ -1073,17 +1090,20 @@ const tagsHint = computed(() => {
   return 'Toca para clasificar el movimiento'
 })
 
+const tagPalette = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#0EA5E9', '#8B5CF6', '#EC4899', '#14B8A6']
 const showNewTagForm = ref(false)
 const newTagName = ref('')
 const newTagDescription = ref('')
+const newTagColor = ref(tagPalette[3])
 
 async function createTag() {
   const name = newTagName.value.trim()
   if (!name) return
   const description = newTagDescription.value.trim() || undefined
-  const tag = await tagsStore.createTag(name, undefined, description)
+  const tag = await tagsStore.createTag(name, newTagColor.value, description)
   newTagName.value = ''
   newTagDescription.value = ''
+  newTagColor.value = tagPalette[3]
   showNewTagForm.value = false
   if (tag) toggleTag(tag.id)
 }
@@ -1636,6 +1656,7 @@ function onShow() {
   showNewTagForm.value = false;
   newTagName.value = '';
   newTagDescription.value = '';
+  newTagColor.value = tagPalette[3];
   aiPrefill.value = null;
   aiSource.value  = null;
   voiceResult.value = null;
@@ -2656,20 +2677,99 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 
 .stm-new-tag-form {
   display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-  flex-basis: 100%;
+  flex-direction: column;
+  gap: 11px;
+  padding: 13px;
+  margin-top: 8px;
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface-2, #f1f5f9);
+  border: 1px solid var(--border-hairline, #e2e8f0);
 
-  .stm-text-input {
-    flex: 1 1 160px;
-    min-width: 120px;
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  &__actions {
-    display: flex;
-    gap: 4px;
+  &__preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
     flex-shrink: 0;
+  }
+
+  &__swatches {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+
+  &__swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+    border: 2px solid transparent;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &--active { border-color: var(--fg-1, #0f172a); box-shadow: 0 0 0 2px var(--surface-2, #f1f5f9); }
+    &--random { background: var(--surface-1, #fff); border: 1px dashed var(--border-hairline, #e2e8f0); color: var(--fg-2, #475569); }
+    &--wheel {
+      position: relative;
+      overflow: hidden;
+      background: conic-gradient(from 0deg, red, yellow, lime, cyan, blue, magenta, red);
+
+      input[type="color"] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        border: 0;
+        padding: 0;
+      }
+    }
+  }
+
+  &__spacer { flex: 1; }
+
+  &__cancel {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: var(--fg-3, #94a3b8);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 7px 10px;
+  }
+
+  &__submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 0;
+    cursor: pointer;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--brand-primary, #2d4da6);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+
+    &:disabled {
+      cursor: not-allowed;
+      background: var(--surface-3, #e2e8f0);
+      color: var(--fg-3, #94a3b8);
+    }
   }
 }
 
