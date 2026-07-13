@@ -1699,6 +1699,11 @@ function onShow() {
   void loadCategories();
   void tagsStore.fetchTags();
   void Promise.all([loadCategoriesWithJars(), loadUserJars()]);
+  // OWF: los selectores de cuenta leen `auth.user.accounts`, un snapshot cargado una sola vez
+  // al iniciar sesión — tras crear transacciones en la misma sesión mostraba saldos viejos
+  // (hallazgo Ronda 2 QA_TRANSACTIONS_TEST_MATRIX.md). Refresca el perfil (incluye accounts
+  // con balance actualizado) cada vez que se abre el modal, sin bloquear el render.
+  void auth.refreshProfile();
 }
 
 function onHide() {

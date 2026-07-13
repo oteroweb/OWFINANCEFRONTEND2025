@@ -184,11 +184,16 @@ export const useAuthStore = defineStore('auth', {
         throw new Error(err.response?.data?.message || err.message || 'Error de inicio de sesión');
       }
     },
-    /** Refresca el perfil del usuario (incluye tasas actuales) y persiste en localStorage */
+    /** Refresca el perfil del usuario (incluye cuentas con balance recalculado y tasas
+     *  actuales) y persiste en localStorage. OWF: la URL tenía un typo ('/users/profile',
+     *  plural) que nunca coincidió con la ruta real registrada ('/user/profile', singular)
+     *  — el método siempre fallaba en silencio (catch vacío) y no tenía ningún llamador
+     *  hasta que se conectó desde SmartTransactionModal.vue para refrescar saldos de cuenta
+     *  al abrir el formulario (hallazgo Ronda 2 QA_TRANSACTIONS_TEST_MATRIX.md). */
     async refreshProfile() {
       if (!this.token) return
       try {
-        const res = await api.get('/users/profile')
+        const res = await api.get('/user/profile')
         const data = (res.data?.data || res.data) as User
         if (data) {
           this.user = data
