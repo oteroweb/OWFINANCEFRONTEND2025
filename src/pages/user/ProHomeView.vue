@@ -386,8 +386,8 @@ async function loadAccountsPanel() {
       const raw = accRes.value.data?.data;
       const list: Record<string, unknown>[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data as Record<string, unknown>[] : [];
       accountsList.value = list.map(a => {
-        const accountType = a.account_type as unknown;
-        const currency = a.currency as unknown;
+        const accountType = a.account_type;
+        const currency = a.currency;
         return {
           id: Number(a.id),
           name: (a.name as string) || 'Cuenta',
