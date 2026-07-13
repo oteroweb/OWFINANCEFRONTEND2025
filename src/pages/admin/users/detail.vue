@@ -545,7 +545,7 @@ onMounted(() => {
 .adm-panel__card-value {
   font-size: 15px;
   font-weight: 800;
-  color: #1E3A8A;
+  color: var(--brand-primary);
   margin-top: 8px;
 }
 

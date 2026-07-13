@@ -324,7 +324,7 @@ watch(
 
 .ai-chat__header-avatar {
   width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-primary) 0%, #0EA5E9 100%);
+  background: var(--gradient-brand);
   display: flex; align-items: center; justify-content: center;
   color: #fff; flex-shrink: 0;
 }
@@ -381,7 +381,7 @@ watch(
 
 .ai-chat__empty-avatar {
   width: 54px; height: 54px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-primary) 0%, #0EA5E9 100%);
+  background: var(--gradient-brand);
   display: flex; align-items: center; justify-content: center;
   color: #fff;
 }
@@ -428,7 +428,7 @@ watch(
 
 .ai-chat__ai-avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-primary) 0%, #0EA5E9 100%);
+  background: var(--gradient-brand);
   color: #fff;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;

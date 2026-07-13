@@ -154,7 +154,7 @@ function fmtPercent(n: number) {
   &__link {
     background: none;
     border: none;
-    color: #0ea5e9;
+    color: var(--info);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
@@ -309,11 +309,11 @@ function fmtPercent(n: number) {
     .body--dark & { border-color: #334155; }
 
     &:hover {
-      border-color: #0ea5e9;
+      border-color: var(--info);
       transform: translateY(-2px);
 
       .jar-card--add__icon,
-      .jar-card--add__label { color: #0ea5e9; }
+      .jar-card--add__label { color: var(--info); }
     }
 
     &__icon { color: #cbd5e1; }

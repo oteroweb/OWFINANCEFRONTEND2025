@@ -385,15 +385,23 @@ async function loadAccountsPanel() {
     if (accRes.status === 'fulfilled') {
       const raw = accRes.value.data?.data;
       const list: Record<string, unknown>[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data as Record<string, unknown>[] : [];
-      accountsList.value = list.map(a => ({
-        id: Number(a.id),
-        name: (a.name as string) || 'Cuenta',
-        short: ((a.name as string) || 'CTA').slice(0, 3).toUpperCase(),
-        type: (a.account_type as string) || 'Cuenta',
-        currency: (a.currency as string) || 'USD',
-        balance: Number(a.balance ?? 0),
-        color: (a.color as string) || 'var(--info)',
-      }));
+      accountsList.value = list.map(a => {
+        const accountType = a.account_type as unknown;
+        const currency = a.currency as unknown;
+        return {
+          id: Number(a.id),
+          name: (a.name as string) || 'Cuenta',
+          short: ((a.name as string) || 'CTA').slice(0, 3).toUpperCase(),
+          type: typeof accountType === 'string'
+            ? accountType
+            : ((accountType as { name?: string })?.name || 'Cuenta'),
+          currency: typeof currency === 'string'
+            ? currency
+            : ((currency as { code?: string })?.code || 'USD'),
+          balance: Number(a.balance ?? 0),
+          color: (a.color as string) || 'var(--info)',
+        };
+      });
     }
     if (debtRes.status === 'fulfilled') {
       const raw = debtRes.value.data?.data;

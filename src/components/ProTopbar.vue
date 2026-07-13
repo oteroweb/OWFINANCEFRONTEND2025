@@ -3,9 +3,9 @@
     <!-- Logo (Left) -->
     <div class="flex items-center gap-2 shrink-0">
       <div class="w-10 h-10 flex items-center justify-center rounded-md bg-blue-900 bg-opacity-10">
-        <span class="text-lg font-bold text-[#1E3A8A]">OW</span>
+        <span class="text-lg font-bold text-[var(--brand-primary)]">OW</span>
       </div>
-      <span class="text-xl font-bold text-[#1E3A8A] hidden sm:inline">OWFinance</span>
+      <span class="text-xl font-bold text-[var(--brand-primary)] hidden sm:inline">OWFinance</span>
     </div>
 
     <!-- Search Bar (Center - flex-grow) -->

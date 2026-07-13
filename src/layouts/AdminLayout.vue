@@ -143,7 +143,7 @@ async function handleLogout() {
 
 <style scoped>
 .adm-header {
-  background: #1E3A8A;
+  background: var(--brand-primary);
   color: #fff;
 }
 .adm-header__title {
@@ -212,11 +212,11 @@ async function handleLogout() {
 .adm-drawer__item.q-router-link--active,
 .adm-drawer__item.q-router-link--exact-active {
   background: #EFF6FF !important;
-  color: #1E3A8A !important;
+  color: var(--brand-primary) !important;
 }
 .adm-drawer__item.q-router-link--active .q-icon,
 .adm-drawer__item.q-router-link--exact-active .q-icon {
-  color: #1E3A8A !important;
+  color: var(--brand-primary) !important;
 }
 .adm-drawer__item--logout {
   color: #EF4444 !important;

@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -61,6 +61,15 @@ const props = defineProps<{
   currencyCode: string;
   hideValues?: boolean;
 }>();
+
+// Colores de marca leídos de CSS vars en runtime (después del mount).
+// Fallbacks hardcodeados SOLO como red de seguridad si el DOM no está listo.
+const brandInfo = ref('#0ea5e9');
+
+onMounted(() => {
+  const style = getComputedStyle(document.documentElement);
+  brandInfo.value = style.getPropertyValue('--info').trim() || '#0ea5e9';
+});
 
 function formatAmount(amount: number): string {
   if (props.hideValues) return '••••••';
@@ -170,7 +179,7 @@ const barOption = computed(() => ({
       name: 'Asignado',
       type: 'bar',
       barMaxWidth: 18,
-      itemStyle: { color: '#0ea5e9', borderRadius: [0, 8, 8, 0] },
+      itemStyle: { color: brandInfo.value, borderRadius: [0, 8, 8, 0] },
       data: safeRows.value.map((row) => Number(row.assignedExpected || 0)),
     },
     {

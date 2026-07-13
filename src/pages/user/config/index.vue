@@ -2102,12 +2102,12 @@ async function saveProfile() {
   color: var(--fg-2, #64748b);
 }
 .apref__mode-btn--active {
-  border-color: var(--brand-primary, #1e3a8a);
+  border-color: var(--brand-primary);
   background: rgba(30, 58, 138, 0.07);
-  color: var(--brand-primary, #1e3a8a);
+  color: var(--brand-primary);
 }
 .apref__mode-btn--active .material-icons {
-  color: var(--brand-primary, #1e3a8a);
+  color: var(--brand-primary);
 }
 .apref__mode-sub {
   font-size: 11px;
@@ -2165,7 +2165,7 @@ async function saveProfile() {
   transition: transform 200ms, background 200ms;
 }
 .apref__toggle--on {
-  background: var(--brand-primary, #1e3a8a);
+  background: var(--brand-primary);
 }
 .apref__toggle--on::after {
   transform: translateX(20px);

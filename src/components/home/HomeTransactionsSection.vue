@@ -127,7 +127,7 @@ const router = useRouter();
   &__link {
     background: none;
     border: none;
-    color: #0ea5e9;
+    color: var(--info);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
@@ -319,7 +319,7 @@ const router = useRouter();
 
     &:not(:disabled):hover {
       background: #eef2ff;
-      color: #1e3a8a;
+      color: var(--brand-primary);
 
       .body--dark & {
         background: #334155;

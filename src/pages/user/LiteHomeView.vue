@@ -1207,7 +1207,7 @@ onMounted(() => {
     &--cashea   { background: rgba(249, 115, 22, 0.12); color: #f97316; }
     &--card     { background: rgba(239, 68, 68, 0.12);  color: #ef4444; }
     &--loan     { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
-    &--personal { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
+    &--personal { background: rgba(14, 165, 233, 0.12); color: var(--info); }
   }
 
   &__info {

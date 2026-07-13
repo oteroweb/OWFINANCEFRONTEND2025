@@ -33,20 +33,26 @@
 // Espejo de los tokens --navy-* / --cyan-* del Design System.
 $brand-presets: (
   navy: (
-    primary:   #1e3a8a,  // navy-700  (DS brand primary)
-    hover:     #16297a,  // navy-800
-    press:     #0f1e4d,  // navy-900
-    soft:      #f1f4fb,  // navy-50
-    secondary: #2d4da6,  // navy-600
-    accent:    #0ea5e9,  // cyan-500 (acento info)
+    primary:              #1e3a8a,  // navy-700  (DS brand primary)
+    hover:                #16297a,  // navy-800
+    press:                #0f1e4d,  // navy-900
+    soft:                 #f1f4fb,  // navy-50
+    secondary:            #2d4da6,  // navy-600
+    accent:               #0ea5e9,  // cyan-500 (acento info)
+    gradient-end:         #0ea5e9,  // navy→cyan (identidad visual principal)
+    gradient-soft-start:  #f1f4fb,  // navy-50
+    gradient-soft-end:    #e0f2fe,  // cyan-100
   ),
   cyan: (
-    primary:   #0ea5e9,  // cyan-500
-    hover:     #0284c7,  // cyan-600
-    press:     #0369a1,  // cyan-700
-    soft:      #e0f2fe,  // cyan-100
-    secondary: #0284c7,  // cyan-600
-    accent:    #1e3a8a,  // navy como acento secundario
+    primary:              #0ea5e9,  // cyan-500
+    hover:                #0284c7,  // cyan-600
+    press:                #0369a1,  // cyan-700
+    soft:                 #e0f2fe,  // cyan-100
+    secondary:            #0284c7,  // cyan-600
+    accent:               #1e3a8a,  // navy como acento secundario
+    gradient-end:         #38bdf8,  // cyan→cyan-300 (coherente con preset cyan)
+    gradient-soft-start:  #e0f2fe,  // cyan-100
+    gradient-soft-end:    #f0f9ff,  // cyan-50
   ),
 );
 
@@ -79,12 +85,15 @@ $font-preset:  ds   !default;   // ds   (DS, default) | outfit
 $brand: map.get($brand-presets, $brand-preset);
 $font:  map.get($font-presets,  $font-preset);
 
-$brand-primary:   map.get($brand, primary);
-$brand-hover:     map.get($brand, hover);
-$brand-press:     map.get($brand, press);
-$brand-soft:      map.get($brand, soft);
-$brand-secondary: map.get($brand, secondary);
-$brand-accent:    map.get($brand, accent);
+$brand-primary:             map.get($brand, primary);
+$brand-hover:               map.get($brand, hover);
+$brand-press:               map.get($brand, press);
+$brand-soft:                map.get($brand, soft);
+$brand-secondary:           map.get($brand, secondary);
+$brand-accent:              map.get($brand, accent);
+$brand-gradient-end:        map.get($brand, gradient-end);
+$brand-gradient-soft-start: map.get($brand, gradient-soft-start);
+$brand-gradient-soft-end:   map.get($brand, gradient-soft-end);
 
 $font-body:    map.get($font, body);
 $font-display: map.get($font, display);
@@ -119,6 +128,10 @@ $accent:    $brand-accent;
     --brand-primary-press: #{$brand-press};
     --brand-primary-soft:  #{$brand-soft};
     --focus-ring:          #{$brand-primary};
+
+    // Gradientes de marca (ÚNICO lugar con hex; componentes solo usan var())
+    --gradient-brand:      linear-gradient(135deg, #{$brand-primary} 0%, #{$brand-gradient-end} 100%);
+    --gradient-brand-soft: linear-gradient(135deg, #{$brand-gradient-soft-start} 0%, #{$brand-gradient-soft-end} 100%);
 
     // Marca → variables --ow-* legacy (consumidas por componentes viejos)
     --ow-color-primary:        #{$brand-primary};

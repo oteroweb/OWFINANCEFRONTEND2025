@@ -223,7 +223,7 @@
               <tr>
                 <th>Capacidad</th>
                 <th class="mode"><span class="m-tag" style="color: var(--brand-primary)"><span class="material-icons" style="font-size: 18px">view_agenda</span>Lite</span></th>
-                <th class="mode"><span class="m-tag" style="color: var(--info-fg, #0ea5e9)"><span class="material-icons" style="font-size: 18px">dashboard</span>Pro</span></th>
+                <th class="mode"><span class="m-tag" style="color: var(--info-fg)"><span class="material-icons" style="font-size: 18px">dashboard</span>Pro</span></th>
               </tr>
             </thead>
             <tbody>

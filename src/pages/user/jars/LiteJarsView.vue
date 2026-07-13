@@ -1244,7 +1244,7 @@ onMounted(() => {
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   transition: background 140ms, color 140ms;
   &.cm-period--on {
-    background: var(--brand-primary, #1E3A8A);
+    background: var(--brand-primary);
     color: #fff;
     box-shadow: none;
   }
@@ -1253,7 +1253,7 @@ onMounted(() => {
 /* Jar row v2 */
 .cm-jar--dim { opacity: 0.55; }
 .cm-jar--dragging { opacity: 0.5; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-.cm-jar--droptarget { border: 1.5px dashed var(--brand-primary, #1E3A8A) !important; }
+.cm-jar--droptarget { border: 1.5px dashed var(--brand-primary) !important; }
 
 .cm-jar__drag {
   cursor: grab;

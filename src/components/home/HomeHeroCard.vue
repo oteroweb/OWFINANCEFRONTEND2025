@@ -117,7 +117,7 @@ const formattedExpense = computed(() => fmt(props.expense));
 
 <style lang="scss" scoped>
 .hero-card {
-  background: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%);
+  background: var(--gradient-brand);
   border-radius: 40px;
   padding: 48px;
   color: white;
@@ -239,7 +239,7 @@ const formattedExpense = computed(() => fmt(props.expense));
 
     &--active {
       background: white;
-      color: #1e3a8a;
+      color: var(--brand-primary);
       opacity: 1;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     }

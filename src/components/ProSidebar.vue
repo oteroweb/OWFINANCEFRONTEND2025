@@ -20,7 +20,7 @@
           :class="[
             'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition whitespace-nowrap',
             activeRoute === item.route
-              ? 'bg-slate-100 text-[#1E3A8A] border-l-4 border-[#1E3A8A]'
+              ? 'bg-slate-100 text-[var(--brand-primary)] border-l-4 border-[var(--brand-primary)]'
               : 'text-slate-700 hover:bg-slate-50 border-l-4 border-transparent'
           ]"
           :title="item.label"
@@ -67,7 +67,7 @@
     <!-- Add Section Button -->
     <div v-if="!collapsed" class="p-2 border-t border-slate-200">
       <button
-        class="w-full py-2 px-4 bg-slate-100 text-[#1E3A8A] rounded-lg text-sm font-medium hover:bg-slate-200 transition"
+        class="w-full py-2 px-4 bg-slate-100 text-[var(--brand-primary)] rounded-lg text-sm font-medium hover:bg-slate-200 transition"
         @click="emit('addSection')"
       >
         + Add Section
