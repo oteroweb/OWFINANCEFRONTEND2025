@@ -1074,10 +1074,12 @@ const showNewTagForm = ref(false)
 const newTagName = ref('')
 
 async function createTag() {
-  if (!newTagName.value.trim()) return
-  await tagsStore.createTag(newTagName.value.trim())
+  const name = newTagName.value.trim()
+  if (!name) return
+  const tag = await tagsStore.createTag(name)
   newTagName.value = ''
   showNewTagForm.value = false
+  if (tag) toggleTag(tag.id)
 }
 
 // ── Pro mode features ──────────────────────────────────────────────────────
