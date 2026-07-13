@@ -444,13 +444,16 @@
               Nueva etiqueta
             </button>
             <div v-if="showNewTagForm" class="stm-new-tag-form">
-              <input v-model="newTagName" class="stm-text-input stm-text-input--flex" placeholder="Nombre de etiqueta" @keydown.enter.prevent="createTag" />
-              <button type="button" class="stm-btn stm-btn--primary stm-btn--xs" :disabled="!newTagName.trim()" @click="createTag">
-                <q-icon name="check" size="14px" />
-              </button>
-              <button type="button" class="stm-btn stm-btn--ghost stm-btn--xs" @click="showNewTagForm = false; newTagName = ''">
-                <q-icon name="close" size="14px" />
-              </button>
+              <input v-model="newTagName" class="stm-text-input" placeholder="Nombre de etiqueta" @keydown.enter.prevent="createTag" />
+              <input v-model="newTagDescription" class="stm-text-input" placeholder="Descripción (opcional)" @keydown.enter.prevent="createTag" />
+              <div class="stm-new-tag-form__actions">
+                <button type="button" class="stm-btn stm-btn--primary stm-btn--xs" :disabled="!newTagName.trim()" @click="createTag">
+                  <q-icon name="check" size="14px" />
+                </button>
+                <button type="button" class="stm-btn stm-btn--ghost stm-btn--xs" @click="showNewTagForm = false; newTagName = ''; newTagDescription = ''">
+                  <q-icon name="close" size="14px" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1072,12 +1075,15 @@ const tagsHint = computed(() => {
 
 const showNewTagForm = ref(false)
 const newTagName = ref('')
+const newTagDescription = ref('')
 
 async function createTag() {
   const name = newTagName.value.trim()
   if (!name) return
-  const tag = await tagsStore.createTag(name)
+  const description = newTagDescription.value.trim() || undefined
+  const tag = await tagsStore.createTag(name, undefined, description)
   newTagName.value = ''
+  newTagDescription.value = ''
   showNewTagForm.value = false
   if (tag) toggleTag(tag.id)
 }
@@ -1629,6 +1635,7 @@ function onShow() {
   form.value.account_to_id = null;
   showNewTagForm.value = false;
   newTagName.value = '';
+  newTagDescription.value = '';
   aiPrefill.value = null;
   aiSource.value  = null;
   voiceResult.value = null;
@@ -2621,15 +2628,10 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 
 .stm-tags-row {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  overflow-x: auto;
-  white-space: nowrap;
   padding: 2px 0 5px;
-
-  &::-webkit-scrollbar { height: 5px; }
-  &::-webkit-scrollbar-thumb { background: var(--border-hairline, #e2e8f0); border-radius: 99px; }
 }
 
 .stm-tag-chip {
@@ -2654,10 +2656,21 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 
 .stm-new-tag-form {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
-  flex: 1;
-  min-width: 0;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+
+  .stm-text-input {
+    flex: 1 1 160px;
+    min-width: 120px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
 }
 
 .stm-btn--xs {
