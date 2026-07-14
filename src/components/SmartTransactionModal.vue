@@ -759,12 +759,12 @@
           <button v-else class="stm-voice-btn" @click="startVoice">
             <q-icon name="mic" size="38px" color="white" />
           </button>
-          <span class="stm-voice-label">{{ voiceRecording ? 'Escuchando… (toca para parar)' : 'Toca para dictar' }}</span>
+          <span class="stm-voice-label">{{ voiceRecording ? 'Grabando… (toca para parar)' : 'Toca para dictar' }}</span>
           <span class="stm-voice-sub">Ej: "Gasté 45 dólares en Whole Foods con BofA"</span>
-          <div v-if="voiceTranscript" class="stm-voice-transcript">"{{ voiceTranscript }}"</div>
           <div v-if="voiceLoading" class="stm-voice-analyzing">
-            <q-spinner size="20px" color="primary" /> Analizando…
+            <q-spinner size="20px" color="primary" /> Transcribiendo y analizando…
           </div>
+          <div v-if="voiceTranscript && !voiceLoading" class="stm-voice-transcript">"{{ voiceTranscript }}"</div>
           <div v-if="voiceError" class="stm-error">{{ voiceError }}</div>
         </div>
         <div v-else class="stm-ai-result">
@@ -857,7 +857,7 @@ import { useTransactionsStore } from 'stores/transactions';
 import { api } from 'src/boot/axios';
 import { useTransactionTypesStore } from 'stores/transactionTypes';
 import { useTagsStore } from 'stores/tags';
-import { useVoiceInput } from 'src/composables/useVoiceInput';
+import { useAudioRecorder } from 'src/composables/useAudioRecorder';
 import { useAiExtraction, type ExtractionResult } from 'src/composables/useAiExtraction';
 import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
 import CategorySelector from 'src/components/CategorySelector.vue';
@@ -1590,23 +1590,29 @@ async function save() {
 }
 
 // ── Voice ─────────────────────────────────────────────────────────────────
-const { transcript: voiceTranscript, isRecording: voiceRecording, error: voiceInputError, start: startVoiceRec, stop: stopVoiceRec } = useVoiceInput();
-const { loading: voiceLoading, error: voiceAiError, extractFromText } = useAiExtraction();
+// OWF-311: graba audio con MediaRecorder (estándar web, funciona en Brave/Safari/iOS) y lo
+// manda al servidor para transcribir (Groq Whisper) — reemplaza SpeechRecognition del
+// navegador, que no es confiable cross-browser (Brave la bloquea, iOS Safari nunca la tuvo).
+const { isRecording: voiceRecording, mimeType: voiceMime, error: voiceInputError, start: startVoiceRec, stop: stopVoiceRec } = useAudioRecorder();
+const { loading: voiceLoading, error: voiceAiError, extractFromAudio } = useAiExtraction();
 const voiceResult = ref<ExtractionResult | null>(null);
+const voiceTranscript = ref('');
 const voiceError  = computed(() => voiceInputError.value ?? voiceAiError.value);
 
 function startVoice() {
   voiceResult.value = null;
+  voiceTranscript.value = '';
   navigator.vibrate?.(50);
-  startVoiceRec();
+  void startVoiceRec();
 }
 
 async function stopVoice() {
   navigator.vibrate?.(50);
-  stopVoiceRec();
-  await new Promise(r => setTimeout(r, 300));
-  if (voiceTranscript.value) {
-    voiceResult.value = await extractFromText('voice', voiceTranscript.value);
+  const audio = await stopVoiceRec();
+  if (audio) {
+    const result = await extractFromAudio(audio, voiceMime.value);
+    voiceResult.value = result;
+    voiceTranscript.value = result?.transcript ?? '';
   }
 }
 
@@ -1727,7 +1733,7 @@ function onShow() {
 }
 
 function onHide() {
-  if (voiceRecording.value) stopVoiceRec();
+  if (voiceRecording.value) void stopVoiceRec();
 }
 
 watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });

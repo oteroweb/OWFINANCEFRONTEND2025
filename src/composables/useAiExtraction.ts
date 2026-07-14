@@ -13,6 +13,8 @@ export interface ExtractionResult {
     confidence: number | null
   }
   processing_ms: number
+  /** OWF-311: presente cuando source=voice — el texto que Groq Whisper transcribió del audio. */
+  transcript?: string | null
 }
 
 function mapHttpError(status: number): string {
@@ -30,18 +32,11 @@ export function useAiExtraction() {
   const retryCount = ref(0)
   const retrying = ref(false)
 
-  async function extractFromText(
-    source: 'voice' | 'ocr' | 'auto',
-    input: string,
-    image?: string
-  ): Promise<ExtractionResult | null> {
+  async function post(payload: Record<string, unknown>): Promise<ExtractionResult | null> {
     loading.value = true
     error.value = null
     retryCount.value = 0
     retrying.value = false
-
-    const payload: Record<string, unknown> = { source, input }
-    if (image) payload.image = image
 
     const attempt = async (): Promise<ExtractionResult | null> => {
       try {
@@ -72,5 +67,21 @@ export function useAiExtraction() {
     }
   }
 
-  return { loading, error, retryCount, retrying, extractFromText }
+  function extractFromText(
+    source: 'voice' | 'ocr' | 'auto',
+    input: string,
+    image?: string
+  ): Promise<ExtractionResult | null> {
+    const payload: Record<string, unknown> = { source, input }
+    if (image) payload.image = image
+    return post(payload)
+  }
+
+  /** OWF-311: source siempre 'voice' — manda el audio grabado (MediaRecorder) para que
+   *  el servidor lo transcriba (Groq Whisper) en vez de depender de SpeechRecognition. */
+  function extractFromAudio(audioBase64: string, mimeType: string): Promise<ExtractionResult | null> {
+    return post({ source: 'voice', audio: audioBase64, audio_mime: mimeType })
+  }
+
+  return { loading, error, retryCount, retrying, extractFromText, extractFromAudio }
 }
