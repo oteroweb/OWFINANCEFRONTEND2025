@@ -77,7 +77,7 @@
             <span class="shell__pro-topbar-title">{{ pageTitle }}</span>
           </div>
           <div class="shell__pro-topbar-actions">
-            <button class="shell__btn-primary" @click="quickAddOpen = true">
+            <button class="shell__btn-primary" @click="onQuickAdd">
               <span class="material-icons" style="font-size:18px">add</span>
               Agregar
             </button>
@@ -127,7 +127,7 @@
     <!-- Lite: pill flotante con todos los tabs -->
     <LiteFloatingBottomNav
       v-if="!isPro"
-      @quick-add="quickAddOpen = true"
+      @quick-add="onQuickAdd"
     />
 
     <!-- Pro mobile: pill con accent cyan -->
@@ -140,7 +140,6 @@
 
     <!-- ═══ OVERLAYS GLOBALES ══════════════════════════════════════════════ -->
     <QuickActionSheet v-if="isMobile" v-model="quickAddOpen" />
-    <DesktopQuickModal v-else v-model="quickAddOpen" />
 
     <!-- Smart Transaction Modal — global, disponible desde cualquier pantalla -->
     <SmartTransactionModal @saved="onTransactionSaved" />
@@ -178,7 +177,6 @@ import LiteFloatingBottomNav from 'components/liquid/LiteFloatingBottomNav.vue';
 import BottomNavMobile from 'components/liquid/BottomNavMobile.vue';
 import ExpandedNavigationMenuLight from 'components/liquid/ExpandedNavigationMenuLight.vue';
 import QuickActionSheet from 'components/liquid/QuickActionSheet.vue';
-import DesktopQuickModal from 'components/liquid/DesktopQuickModal.vue';
 import SmartTransactionModal from 'components/SmartTransactionModal.vue';
 import OnboardingFlow from 'components/OnboardingFlow.vue';
 import NotificationsPanel from 'components/NotificationsPanel.vue';
@@ -210,6 +208,14 @@ function toggleNav() {
 
 function toggleAccountsPanel() {
   window.dispatchEvent(new CustomEvent('owf:accounts-panel-toggle'));
+}
+
+// OWF-312: en desktop el pre-modal "¿Qué quieres registrar?" era redundante con
+// el selector de Tipo/Método que ya tiene SmartTransactionModal — se eliminó y el
+// "+"/"Agregar" abre el modal real directamente. Mobile sigue igual (QuickActionSheet).
+function onQuickAdd() {
+  if (isMobile.value) quickAddOpen.value = true;
+  else ui.openSmartModal();
 }
 
 // Auto-trigger onboarding si el usuario nunca lo ha visto

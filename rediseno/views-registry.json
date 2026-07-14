@@ -27,7 +27,8 @@
       "concept": "SmartModal / QuickAdd global",
       "designPaths": ["ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx", "ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx"],
       "vuePaths": ["src/components/SmartTransactionModal.vue"],
-      "status": "accepted-ported"
+      "status": "superseded-by-vue",
+      "notes": "OWF-312 (2026-07-14): el pre-modal de escritorio ('¿Qué quieres registrar?', DesktopQuickModal.jsx/vue) se eliminó del lado Vue por decisión de producto — era redundante con el selector de Tipo (línea ~50) y los tabs de Método (línea ~23) que SmartTransactionModal.vue ya tenía dentro del mismo formulario. src/components/liquid/DesktopQuickModal.vue fue borrado; sus 2 atajos únicos (movimientos especiales: pago de deuda/aporte sueño/aporte jar, y CTA Asesor IA) se reubicaron dentro de SmartTransactionModal.vue como fila de chips 'stm-quicklinks', visible solo en desktop y solo en el tab Escribir. El JSX de referencia (DesktopQuickModal.jsx) se conserva en rediseno/ solo como memoria histórica del diseño; SmartTransactionModal.jsx sigue vigente y portado (ver entrada transaction-form-desktop)."
     },
     {
       "id": "shared-expense",

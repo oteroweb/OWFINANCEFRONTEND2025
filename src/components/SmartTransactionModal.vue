@@ -56,6 +56,18 @@
           </button>
         </div>
 
+        <!-- OWF-312: atajos rápidos (solo desktop) — reubicados desde el pre-modal eliminado -->
+        <div v-if="!isEditMode && !$q.screen.lt.md" class="stm-quicklinks">
+          <button v-for="l in QUICK_LINKS" :key="l.id" class="stm-quicklink" @click="goQuickLink(l)">
+            <q-icon :name="l.icon" size="14px" />
+            {{ l.label }}
+          </button>
+          <button class="stm-quicklink stm-quicklink--ai" @click="goAdvisor">
+            <q-icon name="psychology" size="14px" />
+            Hablar con Asesor IA
+          </button>
+        </div>
+
         <!-- OWF-186/256/257/258: Ajuste — Cuenta a ajustar + Saldo objetivo + Se creará un ajuste + Motivo -->
         <template v-if="form.type === 'ajuste'">
           <div class="stm-field">
@@ -856,6 +868,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useQuasar, type QSelect } from 'quasar';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
@@ -878,6 +891,7 @@ defineOptions({ name: 'SmartTransactionModal' });
 const emit = defineEmits<{ saved: [] }>();
 
 const $q = useQuasar();
+const router = useRouter();
 const ui = useUiStore();
 const auth = useAuthStore();
 const txStore = useTransactionsStore();
@@ -904,6 +918,24 @@ const tabConfig = {
   photo:  { title: 'Sube un comprobante' },
   autoai: { title: 'Describe con texto libre' },
 };
+
+// OWF-312: atajos que antes vivían en el pre-modal de escritorio (DesktopQuickModal,
+// eliminado por ser redundante con este formulario). Solo desktop, solo tab "Escribir".
+const QUICK_LINKS: { id: string; label: string; icon: string; path: string; query: Record<string, string> }[] = [
+  { id: 'debt',  label: 'Pago de deuda',   icon: 'credit_card',  path: '/user/debts',  query: { quickAction: 'pay' } },
+  { id: 'dream', label: 'Aporte a sueño',  icon: 'auto_awesome', path: '/user/dreams', query: { quickAction: 'contribute' } },
+  { id: 'jar',   label: 'Aporte a jar',    icon: 'savings',      path: '/user/jars',   query: { quickAction: 'deposit' } },
+];
+
+async function goQuickLink(link: typeof QUICK_LINKS[number]) {
+  show.value = false;
+  await router.push({ path: link.path, query: link.query });
+}
+
+async function goAdvisor() {
+  show.value = false;
+  await router.push('/user/asesor');
+}
 
 // OWF-275: "Carga masiva" delega en TransactionBulkImportDialog como overlay
 // independiente (no como tab-content — ver nota junto al template).
@@ -2015,6 +2047,40 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   &--income.stm-type-btn--active   { color: #10b981; }
   &--transfer.stm-type-btn--active { color: #8b5cf6; }
   &--ajuste.stm-type-btn--active   { color: #f59e0b; }
+}
+
+// OWF-312: fila de atajos secundarios (pago de deuda / aporte sueño / aporte jar / asesor IA)
+.stm-quicklinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.stm-quicklink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-hairline, #e2e8f0);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: transparent;
+  color: var(--fg-2, #64748b);
+  font-family: var(--font-body, sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+
+  &:hover {
+    background: var(--surface-2, #f1f4f6);
+    color: var(--fg-1, #0f172a);
+  }
+
+  &--ai {
+    color: var(--brand-primary, #7c3aed);
+    border-color: var(--brand-primary, #7c3aed);
+  }
 }
 
 // ── Fields ──
