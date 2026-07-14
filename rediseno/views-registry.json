@@ -58,9 +58,9 @@
       "id": "transaction-detail-desktop",
       "concept": "Modal de detalle/edición de transacción desktop",
       "designPaths": ["ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx"],
-      "vuePaths": [],
-      "status": "unreviewed",
-      "notes": "INSTRUCTIVO.md lo mapea a src/components/TransactionEditDialog.vue, que YA NO EXISTE en el repo. Confirmar destino real (¿TransactionFormDialog.vue?) y actualizar."
+      "vuePaths": ["src/pages/user/transactions/LiteTransactionsView.vue", "src/components/SmartTransactionModal.vue", "src/stores/ui.ts"],
+      "status": "accepted-ported",
+      "notes": "OWF-313 (2026-07-14): destino real confirmado — el bloque .tx-detail-sheet de LiteTransactionsView.vue (no TransactionEditDialog.vue, borrado en OWF-196). Drift detectado: el diseño unificó Editar para reutilizar el mismo TransactionForm de Crear (con transferencia+comisión); el Vue actual tiene un mini-formulario inline separado sin esos campos — exactamente el reporte del usuario de que 'el formulario de editar es distinto al de crear'. Portando."
     },
     {
       "id": "transaction-detail-mobile",

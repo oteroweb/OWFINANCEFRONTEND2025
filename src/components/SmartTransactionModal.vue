@@ -10,22 +10,28 @@
       <!-- Header -->
       <div class="stm-header">
         <div>
-          <div class="stm-eyebrow">Nuevo movimiento · {{ isProMode ? 'Pro' : 'Lite' }}</div>
-          <div class="stm-title">{{ tab === 'write' ? '¿Qué pasó con tu dinero?' : tabConfig[tab].title }}</div>
+          <div class="stm-eyebrow">{{ isEditMode ? 'Editar movimiento' : 'Nuevo movimiento' }} · {{ isProMode ? 'Pro' : 'Lite' }}</div>
+          <div class="stm-title">{{ isEditMode ? 'Editar' : (tab === 'write' ? '¿Qué pasó con tu dinero?' : tabConfig[tab].title) }}</div>
         </div>
         <button class="stm-close" @click="show = false" aria-label="Cerrar">
           <q-icon name="close" size="22px" />
         </button>
       </div>
 
-      <!-- Method tabs -->
-      <div class="stm-tabs">
+      <!-- Method tabs (Voz/Foto/Auto IA/Carga masiva no aplican en modo edición: la
+           edición reutiliza únicamente el formulario "Escribir", prellenado) -->
+      <div v-if="!isEditMode" class="stm-tabs">
         <button v-for="m in methods" :key="m.id"
           class="stm-tab" :class="{ 'stm-tab--active': tab === m.id }"
           @click="selectMethod(m.id)">
           <q-icon :name="m.icon" size="16px" />
           {{ m.label }}
         </button>
+      </div>
+
+      <!-- Loading spinner while fetching the transaction being edited -->
+      <div v-if="isEditMode && loadingEditTx" class="stm-body stm-body--centered">
+        <q-spinner size="28px" color="primary" />
       </div>
 
       <!-- AI prefill banner -->
@@ -38,7 +44,7 @@
       </div>
 
       <!-- ── ESCRIBIR tab: inline form ── -->
-      <div v-if="tab === 'write'" class="stm-body">
+      <div v-if="tab === 'write' && !(isEditMode && loadingEditTx)" class="stm-body">
 
         <!-- Type selector -->
         <div class="stm-type-row">
@@ -745,7 +751,7 @@
             <q-spinner v-if="saving" size="16px" color="white" />
             <q-icon v-else-if="savedFlash" name="check_circle" size="18px" />
             <q-icon v-else name="check" size="18px" />
-            {{ saving ? 'Guardando…' : savedFlash ? 'Registrado' : 'Guardar' }}
+            {{ saving ? 'Guardando…' : savedFlash ? 'Registrado' : (isEditMode ? 'Guardar cambios' : 'Guardar') }}
           </button>
         </div>
       </div>
@@ -920,12 +926,15 @@ function onBulkImported() {
   emit('saved');
 }
 
-const types = [
+const allTypes = [
   { id: 'expense'  as const, label: 'Gasto',      icon: 'arrow_outward'  },
   { id: 'income'   as const, label: 'Ingreso',     icon: 'arrow_downward' },
   { id: 'transfer' as const, label: 'Transferir',  icon: 'swap_horiz'     },
   { id: 'ajuste'   as const, label: 'Ajuste',      icon: 'tune'           },
 ];
+// OWF-312: "Ajuste" crea un movimiento especial vía POST /accounts/{id}/adjust-balance
+// (no es una transacción PUT-eable) — no tiene sentido ofrecerlo al editar una transacción existente.
+const types = computed(() => isEditMode.value ? allTypes.filter(t => t.id !== 'ajuste') : allTypes);
 
 // ── Form state ────────────────────────────────────────────────────────────
 const aiPrefill = ref<ExtractionResult | null>(null);
@@ -975,6 +984,11 @@ const form = ref({
 const saving     = ref(false);
 const savedFlash = ref(false);
 const saveError  = ref<string | null>(null);
+
+// OWF-312: modo edición — reutiliza este mismo form (prellenado) para editar una
+// transacción existente en vez del mini-form separado que tenía LiteTransactionsView.
+const isEditMode   = computed(() => ui.editingTransactionId != null);
+const loadingEditTx = ref(false);
 
 function emitSavedWithFlash() {
   savedFlash.value = true;
@@ -1394,7 +1408,7 @@ const typeIdFor = computed(() => {
 });
 
 // ── OWF-184: TfReviewCard — helpers de preview y validación ───────────────
-const typeLabelForReview = computed(() => types.find(t => t.id === form.value.type)?.label ?? '');
+const typeLabelForReview = computed(() => allTypes.find(t => t.id === form.value.type)?.label ?? '');
 // OWF-296: accent por tipo (mismos colores que .stm-type-btn--active) + datos para el
 // fraseo de tx-summary.js del rediseño (símbolo real de la cuenta + cántaro anclado).
 const typeAccent = computed(() => (
@@ -1486,7 +1500,9 @@ async function save() {
   saveError.value = null;
 
   try {
-    if (form.value.type === 'ajuste') {
+    // OWF-312: "Ajuste" no existe en modo edición (ver filtro de `types`), pero por
+    // seguridad nunca pasa por el endpoint de ajuste si venimos editando una transacción.
+    if (form.value.type === 'ajuste' && !isEditMode.value) {
       await saveAdjuste();
       $q.notify({ type: 'positive', message: 'Saldo ajustado' });
       emitSavedWithFlash();
@@ -1573,6 +1589,20 @@ async function save() {
         if (rateParalelo.value != null) payload.rate = rateParalelo.value;
         if (rateOficial.value != null) payload.rate_official = rateOficial.value;
       }
+    }
+
+    if (isEditMode.value && ui.editingTransactionId != null) {
+      // OWF-312: reusa la acción del store (PUT /transactions/:id — la misma que ya usa
+      // el resto de la app) en vez de duplicar la llamada aquí. Antes LiteTransactionsView
+      // y TxDetailModal usaban api.patch(), que no coincide con la ruta real del backend
+      // (sólo PUT existe para /transactions/:id).
+      await txStore.updateTransaction({ id: ui.editingTransactionId, ...payload });
+      if (form.value.type !== 'transfer' && showDualRates.value) {
+        await persistOfficialRateIfNeeded();
+      }
+      $q.notify({ type: 'positive', message: 'Movimiento actualizado' });
+      emitSavedWithFlash();
+      return;
     }
 
     await api.post('/transactions', payload);
@@ -1730,6 +1760,70 @@ function onShow() {
   // (hallazgo Ronda 2 QA_TRANSACTIONS_TEST_MATRIX.md). Refresca el perfil (incluye accounts
   // con balance actualizado) cada vez que se abre el modal, sin bloquear el render.
   void auth.refreshProfile();
+
+  // OWF-312: modo edición — sobrescribe los defaults de "crear" con los datos reales
+  // de la transacción (async, llega después del reset de arriba).
+  if (isEditMode.value && ui.editingTransactionId != null) {
+    void loadTransactionForEdit(ui.editingTransactionId);
+  }
+}
+
+// OWF-312: infiere el tipo lógico (expense/income/transfer) de una transacción cruda del
+// backend igual que lo hace LiteTransactionsView para la lista — "ajuste" se colapsa a
+// income/expense según el signo porque el modo edición no ofrece esa opción (ver `types`).
+function deriveTypeFromTx(raw: Record<string, unknown>): 'expense' | 'income' | 'transfer' {
+  const rawType = raw.transaction_type as Record<string, unknown> | undefined;
+  const slug = typeof rawType?.slug === 'string' ? rawType.slug.toLowerCase() : '';
+  const name = typeof rawType?.name === 'string' ? rawType.name.toLowerCase() : '';
+  const text = `${slug} ${name}`;
+  const amount = Number(raw.amount ?? 0);
+  if (text.includes('transfer') || text.includes('traspaso')) return 'transfer';
+  if (text.includes('income') || text.includes('ingreso')) return 'income';
+  if (text.includes('expense') || text.includes('gasto')) return 'expense';
+  return amount >= 0 ? 'income' : 'expense';
+}
+
+async function loadTransactionForEdit(id: number) {
+  loadingEditTx.value = true;
+  try {
+    const res = await api.get<{ data: Record<string, unknown> } | Record<string, unknown>>(`/transactions/${id}`);
+    const body = res.data as { data?: Record<string, unknown> };
+    const raw: Record<string, unknown> = body?.data ?? (res.data as Record<string, unknown>);
+
+    const txType = deriveTypeFromTx(raw);
+    form.value.type = txType;
+    form.value.name = typeof raw.name === 'string' ? raw.name : '';
+    form.value.date = typeof raw.date === 'string' ? raw.date.replace(' ', 'T').slice(0, 16) : now();
+    dateShortcut.value = 'custom';
+
+    const cat = raw.category as { id?: number } | null | undefined;
+    form.value.category_id = cat?.id ?? (typeof raw.category_id === 'number' ? raw.category_id : null);
+    form.value.provider_id = typeof raw.provider_id === 'number' ? raw.provider_id : null;
+    form.value.tags = Array.isArray(raw.tags)
+      ? (raw.tags as { id: number }[]).map(t => t.id).filter((n): n is number => typeof n === 'number')
+      : [];
+
+    const payments = Array.isArray(raw.payment_transactions)
+      ? (raw.payment_transactions as { account_id: number | null; amount: number | string }[])
+      : [];
+    const amount = Number(raw.amount ?? 0);
+
+    if (txType === 'transfer') {
+      const from = payments.find(p => Number(p.amount) < 0);
+      const to = payments.find(p => Number(p.amount) > 0);
+      form.value.account_from_id = from?.account_id ?? null;
+      form.value.account_to_id = to?.account_id ?? null;
+      form.value.amount = from ? Math.abs(Number(from.amount)) : Math.abs(amount);
+    } else {
+      form.value.account_id = payments[0]?.account_id ?? form.value.account_id;
+      form.value.amount = Math.abs(amount);
+    }
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo cargar la transacción para editar.' });
+    ui.closeSmartModal();
+  } finally {
+    loadingEditTx.value = false;
+  }
 }
 
 function onHide() {

@@ -104,6 +104,9 @@ export const useUiStore = defineStore('ui', {
     showSmartModal: false as boolean,
     smartModalTab: 'write' as 'write' | 'voice' | 'photo' | 'autoai',
     smartModalType: 'expense' as 'expense' | 'income' | 'transfer' | 'ajuste',
+    // OWF-312: id de la transacción en edición — cuando está set, SmartTransactionModal
+    // se abre prellenado con sus datos (mismo form que crear) y guarda con PUT en vez de POST.
+    editingTransactionId: null as number | null,
     hideValues: readPrivacyLock() ? true : localStorage.getItem(HIDE_KEY) === 'true',
     privacyLockEnabled: readPrivacyLock(),
     hasPin: null as boolean | null,
@@ -176,12 +179,22 @@ export const useUiStore = defineStore('ui', {
       };
     },
     openSmartModal(tab: 'write' | 'voice' | 'photo' | 'autoai' = 'write', type: 'expense' | 'income' | 'transfer' | 'ajuste' = 'expense') {
+      this.editingTransactionId = null;
       this.smartModalTab = tab;
       this.smartModalType = type;
       this.showSmartModal = true;
     },
+    // OWF-312: abre el mismo modal de creación, pero en modo edición prellenado con la
+    // transacción `id` — reemplaza los mini-forms de edición separados (sin soporte de
+    // transferencia/comisión) por el formulario real de crear.
+    openSmartModalForEdit(id: number) {
+      this.editingTransactionId = id;
+      this.smartModalTab = 'write';
+      this.showSmartModal = true;
+    },
     closeSmartModal() {
       this.showSmartModal = false;
+      this.editingTransactionId = null;
     },
     openNewTransactionDialog(typeSlug?: string) {
       this.prefillTransactionId = null;

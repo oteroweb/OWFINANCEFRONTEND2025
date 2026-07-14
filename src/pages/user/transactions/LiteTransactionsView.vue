@@ -198,15 +198,14 @@
       </div>
     </div>
 
-    <!-- Transaction detail bottom sheet -->
+    <!-- Transaction detail bottom sheet (solo lectura — Editar abre SmartTransactionModal
+         prellenado, el mismo formulario real de crear, en vez de un mini-form aparte) -->
     <q-dialog v-model="showDetail" position="bottom" :maximized="false">
       <div v-if="detailTx" class="tx-detail-sheet">
         <div class="tx-detail-sheet__handle" />
 
-        <!-- ── VIEW MODE ── -->
-        <template v-if="!editMode">
-          <!-- Hero -->
-          <div class="tx-detail-sheet__hero">
+        <!-- Hero -->
+        <div class="tx-detail-sheet__hero">
             <div class="tx-detail-sheet__icon"
               :class="detailTx.type === 'income' ? 'tx-detail-sheet__icon--income' : 'tx-detail-sheet__icon--expense'">
               <q-icon :name="detailTx.type === 'income' ? 'arrow_downward' : 'arrow_outward'" size="26px" />
@@ -216,10 +215,10 @@
               {{ isHidden ? '$ ••••••' : `${detailTx.type === 'income' ? '+' : '−'} ${formatMoney(Math.abs(detailTx.amount))}` }}
             </div>
             <div class="tx-detail-sheet__label">{{ detailTx.name }}</div>
-          </div>
+        </div>
 
-          <!-- Detail rows -->
-          <div class="tx-detail-sheet__rows">
+        <!-- Detail rows -->
+        <div class="tx-detail-sheet__rows">
             <div class="tx-detail-row">
               <q-icon name="swap_vert" size="19px" class="tx-detail-row__icon" />
               <span class="tx-detail-row__key">Tipo</span>
@@ -260,65 +259,30 @@
                 </span>
               </div>
             </div>
-          </div>
+        </div>
 
-          <!-- Confirm eliminar inline -->
-          <div v-if="confirmDelete" class="tx-detail-confirm">
-            <span class="tx-detail-confirm__text">¿Eliminar esta transacción?</span>
-            <button class="tx-detail-btn tx-detail-btn--danger" @click="void confirmDeleteNow()">Confirmar</button>
-            <button class="tx-detail-btn tx-detail-btn--ghost" @click="confirmDelete = false">Cancelar</button>
-          </div>
+        <!-- Confirm eliminar inline -->
+        <div v-if="confirmDelete" class="tx-detail-confirm">
+          <span class="tx-detail-confirm__text">¿Eliminar esta transacción?</span>
+          <button class="tx-detail-btn tx-detail-btn--danger" @click="void confirmDeleteNow()">Confirmar</button>
+          <button class="tx-detail-btn tx-detail-btn--ghost" @click="confirmDelete = false">Cancelar</button>
+        </div>
 
-          <!-- Actions -->
-          <div class="tx-detail-sheet__footer">
-            <button class="tx-detail-btn tx-detail-btn--danger" @click="confirmDelete = true">
-              <q-icon name="delete_outline" size="17px" /> Eliminar
-            </button>
-            <button class="tx-detail-btn tx-detail-btn--ghost" @click="void duplicateFromDetail()">
-              <q-icon name="content_copy" size="17px" /> Duplicar
-            </button>
-            <div style="flex:1" />
-            <button class="tx-detail-btn tx-detail-btn--ghost" @click="showDetail = false">Cerrar</button>
-            <button class="tx-detail-btn tx-detail-btn--primary" @click="enterEditMode">
-              <q-icon name="edit" size="17px" /> Editar
-            </button>
-          </div>
-        </template>
-
-        <!-- ── EDIT MODE ── -->
-        <template v-else>
-          <div class="tx-detail-sheet__edit-title">Editar transacción</div>
-
-          <div class="tx-detail-edit__fields">
-            <div class="tx-detail-edit__field">
-              <label class="tx-detail-edit__label">Concepto</label>
-              <input v-model="editForm.name" class="tx-detail-edit__input" placeholder="Concepto" />
-            </div>
-            <div class="tx-detail-edit__field">
-              <label class="tx-detail-edit__label">Monto</label>
-              <input v-model.number="editForm.amount" type="number" class="tx-detail-edit__input" placeholder="0.00" />
-            </div>
-            <div class="tx-detail-edit__field">
-              <label class="tx-detail-edit__label">Fecha</label>
-              <input v-model="editForm.date" type="datetime-local" class="tx-detail-edit__input" />
-            </div>
-            <div class="tx-detail-edit__field">
-              <label class="tx-detail-edit__label">Categoría</label>
-              <q-select v-model="editForm.category_id" :options="editCategoryOptions" emit-value map-options dense outlined
-                clearable placeholder="Sin categoría" :loading="editCatLoading" />
-              <AnchoredJarChip :category-id="editForm.category_id" class="tx-detail-edit__chip" />
-            </div>
-          </div>
-
-          <div class="tx-detail-sheet__footer">
-            <button class="tx-detail-btn tx-detail-btn--ghost" @click="exitEditMode">Cancelar</button>
-            <div style="flex:1" />
-            <button class="tx-detail-btn tx-detail-btn--primary" :disabled="editSaving" @click="void saveEdit()">
-              <q-icon v-if="editSaving" name="hourglass_empty" size="17px" />
-              <q-icon v-else name="check" size="17px" /> Guardar
-            </button>
-          </div>
-        </template>
+        <!-- Actions — "Editar" abre SmartTransactionModal prellenado (mismo form que
+             crear: soporta transferencia y comisión, no un mini-form aparte) -->
+        <div class="tx-detail-sheet__footer">
+          <button class="tx-detail-btn tx-detail-btn--danger" @click="confirmDelete = true">
+            <q-icon name="delete_outline" size="17px" /> Eliminar
+          </button>
+          <button class="tx-detail-btn tx-detail-btn--ghost" @click="void duplicateFromDetail()">
+            <q-icon name="content_copy" size="17px" /> Duplicar
+          </button>
+          <div style="flex:1" />
+          <button class="tx-detail-btn tx-detail-btn--ghost" @click="showDetail = false">Cerrar</button>
+          <button class="tx-detail-btn tx-detail-btn--primary" @click="editFromDetail">
+            <q-icon name="edit" size="17px" /> Editar
+          </button>
+        </div>
       </div>
     </q-dialog>
 
@@ -334,13 +298,7 @@ import { usePeriodStore } from 'stores/period';
 import TxDropdown from './TxDropdown.vue';
 import PeriodNavigator from 'components/PeriodNavigator.vue';
 import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
-import {
-  loadCategoriesWithJars,
-  loadUserJars,
-  getCachedCategories,
-  jarForCategory,
-  getCachedJars,
-} from 'src/utils/txCatalog';
+import { jarForCategory, getCachedJars } from 'src/utils/txCatalog';
 import type { Tag } from 'stores/tags';
 
 defineOptions({ name: 'LiteTransactionsView' });
@@ -496,73 +454,24 @@ function applyPreset(p: typeof amountPresets[0]) {
 }
 
 // ── Detail / Edit ────────────────────────────────────────────────────
+// OWF-312: "Editar" ya no usa un mini-form propio (editForm/enterEditMode/saveEdit) —
+// abre SmartTransactionModal.vue prellenado (ui.openSmartModalForEdit), el mismo
+// formulario real de "crear" que soporta transferencia y comisión. Este sheet queda
+// como vista de SOLO LECTURA del detalle.
 const detailTx = ref<TxItem | null>(null);
 const showDetail = ref(false);
 const confirmDelete = ref(false);
 
-// Edit mode state
-const editMode = ref(false);
-const editSaving = ref(false);
-const editCatLoading = ref(false);
-const editForm = ref({
-  name: '',
-  amount: 0,
-  date: '',
-  category_id: null as number | null,
-});
-
-const editCategoryOptions = computed(() =>
-  getCachedCategories()
-    .filter(c => c.type === 'category' && c.active)
-    .map(c => ({ label: c.name, value: c.id }))
-);
-
 function openDetail(tx: TxItem) {
   detailTx.value = tx;
   confirmDelete.value = false;
-  editMode.value = false;
   showDetail.value = true;
 }
 
-function enterEditMode() {
+function editFromDetail() {
   if (!detailTx.value) return;
-  editForm.value = {
-    name: detailTx.value.name,
-    amount: detailTx.value.amount,
-    date: detailTx.value.date.slice(0, 16),
-    category_id: detailTx.value.category_id ?? null,
-  };
-  editCatLoading.value = true;
-  void Promise.all([loadCategoriesWithJars(), loadUserJars()]).finally(() => {
-    editCatLoading.value = false;
-  });
-  editMode.value = true;
-}
-
-function exitEditMode() {
-  editMode.value = false;
-}
-
-async function saveEdit() {
-  if (!detailTx.value || editSaving.value) return;
-  editSaving.value = true;
-  try {
-    const derivedJar = jarForCategory(editForm.value.category_id, getCachedJars());
-    await api.patch(`/transactions/${detailTx.value.id}`, {
-      name: editForm.value.name.trim(),
-      amount: editForm.value.amount,
-      date: editForm.value.date.replace('T', ' ') + ':00',
-      category_id: editForm.value.category_id ?? null,
-      jar_id: derivedJar?.id ?? null,
-    });
-    $q.notify({ type: 'positive', message: 'Transacción actualizada' });
-    showDetail.value = false;
-    void loadTransactions();
-  } catch {
-    $q.notify({ type: 'negative', message: 'Error al guardar' });
-  } finally {
-    editSaving.value = false;
-  }
+  showDetail.value = false;
+  ui.openSmartModalForEdit(detailTx.value.id);
 }
 
 async function confirmDeleteNow() {
@@ -1385,49 +1294,5 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-// Edit mode
-.tx-detail-sheet__edit-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--fg-1, #0f172a);
-  padding: 16px 20px 8px;
-}
-
-.tx-detail-edit__fields {
-  padding: 0 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.tx-detail-edit__field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.tx-detail-edit__label {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--fg-2, #64748b);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.tx-detail-edit__input {
-  width: 100%;
-  border: 1.5px solid var(--border-hairline, #e2e8f0);
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 14px;
-  color: var(--fg-1, #0f172a);
-  background: var(--surface-1, #fff);
-  outline: none;
-  &:focus { border-color: var(--brand-primary, #2d4da6); }
-}
-
-.tx-detail-edit__chip {
-  margin-top: 4px;
-}
 
 </style>
