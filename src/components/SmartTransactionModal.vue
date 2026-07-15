@@ -21,11 +21,17 @@
       <!-- Method tabs (Voz/Foto/Auto IA/Carga masiva no aplican en modo edición: la
            edición reutiliza únicamente el formulario "Escribir", prellenado) -->
       <div v-if="!isEditMode" class="stm-tabs">
-        <button v-for="m in methods" :key="m.id"
-          class="stm-tab" :class="{ 'stm-tab--active': tab === m.id }"
-          @click="selectMethod(m.id)">
-          <q-icon :name="m.icon" size="16px" />
-          {{ m.label }}
+        <div class="stm-method-grid">
+          <button v-for="m in primaryMethods" :key="m.id"
+            class="stm-method-tile" :class="{ 'stm-method-tile--active': tab === m.id }"
+            @click="selectMethod(m.id)">
+            <q-icon :name="m.icon" size="20px" />
+            {{ m.label }}
+          </button>
+        </div>
+        <button class="stm-bulk-link" @click="selectMethod('bulk')">
+          <q-icon name="upload_file" size="15px" />
+          Carga masiva
         </button>
       </div>
 
@@ -912,6 +918,10 @@ const methods = [
   { id: 'autoai' as const, icon: 'auto_awesome',  label: 'Auto IA' },
   { id: 'bulk'   as const, icon: 'upload_file',   label: 'Carga masiva' },
 ];
+
+// Las 4 formas de ingreso principales, en bloque 2x2 — "Carga masiva" queda
+// aparte (no es una forma de ingresar UN movimiento, dispara otro dialog).
+const primaryMethods = methods.filter((m) => m.id !== 'bulk');
 
 const tabConfig = {
   voice:  { title: 'Dicta tu movimiento' },
@@ -1953,22 +1963,29 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 // ── Tabs ──
 .stm-tabs {
   display: flex;
-  gap: 5px;
+  flex-direction: column;
+  gap: 10px;
   padding: 0 22px 14px;
-  flex-wrap: wrap;
   flex-shrink: 0;
 }
 
-.stm-tab {
-  display: inline-flex;
+.stm-method-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.stm-method-tile {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 13px;
+  gap: 9px;
+  padding: 13px 14px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-md, 12px);
   font-family: var(--font-body, sans-serif);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
+  text-align: left;
   cursor: pointer;
   background: var(--surface-2, #f1f4f6);
   color: var(--fg-2, #64748b);
@@ -1979,6 +1996,23 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
     color: #fff;
     font-weight: 700;
   }
+}
+
+.stm-bulk-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body, sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg-3, #94a3b8);
+  cursor: pointer;
+
+  &:hover { color: var(--fg-2, #64748b); }
 }
 
 // ── AI prefill banner ──
