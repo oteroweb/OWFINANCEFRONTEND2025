@@ -9,8 +9,17 @@ export interface ExtractionResult {
     currency: string | null
     description: string | null
     category_suggestion: string | null
+    /** OWF-316: nombre de comercio detectado por la IA, antes de resolver contra providers reales. */
+    merchant?: string | null
+    /** OWF-316: provider real del usuario resuelto por similitud contra `merchant` (backend). */
+    provider_id_suggestion?: number | null
+    provider_name_suggestion?: string | null
     date: string | null
     confidence: number | null
+    /** OWF-317: equivalente en la moneda local a la tasa oficial (BCV) del usuario, cuando amount/currency vienen en USD. */
+    bcv_equivalent?: number | null
+    bcv_currency_code?: string | null
+    bcv_rate?: number | null
   }
   processing_ms: number
   /** OWF-311: presente cuando source=voice — el texto que Groq Whisper transcribió del audio. */

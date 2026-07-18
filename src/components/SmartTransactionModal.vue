@@ -795,6 +795,7 @@
           <q-icon name="check_circle" size="40px" color="positive" />
           <div class="stm-ai-result__amount">{{ voiceResult.data.currency }} {{ voiceResult.data.amount?.toFixed(2) }}</div>
           <div class="stm-ai-result__desc">{{ voiceResult.data.description }}</div>
+          <div v-if="bcvLabel(voiceResult.data)" class="stm-ai-result__bcv">{{ bcvLabel(voiceResult.data) }}</div>
           <div class="stm-ai-result__conf">Confianza: {{ Math.round((voiceResult.data.confidence ?? 0) * 100) }}%</div>
           <div class="stm-footer">
             <button class="stm-btn stm-btn--ghost" @click="voiceResult = null; voiceTranscript = ''">Reintentar</button>
@@ -828,6 +829,7 @@
           <q-icon name="check_circle" size="40px" color="positive" />
           <div class="stm-ai-result__amount">{{ ocrResult.data.currency }} {{ ocrResult.data.amount?.toFixed(2) }}</div>
           <div class="stm-ai-result__desc">{{ ocrResult.data.description }}</div>
+          <div v-if="bcvLabel(ocrResult.data)" class="stm-ai-result__bcv">{{ bcvLabel(ocrResult.data) }}</div>
           <div class="stm-footer">
             <button class="stm-btn stm-btn--ghost" @click="ocrResult = null">Otra foto</button>
             <button class="stm-btn stm-btn--primary" @click="applyAiResult(ocrResult, 'foto de factura')">
@@ -846,6 +848,7 @@
           <q-icon name="auto_awesome" size="32px" color="purple" />
           <div class="stm-ai-result__amount">{{ aiTextResult.data.currency }} {{ aiTextResult.data.amount?.toFixed(2) }}</div>
           <div class="stm-ai-result__desc">{{ aiTextResult.data.description }}</div>
+          <div v-if="bcvLabel(aiTextResult.data)" class="stm-ai-result__bcv">{{ bcvLabel(aiTextResult.data) }}</div>
         </div>
         <div class="stm-footer">
           <button class="stm-btn stm-btn--ghost" @click="show = false">Cancelar</button>
@@ -1723,6 +1726,15 @@ async function runTextAi() {
   aiTextResult.value = await extractText('auto', aiText.value);
 }
 
+// OWF-317: equivalente en bolívares a la tasa oficial (BCV) del usuario, ya calculado
+// determinísticamente por el backend (no por la IA) — solo viene presente cuando el monto
+// extraído está en USD y el usuario tiene una tasa oficial configurada.
+function bcvLabel(d: ExtractionResult['data']): string | null {
+  if (!d.bcv_equivalent || !d.bcv_currency_code) return null;
+  const amount = d.bcv_equivalent.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `≈ ${d.bcv_currency_code} ${amount} a la tasa BCV${d.bcv_rate ? ` (${d.bcv_rate})` : ''}`;
+}
+
 // ── Apply AI result to form ───────────────────────────────────────────────
 function applyAiResult(result: ExtractionResult, source: string) {
   aiPrefill.value = result;
@@ -1746,6 +1758,14 @@ function applyAiResult(result: ExtractionResult, source: string) {
       return name === suggestion || name.includes(suggestion) || suggestion.includes(name);
     });
     if (match) form.value.category_id = match.id;
+  }
+
+  // OWF-316 — El backend ya resolvió el "merchant" transcrito (ej. "Vanesco") contra un
+  // provider real del usuario por similitud (ej. "Banesco") — se aplica directo, sin volver
+  // a intentar un match acá (el q-select se prellena con el nombre real, no el transcrito).
+  if (d.provider_id_suggestion) {
+    form.value.provider_id = d.provider_id_suggestion;
+    selectedProviderName.value = d.provider_name_suggestion ?? null;
   }
 
   tab.value = 'write';
@@ -2524,6 +2544,7 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 
   &__amount { font-family: var(--font-money, monospace); font-size: 22px; font-weight: 700; color: var(--fg-1); }
   &__desc   { font-size: 13px; color: var(--fg-2); }
+  &__bcv    { font-size: 12px; font-weight: 600; color: var(--brand-primary, #2d4da6); }
   &__conf   { font-size: 11px; color: var(--fg-3); }
 }
 
