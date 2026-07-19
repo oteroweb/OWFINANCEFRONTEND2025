@@ -841,7 +841,18 @@
           <div class="stm-ai-result__amount">{{ ocrResult.data.currency }} {{ ocrResult.data.amount?.toFixed(2) }}</div>
           <div class="stm-ai-result__desc">{{ ocrResult.data.description }}</div>
           <div v-if="bcvLabel(ocrResult.data)" class="stm-ai-result__bcv">{{ bcvLabel(ocrResult.data) }}</div>
-          <div class="stm-footer">
+
+          <!-- OWF-319 (capa 1): falta la cuenta — preguntar en vez de guardar incompleto -->
+          <template v-if="missingAccountOptions(ocrResult)">
+            <div class="stm-missing-question">¿Con qué cuenta fue?</div>
+            <div class="stm-account-chips">
+              <button v-for="opt in missingAccountOptions(ocrResult)" :key="opt.id" class="stm-account-chip"
+                @click="answerOcrAccount(opt.id)">
+                {{ opt.label }} <span class="stm-account-chip__balance">{{ opt.currency }} {{ opt.balance.toFixed(2) }}</span>
+              </button>
+            </div>
+          </template>
+          <div v-else class="stm-footer">
             <button class="stm-btn stm-btn--ghost" @click="ocrResult = null">Otra foto</button>
             <button class="stm-btn stm-btn--primary" @click="applyAiResult(ocrResult, 'foto de factura')">
               <q-icon name="edit_note" size="18px" /> Editar y guardar
@@ -860,13 +871,24 @@
           <div class="stm-ai-result__amount">{{ aiTextResult.data.currency }} {{ aiTextResult.data.amount?.toFixed(2) }}</div>
           <div class="stm-ai-result__desc">{{ aiTextResult.data.description }}</div>
           <div v-if="bcvLabel(aiTextResult.data)" class="stm-ai-result__bcv">{{ bcvLabel(aiTextResult.data) }}</div>
+
+          <!-- OWF-319 (capa 1): falta la cuenta — preguntar en vez de guardar incompleto -->
+          <template v-if="missingAccountOptions(aiTextResult)">
+            <div class="stm-missing-question">¿Con qué cuenta fue?</div>
+            <div class="stm-account-chips">
+              <button v-for="opt in missingAccountOptions(aiTextResult)" :key="opt.id" class="stm-account-chip"
+                @click="answerTextAccount(opt.id)">
+                {{ opt.label }} <span class="stm-account-chip__balance">{{ opt.currency }} {{ opt.balance.toFixed(2) }}</span>
+              </button>
+            </div>
+          </template>
         </div>
         <div class="stm-footer">
           <button class="stm-btn stm-btn--ghost" @click="show = false">Cancelar</button>
-          <button v-if="aiTextResult" class="stm-btn stm-btn--primary" @click="applyAiResult(aiTextResult, 'texto libre')">
+          <button v-if="aiTextResult && !missingAccountOptions(aiTextResult)" class="stm-btn stm-btn--primary" @click="applyAiResult(aiTextResult, 'texto libre')">
             <q-icon name="edit_note" size="18px" /> Editar y guardar
           </button>
-          <button v-else class="stm-btn stm-btn--ai" :disabled="aiLoading || !aiText.trim()" @click="runTextAi">
+          <button v-else-if="!aiTextResult" class="stm-btn stm-btn--ai" :disabled="aiLoading || !aiText.trim()" @click="runTextAi">
             <q-spinner v-if="aiLoading" size="16px" color="white" />
             <q-icon v-else name="auto_awesome" size="18px" />
             {{ aiLoading ? 'Analizando…' : 'Analizar con IA' }}
@@ -2568,6 +2590,26 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   display: flex; align-items: center; gap: 8px;
   font-size: 13px; color: var(--fg-2);
 }
+
+// ── OWF-319 (capa 1): pregunta de cuenta faltante ──
+.stm-missing-question {
+  font-size: 14px; font-weight: 600; color: var(--fg-1);
+  margin-top: 4px;
+}
+.stm-account-chips {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  width: 100%;
+}
+.stm-account-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-radius: 999px;
+  border: 1px solid var(--border-hairline, #e2e8f0);
+  background: var(--surface-1, #fff);
+  font-size: 13px; font-weight: 600; color: var(--fg-1);
+  cursor: pointer;
+}
+.stm-account-chip:hover { border-color: var(--brand-primary, #6366f1); }
+.stm-account-chip__balance { font-size: 11px; font-weight: 400; color: var(--fg-2); }
 
 // ── AI result ──
 .stm-ai-result {

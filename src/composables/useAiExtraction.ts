@@ -20,10 +20,17 @@ export interface ExtractionResult {
     bcv_equivalent?: number | null
     bcv_currency_code?: string | null
     bcv_rate?: number | null
+    /** OWF-319 (capa 1): cuenta resuelta automáticamente (1 sola cuenta o match por nombre), o null si falta. */
+    account_id?: number | null
   }
   processing_ms: number
   /** OWF-311: presente cuando source=voice — el texto que Groq Whisper transcribió del audio. */
   transcript?: string | null
+  /** OWF-319 (capa 1): campos que el usuario debe completar antes de poder confirmar (hoy solo "account_id"). Vacío = ya se puede confirmar. */
+  missing_fields?: string[]
+  missing_field_options?: {
+    account_id?: { id: number; label: string; balance: number; currency: string }[]
+  }
 }
 
 function mapHttpError(status: number): string {
@@ -92,5 +99,29 @@ export function useAiExtraction() {
     return post({ source: 'voice', audio: audioBase64, audio_mime: mimeType })
   }
 
-  return { loading, error, retryCount, retrying, extractFromText, extractFromAudio }
+  /** OWF-319 (capa 1): resuelve un campo faltante (ej. tap en un chip de cuenta) — llama a
+   *  un endpoint dedicado que NO invoca IA, así que no pasa por post()/retry de red (esa
+   *  lógica es para llamadas que sí cuestan tokens); acá un simple try/catch alcanza. */
+  async function answerMissingField(
+    extractionId: number,
+    field: 'account_id',
+    value: number
+  ): Promise<ExtractionResult | null> {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await api.post<ExtractionResult>(
+        `/ai/extract-transaction/${extractionId}/answer`,
+        { field, value }
+      )
+      return data
+    } catch {
+      error.value = 'No se pudo guardar la respuesta. Intenta de nuevo.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { loading, error, retryCount, retrying, extractFromText, extractFromAudio, answerMissingField }
 }
