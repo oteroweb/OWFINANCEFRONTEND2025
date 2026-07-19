@@ -267,7 +267,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
@@ -696,6 +696,11 @@ async function loadDreams() {
   finally { dreamsLoading.value = false; }
 }
 
+// OWF-adhoc: editar desde el detalle (TxDetailModal → SmartTransactionModal) ya no
+// emite 'saved' directo a este componente — hay que escuchar el evento global que
+// AppShell dispara al guardar, mismo patrón que LiteTransactionsView.vue (OWF-313).
+function onTxSaved() { void loadRecentTransactions(); }
+
 onMounted(() => {
   void Promise.all([
     loadBalanceSummary(),
@@ -705,6 +710,11 @@ onMounted(() => {
     loadAccountsPanel(),
     loadDreams(),
   ]);
+  window.addEventListener('owf:transaction-saved', onTxSaved);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('owf:transaction-saved', onTxSaved);
 });
 </script>
 

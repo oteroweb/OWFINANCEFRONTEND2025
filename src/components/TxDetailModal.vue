@@ -18,11 +18,11 @@
         <div class="txdm__header">
           <div>
             <div class="t-eyebrow">
-              {{ mode === 'edit' ? 'Editar movimiento' : 'Detalle del movimiento' }}
+              Detalle del movimiento
               {{ layoutMode === 'pro' ? ' · Pro' : ' · Lite' }}
             </div>
             <div class="t-h2" style="margin-top: 4px;">
-              {{ mode === 'edit' ? 'Editar' : tx.name }}
+              {{ tx.name }}
             </div>
           </div>
           <button class="txdm__close-btn" @click="isOpen = false" aria-label="Cerrar">
@@ -46,15 +46,14 @@
               class="txdm__hero-amount"
               :style="{ color: isIncome ? 'var(--income-fg)' : 'var(--expense-fg)' }"
             >
-              {{ isHidden ? '$ ••••••' : `${isIncome ? '+' : '−'} $ ${fmtAmt(Math.abs(form.amount))}` }}
+              {{ isHidden ? '$ ••••••' : `${isIncome ? '+' : '−'} $ ${fmtAmt(Math.abs(tx.amount))}` }}
             </div>
             <div class="txdm__hero-date">{{ fmtDate(tx.date) }}</div>
           </div>
         </div>
 
-        <!-- ── VIEW MODE ── -->
-        <template v-if="mode === 'view'">
-          <div class="txdm__fields">
+        <!-- ── VIEW MODE (solo lectura; edición delega a SmartTransactionModal) ── -->
+        <div class="txdm__fields">
             <div class="txdm__field">
               <span class="material-icons txdm__field-icon">swap_vert</span>
               <span class="txdm__field-label">Tipo</span>
@@ -90,118 +89,32 @@
             </div>
           </div>
 
-          <!-- Delete confirm inline -->
-          <div v-if="mode === 'view' && confirmDelete" class="txdm__confirm-delete">
-            <div class="txdm__confirm-delete__text">¿Eliminar este movimiento? No se puede deshacer.</div>
-            <div class="txdm__confirm-delete__actions">
-              <button class="txdm__btn txdm__btn--ghost" @click="confirmDelete = false">Cancelar</button>
-              <button class="txdm__btn txdm__btn--danger" :disabled="saving" @click="doDelete">
-                <span class="material-icons">delete</span>
-                {{ saving ? 'Eliminando…' : 'Eliminar' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- View footer -->
-          <div v-if="!confirmDelete" class="txdm__footer">
-            <button class="txdm__btn txdm__btn--danger-ghost" @click="confirmDelete = true">
-              <span class="material-icons">delete_outline</span> Eliminar
-            </button>
-            <button class="txdm__btn txdm__btn--ghost" @click="doDuplicate">
-              <span class="material-icons">content_copy</span> Duplicar
-            </button>
-            <div style="flex: 1;" />
-            <button class="txdm__btn txdm__btn--ghost" @click="isOpen = false">Cerrar</button>
-            <button class="txdm__btn txdm__btn--primary" @click="mode = 'edit'">
-              <span class="material-icons">edit</span> Editar
+        <!-- Delete confirm inline -->
+        <div v-if="confirmDelete" class="txdm__confirm-delete">
+          <div class="txdm__confirm-delete__text">¿Eliminar este movimiento? No se puede deshacer.</div>
+          <div class="txdm__confirm-delete__actions">
+            <button class="txdm__btn txdm__btn--ghost" @click="confirmDelete = false">Cancelar</button>
+            <button class="txdm__btn txdm__btn--danger" :disabled="saving" @click="doDelete">
+              <span class="material-icons">delete</span>
+              {{ saving ? 'Eliminando…' : 'Eliminar' }}
             </button>
           </div>
-        </template>
+        </div>
 
-        <!-- ── EDIT MODE ── -->
-        <template v-if="mode === 'edit'">
-          <div class="txdm__edit-body">
-
-            <!-- Type toggle -->
-            <div class="txdm__type-seg">
-              <button
-                class="txdm__type-btn"
-                :class="{ 'txdm__type-btn--active-expense': form.txType === 'expense' }"
-                @click="form.txType = 'expense'"
-              >
-                <span class="material-icons">arrow_outward</span> Gasto
-              </button>
-              <button
-                class="txdm__type-btn"
-                :class="{ 'txdm__type-btn--active-income': form.txType === 'income' }"
-                @click="form.txType = 'income'"
-              >
-                <span class="material-icons">arrow_downward</span> Ingreso
-              </button>
-            </div>
-
-            <!-- Amount -->
-            <div class="txdm__amount-field">
-              <span class="txdm__amount-prefix">$</span>
-              <input
-                v-model.number="form.amount"
-                type="number"
-                step="0.01"
-                min="0"
-                class="txdm__amount-input"
-                placeholder="0.00"
-              />
-            </div>
-
-            <!-- Concept -->
-            <div class="txdm__field-group">
-              <label class="txdm__field-label-edit">Concepto</label>
-              <div class="txdm__text-input-wrap">
-                <span class="material-icons txdm__input-icon">notes</span>
-                <input v-model="form.name" type="text" class="txdm__text-input" placeholder="Ej: Mercado del super" />
-              </div>
-            </div>
-
-            <!-- Category + Jar row -->
-            <div class="txdm__row-2col">
-              <div class="txdm__field-group" style="flex: 1;">
-                <label class="txdm__field-label-edit">Categoría</label>
-                <CategorySelector v-model="form.category_id" allow-null placeholder="Sin categoría" />
-              </div>
-              <div class="txdm__field-group" style="flex: 1;">
-                <label class="txdm__field-label-edit">Cántaro <span class="txdm__hint">· anclado a la categoría</span></label>
-                <AnchoredJarChip :category-id="form.category_id" />
-              </div>
-            </div>
-
-            <!-- Account (Pro only) -->
-            <div v-if="layoutMode === 'pro'" class="txdm__field-group">
-              <label class="txdm__field-label-edit">Cuenta</label>
-              <q-select
-                v-model="form.account_id"
-                :options="accountOptions"
-                option-value="id"
-                option-label="label"
-                emit-value
-                map-options
-                outlined
-                dense
-                placeholder="Seleccionar cuenta"
-              />
-            </div>
-
-          </div>
-
-          <!-- Edit footer -->
-          <div class="txdm__footer">
-            <button class="txdm__btn txdm__btn--ghost" @click="mode = 'view'">Cancelar</button>
-            <button class="txdm__btn txdm__btn--primary" :disabled="saving" @click="doSave">
-              <span class="material-icons">check</span>
-              {{ saving ? 'Guardando…' : 'Guardar cambios' }}
-            </button>
-          </div>
-        </template>
-
+        <!-- View footer -->
+        <div v-if="!confirmDelete" class="txdm__footer">
+          <button class="txdm__btn txdm__btn--danger-ghost" @click="confirmDelete = true">
+            <span class="material-icons">delete_outline</span> Eliminar
+          </button>
+          <button class="txdm__btn txdm__btn--ghost" @click="doDuplicate">
+            <span class="material-icons">content_copy</span> Duplicar
+          </button>
+          <div style="flex: 1;" />
+          <button class="txdm__btn txdm__btn--ghost" @click="isOpen = false">Cerrar</button>
+          <button class="txdm__btn txdm__btn--primary" @click="editTx">
+            <span class="material-icons">edit</span> Editar
+          </button>
+        </div>
       </template>
     </q-card>
   </q-dialog>
@@ -213,8 +126,7 @@ import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import AnchoredJarChip from 'components/AnchoredJarChip.vue';
-import CategorySelector from 'components/CategorySelector.vue';
-import { jarForCategory, getCachedJars, loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
+import { loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
 
 interface TxDetail {
   id: number;
@@ -227,12 +139,6 @@ interface TxDetail {
   account_name: string | null;
   account_color: string | null;
   transaction_type_id: number | null;
-}
-
-interface AccountOption {
-  id: number;
-  label: string;
-  color?: string;
 }
 
 const props = defineProps<{
@@ -255,21 +161,9 @@ const isHidden = computed(() => ui.hideValues);
 const loading = ref(false);
 const saving = ref(false);
 const confirmDelete = ref(false);
-const mode = ref<'view' | 'edit'>('view');
 const tx = ref<TxDetail | null>(null);
-const accountOptions = ref<AccountOption[]>([]);
 
-const form = ref({
-  txType: 'expense' as 'income' | 'expense',
-  amount: 0,
-  name: '',
-  category_id: null as number | null,
-  account_id: null as number | null,
-});
-
-const isIncome = computed(() =>
-  mode.value === 'edit' ? form.value.txType === 'income' : (tx.value?.amount ?? 0) > 0
-);
+const isIncome = computed(() => (tx.value?.amount ?? 0) > 0);
 
 function fmtAmt(n: number): string {
   return Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -289,15 +183,11 @@ function fmtDateLong(d: string | null): string {
 
 async function loadTx(id: number) {
   loading.value = true;
-  mode.value = 'view';
   confirmDelete.value = false;
   tx.value = null;
   try {
     await Promise.all([loadCategoriesWithJars(), loadUserJars()]);
-    const [txRes, acctRes] = await Promise.all([
-      api.get(`/transactions/${id}`),
-      api.get('/accounts'),
-    ]);
+    const txRes = await api.get(`/transactions/${id}`);
     const raw = txRes.data?.data ?? txRes.data;
     const paymentLegs: { account?: { name?: string; color?: string; id?: number } }[] =
       raw.payment_transactions ?? raw.paymentTransactions ?? [];
@@ -314,20 +204,6 @@ async function loadTx(id: number) {
       account_color: firstLeg?.account?.color ?? null,
       transaction_type_id: raw.transaction_type_id ?? null,
     };
-    form.value = {
-      txType: (raw.amount ?? 0) > 0 ? 'income' : 'expense',
-      amount: Math.abs(raw.amount ?? 0),
-      name: raw.name ?? '',
-      category_id: raw.category_id ?? null,
-      account_id: tx.value.account_id,
-    };
-    const accounts: { id: number; name: string; color?: string }[] =
-      acctRes.data?.data ?? acctRes.data ?? [];
-    accountOptions.value = accounts.map((a): AccountOption => {
-      const opt: AccountOption = { id: a.id, label: a.name };
-      if (a.color !== undefined) opt.color = a.color;
-      return opt;
-    });
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar la transacción' });
     isOpen.value = false;
@@ -336,27 +212,13 @@ async function loadTx(id: number) {
   }
 }
 
-async function doSave() {
+// OWF-adhoc: "Editar" ya no usa un mini-form propio (sin soporte de transferencia/
+// comisión) — abre SmartTransactionModal.vue prellenado (ui.openSmartModalForEdit),
+// el mismo formulario real de "crear". Este sheet queda como vista de SOLO LECTURA.
+function editTx() {
   if (!tx.value) return;
-  saving.value = true;
-  try {
-    const derivedJarId = jarForCategory(form.value.category_id, getCachedJars())?.id ?? null;
-    const sign = form.value.txType === 'income' ? 1 : -1;
-    await api.patch(`/transactions/${tx.value.id}`, {
-      name: form.value.name,
-      amount: sign * Math.abs(form.value.amount),
-      category_id: form.value.category_id,
-      jar_id: derivedJarId,
-      account_id: form.value.account_id,
-    });
-    $q.notify({ type: 'positive', message: 'Transacción actualizada' });
-    emit('saved');
-    isOpen.value = false;
-  } catch {
-    $q.notify({ type: 'negative', message: 'Error al guardar' });
-  } finally {
-    saving.value = false;
-  }
+  isOpen.value = false;
+  ui.openSmartModalForEdit(tx.value.id);
 }
 
 async function doDelete() {
@@ -394,7 +256,6 @@ async function doDuplicate() {
 }
 
 function onClose() {
-  mode.value = 'view';
   confirmDelete.value = false;
   tx.value = null;
 }
