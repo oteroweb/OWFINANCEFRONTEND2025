@@ -797,7 +797,18 @@
           <div class="stm-ai-result__desc">{{ voiceResult.data.description }}</div>
           <div v-if="bcvLabel(voiceResult.data)" class="stm-ai-result__bcv">{{ bcvLabel(voiceResult.data) }}</div>
           <div class="stm-ai-result__conf">Confianza: {{ Math.round((voiceResult.data.confidence ?? 0) * 100) }}%</div>
-          <div class="stm-footer">
+
+          <!-- OWF-319 (capa 1): falta la cuenta — preguntar en vez de guardar incompleto -->
+          <template v-if="missingAccountOptions(voiceResult)">
+            <div class="stm-missing-question">¿Con qué cuenta fue?</div>
+            <div class="stm-account-chips">
+              <button v-for="opt in missingAccountOptions(voiceResult)" :key="opt.id" class="stm-account-chip"
+                @click="answerVoiceAccount(opt.id)">
+                {{ opt.label }} <span class="stm-account-chip__balance">{{ opt.currency }} {{ opt.balance.toFixed(2) }}</span>
+              </button>
+            </div>
+          </template>
+          <div v-else class="stm-footer">
             <button class="stm-btn stm-btn--ghost" @click="voiceResult = null; voiceTranscript = ''">Reintentar</button>
             <button class="stm-btn stm-btn--primary" @click="applyAiResult(voiceResult, 'voz')">
               <q-icon name="edit_note" size="18px" /> Editar y guardar
@@ -1202,11 +1213,12 @@ const comisionTipos = [
 ];
 const comision = ref({ tipo: 'pagomovil', valor: 0 });
 const PAGOMOVIL_PCT = 0.30;
+const PAGOMOVIL_MIN_VES = 2; // OWF-320: mínimo Bs 2 por operación P2P (BCV Gaceta 43.231, 10/2025)
 const comisionCalculada = computed(() => {
   const base = Math.abs(form.value.amount ?? 0);
   if (comision.value.tipo === 'fijo')       return comision.value.valor;
   if (comision.value.tipo === 'porcentaje') return (base * comision.value.valor) / 100;
-  if (comision.value.tipo === 'pagomovil')  return (base * PAGOMOVIL_PCT) / 100;
+  if (comision.value.tipo === 'pagomovil')  return Math.max((base * PAGOMOVIL_PCT) / 100, PAGOMOVIL_MIN_VES);
   return 0;
 });
 // OWF: monto base + comisión cuando el panel "Cobrar comisión" está activo — usado tanto
@@ -1725,6 +1737,33 @@ async function runTextAi() {
   aiTextResult.value = null;
   aiTextResult.value = await extractText('auto', aiText.value);
 }
+
+// ── OWF-319 (capa 1): slot-filling de cuenta faltante ──────────────────────
+// Cuando el backend no pudo resolver la cuenta con certeza (usuario Pro con 2+ cuentas
+// y el texto no la menciona), la respuesta trae missing_fields=["account_id"] +
+// missing_field_options — en vez de ir directo a "Editar y guardar" se muestran chips
+// con las cuentas disponibles. Tocar un chip llama /answer (sin gastar otra llamada de
+// IA) y actualiza el mismo resultado en el lugar, sin volver a grabar/escribir nada.
+const { answerMissingField } = useAiExtraction();
+
+function missingAccountOptions(result: ExtractionResult | null) {
+  if (!result?.missing_fields?.includes('account_id')) return null;
+  return result.missing_field_options?.account_id ?? null;
+}
+
+async function answerAccount(resultRef: { value: ExtractionResult | null }, accountId: number) {
+  const current = resultRef.value;
+  if (!current) return;
+  const updated = await answerMissingField(current.extraction_id, 'account_id', accountId);
+  if (updated) resultRef.value = updated;
+}
+
+// Vue desenvuelve los refs de nivel superior en el template — para poder actualizar el
+// ref correcto desde un handler de click hace falta un wrapper explícito por resultado
+// (no se puede pasar el ref "voiceResult" tal cual, el template solo ve su valor).
+const answerVoiceAccount = (accountId: number) => answerAccount(voiceResult, accountId);
+const answerOcrAccount = (accountId: number) => answerAccount(ocrResult, accountId);
+const answerTextAccount = (accountId: number) => answerAccount(aiTextResult, accountId);
 
 // OWF-317: equivalente en bolívares a la tasa oficial (BCV) del usuario, ya calculado
 // determinísticamente por el backend (no por la IA) — solo viene presente cuando el monto

@@ -220,6 +220,7 @@
               <div class="ap-row__right">
                 <span class="ap-row__balance">{{ isHidden ? '••••••' : formatMoney(acc.balance) }}</span>
                 <span class="ap-row__currency">{{ acc.currency }}</span>
+                <span v-if="!isHidden && accountUsdEquivalent(acc) != null" class="ap-row__usd">≈ {{ formatMoney(accountUsdEquivalent(acc)!) }} USD</span>
               </div>
             </div>
             <button class="ap-panel__add" @click="router.push('/user/accounts')">
@@ -272,6 +273,7 @@ import { useRouter } from 'vue-router';
 import { api } from 'src/boot/axios';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
+import { useUserRates } from 'src/composables/useUserRates';
 import { TxDetailModal } from 'components';
 import ExchangeRatesTable from 'components/ExchangeRatesTable.vue';
 
@@ -374,6 +376,17 @@ const accountsList = ref<AccountItem[]>([]);
 const debtsList = ref<DebtItem[]>([]);
 const accountsNetTotal = computed(() => accountsList.value.reduce((s, a) => s + a.balance, 0));
 const debtsTotal = computed(() => debtsList.value.reduce((s, d) => s + d.balance, 0));
+
+// OWF-320: equivalente en USD para cuentas en otra moneda (VES, etc.), usando la tasa
+// paralela guardada por el usuario (misma fuente que el picker de SmartTransactionModal).
+const { currentRates } = useUserRates();
+function accountUsdEquivalent(acc: AccountItem): number | null {
+  const code = (acc.currency || '').toUpperCase();
+  if (!code || code === 'USD') return null;
+  const rate = currentRates.value.find(r => r.code.toUpperCase() === code)?.rate;
+  if (!rate || rate <= 0) return null;
+  return acc.balance / rate;
+}
 
 async function loadAccountsPanel() {
   accountsLoading.value = true;
@@ -1312,6 +1325,12 @@ onUnmounted(() => {
   &__currency {
     font-family: var(--font-body);
     font-size: 10px; color: var(--fg-3); font-weight: 600;
+  }
+
+  &__usd {
+    font-family: var(--font-money);
+    font-size: 10px; color: var(--fg-3);
+    font-variant-numeric: tabular-nums;
   }
 }
 
