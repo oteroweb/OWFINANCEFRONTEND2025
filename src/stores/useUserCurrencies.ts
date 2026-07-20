@@ -23,7 +23,7 @@ export const useUserCurrenciesStore = defineStore('userCurrencies', {
       this.loading = true
       try {
         const res = await api.get<{ data: UserCurrency[] } | UserCurrency[]>(
-          '/api/v1/user-currencies'
+          '/user-currencies'
         )
         const raw = res.data
         const list: UserCurrency[] = Array.isArray(raw)
@@ -40,7 +40,7 @@ export const useUserCurrenciesStore = defineStore('userCurrencies', {
     async updateRate(id: number, type: 'official' | 'current', value: number) {
       const field = type === 'official' ? 'official_rate' : 'current_rate'
       const res = await api.put<{ data: UserCurrency } | UserCurrency>(
-        `/api/v1/user-currencies/${id}`,
+        `/user-currencies/${id}`,
         { [field]: value }
       )
       const raw = res.data

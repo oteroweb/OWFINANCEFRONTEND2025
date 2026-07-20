@@ -31,6 +31,9 @@ export interface ExtractionResult {
   missing_field_options?: {
     account_id?: { id: number; label: string; balance: number; currency: string }[]
   }
+  /** OWF-319 (capa 3): true si el usuario dijo un comando de creación directa ("...crea
+   *  directo") Y no falta ningún campo — el frontend guarda sin pasar por la revisión editable. */
+  direct_create?: boolean
 }
 
 function mapHttpError(status: number): string {

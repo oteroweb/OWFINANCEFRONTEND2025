@@ -1636,7 +1636,14 @@ async function save() {
           .filter(p => p.account_id && p.amount)
           .map(p => ({ account_id: p.account_id, amount: p.amount, rate: p.rate ?? 1 }));
       } else {
-        payments = [{ account_id: form.value.account_id, amount }];
+        // OWF-323: si "Cobrar comisión" está activo, la comisión también se descuenta/suma
+        // de esta misma cuenta (mismo criterio que Transferir) — el leg de payment debe
+        // incluirla para que su magnitud coincida con `finalAmount` (payload.amount), o el
+        // backend rechaza con 422 "Payments total (after conversion) must equal transaction amount".
+        const signedCommission = commissionActive.value
+          ? (form.value.type === 'expense' ? -comisionCalculada.value : comisionCalculada.value)
+          : 0;
+        payments = [{ account_id: form.value.account_id, amount: amount + signedCommission }];
       }
 
       // Pro: items de factura
@@ -1723,6 +1730,7 @@ async function stopVoice() {
     const result = await extractFromAudio(audio, voiceMime.value);
     voiceResult.value = result;
     voiceTranscript.value = result?.transcript ?? '';
+    if (result?.direct_create) { await createDirectlyFromAiResult(result); return; }
     speakIfMissingAccount(result);
   }
 }
@@ -1736,7 +1744,11 @@ function processPhoto(file: File) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const base64 = (e.target?.result as string)?.split(',')[1] ?? '';
-    void extractFromImage('ocr', file.name, base64).then(r => { ocrResult.value = r; speakIfMissingAccount(r); });
+    void extractFromImage('ocr', file.name, base64).then(async r => {
+      ocrResult.value = r;
+      if (r?.direct_create) { await createDirectlyFromAiResult(r); return; }
+      speakIfMissingAccount(r);
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -1761,6 +1773,7 @@ async function runTextAi() {
   aiTextResult.value = null;
   const result = await extractText('auto', aiText.value);
   aiTextResult.value = result;
+  if (result?.direct_create) { await createDirectlyFromAiResult(result); return; }
   speakIfMissingAccount(result);
 }
 
@@ -1810,10 +1823,11 @@ function bcvLabel(d: ExtractionResult['data']): string | null {
 }
 
 // ── Apply AI result to form ───────────────────────────────────────────────
-function applyAiResult(result: ExtractionResult, source: string) {
-  aiPrefill.value = result;
-  aiSource.value  = source;
-
+// OWF-319 (capa 3): separado en dos — prefillFormFromAiResult() solo llena form.value
+// (reusado tanto por la revisión editable normal como por "crear directo"), applyAiResult()
+// además muestra el banner de prefill y cambia a la pestaña manual (flujo normal, requiere
+// que el usuario confirme tocando "Editar y guardar").
+function prefillFormFromAiResult(result: ExtractionResult) {
   const d = result.data;
   if (d.type) {
     const map: Record<string, 'expense' | 'income' | 'transfer'> = { expense: 'expense', income: 'income', transfer: 'transfer' };
@@ -1857,8 +1871,20 @@ function applyAiResult(result: ExtractionResult, source: string) {
     form.value.provider_id = d.provider_id_suggestion;
     selectedProviderName.value = d.provider_name_suggestion ?? null;
   }
+}
 
+function applyAiResult(result: ExtractionResult, source: string) {
+  aiPrefill.value = result;
+  aiSource.value  = source;
+  prefillFormFromAiResult(result);
   tab.value = 'write';
+}
+
+/** OWF-319 (capa 3): el usuario dijo "...crea directo" y ya no falta ningún campo — se
+ *  guarda de una, sin pasar por la revisión editable (aiPrefill/tab='write'). */
+async function createDirectlyFromAiResult(result: ExtractionResult) {
+  prefillFormFromAiResult(result);
+  await save();
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────
