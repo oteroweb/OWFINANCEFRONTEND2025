@@ -1809,7 +1809,17 @@ function applyAiResult(result: ExtractionResult, source: string) {
   if (d.amount) form.value.amount = d.amount;
   if (d.currency) form.value.currency = d.currency;
   if (d.description) form.value.name = d.description;
-  if (d.date) form.value.date = d.date.slice(0, 16);
+  // OWF-319: `d.date` que devuelve la extracción de IA es solo "YYYY-MM-DD" (sin hora,
+  // ver buildSystemPrompt() en el backend) — `form.date` en cambio siempre se maneja como
+  // "YYYY-MM-DDTHH:mm" (ver localDateTimeString()). Usar `.slice(0,16)` sobre un string sin
+  // 'T' dejaba form.date con solo la fecha, y al guardar `date.replace('T',' ')+':00'` no
+  // encontraba 'T' que reemplazar y producía un string inválido ("2026-07-20:00"), rechazado
+  // por el backend con "The date field must be a valid date" — bug preexistente que bloqueaba
+  // CUALQUIER guardado prefillado desde IA (Voz/Foto/Auto IA), no solo el slot-filling nuevo.
+  if (d.date) {
+    const hasTime = d.date.includes('T');
+    form.value.date = hasTime ? d.date.slice(0, 16) : `${d.date}T${localDateTimeString(new Date()).slice(11)}`;
+  }
 
   // OWF-129 — Resolver sugerencia de categoría al ID real del usuario
   if (d.category_suggestion && categories.value.length) {
