@@ -139,6 +139,8 @@ interface TxDetail {
   account_name: string | null;
   account_color: string | null;
   transaction_type_id: number | null;
+  transaction_type_name: string | null;
+  transaction_type_slug: string | null;
 }
 
 const props = defineProps<{
@@ -163,7 +165,21 @@ const saving = ref(false);
 const confirmDelete = ref(false);
 const tx = ref<TxDetail | null>(null);
 
-const isIncome = computed(() => (tx.value?.amount ?? 0) > 0);
+// OWF-325: transactions.amount se guarda siempre en positivo (el signo real vive
+// en payment_transactions[].amount) — inferir el tipo por el signo de amount falla
+// siempre para gastos. Mismo patrón que deriveTypeFromTx()/classifyTx() ya usan
+// SmartTransactionModal.vue / LiteHomeView.vue: transaction_type primero, signo de
+// amount solo como último fallback (transacciones legacy sin type asignado).
+function deriveType(t: TxDetail | null): 'income' | 'expense' | 'transfer' {
+  if (!t) return 'expense';
+  const text = `${t.transaction_type_name ?? ''} ${t.transaction_type_slug ?? ''}`.toLowerCase();
+  if (t.transaction_type_id === 4 || text.includes('transfer') || text.includes('traspaso')) return 'transfer';
+  if (text.includes('income') || text.includes('ingreso')) return 'income';
+  if (text.includes('expense') || text.includes('gasto')) return 'expense';
+  return t.amount >= 0 ? 'income' : 'expense';
+}
+
+const isIncome = computed(() => deriveType(tx.value) === 'income');
 
 function fmtAmt(n: number): string {
   return Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -203,6 +219,8 @@ async function loadTx(id: number) {
       account_name: firstLeg?.account?.name ?? raw.account_name ?? null,
       account_color: firstLeg?.account?.color ?? null,
       transaction_type_id: raw.transaction_type_id ?? null,
+      transaction_type_name: raw.transaction_type?.name ?? null,
+      transaction_type_slug: raw.transaction_type?.slug ?? null,
     };
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar la transacción' });
