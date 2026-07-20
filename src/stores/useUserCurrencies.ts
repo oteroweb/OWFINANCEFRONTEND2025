@@ -4,13 +4,20 @@ import { api } from 'boot/axios'
 export interface UserCurrency {
   id: number
   currency_code: string
-  official_rate: number
+  official_rate: number | null
+  current_rate: number | null
+}
+
+// Shape of each row inside the backend's compact `rates` array
+// (GET /user-currencies -> { data: <paginator>, rates: RateRow[] }) — one row
+// per currency, already deduplicated/prioritized server-side (is_current=true,
+// preferring is_official). See UserCurrencyController::index().
+interface RateRow {
+  id: number
+  currency: { id: number; code: string; name?: string; symbol?: string } | null
   current_rate: number
-  currency?: {
-    code: string
-    name: string
-    symbol: string
-  }
+  is_official: boolean
+  is_current: boolean
 }
 
 export const useUserCurrenciesStore = defineStore('userCurrencies', {
@@ -22,14 +29,24 @@ export const useUserCurrenciesStore = defineStore('userCurrencies', {
     async fetchAll() {
       this.loading = true
       try {
-        const res = await api.get<{ data: UserCurrency[] } | UserCurrency[]>(
-          '/user-currencies'
+        const res = await api.get<{ rates?: RateRow[] }>('/user-currencies')
+        const rows = Array.isArray(res.data?.rates) ? res.data.rates : []
+        this.rates = Object.fromEntries(
+          rows
+            .filter((r): r is RateRow & { currency: NonNullable<RateRow['currency']> } => !!r.currency?.code)
+            .map((r) => [
+              r.currency.code,
+              {
+                id: r.id,
+                currency_code: r.currency.code,
+                // `rates` only exposes the current-flagged row per currency; it also
+                // carries the official value when that same row is both current and
+                // official (true after OWF-321's is_current:true fix on save).
+                official_rate: r.is_official ? r.current_rate : null,
+                current_rate: r.current_rate,
+              } satisfies UserCurrency,
+            ])
         )
-        const raw = res.data
-        const list: UserCurrency[] = Array.isArray(raw)
-          ? raw
-          : ((raw as { data: UserCurrency[] }).data ?? [])
-        this.rates = Object.fromEntries(list.map((r) => [r.currency_code, r]))
       } catch (e) {
         console.error('Error fetching user currencies', e)
       } finally {
@@ -38,18 +55,13 @@ export const useUserCurrenciesStore = defineStore('userCurrencies', {
     },
 
     async updateRate(id: number, type: 'official' | 'current', value: number) {
-      const field = type === 'official' ? 'official_rate' : 'current_rate'
-      const res = await api.put<{ data: UserCurrency } | UserCurrency>(
-        `/user-currencies/${id}`,
-        { [field]: value }
-      )
-      const raw = res.data
-      const updated: UserCurrency = (raw as { data: UserCurrency }).data ?? (raw as UserCurrency)
-      const code = updated.currency_code
-      if (this.rates[code]) {
-        this.rates[code] = { ...this.rates[code], ...updated }
-      }
-      return updated
+      // The backend only stores a single `current_rate` per row, distinguished by the
+      // is_official/is_current flags — there's no separate `official_rate` column.
+      await api.put(`/user-currencies/${id}`, {
+        current_rate: value,
+        ...(type === 'official' ? { is_official: true } : { is_current: true }),
+      })
+      await this.fetchAll()
     },
 
     async onEdit(code: string, type: 'official' | 'current', value: number) {
