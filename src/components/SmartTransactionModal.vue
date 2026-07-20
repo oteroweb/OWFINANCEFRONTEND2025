@@ -1435,6 +1435,10 @@ async function persistOfficialRateIfNeeded() {
       currency_id: currencyId,
       current_rate: val,
       is_official: true,
+      // OWF: sin is_current:true este registro nunca se recogía como fallback
+      // (resolveUserCurrencyRate() lo consulta vía UserCurrency.is_current) en la
+      // siguiente transacción — quedaba guardado pero inerte.
+      is_current: true,
     });
   } catch {
     // Silencioso: no bloquear el guardado de la transacción por esto.
@@ -1676,6 +1680,24 @@ async function save() {
         if (rateParalelo.value != null) payload.rate = rateParalelo.value;
         if (rateOficial.value != null) payload.rate_official = rateOficial.value;
       }
+    }
+
+    // OWF-321: persistir la comisión como su propio dato (además de estar ya incluida en
+    // `payload.amount` vía amountWithCommission/fromAmt) para que loadTransactionForEdit()
+    // pueda "desinflar" el monto base al editar sin duplicar la comisión. `commission_value`
+    // se deja null para tipo 'pagomovil' porque ese % es una constante fija (PAGOMOVIL_PCT,
+    // no un valor tipeado por el usuario) — comisionCalculada la recalcula sola a partir del
+    // tipo, así que no hace falta reconstruirla desde `valor`. `commission_amount` siempre
+    // lleva el monto YA calculado, que es el único dato estrictamente necesario para
+    // reconstruir el total al editar.
+    if (commissionActive.value) {
+      payload.commission_type = comision.value.tipo;
+      payload.commission_value = comision.value.tipo === 'pagomovil' ? null : comision.value.valor;
+      payload.commission_amount = comisionCalculada.value;
+    } else {
+      payload.commission_type = null;
+      payload.commission_value = null;
+      payload.commission_amount = null;
     }
 
     if (isEditMode.value && ui.editingTransactionId != null) {
@@ -1982,7 +2004,12 @@ async function loadTransactionForEdit(id: number) {
       : [];
 
     const payments = Array.isArray(raw.payment_transactions)
-      ? (raw.payment_transactions as { account_id: number | null; amount: number | string }[])
+      ? (raw.payment_transactions as {
+          account_id: number | null;
+          amount: number | string;
+          rate_value?: number | string | null;
+          rate_is_official?: boolean | null;
+        }[])
       : [];
     const amount = Number(raw.amount ?? 0);
 
@@ -1994,7 +2021,35 @@ async function loadTransactionForEdit(id: number) {
       form.value.amount = from ? Math.abs(Number(from.amount)) : Math.abs(amount);
     } else {
       form.value.account_id = payments[0]?.account_id ?? form.value.account_id;
-      form.value.amount = Math.abs(amount);
+
+      // OWF-321: `raw.amount` es el TOTAL ya guardado (incluye la comisión horneada dentro,
+      // si hubo). Si lo precargáramos tal cual en form.amount y luego reactivamos el panel de
+      // comisión abajo, amountWithCommission volvería a sumarla al guardar → comisión duplicada.
+      // Por eso restamos commission_amount para dejar en form.amount solo el monto BASE; al
+      // reactivarse el panel, amountWithCommission reconstruye el mismo total original.
+      const commissionAmount = Number(raw.commission_amount ?? 0);
+      form.value.amount = Math.abs(amount) - (commissionAmount > 0 ? commissionAmount : 0);
+
+      if (commissionAmount > 0) {
+        comision.value = {
+          tipo: typeof raw.commission_type === 'string' ? raw.commission_type : 'pagomovil',
+          valor: raw.commission_value != null ? Number(raw.commission_value) : 0,
+        };
+        proPanel.value = 'comision';
+      }
+
+      // OWF-179/321: restaurar tasa oficial/paralela desde el leg de pago guardado — sin esto,
+      // el panel de tasas duales quedaba vacío al editar una transacción en moneda != USD pese
+      // a haberse guardado con tasa.
+      const p0 = payments[0];
+      if (p0?.rate_value != null) {
+        const rv = Number(p0.rate_value);
+        if (p0.rate_is_official) {
+          rateOficial.value = rv;
+        } else {
+          rateParalelo.value = rv;
+        }
+      }
     }
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar la transacción para editar.' });
