@@ -529,17 +529,11 @@
               <q-toggle :model-value="proPanel === 'items'" color="primary" dense @click.stop
                 @update:model-value="(v) => toggleProPanel(v ? 'items' : null)" />
             </button>
-            <button type="button"
-              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'shared' }"
-              @click="toggleProPanel(proPanel === 'shared' ? null : 'shared')">
-              <span class="stm-pro-card-toggle__icon"><q-icon name="pie_chart_outline" size="18px" /></span>
-              <span class="stm-pro-card-toggle__texts">
-                <span class="stm-pro-card-toggle__label">Gasto compartido</span>
-                <span class="stm-pro-card-toggle__sub">Divide entre categorías</span>
-              </span>
-              <q-toggle :model-value="proPanel === 'shared'" color="primary" dense @click.stop
-                @update:model-value="(v) => toggleProPanel(v ? 'shared' : null)" />
-            </button>
+            <!-- OWF-307: "Gasto compartido" oculto a propósito — save() nunca leía sharedCats,
+                 el split se descartaba en silencio y se guardaba el monto completo sin avisar.
+                 Backend tampoco tiene soporte real (no hay shared_categories/splits_by_category).
+                 Reactivar el botón de abajo (y volver el grid a 3 columnas) cuando el backend
+                 soporte de verdad un split de categorías por transacción. -->
           </div>
 
           <!-- OWF-286: Cobrar comisión — separado del grupo de 3, siempre su propia fila (matches TfCommission en rediseno) -->
@@ -2770,12 +2764,14 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
 }
 
 // ── Pro features ────────────────────────────────────────────────────────────
-// OWF-286/296: SIEMPRE 3 columnas en desktop (rowDir='row' en rediseno). Con flex
+// OWF-286/296: forzar N columnas iguales en desktop (rowDir='row' en rediseno). Con flex
 // `1 1 140px` el min-content de cada card (icono + q-toggle) superaba el ancho
-// disponible y la fila se partía en 2+1 — grid con minmax(0,1fr) fuerza 3 columnas.
+// disponible y la fila se partía en 2+1 — grid con minmax(0,1fr) fuerza N columnas.
+// OWF-307: bajado a 2 columnas — "Gasto compartido" oculto (ver template), volver a
+// repeat(3, ...) cuando se reactive.
 .stm-pro-card-toggles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 
   .stm-wrap--mobile & { display: flex; flex-direction: column; }
