@@ -919,6 +919,7 @@ import { api } from 'src/boot/axios';
 import { useTransactionTypesStore } from 'stores/transactionTypes';
 import { useTagsStore } from 'stores/tags';
 import { useAudioRecorder } from 'src/composables/useAudioRecorder';
+import { useSpeechSynthesis } from 'src/composables/useSpeechSynthesis';
 import { useAiExtraction, type ExtractionResult } from 'src/composables/useAiExtraction';
 import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
 import CategorySelector from 'src/components/CategorySelector.vue';
@@ -1722,6 +1723,7 @@ async function stopVoice() {
     const result = await extractFromAudio(audio, voiceMime.value);
     voiceResult.value = result;
     voiceTranscript.value = result?.transcript ?? '';
+    speakIfMissingAccount(result);
   }
 }
 
@@ -1734,7 +1736,7 @@ function processPhoto(file: File) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const base64 = (e.target?.result as string)?.split(',')[1] ?? '';
-    void extractFromImage('ocr', file.name, base64).then(r => { ocrResult.value = r; });
+    void extractFromImage('ocr', file.name, base64).then(r => { ocrResult.value = r; speakIfMissingAccount(r); });
   };
   reader.readAsDataURL(file);
 }
@@ -1757,7 +1759,9 @@ const aiTextResult = ref<ExtractionResult | null>(null);
 
 async function runTextAi() {
   aiTextResult.value = null;
-  aiTextResult.value = await extractText('auto', aiText.value);
+  const result = await extractText('auto', aiText.value);
+  aiTextResult.value = result;
+  speakIfMissingAccount(result);
 }
 
 // ── OWF-319 (capa 1): slot-filling de cuenta faltante ──────────────────────
@@ -1771,6 +1775,15 @@ const { answerMissingField } = useAiExtraction();
 function missingAccountOptions(result: ExtractionResult | null) {
   if (!result?.missing_fields?.includes('account_id')) return null;
   return result.missing_field_options?.account_id ?? null;
+}
+
+// OWF-319 (capa 2): además del selector visual de chips, se lee la pregunta en voz alta
+// con síntesis nativa del navegador — no bloquea nada si no hay soporte (ver
+// useSpeechSynthesis.ts). Se dispara apenas llega una respuesta con account_id faltante,
+// en los 3 paneles IA (Voz/Foto/Auto IA).
+const { speak } = useSpeechSynthesis();
+function speakIfMissingAccount(result: ExtractionResult | null) {
+  if (missingAccountOptions(result)) speak('¿Con qué cuenta fue?');
 }
 
 async function answerAccount(resultRef: { value: ExtractionResult | null }, accountId: number) {
