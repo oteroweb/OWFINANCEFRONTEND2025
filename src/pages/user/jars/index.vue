@@ -324,26 +324,9 @@
             />
           </div>
           <div class="col-12 col-sm-6">
-            <q-select
-              v-model="jarSettings.leverage_jar_id"
-              :options="[
-                { label: 'Ninguno', value: null },
-                ...jarElements
-                  .filter((j) => j.id)
-                  .map((j) => ({ label: j.name, value: j.id }))
-              ]"
-              option-label="label"
-              option-value="value"
-              emit-value
-              map-options
-              clearable
-              dense
-              filled
-              label="Cántaro de apalancamiento"
-              hint="Se usa para cubrir excesos automáticamente"
-            />
-          </div>
-          <div class="col-12 col-sm-6">
+            <!-- OWF-322: selector único de apalancamiento (consolidado: reemplaza el par
+                 global/mensual por un solo control visible, con fallback al default global
+                 hasta que el usuario lo cambie explícitamente para el mes actual). -->
             <q-select
               v-model="monthlyLeverageJarId"
               :options="[
@@ -360,7 +343,8 @@
               dense
               filled
               :label="`Cántaro de apalancamiento (${currentMonth})`"
-              hint="Se aplica solo al mes seleccionado"
+              hint="Se aplica al mes actual. Usa el default global hasta que lo cambies."
+              @update:model-value="onMonthlyLeverageChange"
             />
           </div>
           <div class="col-12 col-sm-6">
@@ -442,26 +426,7 @@
                   />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-select
-                    v-model="jarSettings.leverage_jar_id"
-                    :options="[
-                      { label: 'Ninguno', value: null },
-                      ...jarElements
-                        .filter((j) => j.id)
-                        .map((j) => ({ label: j.name, value: j.id }))
-                    ]"
-                    option-label="label"
-                    option-value="value"
-                    emit-value
-                    map-options
-                    clearable
-                    dense
-                    filled
-                    label="Cántaro de apalancamiento"
-                    hint="Se usa para cubrir excesos automáticamente"
-                  />
-                </div>
-                <div class="col-12 col-sm-6">
+                  <!-- OWF-322: selector único de apalancamiento (consolidado). -->
                   <q-select
                     v-model="monthlyLeverageJarId"
                     :options="[
@@ -478,7 +443,8 @@
                     dense
                     filled
                     :label="`Cántaro de apalancamiento (${currentMonth})`"
-                    hint="Se aplica solo al mes seleccionado"
+                    hint="Se aplica al mes actual. Usa el default global hasta que lo cambies."
+                    @update:model-value="onMonthlyLeverageChange"
                   />
                 </div>
                 <div class="col-12">
@@ -947,6 +913,64 @@
                                   hint="Si este cántaro queda en negativo, se descuenta de este origen"
                                 />
                               </div>
+                              <div class="col-12 col-md-6">
+                                <!-- OWF-322: vincular cuenta — solo informativo/etiqueta visual,
+                                     NO mueve saldo real ni afecta ningún cálculo de balance. -->
+                                <q-select
+                                  v-model="jar.account_id"
+                                  :options="[
+                                    { label: 'Ninguna', value: null, color: null },
+                                    ...jarAccountOptions
+                                  ]"
+                                  option-label="label"
+                                  option-value="value"
+                                  emit-value
+                                  map-options
+                                  clearable
+                                  dense
+                                  filled
+                                  label="Cuenta vinculada"
+                                  hint="Solo referencia visual — no mueve saldo entre cuenta y cántaro"
+                                >
+                                  <template v-slot:selected-item="scope">
+                                    <span class="jar-account-line">
+                                      <span
+                                        v-if="scope.opt.color !== undefined && scope.opt.value !== null"
+                                        class="jar-account-dot"
+                                        :style="{ background: scope.opt.color || 'var(--brand-primary, #1976d2)' }"
+                                      />
+                                      {{ scope.opt.label }}
+                                    </span>
+                                  </template>
+                                  <template v-slot:option="scope">
+                                    <q-item v-bind="scope.itemProps">
+                                      <q-item-section v-if="scope.opt.value !== null" side>
+                                        <span
+                                          class="jar-account-dot"
+                                          :style="{ background: scope.opt.color || 'var(--brand-primary, #1976d2)' }"
+                                        />
+                                      </q-item-section>
+                                      <q-item-section>
+                                        <q-item-label>{{ scope.opt.label }}</q-item-label>
+                                      </q-item-section>
+                                    </q-item>
+                                  </template>
+                                </q-select>
+                                <q-chip
+                                  v-if="jar.account_id"
+                                  dense
+                                  removable
+                                  size="sm"
+                                  class="q-mt-xs"
+                                  @remove="jar.account_id = null"
+                                >
+                                  <span
+                                    class="jar-account-dot q-mr-xs"
+                                    :style="{ background: linkedAccountColor(jar.account_id) || 'var(--brand-primary, #1976d2)' }"
+                                  />
+                                  {{ linkedAccountName(jar.account_id) }}
+                                </q-chip>
+                              </div>
                               </div>
                             </q-expansion-item>
 
@@ -1280,6 +1304,8 @@ type Jar = {
   reset_cycle_day?: number;
   target_amount?: number | null;
   leverage_from_jar_id?: number | null;
+  // OWF-322: cuenta vinculada — solo informativo/referencia visual, no mueve saldo real.
+  account_id?: number | null;
   color?: string | undefined;
   description?: string | null;
   categories?: Array<{ id: string; label: string }>;
@@ -1303,6 +1329,7 @@ type JarAPI = {
   reset_cycle?: string | null;
   reset_cycle_day?: number | null;
   target_amount?: number | null;
+  account_id?: number | null;
   categories?: Array<{ id: string | number; name?: string; label?: string }>;
   color?: string | null;
   sort_order?: number | null;
@@ -1348,6 +1375,33 @@ const activeLayoutModeOption = computed<LayoutModeOption>(
     fallbackLayoutModeOption
 );
 const isLegacyLayout = computed(() => activeLayoutMode.value === 'legacy');
+
+// OWF-322: opciones de cuenta para el selector "Cuenta vinculada" (Opciones avanzadas).
+// Mismo origen de datos que SmartTransactionModal.vue (auth.user.accounts) — la app no
+// tiene un endpoint dedicado de listado de cuentas para el usuario logueado.
+interface JarLinkableAccount {
+  id: number;
+  name: string;
+  color?: string | null;
+}
+function jarLinkableAccounts(): JarLinkableAccount[] {
+  return (auth.user?.accounts ?? []) as unknown as JarLinkableAccount[];
+}
+const jarAccountOptions = computed(() =>
+  jarLinkableAccounts().map((a) => ({
+    label: a.name,
+    value: a.id,
+    color: a.color || null,
+  }))
+);
+function linkedAccountName(accountId: number | null | undefined): string {
+  if (!accountId) return '';
+  return jarLinkableAccounts().find((a) => a.id === accountId)?.name ?? `Cuenta #${accountId}`;
+}
+function linkedAccountColor(accountId: number | null | undefined): string | null {
+  if (!accountId) return null;
+  return jarLinkableAccounts().find((a) => a.id === accountId)?.color ?? null;
+}
 const isLiteLayout = computed(() => activeLayoutMode.value === 'lite');
 const jarsPageClasses = computed(() => ['jars-page', `jars-page--${activeLayoutMode.value}`]);
 const jarElements = ref<Jar[]>([]);
@@ -1367,6 +1421,13 @@ const jarSettings = ref<JarSettings>({
   auto_leverage_enabled: false,
 });
 const monthlyLeverageJarId = ref<number | null>(null);
+// OWF-322: true solo cuando el usuario cambió explícitamente el selector consolidado
+// de apalancamiento para el mes actual — evita crear/actualizar un JarLeverageSetting
+// mensual innecesario cuando el valor mostrado es solo el fallback del default global.
+const monthlyLeverageDirty = ref(false);
+function onMonthlyLeverageChange() {
+  monthlyLeverageDirty.value = true;
+}
 
 const theoreticalSavings = ref({
   total_unused: 0,
@@ -1591,6 +1652,7 @@ function mkJar(name: string, percent: number, type: 'percent' | 'fixed', id?: nu
     reset_cycle_day: 1,
     target_amount: null,
     leverage_from_jar_id: null,
+    account_id: null,
     color: undefined,
     description: null,
     categories: [],
@@ -2265,12 +2327,20 @@ async function loadMonthlyLeverageSetting(month: string) {
   try {
     const res = await api.get('/jars/settings/monthly', { params: { month } });
     const data = res.data?.data || {};
-    monthlyLeverageJarId.value = data.leverage_jar_id ?? null;
+    // OWF-322: si ya existe un override guardado para este mes, mostrarlo.
+    // Si no existe, prellenar (solo visualmente) con el default global — sin
+    // persistirlo como override hasta que el usuario lo cambie y guarde.
+    const overrideExists = Boolean(data.exists);
+    monthlyLeverageJarId.value = overrideExists
+      ? (data.leverage_jar_id ?? null)
+      : (jarSettings.value.leverage_jar_id ?? null);
     useRealIncome.value = data.use_real_income ?? false;
+    monthlyLeverageDirty.value = false;
   } catch (e) {
     console.warn('[JarSettings] Error loading monthly leverage:', e);
-    monthlyLeverageJarId.value = null;
+    monthlyLeverageJarId.value = jarSettings.value.leverage_jar_id ?? null;
     useRealIncome.value = false;
+    monthlyLeverageDirty.value = false;
   }
 }
 
@@ -2290,11 +2360,17 @@ async function saveJarSettings() {
     auto_leverage_enabled: jarSettings.value.auto_leverage_enabled ?? false,
   });
 
-  await api.put('/jars/settings/monthly', {
-    month: currentMonth.value,
-    leverage_jar_id: monthlyLeverageJarId.value ?? null,
-    use_real_income: useRealIncome.value ?? false,
-  });
+  // OWF-322: solo crear/actualizar el override mensual si el usuario efectivamente
+  // tocó el selector consolidado — si sigue mostrando el fallback del default global
+  // sin cambios, no persistir nada (evita overrides mensuales "fantasma").
+  if (monthlyLeverageDirty.value) {
+    await api.put('/jars/settings/monthly', {
+      month: currentMonth.value,
+      leverage_jar_id: monthlyLeverageJarId.value ?? null,
+      use_real_income: useRealIncome.value ?? false,
+    });
+    monthlyLeverageDirty.value = false;
+  }
 }
 
 async function loadTheoreticalSavings() {
@@ -2403,6 +2479,7 @@ async function loadJarData() {
       j.reset_cycle_day = r.reset_cycle_day ?? 1;
       j.target_amount = r.target_amount ?? null;
       j.leverage_from_jar_id = (r as { leverage_from_jar_id?: number | null }).leverage_from_jar_id ?? null;
+      j.account_id = (r as { account_id?: number | null }).account_id ?? null;
       j.description = (r as { description?: string | null }).description ?? null;
       j.collapsed = true;
 
@@ -3279,6 +3356,7 @@ async function saveChanges() {
         reset_cycle_day: j.reset_cycle_day ?? 1,
         target_amount: j.target_amount ?? null,
         leverage_from_jar_id: j.leverage_from_jar_id ?? null,
+        account_id: j.account_id ?? null,
         description: j.description ?? null,
         sort_order: idx + 1,
         active: j.active ?? true,
@@ -3948,6 +4026,21 @@ watch(
 
 .compact-leverage-select {
   min-width: 180px;
+}
+
+/* OWF-322: selector de cuenta vinculada (Opciones avanzadas) */
+.jar-account-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.jar-account-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .jar-bottom-bar {
