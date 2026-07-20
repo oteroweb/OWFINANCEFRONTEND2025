@@ -1822,6 +1822,12 @@ function applyAiResult(result: ExtractionResult, source: string) {
   if (d.amount) form.value.amount = d.amount;
   if (d.currency) form.value.currency = d.currency;
   if (d.description) form.value.name = d.description;
+  // OWF-319: la cuenta resuelta (1 sola cuenta, match del modelo, match por nombre, o
+  // por respuesta del usuario vía /answer) nunca se propagaba al formulario manual — el
+  // selector de cuenta se quedaba con lo que ya tuviera por defecto, sin importar cuál
+  // fue realmente resuelta/elegida. Bug real, no cosmético: la transacción podía guardarse
+  // con una cuenta distinta a la que el usuario confirmó por chip o por voz.
+  if (d.account_id) form.value.account_id = d.account_id;
   // OWF-319: `d.date` que devuelve la extracción de IA es solo "YYYY-MM-DD" (sin hora,
   // ver buildSystemPrompt() en el backend) — `form.date` en cambio siempre se maneja como
   // "YYYY-MM-DDTHH:mm" (ver localDateTimeString()). Usar `.slice(0,16)` sobre un string sin
