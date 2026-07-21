@@ -678,9 +678,10 @@
               </div>
               <div class="stm-field" style="flex:1">
                 <label class="stm-label">Monto</label>
-                <input v-model.number="sc.amount" type="number" class="stm-text-input" min="0" placeholder="0.00" />
+                <input v-model.number="sc.amount" type="number" class="stm-text-input" min="0" placeholder="0.00"
+                  @input="markSharedTouched(i)" />
               </div>
-              <button v-if="sharedCats.length > 2" class="stm-pro-rm" style="margin-top:20px" @click="sharedCats.splice(i, 1)">
+              <button v-if="sharedCats.length > 2" class="stm-pro-rm" style="margin-top:20px" @click="removeSharedCategory(i)">
                 <span class="material-icons" style="font-size:16px">close</span>
               </button>
             </div>
@@ -690,7 +691,7 @@
                 / {{ formatMoney(form.amount ?? 0) }}
               </span>
             </div>
-            <button class="stm-pro-add" @click="sharedCats.push({ category_id: null, amount: 0 })">
+            <button class="stm-pro-add" @click="addSharedCategory">
               <span class="material-icons" style="font-size:15px">add</span> Agregar categoría
             </button>
           </div>
@@ -1282,11 +1283,56 @@ const itemsTotal = computed(() =>
 );
 
 // Gasto compartido (divide entre categorías)
-const sharedCats = ref<{ category_id: number | null; amount: number }[]>([
-  { category_id: null, amount: 0 },
-  { category_id: null, amount: 0 },
+// D-001 (rediseno/DECISIONS.md): reparto equitativo por defecto al agregar/activar,
+// cada fila editable a mano; editar una fila re-reparte el resto solo entre las
+// filas no tocadas (`touched`). No persiste al backend (ver .map() en save()).
+const sharedCats = ref<{ category_id: number | null; amount: number; touched?: boolean }[]>([
+  { category_id: null, amount: 0, touched: false },
+  { category_id: null, amount: 0, touched: false },
 ]);
 const sharedTotal = computed(() => sharedCats.value.reduce((s, c) => s + (c.amount ?? 0), 0));
+
+function redistributeShared() {
+  const total = form.value.amount ?? 0;
+  const untouched = sharedCats.value.filter(sc => !sc.touched);
+  if (!untouched.length) return;
+  const touchedSum = sharedCats.value.filter(sc => sc.touched).reduce((s, sc) => s + (sc.amount ?? 0), 0);
+  const remaining = Math.max(0, total - touchedSum);
+  const share = Math.floor((remaining / untouched.length) * 100) / 100;
+  let assigned = 0;
+  untouched.forEach((sc, idx) => {
+    if (idx === untouched.length - 1) {
+      sc.amount = Math.round((remaining - assigned) * 100) / 100;
+    } else {
+      sc.amount = share;
+      assigned += share;
+    }
+  });
+}
+
+function markSharedTouched(i: number) {
+  const row = sharedCats.value[i];
+  if (row) row.touched = true;
+  redistributeShared();
+}
+
+function addSharedCategory() {
+  sharedCats.value.push({ category_id: null, amount: 0, touched: false });
+  redistributeShared();
+}
+
+function removeSharedCategory(i: number) {
+  sharedCats.value.splice(i, 1);
+  redistributeShared();
+}
+
+watch(() => form.value.amount, () => {
+  if (proPanel.value === 'shared') redistributeShared();
+});
+
+watch(proPanel, (val, old) => {
+  if (val === 'shared' && old !== 'shared') redistributeShared();
+});
 
 function formatMoney(n: number) {
   return `$ ${Math.abs(n).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1957,7 +2003,7 @@ function onShow() {
   rateOficial.value = null;
   transferRate.value = null;
   proPanel.value = null;
-  sharedCats.value = [{ category_id: null, amount: 0 }, { category_id: null, amount: 0 }];
+  sharedCats.value = [{ category_id: null, amount: 0, touched: false }, { category_id: null, amount: 0, touched: false }];
 
   if (!form.value.account_id && accountOptions.value.length) {
     const selectedIds = txStore.selectedAccountIds;
