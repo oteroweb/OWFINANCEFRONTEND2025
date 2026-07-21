@@ -1550,6 +1550,12 @@ const reviewValidationErrors = computed<string[]>(() => {
   if (isProMode.value && proPanel.value === 'split' && Math.abs(splitTotal.value - (form.value.amount ?? 0)) > 0.01) {
     errs.push('La suma del pago múltiple no coincide con el monto total.');
   }
+  // OWF-326: mismo patrón que Split — la UI ya muestra "Suma: X / Y" en rojo cuando no
+  // coincide (ver template del panel Gasto compartido), acá se replica el mensaje en la
+  // tarjeta de revisión para que sea visible también ahí antes de guardar.
+  if (isProMode.value && proPanel.value === 'shared' && Math.abs(sharedTotal.value - (form.value.amount ?? 0)) > 0.01) {
+    errs.push('La suma de categorías no coincide con el monto total.');
+  }
   return errs;
 });
 
@@ -1670,11 +1676,23 @@ async function save() {
         ? itemsTotal.value
         : amountWithCommission.value;
 
+      // OWF-326: "Gasto compartido" — split del monto entre N categorías, cada una con su
+      // propio cántaro resuelto en el frontend (mismo patrón que Items). A diferencia de
+      // items[], acá el monto de la transacción NO se deriva de la suma — el backend valida
+      // que coincida con el monto ya fijado (finalAmount) y rechaza con 422 si no cuadra.
+      const sharedCategories = (isProMode.value && proPanel.value === 'shared')
+        ? sharedCats.value.filter(sc => sc.category_id && sc.amount > 0).map(sc => {
+            const scJar = jarForCategory(sc.category_id ?? null, getCachedJars());
+            return { category_id: sc.category_id, amount: sc.amount, jar_id: scJar?.id ?? null };
+          })
+        : undefined;
+
       payload.amount = finalAmount;
       payload.category_id = form.value.category_id ?? null;
       payload.jar_id = derivedJar?.id ?? null;
       payload.payments = payments;
       if (items?.length) payload.items = items;
+      if (sharedCategories?.length) payload.shared_categories = sharedCategories;
       // OWF-179: tasas paralela/oficial capturadas cuando la moneda de la cuenta != USD
       if (showDualRates.value) {
         if (rateParalelo.value != null) payload.rate = rateParalelo.value;
