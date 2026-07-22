@@ -33,20 +33,20 @@
         <!-- Hero amount -->
         <div
           class="txdm__hero"
-          :style="{ background: isIncome ? 'var(--income-soft)' : 'var(--expense-soft)' }"
+          :style="{ background: heroSoftBg }"
         >
           <div
             class="txdm__hero-icon"
-            :style="{ color: isIncome ? 'var(--income-fg)' : 'var(--expense-fg)' }"
+            :style="{ color: heroFg }"
           >
-            <span class="material-icons">{{ isIncome ? 'arrow_downward' : 'arrow_outward' }}</span>
+            <span class="material-icons">{{ heroIcon }}</span>
           </div>
           <div class="txdm__hero-info">
             <div
               class="txdm__hero-amount"
-              :style="{ color: isIncome ? 'var(--income-fg)' : 'var(--expense-fg)' }"
+              :style="{ color: heroFg }"
             >
-              {{ isHidden ? '$ ••••••' : `${isIncome ? '+' : '−'} $ ${fmtAmt(Math.abs(tx.amount))}` }}
+              {{ isHidden ? '$ ••••••' : `${txType === 'transfer' ? '' : (isIncome ? '+ ' : '− ')}$ ${fmtAmt(Math.abs(tx.amount))}` }}
             </div>
             <div class="txdm__hero-date">{{ fmtDate(tx.date) }}</div>
           </div>
@@ -57,31 +57,51 @@
             <div class="txdm__field">
               <span class="material-icons txdm__field-icon">swap_vert</span>
               <span class="txdm__field-label">Tipo</span>
-              <span class="txdm__field-value" :style="{ color: isIncome ? 'var(--income-fg)' : 'var(--expense-fg)' }">
-                <span class="txdm__dot" :style="{ background: isIncome ? 'var(--income-fg)' : 'var(--expense-fg)' }" />
-                {{ isIncome ? 'Ingreso' : 'Gasto' }}
+              <span class="txdm__field-value" :style="{ color: heroFg }">
+                <span class="txdm__dot" :style="{ background: heroFg }" />
+                {{ txType === 'transfer' ? 'Transferencia' : (isIncome ? 'Ingreso' : 'Gasto') }}
               </span>
             </div>
-            <div class="txdm__field">
-              <span class="material-icons txdm__field-icon">label</span>
-              <span class="txdm__field-label">Categoría</span>
-              <span class="txdm__field-value">{{ tx.category_name || 'Sin categoría' }}</span>
-            </div>
-            <div class="txdm__field">
-              <span class="material-icons txdm__field-icon">savings</span>
-              <span class="txdm__field-label">Cántaro</span>
-              <span class="txdm__field-value">
-                <AnchoredJarChip :category-id="tx.category_id ?? null" compact />
-              </span>
-            </div>
-            <div v-if="tx.account_name" class="txdm__field">
-              <span class="material-icons txdm__field-icon">account_balance_wallet</span>
-              <span class="txdm__field-label">Cuenta</span>
-              <span class="txdm__field-value">
-                <span v-if="tx.account_color" class="txdm__dot" :style="{ background: tx.account_color }" />
-                {{ tx.account_name }}
-              </span>
-            </div>
+            <template v-if="txType !== 'transfer'">
+              <div class="txdm__field">
+                <span class="material-icons txdm__field-icon">label</span>
+                <span class="txdm__field-label">Categoría</span>
+                <span class="txdm__field-value">{{ tx.category_name || 'Sin categoría' }}</span>
+              </div>
+              <div class="txdm__field">
+                <span class="material-icons txdm__field-icon">savings</span>
+                <span class="txdm__field-label">Cántaro</span>
+                <span class="txdm__field-value">
+                  <AnchoredJarChip :category-id="tx.category_id ?? null" compact />
+                </span>
+              </div>
+              <div v-if="tx.account_name" class="txdm__field">
+                <span class="material-icons txdm__field-icon">account_balance_wallet</span>
+                <span class="txdm__field-label">Cuenta</span>
+                <span class="txdm__field-value">
+                  <span v-if="tx.account_color" class="txdm__dot" :style="{ background: tx.account_color }" />
+                  {{ tx.account_name }}
+                </span>
+              </div>
+            </template>
+            <template v-else>
+              <div class="txdm__field">
+                <span class="material-icons txdm__field-icon">account_balance_wallet</span>
+                <span class="txdm__field-label">Origen</span>
+                <span class="txdm__field-value">
+                  <span v-if="tx.account_color" class="txdm__dot" :style="{ background: tx.account_color }" />
+                  {{ tx.account_name || '—' }}
+                </span>
+              </div>
+              <div class="txdm__field">
+                <span class="material-icons txdm__field-icon">arrow_forward</span>
+                <span class="txdm__field-label">Destino</span>
+                <span class="txdm__field-value">
+                  <span v-if="tx.account_to_color" class="txdm__dot" :style="{ background: tx.account_to_color }" />
+                  {{ tx.account_to_name || '—' }}
+                </span>
+              </div>
+            </template>
             <div class="txdm__field">
               <span class="material-icons txdm__field-icon">event</span>
               <span class="txdm__field-label">Fecha</span>
@@ -138,6 +158,8 @@ interface TxDetail {
   account_id: number | null;
   account_name: string | null;
   account_color: string | null;
+  account_to_name: string | null;
+  account_to_color: string | null;
   transaction_type_id: number | null;
   transaction_type_name: string | null;
   transaction_type_slug: string | null;
@@ -179,7 +201,24 @@ function deriveType(t: TxDetail | null): 'income' | 'expense' | 'transfer' {
   return t.amount >= 0 ? 'income' : 'expense';
 }
 
-const isIncome = computed(() => deriveType(tx.value) === 'income');
+const txType = computed(() => deriveType(tx.value));
+const isIncome = computed(() => txType.value === 'income');
+
+// OWF-335: la transferencia usaba los mismos colores/ícono de "Gasto" (isIncome=false
+// para transfer) porque el hero/campo Tipo solo distinguían income/expense — se veía
+// como un gasto normal en vez de un movimiento propio entre cuentas.
+const heroFg = computed(() => {
+  if (txType.value === 'transfer') return 'var(--brand-primary, #8b5cf6)';
+  return isIncome.value ? 'var(--income-fg)' : 'var(--expense-fg)';
+});
+const heroSoftBg = computed(() => {
+  if (txType.value === 'transfer') return 'rgba(139, 92, 246, 0.12)';
+  return isIncome.value ? 'var(--income-soft)' : 'var(--expense-soft)';
+});
+const heroIcon = computed(() => {
+  if (txType.value === 'transfer') return 'swap_horiz';
+  return isIncome.value ? 'arrow_downward' : 'arrow_outward';
+});
 
 function fmtAmt(n: number): string {
   return Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -205,9 +244,13 @@ async function loadTx(id: number) {
     await Promise.all([loadCategoriesWithJars(), loadUserJars()]);
     const txRes = await api.get(`/transactions/${id}`);
     const raw = txRes.data?.data ?? txRes.data;
-    const paymentLegs: { account?: { name?: string; color?: string; id?: number } }[] =
+    const paymentLegs: { amount?: number | string; account?: { name?: string; color?: string; id?: number } }[] =
       raw.payment_transactions ?? raw.paymentTransactions ?? [];
-    const firstLeg = paymentLegs[0];
+    // OWF-335: en una transferencia los legs no vienen ordenados por dirección — hay que
+    // identificar origen/destino por el signo del monto (negativo=origen, positivo=destino),
+    // no asumir que payment_transactions[0] es siempre el origen.
+    const fromLeg = paymentLegs.find(p => Number(p.amount) < 0) ?? paymentLegs[0];
+    const toLeg = paymentLegs.find(p => Number(p.amount) > 0);
     tx.value = {
       id: raw.id,
       name: raw.name,
@@ -215,9 +258,11 @@ async function loadTx(id: number) {
       date: raw.date ?? raw.created_at,
       category_id: raw.category_id ?? null,
       category_name: raw.category?.name ?? raw.category_name ?? null,
-      account_id: firstLeg?.account?.id ?? raw.account_id ?? null,
-      account_name: firstLeg?.account?.name ?? raw.account_name ?? null,
-      account_color: firstLeg?.account?.color ?? null,
+      account_id: fromLeg?.account?.id ?? raw.account_id ?? null,
+      account_name: fromLeg?.account?.name ?? raw.account_name ?? null,
+      account_color: fromLeg?.account?.color ?? null,
+      account_to_name: toLeg?.account?.name ?? null,
+      account_to_color: toLeg?.account?.color ?? null,
       transaction_type_id: raw.transaction_type_id ?? null,
       transaction_type_name: raw.transaction_type?.name ?? null,
       transaction_type_slug: raw.transaction_type?.slug ?? null,
