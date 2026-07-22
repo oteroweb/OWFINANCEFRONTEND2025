@@ -56,6 +56,23 @@ Mientras una divergencia no tenga asiento acá, su vista queda con estado
 - **Guardas**: toda deuda UI-only se registra acá con su tarea; máximo **3** features
   UI-only sin cablear simultáneas en producción.
 
+## D-003 — Panel de filtros: 3 columnas permanentes vs. botón "Filtros" colapsado
+
+- **Fecha**: 2026-07-22 · **Estado**: PENDIENTE · **Disposición propuesta**: `vue-gana`
+- **Divergencia**: el diseño de referencia (Claude Design, captura #4 del audit
+  diseño↔prod de Transacciones) colapsa los filtros en un botón "Filtros" que abre un
+  panel. El Vue real (`src/pages/user/transactions/index.vue`, §1.3) muestra 3 "pools"
+  de filtro siempre visibles en grid (Filtros activos / Categorías / Cántaros), no
+  colapsables. Confirmado real en ambos lados (item #1 del audit), ligado a los items
+  #2 (chips removibles) y #3 (chips de rango de monto) — los tres dependen de la misma
+  decisión de layout.
+- **Recomendación (no confirmada por el usuario)**: `vue-gana` — el panel permanente de
+  prod es más potente (exploración sin clics extra) y ya está probado con datos reales;
+  el diseño debería adoptar el patrón de 3 columnas en vez de colapsarlo.
+- **Acción pendiente**: confirmar con Jose antes de portar cualquier vista de
+  Transacciones al rediseño — mientras no haya confirmación, esta vista queda
+  `divergent-pending-decision` y no se porta.
+
 ---
 
 <!-- Plantilla para asientos nuevos:
