@@ -720,7 +720,11 @@ async function loadDebts() {
 // OWF-adhoc: editar desde el detalle (TxDetailModal → SmartTransactionModal) ya no
 // emite 'saved' directo a este componente — hay que escuchar el evento global que
 // AppShell dispara al guardar, mismo patrón que LiteTransactionsView.vue (OWF-313).
-function onTxSaved() { void loadRecentTransactions(); }
+// OWF-331: solo refrescaba la lista de "Recientes" — el saldo "Disponible" quedaba con
+// el valor viejo hasta un reload manual de la página.
+function onTxSaved() {
+  void Promise.all([loadRecentTransactions(), loadBalanceSummary()]);
+}
 
 onMounted(() => {
   void Promise.all([

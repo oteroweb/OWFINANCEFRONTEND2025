@@ -227,13 +227,29 @@
               </span>
             </div>
             <div class="stm-field" style="margin-top:8px">
-              <label class="stm-label">Tasa ({{ transferFromCurrency }}/{{ transferToCurrency }})</label>
+              <div class="row items-center justify-between">
+                <label class="stm-label">Tasa ({{ transferFromCurrency }}/{{ transferToCurrency }})</label>
+                <span v-if="transferParaleloChip" class="stm-toggle-inline">
+                  <q-toggle v-model="useParaleloActualTransfer" color="primary" dense
+                    @update:model-value="syncTransferParalelo" />
+                  <span class="stm-hint">tasa paralela actual</span>
+                </span>
+              </div>
               <input v-model.number="transferRate" type="number" step="0.0001" min="0"
-                placeholder="0.0000" class="stm-text-input" />
+                placeholder="0.0000" class="stm-text-input" :readonly="useParaleloActualTransfer && !!transferParaleloChip" />
             </div>
-            <div v-if="transferRate && form.amount" class="stm-comm-result">
-              <span>Envías {{ transferFromCurrency }} {{ formatMoney(form.amount) }}</span>
-              <span>Llega {{ transferToCurrency }} {{ formatMoney(transferConvertedAmount) }}</span>
+            <!-- OWF-332: cálculo en ambos sentidos — "59 USD a 867 = X" o "51.100,98 Bs, ¿cuánto vendí?" -->
+            <div v-if="transferRate" class="stm-row-2" style="margin-top:8px">
+              <div class="stm-field">
+                <label class="stm-label">Envías ({{ transferFromCurrency }})</label>
+                <input v-model.number="form.amount" type="number" step="0.01" min="0"
+                  placeholder="0.00" class="stm-text-input" />
+              </div>
+              <div class="stm-field">
+                <label class="stm-label">Llega ({{ transferToCurrency }})</label>
+                <input v-model.number="transferToAmountModel" type="number" step="0.01" min="0"
+                  placeholder="0.00" class="stm-text-input" />
+              </div>
             </div>
           </div>
         </template>
@@ -290,9 +306,15 @@
           <!-- OWF-179/259: tasa paralelo (actual) + tasa oficial (BCV) lado a lado + equiv USD -->
           <div v-if="showDualRates" class="stm-row-2">
             <div class="stm-field">
-              <label class="stm-label">Tasa paralelo (actual)</label>
+              <div class="row items-center justify-between">
+                <label class="stm-label">Tasa paralelo (actual)</label>
+                <span v-if="paraleloChip" class="stm-toggle-inline">
+                  <q-toggle v-model="useParaleloActual" color="primary" dense
+                    @update:model-value="syncParaleloActual" />
+                </span>
+              </div>
               <input v-model.number="rateParalelo" type="number" step="0.0001" min="0"
-                placeholder="0.0000" class="stm-text-input" />
+                placeholder="0.0000" class="stm-text-input" :readonly="useParaleloActual && !!paraleloChip" />
               <span v-if="rateParalelo && rateParalelo > 0 && form.amount" class="stm-rate-equiv">
                 ≈ ${{ ((form.amount ?? 0) / rateParalelo).toFixed(2) }} USD
               </span>
@@ -1247,9 +1269,21 @@ const itemsOn = computed(() => isProMode.value && proPanel.value === 'items');
 const splitOn = computed(() => isProMode.value && proPanel.value === 'split');
 
 // OWF-246: split/items/shared no aplican en Transferencia — solo Comisión.
+// OWF-331: "Desde (origen)" quedaba vacío al entrar a Transferir — a diferencia de
+// form.account_id (gasto/ingreso), account_from_id nunca tenía un default. Mismo criterio:
+// cuenta filtrada activa si hay una sola, si no la primera de la lista.
 watch(() => form.value.type, (type) => {
   if (type === 'transfer' && (proPanel.value === 'split' || proPanel.value === 'items' || proPanel.value === 'shared')) {
     proPanel.value = null;
+  }
+  if (type === 'transfer' && !form.value.account_from_id && accountOptions.value.length) {
+    const selectedIds = txStore.selectedAccountIds;
+    const filteredAccountId = Array.isArray(selectedIds) && selectedIds.length === 1
+      ? Number(selectedIds[0])
+      : null;
+    const matchesOption = filteredAccountId !== null
+      && accountOptions.value.some(o => o.value === filteredAccountId);
+    form.value.account_from_id = matchesOption ? filteredAccountId : accountOptions.value[0]!.value;
   }
 });
 
@@ -1492,12 +1526,23 @@ const showDualRates = computed(() => {
   const code = (findAccountById(form.value.account_id)?.currency?.code || form.value.currency || '').toUpperCase();
   return !!code && code !== 'USD';
 });
+// OWF-333: checkbox explícito "usar tasa paralela actual" — antes se autocompletaba en
+// silencio (solo si el campo estaba vacío) sin que el usuario supiera que podía optar por
+// no usarla. Ahora, mientras el toggle está activo, el campo queda readonly y sincronizado
+// con la tasa paralela vigente; al desactivarlo el usuario puede escribir la suya.
+const paraleloChip = computed(() => {
+  const code = (findAccountById(form.value.account_id)?.currency?.code || form.value.currency || '').toUpperCase();
+  return currentRates.value.find(r => r.code.toUpperCase() === code) ?? null;
+});
+const useParaleloActual = ref(true);
+function syncParaleloActual() {
+  if (useParaleloActual.value && paraleloChip.value) rateParalelo.value = paraleloChip.value.rate;
+}
 watch(showDualRates, (show) => {
   if (!show) return;
-  const code = (findAccountById(form.value.account_id)?.currency?.code || form.value.currency || '').toUpperCase();
-  const chip = currentRates.value.find(r => r.code.toUpperCase() === code);
-  if (chip && rateParalelo.value == null) rateParalelo.value = chip.rate;
+  syncParaleloActual();
 });
+watch(paraleloChip, () => syncParaleloActual());
 
 // Persiste la tasa oficial/BCV reutilizando el endpoint existente de user_currencies,
 // para que quede disponible como referencia en próximas transacciones (sin nueva integración externa).
@@ -1531,6 +1576,23 @@ const transferToCurrency = computed(() => findAccountById(form.value.account_to_
 const transferIsCrossCurrency = computed(() =>
   !!transferFromCurrency.value && !!transferToCurrency.value && transferFromCurrency.value !== transferToCurrency.value
 );
+
+// OWF-333: mismo toggle "usar tasa paralela actual" que en gasto/ingreso, ahora también
+// disponible en el cruce de monedas de una transferencia (antes no existía ningún atajo acá).
+const transferParaleloChip = computed(() => {
+  if (!transferIsCrossCurrency.value) return null;
+  const fromCode = transferFromCurrency.value.toUpperCase();
+  const toCode = transferToCurrency.value.toUpperCase();
+  return currentRates.value.find(r => r.code.toUpperCase() === fromCode)
+    ?? currentRates.value.find(r => r.code.toUpperCase() === toCode)
+    ?? null;
+});
+const useParaleloActualTransfer = ref(true);
+function syncTransferParalelo() {
+  if (useParaleloActualTransfer.value && transferParaleloChip.value) transferRate.value = transferParaleloChip.value.rate;
+}
+watch(transferIsCrossCurrency, (cross) => { if (cross) syncTransferParalelo(); });
+watch(transferParaleloChip, () => syncTransferParalelo());
 const transferConvertedAmount = computed(() => {
   const amt = Number(form.value.amount || 0);
   const r = Number(transferRate.value || 0);
@@ -1540,6 +1602,18 @@ const transferConvertedAmount = computed(() => {
   // FROM=USD → TO=VES: multiply by rate (25 * 737 = 18430)
   const fromIsUSD = (transferFromCurrency.value || '').toUpperCase() === 'USD';
   return fromIsUSD ? amt * r : amt / r;
+});
+// OWF-332: "Llega" editable — permite indicar el monto en cualquiera de los dos sentidos
+// (origen→destino u destino→origen); al escribir acá, deriva form.amount (origen) con la
+// misma tasa, en vez de solo poder calcular hacia adelante.
+const transferToAmountModel = computed({
+  get: () => transferConvertedAmount.value,
+  set: (val: number) => {
+    const r = Number(transferRate.value || 0);
+    if (!r) return;
+    const fromIsUSD = (transferFromCurrency.value || '').toUpperCase() === 'USD';
+    form.value.amount = Number((fromIsUSD ? Number(val) / r : Number(val) * r).toFixed(2));
+  },
 });
 
 // ── Categories ────────────────────────────────────────────────────────────
@@ -2036,6 +2110,8 @@ function onShow() {
   rateParalelo.value = null;
   rateOficial.value = null;
   transferRate.value = null;
+  useParaleloActual.value = true;
+  useParaleloActualTransfer.value = true;
   proPanel.value = null;
   sharedCats.value = [{ category_id: null, amount: 0, touched: false }, { category_id: null, amount: 0, touched: false }];
 
@@ -2127,6 +2203,8 @@ async function loadTransactionForEdit(id: number) {
       // transferRate quedaba null al editar una transferencia cross-currency y canSave
       // la bloqueaba ("Ingresa la tasa de cambio"), impidiendo guardar los cambios.
       if (from?.rate_value != null) {
+        // OWF-333: no pisar la tasa guardada con la paralela vigente al reabrir para editar.
+        useParaleloActualTransfer.value = false;
         transferRate.value = Number(from.rate_value);
       }
 
@@ -2173,6 +2251,8 @@ async function loadTransactionForEdit(id: number) {
         if (p0.rate_is_official) {
           rateOficial.value = rv;
         } else {
+          // OWF-333: no pisar la tasa guardada con la paralela vigente al reabrir para editar.
+          useParaleloActual.value = false;
           rateParalelo.value = rv;
         }
       }
@@ -2474,6 +2554,13 @@ watch(() => ui.showSmartModal, (v) => { if (!v) onHide(); });
   color: var(--fg-3, #94a3b8);
   margin-top: 3px;
   display: block;
+}
+
+// OWF-333: toggle "usar tasa paralela actual" inline junto al label del campo
+.stm-toggle-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 // OWF-296: hint bajo un campo (rediseño: Field hint)
