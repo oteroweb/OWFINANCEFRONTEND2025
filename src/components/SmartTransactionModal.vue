@@ -916,6 +916,7 @@ import { useQuasar, type QSelect } from 'quasar';
 import { useUiStore } from 'stores/ui';
 import { useAuthStore } from 'stores/auth';
 import { useTransactionsStore } from 'stores/transactions';
+import { usePeriodStore } from 'stores/period';
 import { api } from 'src/boot/axios';
 import { useTransactionTypesStore } from 'stores/transactionTypes';
 import { useTagsStore } from 'stores/tags';
@@ -939,6 +940,7 @@ const router = useRouter();
 const ui = useUiStore();
 const auth = useAuthStore();
 const txStore = useTransactionsStore();
+const periodStore = usePeriodStore();
 const ttypes = useTransactionTypesStore();
 const tagsStore = useTagsStore();
 
@@ -1031,6 +1033,21 @@ const now = () => {
 function localDateTimeString(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// OWF-329: si el usuario está filtrando por un día o un mes puntual en la vista de
+// Transacciones y crea un movimiento desde ahí, la fecha debería caer dentro de ese
+// filtro (no siempre "hoy") — si no, el movimiento recién creado desaparece de la
+// lista filtrada apenas se guarda. Sin cambios si el período ya incluye hoy.
+function prefillDateFromPeriod(): string | null {
+  const { type, anchor } = periodStore.state;
+  if (type !== 'day' && type !== 'month') return null;
+  const todayIso = localDateTimeString(new Date()).slice(0, 10);
+  if (type === 'day' && anchor === todayIso) return null;
+  if (type === 'month' && anchor.slice(0, 7) === todayIso.slice(0, 7)) return null;
+  const t = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${anchor}T${pad(t.getHours())}:${pad(t.getMinutes())}`;
 }
 type DateShortcut = 'today' | 'yesterday' | 'custom';
 const dateShortcut = ref<DateShortcut>('today');
@@ -1978,6 +1995,7 @@ function onShow() {
   tab.value = ui.smartModalTab;
   form.value.type = ui.smartModalType;
   form.value.date = now();
+  dateShortcut.value = 'today';
   form.value.amount = null;
   form.value.name = '';
   form.value.category_id = null;
@@ -2013,6 +2031,12 @@ function onShow() {
     const matchesOption = filteredAccountId !== null
       && accountOptions.value.some(o => o.value === filteredAccountId);
     form.value.account_id = matchesOption ? filteredAccountId : accountOptions.value[0]!.value;
+  }
+
+  const periodDate = prefillDateFromPeriod();
+  if (periodDate) {
+    form.value.date = periodDate;
+    dateShortcut.value = 'custom';
   }
 
   void ttypes.fetchTransactionTypes();
