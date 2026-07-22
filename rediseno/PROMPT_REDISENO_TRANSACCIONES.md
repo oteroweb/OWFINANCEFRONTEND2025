@@ -79,16 +79,41 @@ Hero (icono/monto/nombre), filas Tipo/Categoría/Cántaro (`AnchoredJarChip`)/Fe
 
 Este es el componente más rico del sistema y el que debería quedar como fuente de verdad única tras el rediseño (ver sección 6).
 
+### 4.0 Matriz de elementos por modo — LEER ANTES DE DISEÑAR (actualizado 2026-07-22, OWF-336)
+
+⚠️ **Corrección de modelo importante**: Lite y Pro **NO son cuentas ni usuarios distintos** — es el mismo usuario, los mismos datos. La diferencia es el **modelo de cuentas expuesto**:
+- **Lite** = una "billetera" genérica **implícita**, una por moneda que el usuario use (auto-creada al registrarse, `accounts.is_default=true`). El usuario nunca elige entre cuentas — no tiene sentido, solo hay una por moneda.
+- **Pro** = el modelo real de cuentas múltiples con nombre propio (banco, efectivo, tarjeta, etc.), cada una con todas las características — incluida la capacidad de transferir entre ellas.
+
+Si un usuario usó Pro alguna vez y creó cuentas reales, y después vuelve a Lite, esas cuentas **siguen existiendo en el backend** (no se borran) pero **no deben verse ni poder elegirse** en Lite — confirmado y corregido en OWF-336 (antes de esa fecha, el formulario mostraba todas las cuentas reales en ambos modos, bug real).
+
+Por eso, el formulario de creación/edición **no es "un formulario con algunos campos condicionales"** — hay elementos que estructuralmente solo existen en un modo. Tabla completa de qué tiene cada uno (✅ tiene / ❌ no tiene / 🔒 existe pero fijo/sin elegir):
+
+| Elemento | Lite | Pro | Nota |
+|---|---|---|---|
+| Tipo: Gasto / Ingreso | ✅ | ✅ | Igual en ambos |
+| Tipo: Ajuste | ✅ | ✅ | Igual en ambos (oculto al editar, ver 4.2) |
+| Tipo: **Transferir** | ❌ | ✅ | No tiene sentido con una sola cuenta por moneda — excluido del selector de tipo en Lite (OWF-336) |
+| Selector de cuenta | 🔒 | ✅ | Lite: el campo existe pero solo ofrece la billetera de esa moneda (1 opción, sin buscador real). Pro: selector completo multi-cuenta con búsqueda, color, saldo |
+| Cuenta de origen define la moneda | ✅ | ✅ | Igual en ambos — nunca se elige moneda a mano, la define la cuenta |
+| 4 toggles Pro (Pago múltiple / Detalle-factura / Gasto compartido / Comisión) | ❌ | ✅ | Ver 4.4, exclusivos de Pro |
+| Etiquetas | 3 fijas (`impulso`/`planificado`/`recurrente`) | Todas las del usuario | Ver 4.3 |
+| Métodos de entrada (Escribir/Voz/Foto/Auto IA/Carga masiva) | ✅ | ✅ | Sin diferencia por modo — ver 4.9, sí hay slot-filling/TTS/comando directo en ambos |
+| Atajos rápidos (Pago de deuda / Aporte a sueño / Aporte a jar / Asesor IA) | ✅ | ✅ | Sin diferencia por modo — el gate real es viewport desktop, no Lite/Pro (confirmado con interacción real en ambos modos) |
+| Tasas duales (paralelo/oficial BCV) si la cuenta no es USD | — | — | No re-verificado en esta pasada, no asumir sin confirmar antes de diseñar |
+
+**Regla para el rediseño**: cuando un elemento de esta tabla sea ❌ o 🔒 para Lite, el diseño debe reflejar directamente esa ausencia/restricción — no diseñar un único formulario "con todo visible" y asumir que Vue lo oculta después. La elección de qué elementos van en cada modo ya está resuelta arriba; lo que falta es que el diseño (JSX) la respete tan explícitamente como el código Vue ya la respeta desde OWF-336.
+
 ### 4.1 Métodos de entrada (tabs, ocultos en modo edición)
-Escribir · Voz · Foto · Auto IA · Carga masiva (dialog aparte, ver sección 5).
+Escribir · Voz · Foto · Auto IA · Carga masiva (dialog aparte, ver sección 5). Sin diferencia Lite/Pro (ver matriz 4.0).
 
 ### 4.2 Tipos de movimiento
-Gasto · Ingreso · Transferir · Ajuste (oculto en edición — usa endpoint dedicado `POST /accounts/{id}/adjust-balance`, no es una transacción editable por PUT).
+Gasto · Ingreso · Ajuste (todos en ambos modos) · **Transferir (solo Pro, ver matriz 4.0 — OWF-336)**. Ajuste oculto en edición — usa endpoint dedicado `POST /accounts/{id}/adjust-balance`, no es una transacción editable por PUT.
 
 ### 4.3 Campos por tipo
 - **Ajuste**: cuenta a ajustar (dot color + saldo), saldo objetivo, banner "se creará un ajuste de +/-X", motivo (requerido).
-- **Transferencia**: monto hero + pills de moneda (si hay >1 moneda), cuenta origen/destino (side-by-side, con búsqueda, destino excluye la ya elegida), panel de cruce de moneda si origen≠destino (tasa manual + preview "Envías X / Llega Y"), fecha (atajos Hoy/Ayer/Otra), concepto opcional al final.
-- **Gasto/Ingreso**: cuenta de origen (define la moneda — ya no se elige a mano), monto hero (se oculta si "Ítems" está activo, reemplazado por banner de total), **tasas duales** (paralelo actual + oficial BCV) si la cuenta no es USD, concepto, categoría (`CategorySelector`, filtrado por kind) + cántaro anclado (solo lectura, derivado), proveedor/comercio (con creación inline "+ Nuevo proveedor"), fecha.
+- **Transferencia** (solo Pro): monto hero + pills de moneda (si hay >1 moneda), cuenta origen/destino (side-by-side, con búsqueda, destino excluye la ya elegida), panel de cruce de moneda si origen≠destino (tasa manual + preview "Envías X / Llega Y"), fecha (atajos Hoy/Ayer/Otra), concepto opcional al final. ⚠️ Hay 3 bugs reales reportados sobre este panel el mismo día (OWF-331/332/333: cuenta no viene preelegida, saldo no se refresca en UI tras guardar, falta columna de detalle en el listado, falta soportar el cálculo en ambos sentidos origen↔destino, falta toggle de tasa paralela) — no tomar el comportamiento actual de Transferencia como spec limpia, confirmar contra esos tickets antes de diseñar esta pantalla específica.
+- **Gasto/Ingreso**: cuenta de origen (define la moneda — ya no se elige a mano; en Lite el selector solo ofrece la billetera de esa moneda, ver matriz 4.0), monto hero (se oculta si "Ítems" está activo, reemplazado por banner de total), **tasas duales** (paralelo actual + oficial BCV) si la cuenta no es USD, concepto, categoría (`CategorySelector`, filtrado por kind) + cántaro anclado (solo lectura, derivado), proveedor/comercio (con creación inline "+ Nuevo proveedor"), fecha.
 - **Etiquetas**: chips con color semántico + hint contextual + creación inline (paleta de 8 + random + color libre). **Pro**: todas las etiquetas. **Lite**: solo 3 fijas por slug (`impulso`, `planificado`, `recurrente`).
 
 ### 4.4 Features exclusivas de Pro (4 toggles tipo tarjeta, ocultas en Lite/Legacy)
