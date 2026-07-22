@@ -1060,10 +1060,10 @@
           <q-card-section class="tx-detail-modal__amount-section">
             <div
               class="tx-detail-modal__amount"
-              :class="txDetailIsIncome ? 'tx-detail-modal__amount--income' : 'tx-detail-modal__amount--expense'"
+              :class="txDetailIsTransfer ? 'tx-detail-modal__amount--transfer' : (txDetailIsIncome ? 'tx-detail-modal__amount--income' : 'tx-detail-modal__amount--expense')"
             >
               <span class="material-icons tx-detail-modal__amount-icon">
-                {{ txDetailIsIncome ? 'arrow_downward' : 'arrow_outward' }}
+                {{ txDetailIsTransfer ? 'swap_horiz' : (txDetailIsIncome ? 'arrow_downward' : 'arrow_outward') }}
               </span>
               {{ txDetailFormattedAmount }}
             </div>
@@ -3784,10 +3784,18 @@ function txDetailShow(row: AnyRecord) {
   void txDetailLoadOptions();
 }
 
+// OWF-335: "Editar" ya no usa el mini-form propio de este modal (sin soporte de
+// transferencia/tasa/comisión — ver txDetailForm arriba, solo tiene account_id único).
+// Abre SmartTransactionModal.vue prellenado, el mismo formulario real de "crear",
+// mismo patrón ya usado por TxDetailModal.vue. El modo 'edit' de este componente queda
+// sin usar (código legacy retenido solo por 'duplicate', que sigue funcionando para
+// gasto/ingreso simples).
 function txDetailStartEdit() {
   if (!txDetailRow.value) return;
-  txDetailFillForm(txDetailRow.value);
-  txDetailMode.value = 'edit';
+  const id = Number(txDetailRow.value['id']);
+  if (!Number.isFinite(id)) return;
+  txDetailOpen.value = false;
+  ui.openSmartModalForEdit(id);
 }
 
 function txDetailStartDuplicate() {
@@ -3858,10 +3866,27 @@ async function txDetailConfirmDelete() {
 // Computed display helpers for VIEW mode
 function txDetailGetRow(): AnyRecord | null { return txDetailRow.value; }
 const txDetailAmount = computed(() => Number(txDetailGetRow()?.['amount'] ?? 0));
-const txDetailIsIncome = computed(() => txDetailAmount.value >= 0);
+// OWF-335: transactions.amount se guarda siempre en positivo (el signo real vive en
+// payment_transactions[].amount) — inferir por el signo de amount clasificaba TODO gasto
+// y TODA transferencia como "ingreso" (verde, flecha hacia abajo). Mismo patrón que
+// deriveType()/classifyTx() en TxDetailModal.vue / SmartTransactionModal.vue.
+const txDetailIsTransfer = computed(() => {
+  const r = txDetailGetRow();
+  if (!r) return false;
+  const text = `${txDetailTypeName.value} ${txDetailStr(r['transaction_type_id'])}`.toLowerCase();
+  return text.includes('transfer') || text.includes('traspaso');
+});
+const txDetailIsIncome = computed(() => {
+  const r = txDetailGetRow();
+  if (!r) return txDetailAmount.value >= 0;
+  const text = txDetailTypeName.value.toLowerCase();
+  if (text.includes('income') || text.includes('ingreso')) return true;
+  if (text.includes('expense') || text.includes('gasto') || txDetailIsTransfer.value) return false;
+  return txDetailAmount.value >= 0;
+});
 const txDetailFormattedAmount = computed(() => {
   const abs = Math.abs(txDetailAmount.value);
-  const sign = txDetailIsIncome.value ? '+' : '−';
+  const sign = txDetailIsTransfer.value ? '' : (txDetailIsIncome.value ? '+' : '−');
   return `${sign}${new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: 2 }).format(abs)}`;
 });
 const txDetailDate = computed(() => {
@@ -4364,29 +4389,20 @@ function txAmountClass(row: Row): string {
   }
 }
 
+// OWF-337: el cántaro nunca se guarda en la transacción — siempre se deriva de la
+// categoría (mismo patrón que AnchoredJarChip/SmartTransactionModal.vue). Antes esta
+// función buscaba row.jar/row.jar_name, campos que el backend nunca manda — el chip
+// de cántaro del feed jamás renderizaba de verdad.
 function txJarName(row: Row): string {
   const r = row as AnyRecord;
-  // Try jar.name, then jar_name
-  const jar = r['jar'];
-  if (jar && typeof jar === 'object') {
-    const n = (jar as AnyRecord)['name'];
-    if (typeof n === 'string' && n) return n;
-  }
-  const jarName = r['jar_name'];
-  if (typeof jarName === 'string' && jarName) return jarName;
-  return '';
+  const jar = jarForCategory((r['category_id'] as number | null) ?? null, getCachedJars());
+  return jar?.name ?? '';
 }
 
 function txJarColor(row: Row): string {
   const r = row as AnyRecord;
-  const jar = r['jar'];
-  if (jar && typeof jar === 'object') {
-    const c = (jar as AnyRecord)['color'];
-    if (typeof c === 'string' && c) return c;
-  }
-  const jarColor = r['jar_color'];
-  if (typeof jarColor === 'string' && jarColor) return jarColor;
-  return 'var(--brand-primary)';
+  const jar = jarForCategory((r['category_id'] as number | null) ?? null, getCachedJars());
+  return jar?.color || 'var(--brand-primary)';
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -6081,6 +6097,10 @@ function exportCSV(): void {
 
 .tx-detail-modal__amount--expense {
   color: #c62828;
+}
+
+.tx-detail-modal__amount--transfer {
+  color: #8b5cf6;
 }
 
 .tx-detail-modal__amount-icon {
