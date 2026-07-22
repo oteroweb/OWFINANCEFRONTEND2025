@@ -1016,7 +1016,14 @@ const allTypes = [
 ];
 // OWF-312: "Ajuste" crea un movimiento especial vía POST /accounts/{id}/adjust-balance
 // (no es una transacción PUT-eable) — no tiene sentido ofrecerlo al editar una transacción existente.
-const types = computed(() => isEditMode.value ? allTypes.filter(t => t.id !== 'ajuste') : allTypes);
+// OWF-334: "Transferir" requiere 2+ cuentas reales — no tiene sentido con la billetera
+// implícita de Lite (una sola cuenta), sacarlo del selector de tipo en ese modo.
+const types = computed(() => {
+  let list = allTypes;
+  if (isEditMode.value) list = list.filter(t => t.id !== 'ajuste');
+  if (!isProMode.value) list = list.filter(t => t.id !== 'transfer');
+  return list;
+});
 
 // ── Form state ────────────────────────────────────────────────────────────
 const aiPrefill = ref<ExtractionResult | null>(null);
@@ -1373,9 +1380,18 @@ interface UserAccount {
   balance_cached?: number;
   color?: string | null;
   currency?: { id?: number; code?: string; symbol?: string };
+  is_default?: boolean;
 }
+// OWF-334: Lite = billetera implícita (una cuenta "Billetera" auto-creada al registrarse,
+// is_default=true). Cuentas reales adicionales (creadas en una sesión Pro previa) quedan
+// guardadas pero NO deben verse ni elegirse en Lite — mismo usuario, mismos datos, distinta
+// exposición según el modo. Fallback a todas si por algún motivo no hay ninguna is_default
+// (dato viejo/roto) — mejor mostrar algo que dejar el formulario sin cuentas.
 function allUserAccounts(): UserAccount[] {
-  return (auth.user?.accounts ?? []) as unknown as UserAccount[];
+  const accounts = (auth.user?.accounts ?? []) as unknown as UserAccount[];
+  if (isProMode.value) return accounts;
+  const defaults = accounts.filter(a => a.is_default);
+  return defaults.length ? defaults : accounts;
 }
 function findAccountById(id: number | null | undefined): UserAccount | undefined {
   if (!id) return undefined;
@@ -2106,7 +2122,29 @@ async function loadTransactionForEdit(id: number) {
       const to = payments.find(p => Number(p.amount) > 0);
       form.value.account_from_id = from?.account_id ?? null;
       form.value.account_to_id = to?.account_id ?? null;
-      form.value.amount = from ? Math.abs(Number(from.amount)) : Math.abs(amount);
+
+      // OWF-335: restaurar la tasa de cambio guardada en el leg de origen — sin esto,
+      // transferRate quedaba null al editar una transferencia cross-currency y canSave
+      // la bloqueaba ("Ingresa la tasa de cambio"), impidiendo guardar los cambios.
+      if (from?.rate_value != null) {
+        transferRate.value = Number(from.rate_value);
+      }
+
+      // OWF-335: mismo criterio que el branch no-transfer (OWF-321) — el monto del leg de
+      // origen ya incluye la comisión horneada si el cargo estaba activo; hay que restar
+      // commission_amount para dejar en form.amount solo el monto base, y reactivar el
+      // panel para que amountWithCommission reconstruya el mismo total al guardar.
+      const commissionAmount = Number(raw.commission_amount ?? 0);
+      const fromAmt = from ? Math.abs(Number(from.amount)) : Math.abs(amount);
+      form.value.amount = fromAmt - (commissionAmount > 0 ? commissionAmount : 0);
+
+      if (commissionAmount > 0) {
+        comision.value = {
+          tipo: typeof raw.commission_type === 'string' ? raw.commission_type : 'pagomovil',
+          valor: raw.commission_value != null ? Number(raw.commission_value) : 0,
+        };
+        proPanel.value = 'comision';
+      }
     } else {
       form.value.account_id = payments[0]?.account_id ?? form.value.account_id;
 
