@@ -2303,6 +2303,21 @@ function rowCategoryCandidates(row: Row): Array<{ id: number; name: string }> {
     }
   }
 
+  // OWF-340: "Gasto compartido" — la transacción no tiene category_id propio (se reparte
+  // entre N categorías vía shared_categories), mismo patrón de fusión que items arriba.
+  const sharedCategories = (row as AnyRecord)['shared_categories'];
+  if (Array.isArray(sharedCategories)) {
+    for (const sc of sharedCategories) {
+      if (!sc || typeof sc !== 'object') continue;
+      const s = sc as AnyRecord;
+      const cat = s['category'];
+      if (cat && typeof cat === 'object') {
+        const c = cat as AnyRecord;
+        push(c['id'], c['name']);
+      }
+    }
+  }
+
   return out;
 }
 

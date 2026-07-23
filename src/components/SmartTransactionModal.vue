@@ -340,8 +340,9 @@
           </div>
         </template>
 
-        <!-- OWF-188/244/266: Categoría + Cántaro lado a lado (ocultos en modo Items: se gestionan por línea) -->
-        <div v-if="form.type !== 'ajuste' && form.type !== 'transfer' && !itemsOn" class="stm-row-2">
+        <!-- OWF-188/244/266/340: Categoría + Cántaro lado a lado (ocultos en modo Items/Gasto
+             compartido: se gestionan por línea, uno por categoría, más abajo) -->
+        <div v-if="form.type !== 'ajuste' && form.type !== 'transfer' && !itemsOn && !sharedOn" class="stm-row-2">
           <div class="stm-field">
             <label class="stm-label">Categoría <span class="stm-label--opt">(opcional)</span></label>
             <CategorySelector v-model="form.category_id" allow-null placeholder="Sin categoría"
@@ -1267,6 +1268,8 @@ function toggleProPanel(panel: ProPanel) {
 const itemsOn = computed(() => isProMode.value && proPanel.value === 'items');
 // OWF-242: split reemplaza la cuenta simple por el editor multi-cuenta.
 const splitOn = computed(() => isProMode.value && proPanel.value === 'split');
+// OWF-340: gasto compartido reemplaza la categoría principal por una categoría por línea.
+const sharedOn = computed(() => isProMode.value && proPanel.value === 'shared');
 
 // OWF-246: split/items/shared no aplican en Transferencia — solo Comisión.
 // OWF-331: "Desde (origen)" quedaba vacío al entrar a Transferir — a diferencia de

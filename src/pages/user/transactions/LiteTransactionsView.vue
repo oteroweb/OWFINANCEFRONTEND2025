@@ -628,13 +628,22 @@ async function loadTransactions() {
 
       const catRel = typeof tx['category'] === 'object' && tx['category'] ? tx['category'] as Record<string, unknown> : null;
       const jarRel = typeof tx['jar'] === 'object' && tx['jar'] ? tx['jar'] as Record<string, unknown> : null;
+      // OWF-340: "Gasto compartido" no tiene category_id propio (se reparte entre N
+      // categorías vía shared_categories) — mostrar todas, separadas por coma.
+      const sharedCategoryNames = Array.isArray(tx['shared_categories'])
+        ? (tx['shared_categories'] as Record<string, unknown>[])
+            .map((sc) => (typeof sc['category'] === 'object' && sc['category'] ? (sc['category'] as Record<string, unknown>)['name'] : null))
+            .filter((n): n is string => typeof n === 'string' && n.length > 0)
+        : [];
 
       return {
         id: Number(tx.id),
         name: typeof tx.name === 'string' ? tx.name : (typeof tx.description === 'string' ? tx.description : 'Transacción'),
         amount: Math.abs(amount),
         date: typeof tx.date === 'string' ? tx.date : new Date().toISOString(),
-        category: (catRel?.['name'] as string | undefined) ?? ((tx.transaction_type as Record<string, unknown> | undefined)?.name as string | undefined) ?? 'General',
+        category: sharedCategoryNames.length
+          ? sharedCategoryNames.join(', ')
+          : (catRel?.['name'] as string | undefined) ?? ((tx.transaction_type as Record<string, unknown> | undefined)?.name as string | undefined) ?? 'General',
         category_id: catRel ? Number(catRel['id']) : (tx['category_id'] ? Number(tx['category_id']) : null),
         type: txType,
         jar_slug: (catRel?.['jar_slug'] as string | null | undefined) ?? null,
