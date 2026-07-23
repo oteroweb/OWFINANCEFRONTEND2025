@@ -6064,8 +6064,13 @@ function exportCSV(): void {
 }
 
 /* ── OWF-138: Transaction Detail Modal v2 ── */
+/* OWF-334: los colores de texto estaban hardcodeados a tema claro (#222/#666/#999) y
+ * nunca se adaptaron a dark mode — sobre el fondo oscuro real de la app (Quasar q-card
+ * auto-invertido) quedaban casi invisibles. Reemplazados por las variables del design
+ * system, mismo patrón que TxDetailModal.vue. */
 .tx-detail-modal {
   border-radius: 12px !important;
+  background: var(--surface-1);
 }
 
 .tx-detail-modal__bar {
@@ -6092,15 +6097,15 @@ function exportCSV(): void {
 }
 
 .tx-detail-modal__amount--income {
-  color: #1b9645;
+  color: var(--income, #1b9645);
 }
 
 .tx-detail-modal__amount--expense {
-  color: #c62828;
+  color: var(--expense, #c62828);
 }
 
 .tx-detail-modal__amount--transfer {
-  color: #8b5cf6;
+  color: var(--brand-primary, #8b5cf6);
 }
 
 .tx-detail-modal__amount-icon {
@@ -6110,7 +6115,7 @@ function exportCSV(): void {
 
 .tx-detail-modal__name {
   font-size: 14px;
-  color: #666;
+  color: var(--fg-2);
   font-weight: 500;
 }
 
@@ -6137,14 +6142,14 @@ function exportCSV(): void {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #999;
+  color: var(--fg-3);
   margin-bottom: 2px;
 }
 
 .tx-detail-modal__field-value {
   font-size: 14px;
   font-weight: 500;
-  color: #222;
+  color: var(--fg-1);
 }
 
 .tx-detail-modal__jar-chip {
