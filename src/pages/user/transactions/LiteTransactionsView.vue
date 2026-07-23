@@ -191,9 +191,14 @@
             </div>
           </div>
           <span class="tx-tag">{{ tx.jarName || 'General' }}</span>
-          <span class="tx-amount" :style="{ color: tx.type === 'income' ? 'var(--income-fg)' : 'var(--expense-fg)' }">
-            {{ tx.type === 'income' ? '+' : '-' }}{{ isHidden ? '••••••' : formatMoney(Math.abs(tx.amount)) }}
-          </span>
+          <div class="tx-amount-col">
+            <span class="tx-amount" :style="{ color: tx.type === 'income' ? 'var(--income-fg)' : 'var(--expense-fg)' }">
+              {{ tx.type === 'income' ? '+' : '-' }}{{ isHidden ? '••••••' : formatMoney(Math.abs(tx.amount)) }}
+            </span>
+            <span v-if="!isHidden && balanceForTx(tx.id) != null" class="tx-running-balance">
+              {{ formatSignedBalance(balanceForTx(tx.id)!) }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -343,6 +348,36 @@ interface TxOption {
 
 const allTransactions = ref<TxItem[]>([]);
 const loading = ref(false);
+
+// OWF-331: saldo de la cuenta al momento de cada transacción. Lite tiene una sola
+// billetera implícita (sin selector de cuenta como en Pro), así que alcanza con el saldo
+// global actual y reconstruir hacia atrás — allTransactions ya viene ordenado desc (más
+// reciente primero) desde loadTransactions().
+const currentBalance = ref<number | null>(null);
+async function loadCurrentBalance() {
+  try {
+    const res = await api.get('/accounts/summary/global-balance');
+    currentBalance.value = Number(res.data?.data?.total_global_balance ?? 0);
+  } catch (err) {
+    console.warn('[LiteTransactions] Balance error:', err);
+  }
+}
+const runningBalanceMap = computed<Record<number, number>>(() => {
+  const map: Record<number, number> = {};
+  if (currentBalance.value == null) return map;
+  let bal = currentBalance.value;
+  for (const tx of allTransactions.value) {
+    map[tx.id] = bal;
+    bal -= tx.type === 'income' ? tx.amount : -tx.amount;
+  }
+  return map;
+});
+function balanceForTx(txId: number): number | null {
+  return runningBalanceMap.value[txId] ?? null;
+}
+function formatSignedBalance(n: number): string {
+  return n < 0 ? `-${formatMoney(n)}` : formatMoney(n);
+}
 
 // ─── Options ────────────────────────────────────────────────────────
 const typeOptions = [
@@ -615,13 +650,14 @@ async function loadTransactions() {
   }
 }
 
-function onTxSaved() { void loadTransactions(); }
+function onTxSaved() { void Promise.all([loadTransactions(), loadCurrentBalance()]); }
 
 // Recargar cuando cambia el periodo
 watch(() => period.signature, () => void loadTransactions());
 
 onMounted(() => {
   void loadTransactions();
+  void loadCurrentBalance();
   window.addEventListener('owf:transaction-saved', onTxSaved);
 });
 
@@ -1051,11 +1087,26 @@ onUnmounted(() => {
   flex: 1;
 }
 
+.tx-amount-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
 .tx-amount {
   font-family: var(--font-money);
   font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.tx-running-balance {
+  font-family: var(--font-money);
+  font-size: 10px;
+  color: var(--fg-3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 768px) {
