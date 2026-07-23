@@ -78,6 +78,34 @@ Mientras una divergencia no tenga asiento acá, su vista queda con estado
 
 ---
 
+## D-004 — 3ra pestaña "Categorías" en el panel de cuentas (sidebar de Transacciones)
+
+- **Fecha**: 2026-07-23 · **Estado**: PENDIENTE · **Disposición propuesta**: por definir
+- **Divergencia**: item #7 del audit diseño↔prod de Transacciones. `AccountsPanel.jsx`
+  (Claude Design, confirmado con acceso real al proyecto tras resolverse el bloqueo de
+  auth de DesignSync) tiene 3 pestañas en el panel lateral: `['accounts', 'debts',
+  'categories']`. La pestaña "Categorías" es una feature completa: buscador, categorías
+  agrupadas por cántaro (drag desde una categoría, drop sobre un cántaro en la pantalla
+  Cántaros para reasignarla), editor inline por categoría (nombre/color/cántaro/
+  descripción) y "Agregar categoría". El sidebar real de cuentas en Vue
+  (`src/pages/user/transactions/index.vue`, panel `Cuentas`/`Deudas`) solo tiene 2
+  pestañas — no existe ninguna 3ra pestaña de categorías ahí. La gestión de categorías
+  SÍ existe en Vue, pero en otra ubicación: `Configuración → Categorías` (página
+  separada, sin patrón de arrastrar-y-soltar sobre cántaros).
+- **No es una feature faltante lisa y llana** — es una divergencia de patrón/ubicación:
+  el diseño propone gestión de categorías inline (sidebar de Transacciones, con
+  drag-and-drop hacia Cántaros); Vue ya resuelve lo mismo desde una página dedicada de
+  Configuración. Ambos cubren el caso de uso "editar/crear categoría", con UX distinta.
+- **Decisión**: pendiente. Preguntas para adjudicar:
+  1. ¿Vale la pena el patrón drag-and-drop categoría→cántaro inline en Transacciones,
+     o la página dedicada de Configuración ya alcanza?
+  2. Si se porta, ¿reemplaza o convive con `Configuración → Categorías`?
+- **Acción pendiente**: confirmar con Jose antes de portar o descartar. Mientras no
+  haya decisión, esta pestaña del diseño queda `divergent-pending-decision` y no se
+  porta a Vue ni se elimina del diseño.
+
+---
+
 <!-- Plantilla para asientos nuevos:
 
 ## D-00X — <concepto>
