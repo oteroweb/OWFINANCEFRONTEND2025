@@ -2277,7 +2277,51 @@ async function loadTransactionForEdit(id: number) {
       const commissionAmount = Number(raw.commission_amount ?? 0);
       form.value.amount = Math.abs(amount) - (commissionAmount > 0 ? commissionAmount : 0);
 
-      if (commissionAmount > 0) {
+      // OWF-342: hidratar el panel Items/Gasto compartido al editar — antes la edición
+      // siempre trataba la transacción como un gasto simple, sin mostrar el split ya
+      // guardado (gap documentado desde OWF-326/341). proPanel es mutuamente excluyente
+      // (comisión/split/items/shared no se combinan, ver toggleProPanel), así que basta
+      // mirar qué relación vino con datos reales.
+      const sharedCategoriesRaw = Array.isArray(raw.shared_categories)
+        ? raw.shared_categories as Record<string, unknown>[]
+        : [];
+      const itemTransactionsRaw = Array.isArray(raw.item_transactions)
+        ? raw.item_transactions as Record<string, unknown>[]
+        : [];
+
+      if (sharedCategoriesRaw.length) {
+        // touched:true en TODAS las filas — el watch(proPanel,...) de más abajo dispara
+        // redistributeShared() al pasar a 'shared', que solo recalcula filas NO tocadas;
+        // sin esto pisaría los montos reales recién restaurados con un reparto parejo.
+        sharedCats.value = sharedCategoriesRaw.map(sc => {
+          const catRel = sc['category'] as { id?: number } | null | undefined;
+          return {
+            category_id: catRel?.id ?? (typeof sc['category_id'] === 'number' ? sc['category_id'] : null),
+            amount: Number(sc['amount'] ?? 0),
+            touched: true,
+          };
+        });
+        proPanel.value = 'shared';
+      } else if (itemTransactionsRaw.length) {
+        facturaItems.value = itemTransactionsRaw.map(it => {
+          const catRel = it['category'] as { id?: number } | null | undefined;
+          const quantity = Number(it['quantity'] ?? 1) || 1;
+          const totalAmount = Number(it['amount'] ?? 0);
+          // El backend solo persiste quantity + amount (total con impuesto ya horneado) —
+          // no hay columnas para precio unitario ni % de impuesto por separado, así que no
+          // se pueden reconstruir exactos. Mejor aproximación posible sin inventar ni perder
+          // dinero: todo el total como "precio" y 0% de impuesto — si se reguarda sin tocar
+          // nada, quantity × price × (1+0/100) devuelve el mismo total original.
+          return {
+            name: typeof it['name'] === 'string' ? it['name'] : '',
+            quantity,
+            price: Math.round((totalAmount / quantity) * 100) / 100,
+            tax: 0,
+            category_id: catRel?.id ?? (typeof it['category_id'] === 'number' ? it['category_id'] : null),
+          };
+        });
+        proPanel.value = 'items';
+      } else if (commissionAmount > 0) {
         comision.value = {
           tipo: typeof raw.commission_type === 'string' ? raw.commission_type : 'pagomovil',
           valor: raw.commission_value != null ? Number(raw.commission_value) : 0,
