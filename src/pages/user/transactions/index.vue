@@ -1090,14 +1090,31 @@
                   <div class="tx-detail-modal__field-value">{{ txDetailDate }}</div>
                 </div>
               </div>
-              <!-- Cuenta -->
-              <div v-if="txDetailAccountName" class="tx-detail-modal__field">
+              <!-- Cuenta (gasto/ingreso) -->
+              <div v-if="!txDetailIsTransfer && txDetailAccountName" class="tx-detail-modal__field">
                 <span class="material-icons tx-detail-modal__field-icon text-grey-6">account_balance</span>
                 <div>
                   <div class="tx-detail-modal__field-label">Cuenta</div>
                   <div class="tx-detail-modal__field-value">{{ txDetailAccountName }}</div>
                 </div>
               </div>
+              <!-- Origen / Destino (transferencia) -->
+              <template v-if="txDetailIsTransfer">
+                <div v-if="txDetailFromAccountName" class="tx-detail-modal__field">
+                  <span class="material-icons tx-detail-modal__field-icon text-grey-6">account_balance_wallet</span>
+                  <div>
+                    <div class="tx-detail-modal__field-label">Origen</div>
+                    <div class="tx-detail-modal__field-value">{{ txDetailFromAccountName }}</div>
+                  </div>
+                </div>
+                <div v-if="txDetailToAccountName" class="tx-detail-modal__field">
+                  <span class="material-icons tx-detail-modal__field-icon text-grey-6">arrow_forward</span>
+                  <div>
+                    <div class="tx-detail-modal__field-label">Destino</div>
+                    <div class="tx-detail-modal__field-value">{{ txDetailToAccountName }}</div>
+                  </div>
+                </div>
+              </template>
               <!-- Categoría / Proveedor -->
               <div v-if="txDetailProviderName" class="tx-detail-modal__field">
                 <span class="material-icons tx-detail-modal__field-icon text-grey-6">label</span>
@@ -1114,8 +1131,8 @@
                   <div class="tx-detail-modal__field-value">{{ txDetailTypeName }}</div>
                 </div>
               </div>
-              <!-- Cántaro anclado -->
-              <div class="tx-detail-modal__field">
+              <!-- Cántaro anclado (no aplica a transferencias: no tienen categoría propia) -->
+              <div v-if="!txDetailIsTransfer" class="tx-detail-modal__field">
                 <span class="material-icons tx-detail-modal__field-icon text-grey-6">savings</span>
                 <div style="flex:1">
                   <div class="tx-detail-modal__field-label">Cántaro</div>
@@ -3913,6 +3930,27 @@ function txDetailNestedName(key: string): string {
 const txDetailAccountName = computed(() => txDetailNestedName('account'));
 const txDetailProviderName = computed(() => txDetailNestedName('provider'));
 const txDetailTypeName = computed(() => txDetailNestedName('transaction_type'));
+
+// OWF-334: en una transferencia este modal no mostraba NINGUNA cuenta — el campo
+// "Cuenta" lee row.account.name, que solo existe para gasto/ingreso; una transferencia
+// no tiene un "account" único, tiene 2 legs en payment_transactions. Mismo patrón de
+// derivación que TxDetailModal.vue (leg con amount negativo = origen, positivo = destino).
+interface TxDetailLeg { amount?: number | string; account?: { name?: string; color?: string } }
+function txDetailLegs(): TxDetailLeg[] {
+  const r = txDetailGetRow();
+  const pts = r?.['payment_transactions'];
+  return Array.isArray(pts) ? (pts as TxDetailLeg[]) : [];
+}
+const txDetailFromAccountName = computed(() => {
+  const legs = txDetailLegs();
+  const leg = legs.find(p => Number(p.amount) < 0) ?? legs[0];
+  return leg?.account?.name ?? '';
+});
+const txDetailToAccountName = computed(() => {
+  const legs = txDetailLegs();
+  const leg = legs.find(p => Number(p.amount) > 0);
+  return leg?.account?.name ?? '';
+});
 // ─── /OWF-138 ────────────────────────────────────────────────────────────────
 
 function edit(row: Record<string, unknown>) {
