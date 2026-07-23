@@ -254,8 +254,16 @@
                 </div>
 
                 <!-- Amount -->
-                <div class="pro-tx-feed__amount" :class="txAmountClass(row)">
-                  {{ formatAmountInAccountCurrency(row) }}
+                <div class="pro-tx-feed__amount-wrap">
+                  <div class="pro-tx-feed__amount" :class="txAmountClass(row)">
+                    {{ formatAmountInAccountCurrency(row) }}
+                  </div>
+                  <!-- OWF-331: saldo de la cuenta tras esta transacción — solo tiene sentido
+                       con exactamente una cuenta filtrada (mismo criterio que la tabla legacy
+                       y que Lite, que siempre tiene una sola billetera implícita). -->
+                  <div v-if="singleAccountSelected && formatRunningBalanceForRow(row)" class="pro-tx-feed__running-balance">
+                    {{ formatRunningBalanceForRow(row) }}
+                  </div>
                 </div>
 
                 <!-- Row actions (hidden in multi mode) -->
@@ -5663,6 +5671,21 @@ function exportCSV(): void {
 .pro-tx-feed__amount--income  { color: var(--income-fg, #15803d); }
 .pro-tx-feed__amount--expense { color: var(--expense-fg, #b91c1c); }
 .pro-tx-feed__amount--transfer { color: var(--fg-1); }
+
+.pro-tx-feed__amount-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+/* OWF-331: saldo de la cuenta tras cada transacción, visible solo con 1 cuenta filtrada */
+.pro-tx-feed__running-balance {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--fg-3);
+}
 
 /* Row actions */
 .pro-tx-feed__actions {
