@@ -1538,9 +1538,28 @@ const useParaleloActual = ref(true);
 function syncParaleloActual() {
   if (useParaleloActual.value && paraleloChip.value) rateParalelo.value = paraleloChip.value.rate;
 }
+// OWF-337: "Tasa oficial (BCV) hoy" nunca se auto-completaba al crear un movimiento nuevo
+// (0.0000 fijo) — solo se restauraba al editar una transacción ya guardada con esa tasa
+// (ver loadTransactionForEdit). Solo aplica en modo creación: en edición, el valor ya
+// restaurado desde el payment guardado es la fuente de verdad, no lo pisamos.
+async function fetchOfficialRateLatest() {
+  if (isEditMode.value) return;
+  const currencyId = findAccountById(form.value.account_id)?.currency?.id;
+  if (!currencyId) return;
+  try {
+    const res = await api.get<{ data: { rate: number } | null }>('/user-currencies/official-latest', {
+      params: { currency_id: currencyId },
+    });
+    const val = res.data?.data?.rate;
+    if (typeof val === 'number' && val > 0 && !rateOficial.value) rateOficial.value = val;
+  } catch {
+    // Silencioso: el campo queda editable a mano si no hay tasa automática disponible.
+  }
+}
 watch(showDualRates, (show) => {
   if (!show) return;
   syncParaleloActual();
+  void fetchOfficialRateLatest();
 });
 watch(paraleloChip, () => syncParaleloActual());
 
@@ -2129,6 +2148,17 @@ function onShow() {
   if (periodDate) {
     form.value.date = periodDate;
     dateShortcut.value = 'custom';
+  }
+
+  // OWF-337: los watch(showDualRates/paraleloChip, ...) de abajo solo disparan en un
+  // CAMBIO de valor — si el modal se reabre ya con la misma cuenta no-USD preseleccionada
+  // que la vez anterior (p.ej. una cuenta VES filtrada en Transacciones, ver OWF-331),
+  // showDualRates ya arrancaba en `true` y el watcher nunca volvía a correr, dejando
+  // rateParalelo/rateOficial en null (recién reseteados arriba) pese a tener datos reales.
+  // Llamado explícito para cubrir ese caso, además del reactivo para cambios en vivo.
+  if (showDualRates.value) {
+    syncParaleloActual();
+    void fetchOfficialRateLatest();
   }
 
   void ttypes.fetchTransactionTypes();
