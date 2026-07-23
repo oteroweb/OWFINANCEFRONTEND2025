@@ -1779,7 +1779,17 @@ async function save() {
     const rawAmt = itemsOn.value ? itemsTotal.value : (form.value.amount ?? 0);
     const amount = form.value.type === 'expense' ? -Math.abs(rawAmt) : Math.abs(rawAmt);
 
-    const derivedJar = jarForCategory(form.value.category_id ?? null, getCachedJars());
+    // OWF-341: bug real encontrado al auditar la lógica del formulario — Items y Gasto
+    // compartido ocultan el selector de Categoría principal (se completa por línea abajo),
+    // pero `form.value.category_id` seguía viajando en el payload tal cual quedó en memoria
+    // desde antes de activar el panel (p.ej. el usuario elige una categoría, después prueba
+    // "Gasto compartido"). Resultado: la transacción guardaba category_id/jar_id "fantasma"
+    // ADEMÁS de items[]/shared_categories[], y el listado mostraba una categoría de más
+    // (categoryLabelForRow fusiona category + item_transactions/shared_categories, ver
+    // OWF-341). En estos dos modos la categoría vive solo a nivel de línea — a nivel de
+    // transacción debe quedar null, sin importar qué haya quedado seleccionado antes.
+    const categoryAtTransactionLevel = (itemsOn.value || sharedOn.value) ? null : form.value.category_id;
+    const derivedJar = jarForCategory(categoryAtTransactionLevel ?? null, getCachedJars());
 
     const payload: Record<string, unknown> = {
       name: form.value.name.trim(),
@@ -1863,7 +1873,7 @@ async function save() {
         : undefined;
 
       payload.amount = finalAmount;
-      payload.category_id = form.value.category_id ?? null;
+      payload.category_id = categoryAtTransactionLevel ?? null;
       payload.jar_id = derivedJar?.id ?? null;
       payload.payments = payments;
       if (items?.length) payload.items = items;
