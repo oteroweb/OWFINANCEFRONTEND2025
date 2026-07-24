@@ -4310,8 +4310,12 @@ const apTxCategoriesGroups = computed<ApCatGroup[]>(() => {
   }));
   const assignedIds = new Set(groups.flatMap(g => g.cats.map(c => c.id)));
   const unassigned = cats.filter(c => !assignedIds.has(c.id));
+  // Los grupos de cántaro real siempre se muestran, aunque estén vacíos —
+  // son el drop target para reasignar una categoría, ocultarlos cuando no
+  // tienen categorías dejaría un cántaro sin forma de recibir una por
+  // drag-and-drop. "Sin cántaro" es sintético, solo se muestra si hay algo.
   if (unassigned.length) groups.push({ key: 'none', jar: null, cats: unassigned });
-  return groups.filter(g => g.cats.length);
+  return groups;
 });
 
 function onApCatDragStart(cat: CatalogCategory, ev: DragEvent): void {
