@@ -347,6 +347,11 @@
                   :class="{ 'ap-panel__seg-btn--active': apTxSection === 'debts' }"
                   @click="apTxSection = 'debts'"
                 >Deudas</button>
+                <button
+                  class="ap-panel__seg-btn"
+                  :class="{ 'ap-panel__seg-btn--active': apTxSection === 'categories' }"
+                  @click="apTxSection = 'categories'; if (!apCategoriesData.length) void loadApCategoriesData();"
+                >Categorías</button>
               </div>
               <button
                 v-if="apTxSection === 'accounts'"
@@ -447,7 +452,7 @@
           </template>
 
           <!-- ── Debts section ── -->
-          <template v-else>
+          <template v-else-if="apTxSection === 'debts'">
             <div class="ap-panel__total">
               <span class="t-eyebrow" style="margin-bottom:4px;display:block">Total adeudado · USD</span>
               <span class="ap-panel__total-amount" style="color: var(--expense-fg)">{{ formatMoney(apTxDebtsTotal) }}</span>
@@ -470,6 +475,59 @@
               <button class="ap-panel__add" style="color:var(--expense-fg)" @click="$router.push('/user/debts')">
                 <span class="material-icons" style="font-size:18px">add_circle_outline</span>
                 Registrar deuda
+              </button>
+            </div>
+          </template>
+
+          <!-- ── Categorías section (D-004, OWF-343): drag categoría → grupo de
+               cántaro para reasignarla. Port de AccountsPanel.jsx (Claude Design). ── -->
+          <template v-else>
+            <div class="ap-panel__list" style="padding-top:10px">
+              <div style="padding:0 18px 10px">
+                <q-input v-model="apCatQ" dense filled placeholder="Filtrar categorías" style="font-size:12.5px">
+                  <template #prepend><q-icon name="search" size="16px" /></template>
+                </q-input>
+                <div style="font-size:11px;color:var(--fg-3);margin-top:8px">
+                  Arrastrá una categoría sobre un cántaro para reasignarla.
+                </div>
+              </div>
+              <div v-if="apCatLoading" class="ap-panel__loading">
+                <q-spinner color="primary" size="20px" />
+              </div>
+              <template v-else>
+                <div
+                  v-for="g in apTxCategoriesGroups"
+                  :key="g.key"
+                  class="ap-cat-group"
+                  :class="{ 'ap-cat-group--over': apDropOverJarKey === g.key }"
+                  @dragover="onApJarDragOver(g.key, $event)"
+                  @dragleave="onApJarDragLeave(g.key)"
+                  @drop="onApJarDrop(g.jar ? g.jar.id : null, $event)"
+                >
+                  <div class="ap-cat-group__header">
+                    <span class="ap-cat-group__dot" :style="{ background: g.jar ? g.jar.color : 'var(--fg-3)' }" />
+                    <span class="ap-cat-group__name">{{ g.jar ? g.jar.name : 'Sin cántaro' }}</span>
+                  </div>
+                  <div class="ap-cat-group__chips">
+                    <span
+                      v-for="c in g.cats"
+                      :key="c.id"
+                      class="ap-cat-chip"
+                      draggable="true"
+                      @dragstart="onApCatDragStart(c, $event)"
+                    >{{ c.name }}</span>
+                  </div>
+                </div>
+              </template>
+
+              <div v-if="apAddingCat" style="padding:8px 18px;display:flex;gap:8px;align-items:center">
+                <q-input v-model="apNewCatName" dense filled placeholder="Nombre de la categoría" class="col" @keyup.enter="apCreateCategory" />
+                <q-btn flat round dense icon="check" color="primary" @click="apCreateCategory" />
+                <q-btn flat round dense icon="close" color="grey" @click="apAddingCat = false; apNewCatName = ''" />
+              </div>
+              <button v-else class="ap-panel__add" @click="apAddingCat = true">
+                <span class="material-icons" style="font-size:18px">add_circle_outline</span>
+                Agregar categoría
               </button>
             </div>
           </template>
@@ -1322,7 +1380,7 @@ import {
   type LayoutModeOption,
   type UserLayoutMode,
 } from 'src/utils/layoutMode';
-import { loadCategoriesWithJars, loadUserJars, jarForCategory, getCachedJars, getCachedCategories, JAR_SLUG_NAMES } from 'src/utils/txCatalog';
+import { loadCategoriesWithJars, loadUserJars, jarForCategory, getCachedJars, getCachedCategories, JAR_SLUG_NAMES, type CatalogCategory, type JarRef } from 'src/utils/txCatalog';
 defineOptions({ name: 'user_transactions_page' });
 
 const $q = useQuasar();
@@ -4205,7 +4263,7 @@ function onAccountsPanelToggle() {
   try { localStorage.setItem('owf-ap-panel-open', String(apPanelOpen.value)); } catch { /* noop */ }
 }
 
-const apTxSection = ref<'accounts' | 'debts'>('accounts');
+const apTxSection = ref<'accounts' | 'debts' | 'categories'>('accounts');
 const apSelectMode = ref(false);
 const apMenuId = ref<number | null>(null);
 const apTxLoading = ref(false);
@@ -4217,6 +4275,96 @@ const apTxAccountsList = ref<ApTxAccount[]>([]);
 const apTxDebtsList = ref<ApTxDebt[]>([]);
 const apTxNetTotal = computed(() => apTxAccountsList.value.reduce((s, a) => s + a.balance, 0));
 const apTxDebtsTotal = computed(() => apTxDebtsList.value.reduce((s, d) => s + d.balance, 0));
+
+// ── Categorías (D-004, OWF-343): 3ra pestaña del panel de cuentas, port del
+// AccountsPanel.jsx de Claude Design — categorías agrupadas por cántaro,
+// reasignables por drag-and-drop. Estado propio (no el cache compartido de
+// txCatalog) para poder mutar assigned_jar_id localmente tras el PATCH sin
+// pelear con la reactividad del módulo compartido. ──────────────────────
+const apCatQ = ref('');
+const apCategoriesData = ref<CatalogCategory[]>([]);
+const apJarsData = ref<JarRef[]>([]);
+const apCatLoading = ref(false);
+const apAddingCat = ref(false);
+const apNewCatName = ref('');
+const apDropOverJarKey = ref<string | null>(null); // jar.id o 'none'
+
+async function loadApCategoriesData(): Promise<void> {
+  apCatLoading.value = true;
+  try {
+    await Promise.all([loadCategoriesWithJars(), loadUserJars()]);
+    apCategoriesData.value = getCachedCategories().filter(c => c.type !== 'folder');
+    apJarsData.value = getCachedJars();
+  } finally {
+    apCatLoading.value = false;
+  }
+}
+
+interface ApCatGroup { key: string; jar: JarRef | null; cats: CatalogCategory[] }
+const apTxCategoriesGroups = computed<ApCatGroup[]>(() => {
+  const q = apCatQ.value.trim().toLowerCase();
+  const cats = apCategoriesData.value.filter(c => !q || c.name.toLowerCase().includes(q));
+  const groups: ApCatGroup[] = apJarsData.value.map(j => ({
+    key: String(j.id), jar: j,
+    cats: cats.filter(c => jarForCategory(c.id, apJarsData.value)?.id === j.id),
+  }));
+  const assignedIds = new Set(groups.flatMap(g => g.cats.map(c => c.id)));
+  const unassigned = cats.filter(c => !assignedIds.has(c.id));
+  if (unassigned.length) groups.push({ key: 'none', jar: null, cats: unassigned });
+  return groups.filter(g => g.cats.length);
+});
+
+function onApCatDragStart(cat: CatalogCategory, ev: DragEvent): void {
+  ev.dataTransfer?.setData('text/plain', String(cat.id));
+  if (ev.dataTransfer) ev.dataTransfer.effectAllowed = 'move';
+}
+
+function onApJarDragOver(groupKey: string, ev: DragEvent): void {
+  ev.preventDefault();
+  apDropOverJarKey.value = groupKey;
+}
+
+function onApJarDragLeave(groupKey: string): void {
+  if (apDropOverJarKey.value === groupKey) apDropOverJarKey.value = null;
+}
+
+async function onApJarDrop(jarId: number | null, ev: DragEvent): Promise<void> {
+  ev.preventDefault();
+  apDropOverJarKey.value = null;
+  const idStr = ev.dataTransfer?.getData('text/plain');
+  const catId = idStr ? Number(idStr) : NaN;
+  if (!Number.isFinite(catId)) return;
+  const cat = apCategoriesData.value.find(c => c.id === catId);
+  if (!cat || cat.assigned_jar_id === jarId) return;
+  try {
+    await api.patch(`/categories/${catId}/jar`, { jar_id: jarId });
+    cat.assigned_jar_id = jarId;
+    $q.notify({ type: 'positive', message: 'Categoría reasignada' });
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo reasignar la categoría' });
+  }
+}
+
+async function apCreateCategory(): Promise<void> {
+  const name = apNewCatName.value.trim();
+  if (!name) return;
+  try {
+    const res = await api.post('/categories', { name });
+    const data = (res.data as { data?: { id: number; name: string } })?.data;
+    if (data?.id) {
+      apCategoriesData.value.push({
+        id: data.id, name: data.name ?? name, icon: null, jar_slug: null,
+        assigned_jar_id: null, active: true, user_id: null, type: 'category',
+        parent_id: null, transaction_type_id: null,
+      });
+    }
+    apNewCatName.value = '';
+    apAddingCat.value = false;
+    $q.notify({ type: 'positive', message: 'Categoría creada' });
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo crear la categoría' });
+  }
+}
 
 // ── Multi-select mode ───────────────────────────────────────────────────
 const txMultiMode    = ref(false);
@@ -6137,6 +6285,62 @@ function exportCSV(): void {
   text-align: center;
   font-size: 12.5px;
   color: var(--fg-3);
+}
+
+/* ── D-004 / OWF-343: pestaña Categorías del panel de cuentas (drag-and-drop) ── */
+.ap-cat-group {
+  padding: 8px 18px 12px;
+  border-radius: var(--radius-md, 12px);
+  transition: background 120ms;
+
+  &--over {
+    background: color-mix(in srgb, var(--info) 12%, transparent);
+    outline: 1.5px dashed var(--info);
+    outline-offset: -2px;
+  }
+}
+
+.ap-cat-group__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.ap-cat-group__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.ap-cat-group__name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+.ap-cat-group__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ap-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  font-size: 11.5px;
+  color: var(--fg-1);
+  cursor: grab;
+  user-select: none;
+
+  &:active { cursor: grabbing; }
 }
 
 /* ── OWF-138: Transaction Detail Modal v2 ── */

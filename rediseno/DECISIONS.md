@@ -80,7 +80,7 @@ Mientras una divergencia no tenga asiento acá, su vista queda con estado
 
 ## D-004 — 3ra pestaña "Categorías" en el panel de cuentas (sidebar de Transacciones)
 
-- **Fecha**: 2026-07-23 · **Estado**: PENDIENTE · **Disposición propuesta**: por definir
+- **Fecha**: 2026-07-23 · **Estado**: ADJUDICADO (confirmado 2026-07-23) · **Disposición**: `design-gana` (opción 1 — portar el drag-and-drop)
 - **Divergencia**: item #7 del audit diseño↔prod de Transacciones. `AccountsPanel.jsx`
   (Claude Design, confirmado con acceso real al proyecto tras resolverse el bloqueo de
   auth de DesignSync) tiene 3 pestañas en el panel lateral: `['accounts', 'debts',
@@ -96,13 +96,27 @@ Mientras una divergencia no tenga asiento acá, su vista queda con estado
   el diseño propone gestión de categorías inline (sidebar de Transacciones, con
   drag-and-drop hacia Cántaros); Vue ya resuelve lo mismo desde una página dedicada de
   Configuración. Ambos cubren el caso de uso "editar/crear categoría", con UX distinta.
-- **Decisión**: pendiente. Preguntas para adjudicar:
-  1. ¿Vale la pena el patrón drag-and-drop categoría→cántaro inline en Transacciones,
-     o la página dedicada de Configuración ya alcanza?
-  2. Si se porta, ¿reemplaza o convive con `Configuración → Categorías`?
-- **Acción pendiente**: confirmar con Jose antes de portar o descartar. Mientras no
-  haya decisión, esta pestaña del diseño queda `divergent-pending-decision` y no se
-  porta a Vue ni se elimina del diseño.
+- **Decisión** (Jose, 2026-07-23): opción 1 — portar el patrón drag-and-drop inline a
+  Vue. Convive con `Configuración → Categorías` (no se elimina esa página; no se pidió).
+- **Implementado 2026-07-23** (OWF-343): 3ra pestaña "Categorías" agregada al panel de
+  cuentas de `src/pages/user/transactions/index.vue` (junto a Cuentas/Deudas) —
+  buscador, categorías agrupadas por cántaro, chips draggable, drop sobre el header de
+  un grupo de cántaro para reasignar, "Agregar categoría" (quick-add, solo nombre).
+  **Simplificaciones deliberadas frente al mock**: (1) sin editor inline de
+  color/descripción por categoría — el modelo `Category` real no tiene esos campos
+  (solo `name`/`icon`/`parent_id`/`transaction_type_id`/etc., confirmado en
+  `app/Models/Entities/Category.php`); el color de cada chip se hereda del cántaro
+  asignado, no es propio de la categoría. (2) el drop target es el header del grupo de
+  cántaro DENTRO de esta misma pestaña (no "sobre un cántaro en la pantalla Cántaros"
+  como describe el mock) — la pantalla Cántaros vive en otra ruta con su propio estado
+  pesado (`POST /jars/bulk-sync`, requiere porcentajes/config completa), no hay forma
+  de dropear entre rutas distintas en una SPA; este patrón logra el mismo resultado
+  funcional (reasignar categoría→cántaro) sin depender de esa página.
+  **Backend nuevo**: `PATCH /categories/{id}/jar` (`CategoryController::assignJar`) —
+  sync liviano del pivot `jar_category` para UNA categoría (a diferencia de
+  `/jars/bulk-sync`, no toca el resto de cántaros ni sus porcentajes), scoped al
+  usuario dueño de la categoría y del cántaro. 2 tests feature nuevos, suite completa
+  verde (excepto 2 fallos preexistentes/ajenos ya documentados, no relacionados).
 
 ---
 
