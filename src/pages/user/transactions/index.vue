@@ -264,6 +264,13 @@
                   <div v-if="singleAccountSelected && formatRunningBalanceForRow(row)" class="pro-tx-feed__running-balance">
                     {{ formatRunningBalanceForRow(row) }}
                   </div>
+                  <!-- OWF-340: conversión a USD inline cuando la cuenta filtrada no es USD
+                       (rediseno/PROMPT_REDISENO_TRANSACCIONES.md §1.9) — ya existía para la
+                       tabla legacy (formatAmountConversionLine/showUsdUnderAmounts), nunca se
+                       pintaba en el feed Pro real. -->
+                  <div v-if="formatAmountConversionLine(row)" class="pro-tx-feed__usd-conversion">
+                    {{ formatAmountConversionLine(row) }}
+                  </div>
                 </div>
 
                 <!-- Row actions (hidden in multi mode) -->
@@ -5890,6 +5897,15 @@ function exportCSV(): void {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--fg-3);
+}
+
+/* OWF-340: conversión inline a USD cuando la cuenta filtrada no es USD */
+.pro-tx-feed__usd-conversion {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--fg-3);
+  opacity: 0.85;
 }
 
 /* Row actions */
