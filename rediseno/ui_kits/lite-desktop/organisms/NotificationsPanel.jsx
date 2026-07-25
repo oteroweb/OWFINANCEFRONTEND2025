@@ -25,7 +25,7 @@ const NOTIF_TONE = {
   info:    { fg: 'var(--info)',       bg: 'var(--surface-2)'    },
 };
 
-function NotificationsPanel({ open, onClose, accent = 'var(--brand-primary)', anchorRight = 32, anchorTop = 76 }) {
+function NotificationsPanel({ open, onClose, onViewAll, accent = 'var(--brand-primary)', anchorRight = 32, anchorTop = 76 }) {
   const ref = useNotifRef(null);
   const isMobile = useViewportMobile();
   const [items, setItems] = useNotifState(NOTIF_SEED);
@@ -68,7 +68,7 @@ function NotificationsPanel({ open, onClose, accent = 'var(--brand-primary)', an
           <NotifHeader T={T} accent={accent} unreadCount={unreadCount} onMarkAll={markAllRead} pad="6px 18px 12px" />
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {items.map(n => <NotifRow key={n.id} n={n} T={T} onClick={() => readOne(n.id)} />)}
-            <NotifFooter T={T} />
+            <NotifFooter T={T} onClick={() => { onViewAll && onViewAll(); onClose(); }} />
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@ function NotificationsPanel({ open, onClose, accent = 'var(--brand-primary)', an
       <NotifHeader T={T} accent={accent} unreadCount={unreadCount} onMarkAll={markAllRead} pad="16px 18px 12px" />
       <div style={{ overflowY: 'auto' }}>
         {items.map(n => <NotifRow key={n.id} n={n} T={T} onClick={() => readOne(n.id)} />)}
-        <NotifFooter T={T} />
+        <NotifFooter T={T} onClick={() => { onViewAll && onViewAll(); onClose(); }} />
       </div>
     </div>
   );
@@ -153,10 +153,11 @@ function NotifRow({ n, T, onClick }) {
   );
 }
 
-function NotifFooter({ T }) {
+function NotifFooter({ T, onClick }) {
   const [h, setH] = useNotifState(false);
   return (
     <button
+      type="button" onClick={onClick}
       onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
         width: '100%', border: 0, cursor: 'pointer',

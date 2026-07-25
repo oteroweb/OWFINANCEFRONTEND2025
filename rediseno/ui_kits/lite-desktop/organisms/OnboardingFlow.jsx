@@ -179,11 +179,29 @@ function ObStep({ step, p, set, F, applyTemplate }) {
   // done
   const tpl = (window.JAR_TEMPLATES || []).find(t0 => t0.slug === p.template_slug);
   const lbl = (field, val) => { const g = F[field]; const o = g && g.options.find(x => x.value === val); return o ? o.label : '—'; };
+
+  /* Gamificación (§4.2 paso 7 del prompt): 🌱 Semilla <40% · 🌿 Brote 40-74% ·
+   * 🌳 Árbol ≥75%, sobre los 8 campos de perfil (mismo criterio que la barra
+   * de completitud de Perfil, ver PROMPT_REDISENO_DEUDAS_SUENOS_PERFIL.md §4.1). */
+  const PROFILE_FIELD_KEYS = ['occupation', 'income_range', 'living_situation', 'debt_situation', 'emergency_fund', 'money_relationship', 'main_goal', 'emotional_keyword'];
+  const filledCount = PROFILE_FIELD_KEYS.filter(k => p[k]).length + (p.long_term_dream ? 1 : 0);
+  const completionPct = Math.round((filledCount / (PROFILE_FIELD_KEYS.length + 1)) * 100);
+  const badge = completionPct >= 75
+    ? { emoji: '🌳', label: t('Árbol') }
+    : completionPct >= 40
+      ? { emoji: '🌿', label: t('Brote') }
+      : { emoji: '🌱', label: t('Semilla') };
+
   return (
     <div style={{ textAlign: 'center', paddingTop: 8 }}>
       <span style={{ width: 76, height: 76, borderRadius: '50%', background: 'var(--income-soft)', color: 'var(--income-fg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
         <span className="material-icons" style={{ fontSize: 40 }}>check_circle</span>
       </span>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 999, background: 'var(--surface-1)', boxShadow: 'var(--shadow-card)', marginBottom: 14 }}>
+        <span style={{ fontSize: 20, lineHeight: 1 }}>{badge.emoji}</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 700, color: 'var(--fg-1)' }}>{badge.label}</span>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-3)' }}>· {completionPct}% {t('del perfil')}</span>
+      </div>
       <h1 className="t-h1" style={{ margin: 0 }}>{t('¡Todo listo!')}</h1>
       <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--fg-2)', margin: '10px auto 22px', maxWidth: 440, textWrap: 'pretty' }}>{t('Guardamos tu perfil. El asesor IA ya puede darte consejos personalizados. Puedes editarlo cuando quieras en Ajustes.')}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9, textAlign: 'left', background: 'var(--surface-1)', boxShadow: 'var(--shadow-card)', borderRadius: 'var(--radius-md)', padding: 18, maxWidth: 420, margin: '0 auto' }}>

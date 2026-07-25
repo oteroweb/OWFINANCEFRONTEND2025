@@ -151,9 +151,10 @@ function ProShell() {
           {route === 'jars'         && <ProJarsRoute hidden={hidden} />}
           {route === 'dreams'       && <DreamsRoute hidden={hidden} />}
           {route === 'debts'        && <DebtsRoute hidden={hidden} />}
-          {route === 'config'       && <ConfigRoute rates={rates} onRatesChange={setRates} onGo={setRoute} onStartOnboarding={() => setOnbOpen(true)} />}
+          {route === 'config'       && <ProConfigRoute rates={rates} onRatesChange={setRates} onGo={setRoute} onStartOnboarding={() => setOnbOpen(true)} />}
           {route === 'profile'      && <ProfileRoute onGo={setRoute} />}
           {route === 'finprofile'   && <FinancialProfileRoute onGo={setRoute} />}
+          {route === 'notifications' && <NotificationsRoute />}
         </main>
       </div>
 
@@ -193,7 +194,7 @@ function ProShell() {
       <SmartTransactionModal open={smartOpen} onClose={() => setSmartOpen(false)} initialType={smartType} initialTab={smartTab} mode="pro" rates={rates} />
       <TransactionDetailModal open={!!detailTx} tx={detailTx} mode="pro" hidden={hidden} onClose={() => setDetailTx(null)} onChanged={() => setDataVer(v => v + 1)} />
       <AIAdvisorPanel open={aiOpen} onClose={() => setAIOpen(false)} />
-      <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} accent="var(--info)" anchorRight={24} anchorTop={60} />
+      <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} onViewAll={() => setRoute('notifications')} accent="var(--info)" anchorRight={24} anchorTop={60} />
       <OnboardingFlow open={onbOpen} onClose={() => setOnbOpen(false)} onFinish={() => { setOnbOpen(false); setRoute('home'); }} />
     </div>
   );

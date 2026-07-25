@@ -61,6 +61,7 @@ function LiteShell() {
         {route === 'config'       && <ConfigRoute onGo={setRoute} onStartOnboarding={() => setOnbOpen(true)} />}
         {route === 'profile'      && <ProfileRoute onGo={setRoute} />}
         {route === 'finprofile'   && <FinancialProfileRoute onGo={setRoute} />}
+        {route === 'notifications' && <NotificationsRoute />}
       </main>
 
       {/* Floating nav pill — Lite signature */}
@@ -84,7 +85,7 @@ function LiteShell() {
       {/* AI Advisor slide-in panel */}
       <AIAdvisorPanel open={aiOpen} onClose={() => setAIOpen(false)} />
       {/* Notifications (popover desktop · sheet mobile) */}
-      <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} accent="var(--brand-primary)" anchorRight={32} />
+      <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} onViewAll={() => setRoute('notifications')} accent="var(--brand-primary)" anchorRight={32} />
       {/* Onboarding post-creación de cuenta */}
       <OnboardingFlow open={onbOpen} onClose={() => setOnbOpen(false)} onFinish={() => { setOnbOpen(false); setRoute('home'); }} />
     </div>

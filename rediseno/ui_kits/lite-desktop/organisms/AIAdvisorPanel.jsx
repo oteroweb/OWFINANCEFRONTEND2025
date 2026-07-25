@@ -42,6 +42,11 @@ function AIAdvisorPanel({ open, onClose }) {
   const [messages, setMessages] = useAIPanelState([...DESKTOP_AI_SEED]);
   const [input, setInput] = useAIPanelState('');
   const [loading, setLoading] = useAIPanelState(false);
+  const [error, setError] = useAIPanelState(null);
+  const [settingsOpen, setSettingsOpen] = useAIPanelState(false);
+  const [advisorName, setAdvisorName] = useAIPanelState('Asesor IA');
+  const [personality, setPersonality] = useAIPanelState('amigable');
+  const [advisorEnabled, setAdvisorEnabled] = useAIPanelState(true);
   const bottomRef = useAIPanelRef(null);
 
   useAIPanelEffect(() => {
@@ -58,6 +63,7 @@ function AIAdvisorPanel({ open, onClose }) {
   const send = async (text) => {
     const t = (text || input).trim();
     if (!t || loading) return;
+    setError(null);
     setInput('');
     const userMsg = { id: Date.now(), role: 'user', time: new Date().toTimeString().slice(0, 5), parts: [{ text: t, plain: true }] };
     setMessages(m => [...m, userMsg]);
@@ -73,9 +79,19 @@ function AIAdvisorPanel({ open, onClose }) {
       const clean = raw.replace(/\[CTA:\s*.+?\]/g, '').trim();
       setMessages(m => [...m, { id: Date.now() + 1, role: 'ai', time: new Date().toTimeString().slice(0, 5), parts: [{ text: clean, plain: true }], ctas: cta ? [cta] : [] }]);
     } catch {
-      setMessages(m => [...m, { id: Date.now() + 1, role: 'ai', time: new Date().toTimeString().slice(0, 5), parts: [{ text: 'No pude conectar. Intenta de nuevo.', plain: true }], ctas: [] }]);
+      /* Barra de error real (§1.4 del prompt) en vez de una burbuja falsa del
+       * asistente — se descarta el mensaje de usuario recién agregado para
+       * poder reintentar exactamente, mismo patrón que `retryLastMessage`. */
+      setMessages(m => m.filter(msg => msg.id !== userMsg.id));
+      setError({ text: t });
     }
     setLoading(false);
+  };
+  const retryLastMessage = () => { if (error) { const t = error.text; setError(null); send(t); } };
+  const clearConversation = () => { setMessages([]); setError(null); };
+  const copyMessage = (msg) => {
+    const text = (msg.parts || []).map(p => p.text).join('');
+    navigator.clipboard && navigator.clipboard.writeText(text).catch(() => {});
   };
 
   return (
@@ -116,21 +132,33 @@ function AIAdvisorPanel({ open, onClose }) {
           }}>
             <span className="material-icons" style={{ fontSize: 20, color: '#fff' }}>auto_awesome</span>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--fg-1)' }}>Asesor Financiero IA</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--fg-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{advisorName}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--income-fg)' }}>
               <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--income)', display: 'inline-block' }} />
-              EN LÍNEA
+              {loading ? t('escribiendo…') : t('en línea')}
             </div>
           </div>
+          <IconButton icon="refresh" ariaLabel="Limpiar conversación" onClick={clearConversation} />
+          <IconButton icon="tune" ariaLabel="Ajustes del asesor" onClick={() => setSettingsOpen(true)} />
           <IconButton icon="close" ariaLabel="Cerrar panel" onClick={onClose} />
         </div>
 
         {/* Messages */}
         <div ref={bottomRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 0', display: 'flex', flexDirection: 'column', gap: 16, scrollbarWidth: 'thin' }}>
-          {messages.map(msg => <DesktopChatBubble key={msg.id} message={msg} onCta={send} />)}
+          {messages.map(msg => <DesktopChatBubble key={msg.id} message={msg} onCta={send} onCopy={copyMessage} />)}
           {loading && <DesktopTypingBubble />}
         </div>
+
+        {/* Barra de error (§1.4) */}
+        {error && (
+          <div style={{ margin: '0 16px 10px', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--expense-soft)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <span className="material-icons" style={{ fontSize: 18, color: 'var(--expense-fg)' }}>error</span>
+            <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--expense-fg)' }}>{t('No pude conectar. Intenta de nuevo.')}</span>
+            <button type="button" onClick={retryLastMessage} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--expense-fg)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 12.5 }}>{t('Reintentar')}</button>
+            <button type="button" onClick={() => setError(null)} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--expense-fg)', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 12.5 }}>{t('OK')}</button>
+          </div>
+        )}
 
         {/* Quick replies */}
         <div style={{ display: 'flex', gap: 8, padding: '10px 16px 0', overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0 }}>
@@ -171,14 +199,60 @@ function AIAdvisorPanel({ open, onClose }) {
           </button>
         </div>
       </div>
+
+      {/* Ajustes del asesor (§1.2) — nombre, personalidad, activado */}
+      {settingsOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(15,23,42,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setSettingsOpen(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width: 'min(380px,100%)', background: 'var(--surface-1)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-float)', padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--fg-1)' }}>{t('Ajustes del asesor')}</div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: 'var(--fg-2)', marginBottom: 5 }}>{t('Nombre del asesor')}</div>
+              <input value={advisorName} maxLength={60} onChange={e => setAdvisorName(e.target.value)} placeholder="Asesor IA" style={{ ...window.FC_INPUT_STYLE, width: '100%', boxSizing: 'border-box', padding: '9px 11px' }} onFocus={window.fcFocus} onBlur={window.fcBlur} />
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: 'var(--fg-2)', marginBottom: 8 }}>{t('Personalidad')}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  ['amigable', 'emoji_emotions', t('Amigable'), t('Cálido, directo y empático')],
+                  ['formal', 'business_center', t('Formal'), t('Profesional y preciso, sin rodeos')],
+                  ['coach', 'fitness_center', t('Coach'), t('Te reta y motiva a mejorar')],
+                ].map(([id, icon, label, desc]) => {
+                  const on = personality === id;
+                  return (
+                    <button key={id} type="button" onClick={() => setPersonality(id)} style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', cursor: 'pointer', padding: '10px 12px', borderRadius: 'var(--radius-sm)', border: on ? '1.5px solid var(--brand-primary)' : '1.5px solid var(--border-hairline)', background: on ? 'var(--brand-primary-soft)' : 'var(--surface-1)' }}>
+                      <span className="material-icons" style={{ fontSize: 19, color: on ? 'var(--brand-primary)' : 'var(--fg-2)' }}>{icon}</span>
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13, color: 'var(--fg-1)' }}>{label}</div>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-2)' }}>{desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button type="button" onClick={() => setAdvisorEnabled(v => !v)} style={{ width: 36, height: 20, border: 0, borderRadius: 999, background: advisorEnabled ? 'var(--brand-primary)' : 'var(--surface-3)', position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
+                <span style={{ position: 'absolute', top: 2, left: advisorEnabled ? 18 : 2, width: 16, height: 16, borderRadius: 999, background: '#fff', transition: 'left 150ms' }} />
+              </button>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--fg-1)' }}>{t('Asesor activado')}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <button type="button" onClick={() => setSettingsOpen(false)} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-2)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600 }}>{t('Cancelar')}</button>
+              <button type="button" onClick={() => setSettingsOpen(false)} style={{ border: 0, cursor: 'pointer', padding: '9px 18px', borderRadius: 'var(--radius-pill)', background: 'var(--brand-primary)', color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13 }}>{t('Guardar cambios')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
-function DesktopChatBubble({ message, onCta }) {
+function DesktopChatBubble({ message, onCta, onCopy }) {
   const isUser = message.role === 'user';
+  const [hover, setHover] = useAIPanelState(false);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', gap: 8, padding: '0 16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', gap: 8, padding: '0 16px' }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexDirection: isUser ? 'row-reverse' : 'row' }}>
         {!isUser && (
           <div style={{ width: 26, height: 26, borderRadius: 13, flexShrink: 0, background: 'linear-gradient(135deg, #7C3AED 0%, #0EA5E9 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -188,7 +262,7 @@ function DesktopChatBubble({ message, onCta }) {
         <div style={{
           maxWidth: '82%', background: isUser ? 'var(--surface-2)' : 'var(--surface-1)',
           borderRadius: isUser ? '14px 14px 3px 14px' : '3px 14px 14px 14px',
-          padding: '10px 14px', boxShadow: 'var(--shadow-card)',
+          padding: '10px 14px', boxShadow: 'var(--shadow-card)', position: 'relative',
         }}>
           <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.55, color: 'var(--fg-1)', whiteSpace: 'pre-wrap' }}>
             {(message.parts || []).map((p, i) =>
@@ -197,6 +271,11 @@ function DesktopChatBubble({ message, onCta }) {
             )}
           </span>
         </div>
+        {hover && (
+          <button type="button" onClick={() => onCopy && onCopy(message)} title={t('Copiar')} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex', alignSelf: 'center' }}>
+            <span className="material-icons" style={{ fontSize: 15 }}>content_copy</span>
+          </button>
+        )}
       </div>
       {!isUser && message.ctas && message.ctas.length > 0 && (
         <div style={{ marginLeft: 34, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
