@@ -86,84 +86,14 @@ function ProConfigRoute({ rates = {}, onRatesChange, onGo, onStartOnboarding }) 
         </Card>
       )}
 
-      {tab === 'Categorías' && (
-        <Card padding={0}>
-          <div style={{ padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-3)', borderBottom: '1px solid var(--border-hairline)' }}>
-            {t('Vista simplificada — el árbol completo con drag&drop es el alcance del módulo Cuentas/Categorías/Impuestos.')}
-          </div>
-          {(window.SAMPLE_CATEGORIES || []).slice(0, 8).map((c, i) => {
-            const jar = (window.SAMPLE_JARS || []).find(j => j.id === c.assigned_jar_id);
-            return (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderTop: i ? '1px solid var(--border-hairline)' : 'none' }}>
-                <span className="material-icons" style={{ fontSize: 18, color: 'var(--fg-2)' }}>{c.icon || 'label'}</span>
-                <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--fg-1)' }}>{c.name}</span>
-                {jar ? (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-body)', fontSize: 11.5, fontWeight: 600, padding: '3px 10px', borderRadius: 999, background: jar.color + '22', color: jar.color }}>
-                    <span style={{ width: 6, height: 6, borderRadius: 999, background: jar.color }} />{jar.name}
-                  </span>
-                ) : <span style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-3)', fontStyle: 'italic' }}>{t('Sin cántaro')}</span>}
-              </div>
-            );
-          })}
-        </Card>
-      )}
+      {tab === 'Categorías' && <CategoriesTreeView />}
 
-      {tab === 'Cuentas' && (
-        <Card padding={0}>
-          <div style={{ padding: '10px 16px', fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-3)', borderBottom: '1px solid var(--border-hairline)' }}>
-            {t('Vista simplificada — carpetas, drag&drop y toggle "incluir en balance" son el alcance del módulo Cuentas/Categorías/Impuestos.')}
-          </div>
-          {(window.SAMPLE_ACCOUNTS || []).map((a, i) => (
-            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderTop: i ? '1px solid var(--border-hairline)' : 'none' }}>
-              <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--surface-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700, color: 'var(--fg-2)' }}>{a.currencyCode?.slice(0, 2)}</span>
-              <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--fg-1)' }}>{a.name}{a.isDefault ? ` · ${t('predeterminada')}` : ''}</span>
-              <Money value={a.balance} currency={a.currencySymbol} />
-            </div>
-          ))}
-          <div style={{ padding: '11px 16px', borderTop: '1px solid var(--border-hairline)' }}>
-            <PillButton variant="ghost" icon="add">{t('Agregar cuenta')}</PillButton>
-          </div>
-        </Card>
-      )}
+      {tab === 'Cuentas' && <AccountsTreeView />}
 
-      {tab === 'Impuestos' && <ConfigTaxesTab />}
+      {tab === 'Impuestos' && <TaxesCrud />}
     </div>
   );
 }
 
-/* Impuestos: CRUD genérico simple (Nombre/Porcentaje/Activo), mismo motor
- * conceptual que las 15 vistas CRUD de Admin — acá solo local, sin
- * confirmación previa de borrado (mismo patrón documentado). */
-function ConfigTaxesTab() {
-  const [rows, setRows] = usePCState([
-    { id: 1, name: 'IGTF', percent: 3, active: true },
-    { id: 2, name: 'IVA', percent: 16, active: true },
-  ]);
-  return (
-    <Card padding={0} style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-body)', fontSize: 12.5 }}>
-        <thead><tr>
-          {['Nombre', 'Porcentaje', 'Activo', ''].map(h => <th key={h} style={{ textAlign: 'left', padding: '11px 16px', borderBottom: '1px solid var(--border-hairline)', fontSize: 10.5, fontWeight: 700, letterSpacing: '.04em', color: 'var(--fg-3)' }}>{t(h)}</th>)}
-        </tr></thead>
-        <tbody>
-          {rows.map(r => (
-            <tr key={r.id} style={{ borderBottom: '1px solid var(--border-hairline)' }}>
-              <td style={{ padding: '11px 16px', color: 'var(--fg-1)' }}>{r.name}</td>
-              <td style={{ padding: '11px 16px', color: 'var(--fg-1)' }}>{r.percent}%</td>
-              <td style={{ padding: '11px 16px' }}>
-                <span style={{ width: 30, height: 18, borderRadius: 999, background: r.active ? 'var(--income-fg)' : 'var(--surface-3)', position: 'relative', display: 'inline-block' }}>
-                  <span style={{ position: 'absolute', top: 2, left: r.active ? 14 : 2, width: 14, height: 14, borderRadius: 999, background: '#fff' }} />
-                </span>
-              </td>
-              <td style={{ padding: '11px 16px', textAlign: 'right' }}>
-                <button type="button" onClick={() => setRows(rs => rs.filter(x => x.id !== r.id))} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--expense-fg)', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 12 }}>{t('Eliminar')}</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </Card>
-  );
-}
 
 Object.assign(window, { ProConfigRoute });
