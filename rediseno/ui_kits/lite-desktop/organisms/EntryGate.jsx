@@ -9,11 +9,15 @@
 const { useState: useGateState } = React;
 
 function EntryGate({ onAuthed }) {
-  const [route, setRoute] = useGateState('landing'); // landing | login | register | forgot | reset
+  const [route, setRoute] = useGateState('landing'); // landing | login | register | forgot | reset | features | pricing | matrix
   const [data, setData] = useGateState({ name: '', email: '', password: '' });
   const tt = (window.t || ((s) => s));
+  const goTo = (r) => setRoute(r);
 
-  if (route === 'landing') return <GateLanding onRegister={() => setRoute('register')} onLogin={() => setRoute('login')} />;
+  if (route === 'landing') return <GateLanding onRegister={() => setRoute('register')} onLogin={() => setRoute('login')} onGo={goTo} />;
+  if (route === 'features') return <FeaturesPage onGo={goTo} />;
+  if (route === 'pricing') return <PricingPage onGo={goTo} />;
+  if (route === 'matrix') return <MatrixPage onGo={goTo} />;
   if (route === 'forgot') return <GateForgotPassword email={data.email} setEmail={v => setData({ ...data, email: v })} onBack={() => setRoute('login')} onSent={() => setRoute('reset')} />;
   if (route === 'reset') return <GateResetPassword onBack={() => setRoute('login')} onDone={() => setRoute('login')} />;
   return <GateAuth mode={route} data={data} setData={setData}
@@ -174,18 +178,25 @@ function GateTopBar({ right }) {
   );
 }
 
-function GateLanding({ onRegister, onLogin }) {
+function GateLanding({ onRegister, onLogin, onGo }) {
+  const tf = (window.t || (s => s));
   const feats = [
     { icon: 'savings', t: 'Cántaros con propósito', d: 'Reparte tu ingreso en frascos que reflejan tu vida, no una hoja de cálculo.' },
     { icon: 'auto_awesome', t: 'Asesor con IA', d: 'Aprende de tu perfil y te aconseja en tu idioma, sin juicios.' },
     { icon: 'insights', t: 'Claridad mes a mes', d: 'Ves a dónde va tu dinero y cuánto te queda disponible, siempre.' },
   ];
+  const trust = ['5 formas de registrar', '3 monedas', '2 modos', '∞ cántaros'];
+  const featureGrid = [
+    ['currency_exchange', 'Multimoneda real', 'No solo etiquetas — conversión real entre monedas.'],
+    ['dark_mode', 'Claro y oscuro', 'Se adapta a tu sistema o lo eliges vos.'],
+    ['visibility_off', 'Modo privacidad', 'Oculta tus montos con un toque, en cualquier vista.'],
+    ['receipt_long', 'Ítems por línea', 'Detalle de factura completo cuando lo necesitas (Pro).'],
+    ['swap_horiz', 'Transferencias', 'Entre cuentas y monedas, con tasa clara (Pro).'],
+    ['sync_alt', 'Portabilidad Lite↔Pro', 'Cambiá de modo cuando quieras — mismos datos, sin fricción.'],
+  ];
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', display: 'flex', flexDirection: 'column' }}>
-      <GateTopBar right={<>
-        <PillButton variant="ghost" size="sm" onClick={onLogin}>Iniciar sesión</PillButton>
-        <PillButton variant="primary" size="sm" onClick={onRegister}>Crear cuenta</PillButton>
-      </>} />
+      <MarketingNav onGo={(r) => r === 'login' ? onLogin() : r === 'register' ? onRegister() : onGo(r)} active="landing" />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto', padding: '56px 32px', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 56, alignItems: 'center', width: '100%' }}>
           <div>
@@ -208,6 +219,53 @@ function GateLanding({ onRegister, onLogin }) {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Trust strip */}
+      <div style={{ borderTop: '1px solid var(--border-hairline)', background: 'var(--surface-1)', padding: '18px 32px' }}>
+        <div style={{ maxWidth: 1140, margin: '0 auto', display: 'flex', gap: 28, justifyContent: 'center', flexWrap: 'wrap' }}>
+          {trust.map((t, i) => <span key={i} style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--fg-2)' }}>{tf(t)}</span>)}
+        </div>
+      </div>
+
+      {/* Comparación Lite vs Pro (compacta — la matriz completa vive en /matriz) */}
+      <div style={{ padding: '56px 32px', background: 'var(--bg-canvas)' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 28, color: 'var(--fg-1)', textAlign: 'center', margin: '0 0 8px' }}>{tf('Un modo para cada momento')}</h2>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--fg-2)', textAlign: 'center', margin: '0 0 28px' }}>{tf('Cambia entre Lite y Pro cuando quieras — mismos datos, sin fricción.')}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <Card>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}><span className="material-icons" style={{ color: 'var(--brand-primary)' }}>speed</span><span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--fg-1)' }}>Lite</span></div>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--fg-2)', margin: 0 }}>{tf('Rápida, ágil y directa al grano. Una sola billetera, sin fricción.')}</p>
+            </Card>
+            <Card>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}><span className="material-icons" style={{ color: 'var(--info)' }}>dashboard_customize</span><span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--fg-1)' }}>Pro</span></div>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--fg-2)', margin: 0 }}>{tf('Potencia máxima. Vista de escritorio, multi-cuenta y análisis detallados.')}</p>
+            </Card>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 18 }}>
+            <button type="button" onClick={() => onGo('matrix')} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--brand-primary)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13 }}>{tf('Ver comparativa completa →')}</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Features grid */}
+      <div style={{ padding: '20px 32px 56px' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          {featureGrid.map(([icon, title, d], i) => (
+            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <span style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: 'var(--surface-2)', color: 'var(--fg-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><span className="material-icons" style={{ fontSize: 18 }}>{icon}</span></span>
+              <div><div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13.5, color: 'var(--fg-1)' }}>{tf(title)}</div><div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--fg-2)', lineHeight: 1.5 }}>{tf(d)}</div></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA final */}
+      <div style={{ background: 'linear-gradient(135deg, #0B1B3A, #1E3A8A)', padding: '56px 32px', textAlign: 'center' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 28, color: '#fff', margin: '0 0 10px' }}>{tf('Empieza a tener claridad hoy')}</h2>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'rgba(255,255,255,.8)', margin: '0 0 24px' }}>{tf('Gratis para empezar. Menos de 2 minutos.')}</p>
+        <PillButton variant="primary" icon="arrow_forward" onClick={onRegister}>{tf('Crear mi cuenta gratis')}</PillButton>
       </div>
     </div>
   );

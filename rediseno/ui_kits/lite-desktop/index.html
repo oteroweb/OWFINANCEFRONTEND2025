@@ -301,6 +301,7 @@
   <script type="text/babel" src="organisms/JarsProEditor.jsx"></script>
   <script type="text/babel" src="organisms/JarsLiteConfig.jsx"></script>
   <script type="text/babel" src="organisms/OnboardingFlow.jsx"></script>
+  <script type="text/babel" src="organisms/MarketingPages.jsx"></script>
   <script type="text/babel" src="organisms/EntryGate.jsx"></script>
 
   <!-- ── Organisms · Financial display ─────────────────────────── -->
@@ -360,8 +361,17 @@
         reactRoot.render(<EntryGate onAuthed={(opts) => {
           try { localStorage.setItem('ow-session', '1'); } catch (e) {}
           window.__appRoute = 'home';
-          renderApp();
-          if (opts && opts.onboard) setTimeout(() => window.__owStartOnboarding && window.__owStartOnboarding(), 360);
+          if (opts && opts.onboard) {
+            // OnboardingModal (elegir Lite/Pro) va PRIMERO, pantalla completa,
+            // no saltable — solo entonces se monta el shell real + OnboardingFlow.
+            reactRoot.render(<OnboardingModal onChoose={(mode) => {
+              window.setMode(mode);
+              renderApp();
+              setTimeout(() => window.__owStartOnboarding && window.__owStartOnboarding(), 360);
+            }} />);
+          } else {
+            renderApp();
+          }
         }} />);
         return;
       }

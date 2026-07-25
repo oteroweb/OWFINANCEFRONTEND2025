@@ -116,22 +116,10 @@ function ObStep({ step, p, set, F, applyTemplate }) {
             </div>
           ))}
         </div>
-        {/* elegir Lite / Pro */}
-        <div style={{ maxWidth: 400, margin: '0 auto', textAlign: 'left' }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, color: 'var(--fg-2)', marginBottom: 9 }}>{t('¿Cómo prefieres empezar?')}</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {[['lite', 'Lite', 'Simple y enfocado', 'spa'], ['pro', 'Pro', 'Panel completo multi-cuenta', 'dashboard']].map(([id, lbl, d, ic]) => {
-              const on = p.mode === id;
-              return (
-                <button key={id} type="button" onClick={() => set('mode', id)} style={{ flex: 1, textAlign: 'left', cursor: 'pointer', padding: '13px 15px', borderRadius: 'var(--radius-md)', border: on ? '1.5px solid var(--brand-primary)' : '1.5px solid var(--border-hairline)', background: on ? 'var(--brand-primary-soft)' : 'var(--surface-1)' }}>
-                  <span className="material-icons" style={{ fontSize: 22, color: on ? 'var(--brand-primary)' : 'var(--fg-2)' }}>{ic}</span>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 700, color: 'var(--fg-1)', marginTop: 4 }}>{lbl}</div>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-2)' }}>{t(d)}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* La elección Lite/Pro ya no vive acá — pasó a OnboardingModal (pantalla
+         * completa, previa a este wizard), matching la arquitectura real de 2
+         * flujos independientes (OnboardingModal vs OnboardingFlow). `p.mode`
+         * llega precargado desde ahí. */}
       </div>
     );
   }
@@ -242,4 +230,41 @@ function ObDreamInput({ value, onChange }) {
   );
 }
 
-Object.assign(window, { OnboardingFlow });
+/* ─── OnboardingModal — elegir Lite/Pro (PROMPT_REDISENO_ASESOR_CONFIG_NOTIFICACIONES_ONBOARDING.md §4.1) ─
+ * Independiente de OnboardingFlow (el wizard de perfil de arriba) — en el
+ * Vue real son 2 flujos separados: este va PRIMERO (obligatorio, sin botón
+ * de cerrar, solo se dispara la 1ª vez), OnboardingFlow es opcional/después.
+ * Antes de este componente, la elección de modo vivía fusionada dentro del
+ * paso "welcome" de OnboardingFlow — se sacó de ahí para que ambos flujos
+ * queden realmente independientes, como en producción.
+ * Props: onChoose(mode) */
+function OnboardingModal({ onChoose }) {
+  const tf = (window.t || (s => s));
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 30000, background: 'var(--brand-primary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <span style={{ width: 60, height: 60, borderRadius: 18, background: 'rgba(255,255,255,.16)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+          <span className="material-icons" style={{ fontSize: 30, color: '#fff' }}>savings</span>
+        </span>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 30, color: '#fff', margin: '0 0 8px' }}>{tf('Bienvenido a OW Finance')}</h1>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'rgba(255,255,255,.85)', margin: 0 }}>{tf('¿Cómo prefieres empezar? Puedes cambiar de modo cuando quieras.')}</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, width: '100%', maxWidth: 720 }}>
+        <button type="button" onClick={() => onChoose('lite')} style={{ textAlign: 'left', border: 0, cursor: 'pointer', borderRadius: 'var(--radius-lg)', background: '#fff', padding: 28, boxShadow: '0 20px 50px rgba(0,0,0,.25)' }}>
+          <span className="material-icons" style={{ fontSize: 32, color: 'var(--brand-primary)' }}>speed</span>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--fg-1)', margin: '14px 0 6px' }}>Lite</div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--fg-2)', lineHeight: 1.5, margin: '0 0 18px' }}>{tf('Rápida, ágil y directa al grano. Una sola billetera, sin cuentas que pensar.')}</p>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--brand-primary)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13.5 }}>{tf('Elegir Lite')} <span className="material-icons" style={{ fontSize: 17 }}>arrow_forward</span></span>
+        </button>
+        <button type="button" onClick={() => onChoose('pro')} style={{ textAlign: 'left', border: 0, cursor: 'pointer', borderRadius: 'var(--radius-lg)', background: '#0B1220', padding: 28, boxShadow: '0 20px 50px rgba(0,0,0,.35)' }}>
+          <span className="material-icons" style={{ fontSize: 32, color: '#fff' }}>dashboard_customize</span>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: '#fff', margin: '14px 0 6px' }}>Pro</div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'rgba(255,255,255,.7)', lineHeight: 1.5, margin: '0 0 18px' }}>{tf('Potencia máxima. Vista de escritorio, multi-cuenta y análisis detallados.')}</p>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#fff', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13.5 }}>{tf('Elegir Pro')} <span className="material-icons" style={{ fontSize: 17 }}>arrow_forward</span></span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { OnboardingFlow, OnboardingModal });
