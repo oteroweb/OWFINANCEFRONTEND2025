@@ -55,7 +55,7 @@ function LiteShell() {
         {route === 'home'         && <HomeRoute hidden={hidden} onQuickAdd={openQuick} onGo={setRoute} />}
         {route === 'transactions' && <TransactionsRoute hidden={hidden} />}
         {route === 'analisis'     && <AnalisisRoute hidden={hidden} />}
-        {route === 'jars'         && <JarsRoute hidden={hidden} />}
+        {route === 'jars'         && <JarsRoute hidden={hidden} onQuickAdd={openQuick} />}
         {route === 'dreams'       && <DreamsRoute hidden={hidden} />}
         {route === 'debts'        && <DebtsRoute hidden={hidden} />}
         {route === 'config'       && <ConfigRoute onGo={setRoute} onStartOnboarding={() => setOnbOpen(true)} />}

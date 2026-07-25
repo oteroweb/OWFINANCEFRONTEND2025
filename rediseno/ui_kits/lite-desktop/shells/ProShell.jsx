@@ -141,7 +141,7 @@ function ProShell() {
           {route === 'home'         && <ProHomeRoute hidden={hidden} onQuickAdd={openQuick} onGo={setRoute} onOpenAI={openAI} />}
           {route === 'transactions' && <TransactionsRoute hidden={hidden} />}
           {route === 'analisis'     && <ProAnalisisRoute hidden={hidden} />}
-          {route === 'jars'         && <JarsRoute hidden={hidden} />}
+          {route === 'jars'         && <ProJarsRoute hidden={hidden} />}
           {route === 'dreams'       && <DreamsRoute hidden={hidden} />}
           {route === 'debts'        && <DebtsRoute hidden={hidden} />}
           {route === 'config'       && <ConfigRoute rates={rates} onRatesChange={setRates} onGo={setRoute} onStartOnboarding={() => setOnbOpen(true)} />}
