@@ -45,6 +45,11 @@ function ProShell() {
   const openQuick = () => { setAIOpen(false);    setSmartOpen(false); setQuickOpen(true); };
   const openSmart = (type = 'expense', tab = 'text') => { setSmartType(type); setSmartTab(tab); setQuickOpen(false); setSmartOpen(true); };
 
+  /* Admin tiene su propio layout completo (AdminLayout.vue en el Vue real,
+   * sin sidebar/topbar de AppShell) — se renderiza como pantalla completa
+   * en vez de dentro del <main> de este shell. */
+  if (route === 'admin') return <AdminRoute onExit={() => setRoute('home')} />;
+
   return (
     <div data-screen-label="Pro Desktop" style={{ display: 'flex', height: '100vh', background: 'var(--bg-canvas)', overflow: 'hidden', position: 'relative' }}>
 
@@ -121,6 +126,8 @@ function ProShell() {
               <IconButton icon="notifications" ariaLabel="Notificaciones" onClick={() => setNotifOpen(o => !o)} />
               <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, background: 'var(--expense)', boxShadow: '0 0 0 2px var(--surface-1)' }} />
             </div>
+            {/* Solo visible si auth.role === 'admin' en el Vue real — siempre visible acá porque el mock no modela roles. */}
+            <IconButton icon="admin_panel_settings" ariaLabel="Panel de administración" onClick={() => setRoute('admin')} />
             {!isMobile && (
               <React.Fragment>
                 <span style={{ width: 1, height: 22, background: 'var(--border-hairline)', margin: '0 2px', flexShrink: 0 }} />

@@ -7,6 +7,8 @@
 
 Rediseñar el panel `/admin/*` (18+ vistas). **La estrategia de rediseño más eficiente aquí es distinta a la de los módulos de usuario**: 15 de las 18 vistas son CRUD genérico sobre el mismo motor (`CrudPage.vue` + `dictionary.ts` por entidad) — rediseñar `CrudPage.vue` una sola vez impacta automáticamente a las 15. Solo 4 vistas son verdaderamente custom y necesitan diseño individual: `users` (index + detail), `admin_dashboard`, `ai_monitor`, `system`.
 
+✅ **Actualizado 2026-07-25 — diseño real construido, greenfield (no había nada previo salvo el HTML genérico).** Nuevo `AdminRoute.jsx` (+ `organisms/AdminScreens.jsx`) con sidebar propia (no comparte nav con AppShell, igual que `AdminLayout.vue` en el Vue real) y 6 pantallas: Dashboard (6 KPIs), Usuarios (index con búsqueda+KPIs + detalle con 6 tabs + botón Impersonar con banner rojo persistente), Monitor de IA (7 proveedores con posición de fallback, selector de periodo, desglose por funcionalidad, tabla de últimas llamadas), Sistema (chips de entorno, conteos de tablas, últimas sesiones), y **2 CRUDs de muestra** (Monedas, Proveedores) sobre un solo motor genérico parametrizable `AdminCrudTable` — representa las 15 pantallas CRUD reales sin construir cada una por separado, tal como recomienda este documento. Acceso: nuevo botón "Panel de administración" en el topbar Pro (gateado por rol en el Vue real, siempre visible acá porque el mock no modela roles). Verificado end-to-end en el kit: las 6 pantallas cargan, "Ver" en un usuario abre el detalle, "Impersonar" dispara el banner, sin errores de consola. Subido a Claude Design.
+
 ---
 
 ## 1. Motor genérico — `CrudPage.vue` (rediseñar esto primero, una sola vez)
