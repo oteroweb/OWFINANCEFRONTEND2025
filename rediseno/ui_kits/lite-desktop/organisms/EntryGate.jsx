@@ -9,15 +9,148 @@
 const { useState: useGateState } = React;
 
 function EntryGate({ onAuthed }) {
-  const [route, setRoute] = useGateState('landing'); // landing | login | register
+  const [route, setRoute] = useGateState('landing'); // landing | login | register | forgot | reset
   const [data, setData] = useGateState({ name: '', email: '', password: '' });
   const tt = (window.t || ((s) => s));
 
   if (route === 'landing') return <GateLanding onRegister={() => setRoute('register')} onLogin={() => setRoute('login')} />;
+  if (route === 'forgot') return <GateForgotPassword email={data.email} setEmail={v => setData({ ...data, email: v })} onBack={() => setRoute('login')} onSent={() => setRoute('reset')} />;
+  if (route === 'reset') return <GateResetPassword onBack={() => setRoute('login')} onDone={() => setRoute('login')} />;
   return <GateAuth mode={route} data={data} setData={setData}
     onBack={() => setRoute('landing')}
     onSwap={() => setRoute(route === 'login' ? 'register' : 'login')}
+    onForgot={() => setRoute('forgot')}
     onSubmit={() => onAuthed({ onboard: route === 'register' })} />;
+}
+
+/* Medidor de fuerza (§ ChangePasswordCard, reusado acá — mismo criterio:
+ * longitud≥8, mayúscula, número, carácter especial). */
+function useStrength(pwd) {
+  let s = 0;
+  if (pwd.length >= 8) s++;
+  if (/[A-Z]/.test(pwd)) s++;
+  if (/[0-9]/.test(pwd)) s++;
+  if (/[^A-Za-z0-9]/.test(pwd)) s++;
+  return s;
+}
+const STRENGTH_LABELS = ['Muy débil', 'Débil', 'Aceptable', 'Aceptable', 'Fuerte'];
+const STRENGTH_COLORS = ['var(--expense)', 'var(--expense)', 'var(--warning)', 'var(--warning)', 'var(--income)'];
+function StrengthMeter({ pwd }) {
+  if (!pwd) return null;
+  const score = useStrength(pwd);
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 5 }}>
+        {[0, 1, 2, 3].map(i => <div key={i} style={{ flex: 1, height: 4, borderRadius: 999, background: i < score ? STRENGTH_COLORS[score] : 'var(--surface-3)' }} />)}
+      </div>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: STRENGTH_COLORS[score] }}>{(window.t || (s => s))(STRENGTH_LABELS[score])}</span>
+    </div>
+  );
+}
+
+/* Botones sociales decorativos — sin función real, igual que en LoginPage.vue (§9 del prompt). */
+function GateSocialButtons() {
+  const tf = (window.t || (s => s));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0' }}>
+        <span style={{ flex: 1, height: 1, background: 'var(--border-hairline)' }} />
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-3)' }}>{tf('o continúa con')}</span>
+        <span style={{ flex: 1, height: 1, background: 'var(--border-hairline)' }} />
+      </div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        {[['G', 'Google'], ['', 'Apple']].map(([label, name]) => (
+          <button key={name} type="button" title={tf(`${name} (decorativo, sin función real)`)}
+            style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1.5px solid var(--border-hairline)', background: 'var(--surface-1)', cursor: 'not-allowed', padding: '11px 0', borderRadius: 'var(--radius-lg)', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13.5, color: 'var(--fg-2)' }}>
+            <span className="material-icons" style={{ fontSize: 18 }}>{name === 'Apple' ? 'apple' : 'g_translate'}</span>{name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* Recuperar contraseña — ForgotPasswordPage.vue: email → banner de éxito. */
+function GateForgotPassword({ email, setEmail, onBack, onSent }) {
+  const [sent, setSent] = useGateState(false);
+  const tf = (window.t || (s => s));
+  const valid = /\S+@\S+\.\S+/.test(email);
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', display: 'flex', flexDirection: 'column' }}>
+      <GateTopBar right={<PillButton variant="ghost" size="sm" icon="arrow_back" onClick={onBack}>{tf('Inicio de sesión')}</PillButton>} />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          <div style={{ textAlign: 'center', marginBottom: 26 }}>
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+              <span style={{ width: 56, height: 56, borderRadius: 28, background: 'var(--brand-primary-soft)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><span className="material-icons" style={{ fontSize: 26, color: 'var(--brand-primary)' }}>lock_reset</span></span>
+            </div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, color: 'var(--fg-1)', margin: '0 0 6px' }}>{tf('¿Olvidaste tu contraseña?')}</h1>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--fg-2)', margin: 0 }}>{tf('Te enviamos un enlace para restablecerla.')}</p>
+          </div>
+          {sent ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', textAlign: 'center' }}>
+              <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--income-soft)', color: 'var(--income-fg)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600 }}>
+                ✅ {tf('Revisa tu correo')} ({email}) {tf('para restablecer tu contraseña.')}
+              </div>
+              <button type="button" onClick={onSent} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--brand-primary)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13 }}>{tf('Ya tengo el enlace →')}</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <GateInput value={email} onChange={setEmail} placeholder="tu@correo.com" type="email" icon="mail" onEnter={() => valid && setSent(true)} />
+              <div style={{ opacity: valid ? 1 : 0.55, pointerEvents: valid ? 'auto' : 'none' }}>
+                <PillButton variant="primary" icon="send" onClick={() => valid && setSent(true)}>{tf('Enviar enlace')}</PillButton>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Restablecer contraseña — ResetPasswordPage.vue: nueva contraseña + confirmar → banner de éxito. */
+function GateResetPassword({ onBack, onDone }) {
+  const [pwd, setPwd] = useGateState('');
+  const [confirm, setConfirm] = useGateState('');
+  const [show, setShow] = useGateState(false);
+  const [done, setDone] = useGateState(false);
+  const [err, setErr] = useGateState('');
+  const tf = (window.t || (s => s));
+
+  const submit = () => {
+    if (pwd.length < 8) { setErr(tf('Mínimo 8 caracteres')); return; }
+    if (pwd !== confirm) { setErr(tf('Las contraseñas no coinciden')); return; }
+    setErr(''); setDone(true);
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg-canvas)', display: 'flex', flexDirection: 'column' }}>
+      <GateTopBar right={<PillButton variant="ghost" size="sm" icon="arrow_back" onClick={onBack}>{tf('Inicio de sesión')}</PillButton>} />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          <div style={{ textAlign: 'center', marginBottom: 26 }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, color: 'var(--fg-1)', margin: '0 0 6px' }}>{tf('Elige una nueva contraseña')}</h1>
+          </div>
+          {done ? (
+            <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--income-soft)', color: 'var(--income-fg)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
+              ✅ {tf('Contraseña actualizada — ya puedes iniciar sesión.')}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ position: 'relative' }}>
+                <GateInput value={pwd} onChange={v => { setPwd(v); setErr(''); }} placeholder={tf('Nueva contraseña')} type={show ? 'text' : 'password'} icon="lock" />
+                <button type="button" onClick={() => setShow(s => !s)} style={{ position: 'absolute', top: '50%', right: 14, transform: 'translateY(-50%)', border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex' }}><span className="material-icons" style={{ fontSize: 20 }}>{show ? 'visibility_off' : 'visibility'}</span></button>
+              </div>
+              <StrengthMeter pwd={pwd} />
+              <GateInput value={confirm} onChange={v => { setConfirm(v); setErr(''); }} placeholder={tf('Confirmar contraseña')} type={show ? 'text' : 'password'} icon="lock" onEnter={submit} />
+              {err && <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--expense-fg)' }}>{err}</div>}
+              <div><PillButton variant="primary" icon="check" onClick={submit}>{tf('Guardar contraseña')}</PillButton></div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function GateBrand({ size = 34 }) {
@@ -91,7 +224,7 @@ function GateInput({ value, onChange, placeholder, type = 'text', icon, onEnter 
   );
 }
 
-function GateAuth({ mode, data, setData, onSubmit, onSwap, onBack }) {
+function GateAuth({ mode, data, setData, onSubmit, onSwap, onBack, onForgot }) {
   const [show, setShow] = useGateState(false);
   const isReg = mode === 'register';
   const valid = isReg
@@ -114,7 +247,14 @@ function GateAuth({ mode, data, setData, onSubmit, onSwap, onBack }) {
               <GateInput value={data.password} onChange={v => setData({ ...data, password: v })} placeholder={isReg ? 'Contraseña (mín. 6)' : 'Contraseña'} type={show ? 'text' : 'password'} icon="lock" onEnter={() => valid && onSubmit()} />
               <button type="button" onClick={() => setShow(s => !s)} style={{ position: 'absolute', top: '50%', right: 14, transform: 'translateY(-50%)', border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex' }}><span className="material-icons" style={{ fontSize: 20 }}>{show ? 'visibility_off' : 'visibility'}</span></button>
             </div>
+            {isReg && <StrengthMeter pwd={data.password} />}
+            {!isReg && (
+              <div style={{ textAlign: 'right', marginTop: -4 }}>
+                <button type="button" onClick={onForgot} style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-2)', fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600 }}>¿Olvidaste tu contraseña?</button>
+              </div>
+            )}
             <div style={{ marginTop: 6, opacity: valid ? 1 : 0.55, pointerEvents: valid ? 'auto' : 'none' }}><PillButton variant="primary" icon={isReg ? 'arrow_forward' : 'login'} onClick={() => valid && onSubmit()}>{isReg ? 'Continuar' : 'Iniciar sesión'}</PillButton></div>
+            <GateSocialButtons />
           </div>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--fg-2)', textAlign: 'center', marginTop: 24 }}>
             {isReg ? '¿Ya tienes cuenta? ' : '¿Aún no tienes cuenta? '}
