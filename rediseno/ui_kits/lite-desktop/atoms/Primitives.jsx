@@ -55,9 +55,9 @@ function Eyebrow({ children }) {
 }
 
 /* ---------- Card ---------- */
-function Card({ children, hero = false, padding = 24, style = {} }) {
+function Card({ children, hero = false, padding = 24, style = {}, onClick }) {
   return (
-    <div style={{
+    <div onClick={onClick} style={{
       background: 'var(--surface-1)',
       borderRadius: hero ? 'var(--radius-xl)' : 'var(--radius-lg)',
       padding: hero ? 32 : padding,

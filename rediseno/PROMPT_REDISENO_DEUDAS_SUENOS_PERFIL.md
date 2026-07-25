@@ -7,6 +7,8 @@
 
 Rediseñar 4 vistas que hoy se agrupan en un solo documento porque comparten una característica estructural poco común en el sistema: **ninguna tiene diferencias de código entre Pro y Lite**. Se renderizan idénticas en ambos modos. Esto simplifica el alcance visual (una sola variante por vista, no dos), pero es una decisión que vale la pena confirmar con producto antes de diseñar — ver sección 6.
 
+✅ **Actualizado 2026-07-25 — las 4 ya tienen diseño real, no solo el preview/hero de solo-lectura descrito abajo.** `FinancialProfileRoute.jsx` ya estaba completo (4 cards + selector de plantilla + tabla editable de cántaros, sin cambios). Se completaron `DebtsRoute.jsx` (detalle con Pagar cuota/Editar/Eliminar, formulario de alta/edición con los campos reales del §1.5, diálogo de pago que reduce el saldo, confirmación de borrado, estado vacío), `DreamsRoute.jsx` (menú contextual Aportar/Editar/Marcar completado-Reabrir/Eliminar, formulario con paleta de 8 colores, diálogo de aporte con celebración al completar, sección "Completados" separada, estado vacío) y `ProfileRoute.jsx` (se agregó la card "Seguridad" con `ChangePasswordCard` — indicador de fortaleza de 4 segmentos, validaciones — que faltaba por completo). Verificado end-to-end en el kit: pago de cuota que reduce el saldo real, aporte que completa un sueño y dispara la celebración + lo mueve a Completados, y el indicador de fortaleza de contraseña reaccionando en vivo — todo sin errores de consola. De paso, `Card` (atoms/Primitives.jsx) ganó soporte de `onClick` — no lo tenía, así que las tarjetas de Deudas/Sueños se veían clicables (`cursor:pointer`) pero no hacían nada.
+
 ---
 
 ## 1. Deudas (`/user/debts`)

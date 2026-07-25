@@ -20,14 +20,14 @@ const DEBT_STATUS_META = {
   'paid':     { label: 'Pagado',       color: 'var(--income)',  soft: 'var(--income-soft)',  fg: 'var(--income-fg)'  },
 };
 
-function DebtTile({ debt, hidden, compact = false }) {
+function DebtTile({ debt, hidden, compact = false, onClick }) {
   const provider = DEBT_PROVIDER_META[debt.provider] || DEBT_PROVIDER_META.loan;
   const status   = DEBT_STATUS_META[debt.status]     || DEBT_STATUS_META['on-track'];
   const progress = debt.total ? Math.round((debt.paid / debt.total) * 100) : Math.round(((debt.original - debt.balance) / debt.original) * 100);
   const isCashea = debt.provider === 'cashea';
 
   return (
-    <Card padding={compact ? 18 : 22} style={{ display: 'flex', flexDirection: 'column', gap: 12, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+    <Card onClick={onClick} padding={compact ? 18 : 22} style={{ display: 'flex', flexDirection: 'column', gap: 12, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
       {isCashea && (
         <div style={{
           position: 'absolute', top: 0, right: 0,
@@ -141,7 +141,7 @@ function DebtsPreview({ debts, hidden, onViewAll }) {
   );
 }
 
-function DebtsFullList({ debts, hidden }) {
+function DebtsFullList({ debts, hidden, onOpen }) {
   const isMobile = useViewportMobile();
   const cashea = debts.filter(d => d.provider === 'cashea');
   const others = debts.filter(d => d.provider !== 'cashea');
@@ -165,7 +165,7 @@ function DebtsFullList({ debts, hidden }) {
             </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 14 }}>
-            {cashea.map(d => <DebtTile key={d.id} debt={d} hidden={hidden} />)}
+            {cashea.map(d => <DebtTile key={d.id} debt={d} hidden={hidden} onClick={() => onOpen && onOpen(d.id)} />)}
           </div>
         </div>
       )}
@@ -174,7 +174,7 @@ function DebtsFullList({ debts, hidden }) {
         <div>
           <h3 className="t-h3" style={{ margin: '0 0 12px' }}>{t('Otras deudas')}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 14 }}>
-            {others.map(d => <DebtTile key={d.id} debt={d} hidden={hidden} />)}
+            {others.map(d => <DebtTile key={d.id} debt={d} hidden={hidden} onClick={() => onOpen && onOpen(d.id)} />)}
           </div>
         </div>
       )}

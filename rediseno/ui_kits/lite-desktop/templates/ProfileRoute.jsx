@@ -6,6 +6,65 @@
 /* global React */
 const { useState: usePrState } = React;
 
+/* ── Seguridad: cambio de contraseña + indicador de fortaleza (§5 del prompt) ── */
+function ChangePasswordCard() {
+  const [pwd, setPwd] = usePrState('');
+  const [confirm, setConfirm] = usePrState('');
+  const [show, setShow] = usePrState(false);
+  const [msg, setMsg] = usePrState('');
+
+  const score = (() => {
+    let s = 0;
+    if (pwd.length >= 8) s++;
+    if (/[A-Z]/.test(pwd)) s++;
+    if (/[0-9]/.test(pwd)) s++;
+    if (/[^A-Za-z0-9]/.test(pwd)) s++;
+    return s;
+  })();
+  const LABELS = [t('Muy débil'), t('Débil'), t('Aceptable'), t('Aceptable'), t('Fuerte')];
+  const COLORS = ['var(--expense)', 'var(--expense)', 'var(--warning)', 'var(--warning)', 'var(--income)'];
+
+  const submit = () => {
+    if (!pwd && !confirm) return;
+    if (pwd.length < 8) { setMsg(t('Mínimo 8 caracteres')); return; }
+    if (pwd !== confirm) { setMsg(t('Las contraseñas no coinciden')); return; }
+    setMsg(t('Contraseña actualizada')); setPwd(''); setConfirm('');
+  };
+
+  return (
+    <ProfileSection title={t('Seguridad')}>
+      <Field label={t('Nueva contraseña')}>
+        <div style={{ position: 'relative' }}>
+          <TextInput value={pwd} onChange={v => { setPwd(v); setMsg(''); }} type={show ? 'text' : 'password'} placeholder={t('Mínimo 8 caracteres')} icon="lock" />
+          <button type="button" onClick={() => setShow(v => !v)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-3)', display: 'flex' }}>
+            <span className="material-icons" style={{ fontSize: 18 }}>{show ? 'visibility_off' : 'visibility'}</span>
+          </button>
+        </div>
+      </Field>
+      <Field label={t('Confirmar contraseña')}>
+        <TextInput value={confirm} onChange={v => { setConfirm(v); setMsg(''); }} type={show ? 'text' : 'password'} placeholder={t('Repite la contraseña')} icon="lock" />
+      </Field>
+      {pwd && (
+        <div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 5 }}>
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} style={{ flex: 1, height: 4, borderRadius: 999, background: i < score ? COLORS[score] : 'var(--surface-3)' }} />
+            ))}
+          </div>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, color: COLORS[score] }}>{LABELS[score]}</span>
+        </div>
+      )}
+      {msg && <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: msg.includes('actualizada') ? 'var(--income-fg)' : 'var(--expense-fg)' }}>{msg}</div>}
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--fg-3)' }}>{t('Deja estos campos vacíos si no deseas cambiar tu contraseña')}</div>
+      <div>
+        <button type="button" onClick={submit} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, border: 0, cursor: 'pointer', padding: '9px 18px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-2)', color: 'var(--fg-1)', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13 }}>
+          <span className="material-icons" style={{ fontSize: 16 }}>key</span>{t('Actualizar contraseña')}
+        </button>
+      </div>
+    </ProfileSection>
+  );
+}
+
 function ProfileRoute({ onGo }) {
   const seed = (window.SAMPLE_USER && window.SAMPLE_USER.profile) || {};
   const [form, setForm] = usePrState({
@@ -104,6 +163,8 @@ function ProfileRoute({ onGo }) {
           </Field>
         </div>
       </ProfileSection>
+
+      <ChangePasswordCard />
 
       {/* acciones */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>

@@ -9,12 +9,13 @@ const DREAM_TONES = {
   'dream-secondary': { accent: '#EC4899', tint: 'rgba(236,72,153,0.10)', soft: 'rgba(236,72,153,0.18)' },
 };
 
-function DreamTile({ dream, hidden, compact = false }) {
+function DreamTile({ dream, hidden, compact = false, onClick }) {
   const t = DREAM_TONES[dream.tone] || DREAM_TONES['dream-primary'];
-  const remaining = dream.goal - dream.amount;
+  const remaining = Math.max(0, dream.goal - dream.amount);
+  const completed = dream.progress >= 100 || dream.completed;
 
   return (
-    <Card padding={compact ? 18 : 22} style={{ display: 'flex', flexDirection: 'column', gap: 14, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+    <Card onClick={onClick} padding={compact ? 18 : 22} style={{ display: 'flex', flexDirection: 'column', gap: 14, cursor: 'pointer', position: 'relative', overflow: 'hidden', opacity: completed ? 0.72 : 1 }}>
       {/* Background flourish */}
       <div style={{
         position: 'absolute', top: -40, right: -40, width: 160, height: 160,
@@ -56,8 +57,12 @@ function DreamTile({ dream, hidden, compact = false }) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--fg-2)' }}>
-          <span><strong style={{ color: t.accent }}>{dream.progress}%</strong> · ETA {dream.eta}</span>
-          <span>{window.t('Faltan')} <span className="tabular" style={{ color: 'var(--fg-1)', fontWeight: 600 }}>${remaining.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></span>
+          {completed ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--income-fg)', fontWeight: 700 }}><span className="material-icons" style={{ fontSize: 14 }}>check_circle</span>{window.t('¡Completado!')}</span>
+          ) : (
+            <span><strong style={{ color: t.accent }}>{dream.progress}%</strong> · ETA {dream.eta}</span>
+          )}
+          {!completed && <span>{window.t('Faltan')} <span className="tabular" style={{ color: 'var(--fg-1)', fontWeight: 600 }}>${remaining.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></span>}
         </div>
       </div>
 
@@ -137,11 +142,11 @@ function DreamsPreview({ dreams, hidden, onViewAll }) {
   );
 }
 
-function DreamsFullGrid({ dreams, hidden }) {
+function DreamsFullGrid({ dreams, hidden, onOpen }) {
   const isMobile = useViewportMobile();
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
-      {dreams.map(d => <DreamTile key={d.id} dream={d} hidden={hidden} />)}
+      {dreams.map(d => <DreamTile key={d.id} dream={d} hidden={hidden} onClick={() => onOpen && onOpen(d.id)} />)}
     </div>
   );
 }
