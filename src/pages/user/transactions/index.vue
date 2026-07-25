@@ -264,12 +264,12 @@
                   <div v-if="singleAccountSelected && formatRunningBalanceForRow(row)" class="pro-tx-feed__running-balance">
                     {{ formatRunningBalanceForRow(row) }}
                   </div>
-                  <!-- OWF-340: conversión a USD inline cuando la cuenta filtrada no es USD
-                       (rediseno/PROMPT_REDISENO_TRANSACCIONES.md §1.9) — ya existía para la
-                       tabla legacy (formatAmountConversionLine/showUsdUnderAmounts), nunca se
-                       pintaba en el feed Pro real. -->
-                  <div v-if="formatAmountConversionLine(row)" class="pro-tx-feed__usd-conversion">
-                    {{ formatAmountConversionLine(row) }}
+                  <!-- OWF-340: conversión dual (paralela + BCV) cuando la cuenta filtrada no es
+                       USD — decisión explícita del usuario (dual, no la conversión simple que
+                       especifica rediseno/PROMPT_REDISENO_TRANSACCIONES.md §1.9). El feed Pro
+                       nunca mostraba ninguna conversión antes de esto. -->
+                  <div v-if="formatDualRateLineForRow(row)" class="pro-tx-feed__usd-conversion">
+                    {{ formatDualRateLineForRow(row) }}
                   </div>
                 </div>
 
@@ -2110,10 +2110,31 @@ async function resolveSingleAccountRate(): Promise<void> {
   const rateSrv = await fetchUserCurrentRate(singleAccountCurrencyId.value);
   if (typeof rateSrv === 'number' && rateSrv > 0) singleAccountRate.value = rateSrv;
 }
+// OWF-340: tasa oficial (BCV) automática para la conversión dual del listado — mismo
+// endpoint que ya usa SmartTransactionModal.vue para prellenar "Tasa oficial (BCV) hoy"
+// (OWF-339), aplicado acá a la cuenta única filtrada.
+const singleAccountBcvRate = ref<number | null>(null);
+async function resolveSingleAccountBcvRate(): Promise<void> {
+  const currencyId = singleAccountCurrencyId.value;
+  if ((singleAccountCurrencyCode.value || 'USD') === 'USD' || !currencyId) {
+    singleAccountBcvRate.value = null;
+    return;
+  }
+  try {
+    const res = await api.get<{ data: { rate: number } | null }>('/user-currencies/official-latest', {
+      params: { currency_id: currencyId },
+    });
+    const val = res.data?.data?.rate;
+    singleAccountBcvRate.value = typeof val === 'number' && val > 0 ? val : null;
+  } catch {
+    singleAccountBcvRate.value = null;
+  }
+}
 watch(
   () => [singleAccountId.value, singleAccountCurrencyCode.value, singleAccountCurrencyId.value],
   () => {
     void resolveSingleAccountRate();
+    void resolveSingleAccountBcvRate();
   }
 );
 const showRunningBalanceColumn = computed(
@@ -3426,6 +3447,22 @@ function balanceCellClass(row: Row): Array<string> {
   const amt = parseNumber((row as AnyRecord)['amount']);
   if (isTransferRow(row)) return ['balance-cell', 'balance-transfer'];
   return ['balance-cell', amt >= 0 ? 'balance-positive' : 'balance-negative'];
+}
+// OWF-340: conversión dual (tasa paralela + BCV) del monto de cada fila, para cuando
+// la cuenta filtrada está en una moneda distinta de USD — antes el feed Pro no
+// mostraba NINGUNA conversión (la tabla "legacy" sí tenía una, formatAmountConversionLine,
+// pero solo la conversión simple con una tasa, nunca llegó al feed real).
+function formatDualRateLineForRow(row: Row): string {
+  if (!showUsdUnderAmounts.value) return '';
+  const accountAmount = Math.abs(totalPaymentsForRow(row));
+  const parts: string[] = [];
+  if (singleAccountRate.value && singleAccountRate.value > 0) {
+    parts.push(`Paralela ${formatCurrencyAmount('USD', accountAmount / singleAccountRate.value)}`);
+  }
+  if (singleAccountBcvRate.value && singleAccountBcvRate.value > 0) {
+    parts.push(`BCV ${formatCurrencyAmount('USD', accountAmount / singleAccountBcvRate.value)}`);
+  }
+  return parts.join(' · ');
 }
 function formatRunningBalanceForRow(row: Row): string {
   const id = (row as AnyRecord)['id'] as string | number | undefined;
