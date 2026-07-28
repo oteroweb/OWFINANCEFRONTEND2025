@@ -664,6 +664,16 @@
                   ≈ {{ formatMoney(pago.amount / pago.rate) }} USD
                 </span>
               </div>
+              <!-- OWF-353: impuesto por fila (IGTF, Comisión Pago Móvil, etc.) — reusa el
+                   catálogo real de `taxes` (applies_to payment/both), no un % libre. -->
+              <div class="stm-split-rate">
+                <span class="material-icons" style="font-size:14px;color:var(--fg-3)">receipt_long</span>
+                <q-select v-model="pago.tax_id" :options="paymentTaxOptions" emit-value map-options dense outlined clearable
+                  class="stm-text-input stm-text-input--rate" style="flex:1" placeholder="Sin impuesto" />
+                <span v-if="pago.tax_id && pago.amount" class="stm-split-rate__equiv">
+                  ≈ {{ formatMoney(splitRowFinalAmount(pago)) }} c/imp.
+                </span>
+              </div>
             </div>
             <div class="stm-pro-summary">
               Suma: <strong>{{ formatMoney(splitTotal) }}</strong>
@@ -671,7 +681,7 @@
                 / {{ formatMoney(form.amount ?? 0) }}
               </span>
             </div>
-            <button class="stm-pro-add" @click="splitPagos.push({ account_id: null, amount: 0, rate: 1 })">
+            <button class="stm-pro-add" @click="splitPagos.push({ account_id: null, amount: 0, rate: 1, tax_id: null })">
               <span class="material-icons" style="font-size:15px">add</span> Agregar cuenta
             </button>
           </div>
@@ -1331,19 +1341,48 @@ const amountWithCommission = computed(() => {
 });
 
 // Split
-const splitPagos = ref<{ account_id: number | null; amount: number; rate: number }[]>([
-  { account_id: null, amount: 0, rate: 1 },
-  { account_id: null, amount: 0, rate: 1 },
+const splitPagos = ref<{ account_id: number | null; amount: number; rate: number; tax_id: number | null }[]>([
+  { account_id: null, amount: 0, rate: 1, tax_id: null },
+  { account_id: null, amount: 0, rate: 1, tax_id: null },
 ]);
+
+// OWF-353: catálogo de impuestos aplicables a pagos (IGTF, Comisión Pago Móvil, etc.) —
+// GET /taxes/active, cargado una sola vez (antes admin-only por bug, ver fix de ruta).
+interface PaymentTaxOption { label: string; value: number; percent: number }
+const paymentTaxOptions = ref<PaymentTaxOption[]>([]);
+async function loadPaymentTaxes() {
+  if (paymentTaxOptions.value.length) return;
+  try {
+    const res = await api.get<{ data: Record<string, unknown>[] }>('/taxes/active');
+    const raw = Array.isArray(res.data?.data) ? res.data.data : [];
+    paymentTaxOptions.value = raw
+      .filter((t) => typeof t['applies_to'] === 'string' && ['payment', 'both'].includes(t['applies_to']))
+      .map((t) => ({
+        label: `${typeof t['name'] === 'string' ? t['name'] : ''} (${Number(t['percent'] ?? 0)}%)`,
+        value: Number(t['id']),
+        percent: Number(t['percent'] ?? 0),
+      }));
+  } catch {
+    // Silencioso: el selector queda vacío, el usuario puede seguir sin impuesto.
+  }
+}
+function splitRowFinalAmount(p: { amount: number; tax_id: number | null }): number {
+  const tax = paymentTaxOptions.value.find((t) => t.value === p.tax_id);
+  const percent = tax?.percent ?? 0;
+  return (p.amount ?? 0) * (1 + percent / 100);
+}
 // OWF: cada fila puede estar en una moneda distinta a USD (con su propia tasa) — sumar el
 // monto crudo sin convertir mezclaba unidades (ej. 20 USD + 1500 VES = "1520", cuando el
 // equivalente real es 20 + 10 = 30 USD). El equivalente por fila ya se mostraba bien junto al
 // campo Tasa (`pago.amount / pago.rate`); `splitTotal` ahora usa la misma conversión, ya que
 // se compara contra `form.amount` (USD) tanto en la UI ("Suma") como en la validación de guardado.
+// OWF-353: el impuesto por fila se aplica ANTES de convertir a USD (monto local con
+// impuesto ya horneado, mismo criterio que items).
 const splitTotal = computed(() => splitPagos.value.reduce((s, p) => {
   const currency = splitAccountCurrency(p.account_id);
   const rate = p.rate || 1;
-  const usdEquiv = (currency && currency !== 'USD' && rate > 0) ? (p.amount ?? 0) / rate : (p.amount ?? 0);
+  const finalLocal = splitRowFinalAmount(p);
+  const usdEquiv = (currency && currency !== 'USD' && rate > 0) ? finalLocal / rate : finalLocal;
   return s + usdEquiv;
 }, 0));
 
@@ -1854,11 +1893,13 @@ async function save() {
       if (transferIsCrossCurrency.value) payload.rate = transferRate.value;
     } else {
       // Pro: determinar payments (split o pago simple)
-      let payments: { account_id: number | null; amount: number }[];
+      let payments: { account_id: number | null; amount: number; tax_id?: number | null }[];
       if (isProMode.value && proPanel.value === 'split' && splitPagos.value.some(p => p.account_id)) {
+        // OWF-353: el monto que viaja ya incluye el impuesto de la fila (mismo criterio
+        // que items[].amount) — splitTotal/reviewValidationErrors ya validan contra esto.
         payments = splitPagos.value
           .filter(p => p.account_id && p.amount)
-          .map(p => ({ account_id: p.account_id, amount: p.amount, rate: p.rate ?? 1 }));
+          .map(p => ({ account_id: p.account_id, amount: splitRowFinalAmount(p), rate: p.rate ?? 1, tax_id: p.tax_id ?? null }));
       } else {
         // OWF-323: si "Cobrar comisión" está activo, la comisión también se descuenta/suma
         // de esta misma cuenta (mismo criterio que Transferir) — el leg de payment debe
@@ -2205,6 +2246,7 @@ function onShow() {
 
   void ttypes.fetchTransactionTypes();
   void loadCategories();
+  void loadPaymentTaxes();
   void tagsStore.fetchTags();
   void Promise.all([loadCategoriesWithJars(), loadUserJars()]);
   // OWF: los selectores de cuenta leen `auth.user.accounts`, un snapshot cargado una sola vez
