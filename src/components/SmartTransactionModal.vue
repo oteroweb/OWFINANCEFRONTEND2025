@@ -308,8 +308,9 @@
             <div class="stm-field">
               <div class="row items-center justify-between">
                 <label class="stm-label">Tasa paralelo (actual)</label>
-                <span v-if="paraleloChip" class="stm-toggle-inline">
-                  <q-toggle v-model="useParaleloActual" color="primary" dense
+                <span class="row items-center stm-toggle-inline">
+                  <q-btn flat round dense size="sm" icon="history" @click="openRateHistory('paralela')" />
+                  <q-toggle v-if="paraleloChip" v-model="useParaleloActual" color="primary" dense
                     @update:model-value="syncParaleloActual" />
                 </span>
               </div>
@@ -320,10 +321,13 @@
               </span>
             </div>
             <div class="stm-field">
-              <label class="stm-label">
-                Tasa oficial (BCV)
-                <span class="stm-badge-hoy">hoy</span>
-              </label>
+              <div class="row items-center justify-between">
+                <label class="stm-label">
+                  Tasa oficial (BCV)
+                  <span class="stm-badge-hoy">hoy</span>
+                </label>
+                <q-btn flat round dense size="sm" icon="history" @click="openRateHistory('bcv')" />
+              </div>
               <input v-model.number="rateOficial" type="number" step="0.0001" min="0"
                 placeholder="0.0000" class="stm-text-input" />
               <span v-if="rateOficial && rateOficial > 0 && form.amount" class="stm-rate-equiv">
@@ -331,6 +335,13 @@
               </span>
             </div>
           </div>
+
+          <RateHistoryPicker
+            v-model="rateHistoryOpen"
+            :kind="rateHistoryKind"
+            :currency-id="dualRatesCurrencyId"
+            @select="onRateHistorySelect"
+          />
 
           <!-- Concept -->
           <div class="stm-field">
@@ -950,6 +961,7 @@ import AnchoredJarChip from 'src/components/AnchoredJarChip.vue';
 import CategorySelector from 'src/components/CategorySelector.vue';
 import TfReviewCard from 'src/components/TfReviewCard.vue';
 import JarPercentSplitInfo from 'src/components/JarPercentSplitInfo.vue';
+import RateHistoryPicker from 'src/components/RateHistoryPicker.vue';
 import TransactionBulkImportDialog from 'src/components/TransactionBulkImportDialog.vue';
 import { useUserRates } from 'src/composables/useUserRates';
 import { jarForCategory, getCachedJars, loadCategoriesWithJars, loadUserJars } from 'src/utils/txCatalog';
@@ -1529,6 +1541,23 @@ const showDualRates = computed(() => {
   const code = (findAccountById(form.value.account_id)?.currency?.code || form.value.currency || '').toUpperCase();
   return !!code && code !== 'USD';
 });
+// OWF-346: picker "elegir tasa anterior" — reusa el mismo id de moneda que ya calcula
+// fetchOfficialRateLatest() para la cuenta seleccionada.
+const dualRatesCurrencyId = computed(() => findAccountById(form.value.account_id)?.currency?.id ?? null);
+const rateHistoryOpen = ref(false);
+const rateHistoryKind = ref<'paralela' | 'bcv'>('paralela');
+function openRateHistory(kind: 'paralela' | 'bcv') {
+  rateHistoryKind.value = kind;
+  rateHistoryOpen.value = true;
+}
+function onRateHistorySelect(row: { rate: number; date: string }) {
+  if (rateHistoryKind.value === 'bcv') {
+    rateOficial.value = row.rate;
+  } else {
+    useParaleloActual.value = false;
+    rateParalelo.value = row.rate;
+  }
+}
 // OWF-333: checkbox explícito "usar tasa paralela actual" — antes se autocompletaba en
 // silencio (solo si el campo estaba vacío) sin que el usuario supiera que podía optar por
 // no usarla. Ahora, mientras el toggle está activo, el campo queda readonly y sincronizado
