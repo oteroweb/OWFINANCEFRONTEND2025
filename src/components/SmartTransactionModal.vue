@@ -542,55 +542,56 @@
           <!-- OWF-253/286: card-row toggles — fila en desktop (rowDir='row' en rediseno), columna en mobile -->
           <div v-if="form.type !== 'transfer'" class="stm-pro-card-toggles">
             <button type="button"
-              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'split' }"
-              @click="toggleProPanel(proPanel === 'split' ? null : 'split')">
+              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': detailPanel === 'split' }"
+              @click="toggleDetailPanel(detailPanel === 'split' ? null : 'split')">
               <span class="stm-pro-card-toggle__icon"><q-icon name="call_split" size="18px" /></span>
               <span class="stm-pro-card-toggle__texts">
                 <span class="stm-pro-card-toggle__label">Pago múltiple</span>
                 <span class="stm-pro-card-toggle__sub">Varias cuentas</span>
               </span>
-              <q-toggle :model-value="proPanel === 'split'" color="primary" dense @click.stop
-                @update:model-value="(v) => toggleProPanel(v ? 'split' : null)" />
+              <q-toggle :model-value="detailPanel === 'split'" color="primary" dense @click.stop
+                @update:model-value="(v) => toggleDetailPanel(v ? 'split' : null)" />
             </button>
             <button type="button"
-              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'items' }"
-              @click="toggleProPanel(proPanel === 'items' ? null : 'items')">
+              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': detailPanel === 'items' }"
+              @click="toggleDetailPanel(detailPanel === 'items' ? null : 'items')">
               <span class="stm-pro-card-toggle__icon"><q-icon name="receipt_long" size="18px" /></span>
               <span class="stm-pro-card-toggle__texts">
                 <span class="stm-pro-card-toggle__label">Detalle / factura</span>
                 <span class="stm-pro-card-toggle__sub">Ítems + impuestos</span>
               </span>
-              <q-toggle :model-value="proPanel === 'items'" color="primary" dense @click.stop
-                @update:model-value="(v) => toggleProPanel(v ? 'items' : null)" />
+              <q-toggle :model-value="detailPanel === 'items'" color="primary" dense @click.stop
+                @update:model-value="(v) => toggleDetailPanel(v ? 'items' : null)" />
             </button>
             <button type="button"
-              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'shared' }"
-              @click="toggleProPanel(proPanel === 'shared' ? null : 'shared')">
+              class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': detailPanel === 'shared' }"
+              @click="toggleDetailPanel(detailPanel === 'shared' ? null : 'shared')">
               <span class="stm-pro-card-toggle__icon"><q-icon name="pie_chart_outline" size="18px" /></span>
               <span class="stm-pro-card-toggle__texts">
                 <span class="stm-pro-card-toggle__label">Gasto compartido</span>
                 <span class="stm-pro-card-toggle__sub">Divide entre categorías</span>
               </span>
-              <q-toggle :model-value="proPanel === 'shared'" color="primary" dense @click.stop
-                @update:model-value="(v) => toggleProPanel(v ? 'shared' : null)" />
+              <q-toggle :model-value="detailPanel === 'shared'" color="primary" dense @click.stop
+                @update:model-value="(v) => toggleDetailPanel(v ? 'shared' : null)" />
             </button>
           </div>
 
-          <!-- OWF-286: Cobrar comisión — separado del grupo de 3, siempre su propia fila (matches TfCommission en rediseno) -->
+          <!-- OWF-286/353: Cobrar comisión — independiente de split/items/shared (antes se
+               excluían entre sí), puede combinarse con cualquiera (p.ej. Pago múltiple +
+               Comisión) o quedar sola, igual que un Gasto/Ingreso simple + Comisión. -->
           <button type="button"
-            class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': proPanel === 'comision' }"
-            @click="toggleProPanel(proPanel === 'comision' ? null : 'comision')">
+            class="stm-pro-card-toggle" :class="{ 'stm-pro-card-toggle--on': commissionOn }"
+            @click="commissionOn = !commissionOn">
             <span class="stm-pro-card-toggle__icon"><q-icon name="percent" size="18px" /></span>
             <span class="stm-pro-card-toggle__texts">
               <span class="stm-pro-card-toggle__label">Cobrar comisión</span>
               <span class="stm-pro-card-toggle__sub">Pago móvil, fija o porcentaje</span>
             </span>
-            <q-toggle :model-value="proPanel === 'comision'" color="primary" dense @click.stop
-              @update:model-value="(v) => toggleProPanel(v ? 'comision' : null)" />
+            <q-toggle v-model="commissionOn" color="primary" dense @click.stop />
           </button>
 
           <!-- Comisión panel -->
-          <div v-if="proPanel === 'comision'" class="stm-pro-panel">
+          <div v-if="commissionOn" class="stm-pro-panel">
             <div class="stm-comm-types">
               <button v-for="ct in comisionTipos" :key="ct.value"
                 class="stm-comm-type" :class="{ 'stm-comm-type--active': comision.tipo === ct.value }"
@@ -619,7 +620,7 @@
           </div>
 
           <!-- Split panel -->
-          <div v-if="proPanel === 'split'" class="stm-pro-panel">
+          <div v-if="detailPanel === 'split'" class="stm-pro-panel">
             <div v-for="(pago, i) in splitPagos" :key="i" class="stm-split-row">
               <div class="stm-split-row__fields">
                 <div class="stm-field" style="flex:2">
@@ -687,7 +688,7 @@
           </div>
 
           <!-- Items/factura panel -->
-          <div v-if="proPanel === 'items'" class="stm-pro-panel">
+          <div v-if="detailPanel === 'items'" class="stm-pro-panel">
             <div v-for="(item, i) in facturaItems" :key="i" class="stm-items-block">
               <div class="stm-items-row">
                 <input v-model="item.name" class="stm-text-input stm-text-input--flex" placeholder="Artículo" />
@@ -713,7 +714,7 @@
           </div>
 
           <!-- Gasto compartido panel -->
-          <div v-if="proPanel === 'shared'" class="stm-pro-panel">
+          <div v-if="detailPanel === 'shared'" class="stm-pro-panel">
             <div v-for="(sc, i) in sharedCats" :key="i" class="stm-split-row__fields" style="margin-bottom:8px">
               <div class="stm-field" style="flex:2">
                 <label class="stm-label">Categoría {{ i + 1 }}</label>
@@ -1279,27 +1280,35 @@ const isProMode = computed(() =>
   (auth.settings?.layout_mode ?? auth.user?.layout_mode) === 'pro'
 );
 
-type ProPanel = 'comision' | 'split' | 'items' | 'shared' | null;
-const proPanel = ref<ProPanel>(null);
+// OWF-353: antes `proPanel` era un único selector con 4 valores mutuamente excluyentes
+// (comisión/split/items/shared) — no se podía dividir un pago entre cuentas Y cobrarle
+// comisión al mismo tiempo. Ahora son 2 ejes independientes: `detailPanel` sigue siendo
+// mutuamente excluyente entre split/items/shared (esos 3 sí son incompatibles entre sí —
+// cada uno reemplaza la cuenta/categoría/monto principal de forma distinta), y
+// `commissionOn` es un toggle aparte que puede combinarse con cualquiera de los 3 (o con
+// ninguno, como ya pasaba antes con "Gasto/Ingreso simple + Comisión").
+type ProPanel = 'split' | 'items' | 'shared' | null;
+const detailPanel = ref<ProPanel>(null);
+const commissionOn = ref(false);
 
-function toggleProPanel(panel: ProPanel) {
-  proPanel.value = proPanel.value === panel ? null : panel;
+function toggleDetailPanel(panel: ProPanel) {
+  detailPanel.value = detailPanel.value === panel ? null : panel;
 }
 
 // OWF-243/244: items (factura) reemplaza monto+categoría principales por su propio detalle.
-const itemsOn = computed(() => isProMode.value && proPanel.value === 'items');
+const itemsOn = computed(() => isProMode.value && detailPanel.value === 'items');
 // OWF-242: split reemplaza la cuenta simple por el editor multi-cuenta.
-const splitOn = computed(() => isProMode.value && proPanel.value === 'split');
+const splitOn = computed(() => isProMode.value && detailPanel.value === 'split');
 // OWF-340: gasto compartido reemplaza la categoría principal por una categoría por línea.
-const sharedOn = computed(() => isProMode.value && proPanel.value === 'shared');
+const sharedOn = computed(() => isProMode.value && detailPanel.value === 'shared');
 
 // OWF-246: split/items/shared no aplican en Transferencia — solo Comisión.
 // OWF-331: "Desde (origen)" quedaba vacío al entrar a Transferir — a diferencia de
 // form.account_id (gasto/ingreso), account_from_id nunca tenía un default. Mismo criterio:
 // cuenta filtrada activa si hay una sola, si no la primera de la lista.
 watch(() => form.value.type, (type) => {
-  if (type === 'transfer' && (proPanel.value === 'split' || proPanel.value === 'items' || proPanel.value === 'shared')) {
-    proPanel.value = null;
+  if (type === 'transfer' && detailPanel.value !== null) {
+    detailPanel.value = null;
   }
   if (type === 'transfer' && !form.value.account_from_id && accountOptions.value.length) {
     const selectedIds = txStore.selectedAccountIds;
@@ -1332,7 +1341,7 @@ const comisionCalculada = computed(() => {
 // para el preview (TfReviewCard) como para el guardado, para que ambos coincidan en TODOS
 // los tipos (antes solo se aplicaba al guardar Gasto/Ingreso; Transferir lo ignoraba por
 // completo pese a mostrar "Total" con comisión en el panel).
-const commissionActive = computed(() => isProMode.value && proPanel.value === 'comision' && comisionCalculada.value > 0);
+const commissionActive = computed(() => isProMode.value && commissionOn.value && comisionCalculada.value > 0);
 const amountWithCommission = computed(() => {
   // OWF: en modo Items el monto real es itemsTotal (el Monto hero queda oculto) — usar
   // form.amount aquí hacía que el preview "Vas a registrar" mostrara siempre $0.00.
@@ -1439,10 +1448,10 @@ function removeSharedCategory(i: number) {
 }
 
 watch(() => form.value.amount, () => {
-  if (proPanel.value === 'shared') redistributeShared();
+  if (detailPanel.value === 'shared') redistributeShared();
 });
 
-watch(proPanel, (val, old) => {
+watch(detailPanel, (val, old) => {
   if (val === 'shared' && old !== 'shared') redistributeShared();
 });
 
@@ -1790,13 +1799,13 @@ const reviewValidationErrors = computed<string[]>(() => {
   const effectiveAmount = itemsOn.value ? itemsTotal.value : form.value.amount;
   if (!effectiveAmount || effectiveAmount <= 0) errs.push('El monto debe ser mayor a cero.');
   if (!form.value.account_id) errs.push('Selecciona una cuenta.');
-  if (isProMode.value && proPanel.value === 'split' && Math.abs(splitTotal.value - (form.value.amount ?? 0)) > 0.01) {
+  if (isProMode.value && detailPanel.value === 'split' && Math.abs(splitTotal.value - (form.value.amount ?? 0)) > 0.01) {
     errs.push('La suma del pago múltiple no coincide con el monto total.');
   }
   // OWF-326: mismo patrón que Split — la UI ya muestra "Suma: X / Y" en rojo cuando no
   // coincide (ver template del panel Gasto compartido), acá se replica el mensaje en la
   // tarjeta de revisión para que sea visible también ahí antes de guardar.
-  if (isProMode.value && proPanel.value === 'shared' && Math.abs(sharedTotal.value - (form.value.amount ?? 0)) > 0.01) {
+  if (isProMode.value && detailPanel.value === 'shared' && Math.abs(sharedTotal.value - (form.value.amount ?? 0)) > 0.01) {
     errs.push('La suma de categorías no coincide con el monto total.');
   }
   return errs;
@@ -1894,12 +1903,19 @@ async function save() {
     } else {
       // Pro: determinar payments (split o pago simple)
       let payments: { account_id: number | null; amount: number; tax_id?: number | null }[];
-      if (isProMode.value && proPanel.value === 'split' && splitPagos.value.some(p => p.account_id)) {
+      if (isProMode.value && detailPanel.value === 'split' && splitPagos.value.some(p => p.account_id)) {
         // OWF-353: el monto que viaja ya incluye el impuesto de la fila (mismo criterio
         // que items[].amount) — splitTotal/reviewValidationErrors ya validan contra esto.
         payments = splitPagos.value
           .filter(p => p.account_id && p.amount)
           .map(p => ({ account_id: p.account_id, amount: splitRowFinalAmount(p), rate: p.rate ?? 1, tax_id: p.tax_id ?? null }));
+        // OWF-353: Pago múltiple + Comisión combinados — la comisión se carga a la primera
+        // fila (decisión del usuario: no se prorratea entre cuentas). El signo sigue el
+        // mismo criterio que el pago simple de abajo (resta en gasto, suma en ingreso).
+        if (commissionActive.value && payments.length) {
+          const signedCommission = form.value.type === 'expense' ? -comisionCalculada.value : comisionCalculada.value;
+          payments[0]!.amount += signedCommission;
+        }
       } else {
         // OWF-323: si "Cobrar comisión" está activo, la comisión también se descuenta/suma
         // de esta misma cuenta (mismo criterio que Transferir) — el leg de payment debe
@@ -1912,7 +1928,7 @@ async function save() {
       }
 
       // Pro: items de factura
-      const items = (isProMode.value && proPanel.value === 'items')
+      const items = (isProMode.value && detailPanel.value === 'items')
         ? facturaItems.value.filter(it => it.name && it.price > 0).map(it => {
             const itemJar = jarForCategory(it.category_id ?? null, getCachedJars());
             return {
@@ -1935,7 +1951,7 @@ async function save() {
       // propio cántaro resuelto en el frontend (mismo patrón que Items). A diferencia de
       // items[], acá el monto de la transacción NO se deriva de la suma — el backend valida
       // que coincida con el monto ya fijado (finalAmount) y rechaza con 422 si no cuadra.
-      const sharedCategories = (isProMode.value && proPanel.value === 'shared')
+      const sharedCategories = (isProMode.value && detailPanel.value === 'shared')
         ? sharedCats.value.filter(sc => sc.category_id && sc.amount > 0).map(sc => {
             const scJar = jarForCategory(sc.category_id ?? null, getCachedJars());
             return { category_id: sc.category_id, amount: sc.amount, jar_id: scJar?.id ?? null };
@@ -2214,7 +2230,8 @@ function onShow() {
   transferRate.value = null;
   useParaleloActual.value = true;
   useParaleloActualTransfer.value = true;
-  proPanel.value = null;
+  detailPanel.value = null;
+  commissionOn.value = false;
   sharedCats.value = [{ category_id: null, amount: 0, touched: false }, { category_id: null, amount: 0, touched: false }];
 
   if (!form.value.account_id && accountOptions.value.length) {
@@ -2335,7 +2352,7 @@ async function loadTransactionForEdit(id: number) {
           tipo: typeof raw.commission_type === 'string' ? raw.commission_type : 'pagomovil',
           valor: raw.commission_value != null ? Number(raw.commission_value) : 0,
         };
-        proPanel.value = 'comision';
+        commissionOn.value = true;
       }
     } else {
       form.value.account_id = payments[0]?.account_id ?? form.value.account_id;
@@ -2350,9 +2367,11 @@ async function loadTransactionForEdit(id: number) {
 
       // OWF-342: hidratar el panel Items/Gasto compartido al editar — antes la edición
       // siempre trataba la transacción como un gasto simple, sin mostrar el split ya
-      // guardado (gap documentado desde OWF-326/341). proPanel es mutuamente excluyente
-      // (comisión/split/items/shared no se combinan, ver toggleProPanel), así que basta
-      // mirar qué relación vino con datos reales.
+      // guardado (gap documentado desde OWF-326/341). shared/items siguen siendo
+      // mutuamente excluyentes entre sí vía detailPanel, así que basta mirar qué
+      // relación vino con datos reales. OWF-353: la comisión ahora es independiente
+      // de detailPanel — se restaura siempre que haya monto, se combine o no con
+      // shared/items (antes solo se restauraba si NINGUNO de los dos aplicaba).
       const sharedCategoriesRaw = Array.isArray(raw.shared_categories)
         ? raw.shared_categories as Record<string, unknown>[]
         : [];
@@ -2361,7 +2380,7 @@ async function loadTransactionForEdit(id: number) {
         : [];
 
       if (sharedCategoriesRaw.length) {
-        // touched:true en TODAS las filas — el watch(proPanel,...) de más abajo dispara
+        // touched:true en TODAS las filas — el watch(detailPanel,...) de más abajo dispara
         // redistributeShared() al pasar a 'shared', que solo recalcula filas NO tocadas;
         // sin esto pisaría los montos reales recién restaurados con un reparto parejo.
         sharedCats.value = sharedCategoriesRaw.map(sc => {
@@ -2372,7 +2391,7 @@ async function loadTransactionForEdit(id: number) {
             touched: true,
           };
         });
-        proPanel.value = 'shared';
+        detailPanel.value = 'shared';
       } else if (itemTransactionsRaw.length) {
         facturaItems.value = itemTransactionsRaw.map(it => {
           const catRel = it['category'] as { id?: number } | null | undefined;
@@ -2391,13 +2410,14 @@ async function loadTransactionForEdit(id: number) {
             category_id: catRel?.id ?? (typeof it['category_id'] === 'number' ? it['category_id'] : null),
           };
         });
-        proPanel.value = 'items';
-      } else if (commissionAmount > 0) {
+        detailPanel.value = 'items';
+      }
+      if (commissionAmount > 0) {
         comision.value = {
           tipo: typeof raw.commission_type === 'string' ? raw.commission_type : 'pagomovil',
           valor: raw.commission_value != null ? Number(raw.commission_value) : 0,
         };
-        proPanel.value = 'comision';
+        commissionOn.value = true;
       }
 
       // OWF-179/321: restaurar tasa oficial/paralela desde el leg de pago guardado — sin esto,

@@ -27,6 +27,48 @@
       </div>
 
       <template v-else>
+        <!-- Gamificación: anillo de completitud + nivel + insignias por sección -->
+        <div class="fp-page__card fp-page__gam-card">
+          <div class="fp-page__gam-top">
+            <div class="fp-page__ring" :style="{ '--ring-color': completeness.level.color }">
+              <svg width="88" height="88" viewBox="0 0 88 88">
+                <circle cx="44" cy="44" r="38" fill="none" stroke="var(--surface-3)" stroke-width="8" />
+                <circle cx="44" cy="44" r="38" fill="none" :stroke="completeness.level.color" stroke-width="8"
+                  stroke-linecap="round" :stroke-dasharray="ringCircumference"
+                  :stroke-dashoffset="ringOffset" transform="rotate(-90 44 44)"
+                  style="transition: stroke-dashoffset 700ms ease, stroke 300ms" />
+              </svg>
+              <div class="fp-page__ring-label">
+                <span class="fp-page__ring-pct">{{ completeness.pct }}%</span>
+                <span class="fp-page__ring-sub">perfil</span>
+              </div>
+            </div>
+            <div class="fp-page__gam-info">
+              <span class="fp-page__level-badge" :style="{ color: completeness.level.color, background: completeness.level.soft }">
+                <q-icon :name="completeness.level.icon" size="15px" />
+                {{ completeness.level.label }}
+                <span v-if="completeness.level.pro" class="fp-page__level-pro">PRO</span>
+              </span>
+              <p class="fp-page__gam-tip">{{ gamTip }}</p>
+            </div>
+          </div>
+
+          <div class="fp-page__badges">
+            <div v-for="sec in completeness.sections" :key="sec.id" class="fp-page__badge">
+              <span class="fp-page__badge-icon" :class="{ 'fp-page__badge-icon--done': sec.complete }">
+                <q-icon :name="sec.icon" size="19px" />
+                <span v-if="sec.complete" class="fp-page__badge-check"><q-icon name="check" size="9px" /></span>
+              </span>
+              <span class="fp-page__badge-label" :class="{ 'fp-page__badge-label--done': sec.complete }">{{ sec.label }}</span>
+            </div>
+          </div>
+
+          <button type="button" class="fp-page__reset-btn" @click="confirmReset = true">
+            <q-icon name="refresh" size="16px" />
+            Reiniciar mi perfil
+          </button>
+        </div>
+
         <!-- Card 1: Quién soy -->
         <div class="fp-page__card">
           <div class="fp-page__card-title">
@@ -220,6 +262,88 @@
           </div>
         </div>
 
+        <!-- Card 5: Avanzado (Pro) -->
+        <div class="fp-page__card" :class="{ 'fp-page__card--locked': !isPro }">
+          <div class="fp-page__card-title">
+            <span class="fp-page__card-icon" :style="isPro ? {} : { background: 'var(--income-fg)', color: '#fff' }">
+              <q-icon name="workspace_premium" size="18px" />
+            </span>
+            Avanzado
+            <span v-if="!isPro" class="fp-page__pro-tag">PRO</span>
+          </div>
+
+          <template v-if="isPro">
+            <div class="fp-page__chip-group">
+              <div class="fp-page__chip-label">¿Tu ingreso es estable o variable?</div>
+              <div class="fp-page__chips">
+                <button v-for="o in OPTIONS.income_detail" :key="o.value"
+                  class="fp-page__chip" :class="{ 'fp-page__chip--active': advanced.income_detail === o.value }"
+                  @click="advanced.income_detail = advanced.income_detail === o.value ? null : o.value">
+                  {{ o.label }}
+                </button>
+              </div>
+            </div>
+            <div class="fp-page__chip-group">
+              <div class="fp-page__chip-label">Ante invertir, ¿qué prefieres?</div>
+              <div class="fp-page__chips">
+                <button v-for="o in OPTIONS.risk_tolerance" :key="o.value"
+                  class="fp-page__chip" :class="{ 'fp-page__chip--active': advanced.risk_tolerance === o.value }"
+                  @click="advanced.risk_tolerance = advanced.risk_tolerance === o.value ? null : o.value">
+                  {{ o.label }}
+                </button>
+              </div>
+            </div>
+            <div class="fp-page__chip-group">
+              <div class="fp-page__chip-label">¿En qué plazo piensas tus metas?</div>
+              <div class="fp-page__chips">
+                <button v-for="o in OPTIONS.time_horizon" :key="o.value"
+                  class="fp-page__chip" :class="{ 'fp-page__chip--active': advanced.time_horizon === o.value }"
+                  @click="advanced.time_horizon = advanced.time_horizon === o.value ? null : o.value">
+                  {{ o.label }}
+                </button>
+              </div>
+            </div>
+            <div class="fp-page__chip-group">
+              <div class="fp-page__chip-label">¿Qué pesa más hoy?</div>
+              <div class="fp-page__chips">
+                <button v-for="o in OPTIONS.goal_priority" :key="o.value"
+                  class="fp-page__chip" :class="{ 'fp-page__chip--active': advanced.goal_priority === o.value }"
+                  @click="advanced.goal_priority = advanced.goal_priority === o.value ? null : o.value">
+                  {{ o.label }}
+                </button>
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <p class="fp-page__locked-copy">
+              Detalle de ingresos, riesgo, horizonte y prioridades para una estrategia a tu medida.
+            </p>
+            <q-btn unelevated color="primary" label="Disponible en plan Pro" icon="lock_open"
+              class="fp-page__locked-cta" @click="void router.push('/user/config')" />
+          </template>
+        </div>
+
+        <!-- Confirm reset onboarding dialog -->
+        <q-dialog v-model="confirmReset" persistent>
+          <q-card style="min-width: 320px; max-width: 420px">
+            <q-card-section class="row items-center gap-3">
+              <div class="fp-page__confirm-icon">
+                <q-icon name="refresh" size="20px" color="warning" />
+              </div>
+              <div>
+                <div class="fp-page__confirm-title">¿Reiniciar tu perfil?</div>
+                <div class="fp-page__confirm-sub">
+                  Volverás a recorrer el onboarding desde cero la próxima vez que entres. Tus datos actuales no se borran hasta que lo completes de nuevo.
+                </div>
+              </div>
+            </q-card-section>
+            <q-card-actions align="right">
+              <q-btn flat label="Cancelar" v-close-popup />
+              <q-btn unelevated color="negative" label="Reiniciar" @click="resetProfile" />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+
         <!-- Confirm template replace dialog -->
         <q-dialog v-model="confirmTplDialog" persistent>
           <q-card style="min-width: 340px; max-width: 420px">
@@ -265,15 +389,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
+import { useAuthStore } from 'stores/auth';
 
 defineOptions({ name: 'FinancialProfilePage' });
 
 const router = useRouter();
 const $q = useQuasar();
+const auth = useAuthStore();
+
+const isPro = computed(() => (auth.settings?.layout_mode ?? auth.user?.layout_mode) === 'pro');
+const confirmReset = ref(false);
 
 const loading = ref(true);
 const saving = ref(false);
@@ -308,6 +437,61 @@ interface EditableJar {
 const jarsTotal = computed(() =>
   form.value.jars.reduce((s, j) => s + (Number(j.percent) || 0), 0)
 );
+
+// ── Gamificación (OWF-358) — mismo concepto de niveles que el onboarding:
+// basico/completo/avanzado, con pesos por campo (rediseno/onboarding/gamification.jsx) ──
+const ONB_LEVELS = [
+  { id: 'basico', label: 'Básico', color: 'var(--info)', soft: 'var(--info-soft, rgba(59,130,246,.12))', icon: 'eco' },
+  { id: 'completo', label: 'Completo', color: 'var(--brand-primary)', soft: 'var(--brand-primary-soft, rgba(99,102,241,.12))', icon: 'verified' },
+  { id: 'avanzado', label: 'Avanzado', color: 'var(--income-fg)', soft: 'var(--income-soft, rgba(22,163,74,.12))', icon: 'workspace_premium', pro: true },
+];
+const ONB_WEIGHTS: Record<string, number> = {
+  occupation: 12.5, income_range: 12.5, main_goal: 12.5, templateSlug: 12.5,
+  debt_situation: 10, emergency_fund: 9, money_relationship: 9, living_situation: 9, dream: 9, emotional_keyword: 4,
+};
+const ADVANCED_FIELDS = ['income_detail', 'risk_tolerance', 'time_horizon', 'goal_priority'] as const;
+const filled = (v: unknown) => v !== null && v !== undefined && v !== '';
+
+const completeness = computed(() => {
+  let pct = 0;
+  for (const [field, weight] of Object.entries(ONB_WEIGHTS)) {
+    if (filled((form.value as Record<string, unknown>)[field])) pct += weight;
+  }
+  pct = Math.round(pct);
+
+  const standardDone = Object.keys(ONB_WEIGHTS).every(f => filled((form.value as Record<string, unknown>)[f]));
+  const advDone = isPro.value && ADVANCED_FIELDS.every(f => filled(advanced.value[f]));
+
+  let levelId: 'basico' | 'completo' | 'avanzado' = 'basico';
+  if (standardDone && advDone) levelId = 'avanzado';
+  else if (standardDone) levelId = 'completo';
+
+  const levelIndex = ONB_LEVELS.findIndex(l => l.id === levelId);
+  const level = ONB_LEVELS[levelIndex] ?? ONB_LEVELS[0]!;
+
+  const sections = [
+    { id: 'you', label: 'Quién eres', icon: 'person', fields: ['occupation', 'income_range', 'living_situation'] },
+    { id: 'situation', label: 'Tu situación', icon: 'account_balance', fields: ['debt_situation', 'emergency_fund', 'money_relationship'] },
+    { id: 'goals', label: 'Tus metas', icon: 'flag', fields: ['main_goal', 'dream', 'emotional_keyword'] },
+    { id: 'jars', label: 'Tus cántaros', icon: 'savings', fields: ['templateSlug'] },
+  ].map(s => {
+    const done = s.fields.filter(f => filled((form.value as Record<string, unknown>)[f])).length;
+    return { ...s, done, total: s.fields.length, complete: done === s.fields.length };
+  });
+
+  return { pct, level, levelId, levelIndex, standardDone, advDone, sections };
+});
+
+const ringCircumference = 2 * Math.PI * 38;
+const ringOffset = computed(() => ringCircumference * (1 - Math.max(0, Math.min(100, completeness.value.pct)) / 100));
+
+const gamTip = computed(() => {
+  const c = completeness.value;
+  if (c.levelId === 'basico') return 'Completa tu situación financiera para pasar de consejos generales a consejos a tu medida.';
+  if (c.levelId === 'completo' && !isPro.value) return 'Con Pro desbloqueas el nivel Avanzado: proyecciones y estrategia personalizada.';
+  if (c.levelId === 'completo') return 'Completa el bloque Avanzado para desbloquear el nivel máximo.';
+  return 'Tu perfil está al máximo. El asesor ya trabaja con toda tu información.';
+});
 
 const OPTIONS = {
   occupation: [
@@ -363,6 +547,27 @@ const OPTIONS = {
     { value: 'control', label: 'En control' },
     { value: 'prospero', label: 'Próspero/a' },
   ],
+  // OWF-359 — campos avanzados (solo Pro)
+  income_detail: [
+    { value: 'estable', label: 'Estable' },
+    { value: 'variable', label: 'Variable' },
+    { value: 'mixto', label: 'Mixto' },
+  ],
+  risk_tolerance: [
+    { value: 'conservador', label: 'Proteger' },
+    { value: 'equilibrado', label: 'Equilibrar' },
+    { value: 'agresivo', label: 'Crecer' },
+  ],
+  time_horizon: [
+    { value: 'corto', label: 'Corto plazo' },
+    { value: 'medio', label: 'Mediano plazo' },
+    { value: 'largo', label: 'Largo plazo' },
+  ],
+  goal_priority: [
+    { value: 'seguridad', label: 'Seguridad' },
+    { value: 'crecimiento', label: 'Crecimiento' },
+    { value: 'experiencias', label: 'Experiencias' },
+  ],
 };
 
 const form = ref({
@@ -378,6 +583,38 @@ const form = ref({
   templateSlug: null as string | null,
   jars: [] as EditableJar[],
 });
+
+// OWF-359 — campos avanzados Pro. El backend aún no expone columnas para
+// income_detail/risk_tolerance/time_horizon/goal_priority (ver
+// UserFinancialProfileController::PROFILE_FIELDS), así que por ahora se
+// persisten localmente por usuario. Cuando el backend agregue soporte,
+// reemplazar advancedStorageKey/load/save por la llamada API real.
+const advanced = ref({
+  income_detail: null as string | null,
+  risk_tolerance: null as string | null,
+  time_horizon: null as string | null,
+  goal_priority: null as string | null,
+});
+
+function advancedStorageKey(): string | null {
+  const uid = auth.user?.id;
+  return uid ? `owf_advanced_profile_${uid}` : null;
+}
+
+function loadAdvanced() {
+  const key = advancedStorageKey();
+  if (!key) return;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) Object.assign(advanced.value, JSON.parse(raw));
+  } catch { /* noop */ }
+}
+
+function saveAdvanced() {
+  const key = advancedStorageKey();
+  if (!key) return;
+  try { localStorage.setItem(key, JSON.stringify(advanced.value)); } catch { /* noop */ }
+}
 
 function makeKey() {
   return Math.random().toString(36).slice(2);
@@ -436,7 +673,21 @@ onMounted(async () => {
   }
 
   loading.value = false;
+  loadAdvanced();
 });
+
+watch(advanced, saveAdvanced, { deep: true });
+
+async function resetProfile() {
+  confirmReset.value = false;
+  try {
+    await auth.updateSettings({ has_seen_onboarding: false });
+    $q.notify({ type: 'positive', message: 'Perfil reiniciado. El onboarding se abrirá de nuevo.' });
+    void router.push('/user/home');
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo reiniciar el perfil' });
+  }
+}
 
 function pickTemplate(slug: string) {
   if (slug === form.value.templateSlug) return;
@@ -496,6 +747,14 @@ async function save() {
         dream: form.value.dream,
         emotional_keyword: form.value.emotional_keyword,
         onboarding_profile_completed: true,
+        // OWF-359 — el backend aún no persiste estos 4 campos (no están en
+        // UserFinancialProfileController::PROFILE_FIELDS); se envían igual
+        // por si se agrega soporte, pero hoy Laravel los descarta en el
+        // validate(). La fuente de verdad real es localStorage (ver saveAdvanced()).
+        income_detail: advanced.value.income_detail,
+        risk_tolerance: advanced.value.risk_tolerance,
+        time_horizon: advanced.value.time_horizon,
+        goal_priority: advanced.value.goal_priority,
       }),
       form.value.jars.length > 0
         ? api.post('/jars/bulk-sync', { jars: form.value.jars.map(j => ({
@@ -508,6 +767,7 @@ async function save() {
         : Promise.resolve(),
     ]);
     if (profileSave.status === 'rejected') throw profileSave.reason;
+    saveAdvanced();
     $q.notify({ type: 'positive', message: 'Perfil financiero actualizado' });
     void router.push('/user/config');
   } catch (e: unknown) {
@@ -942,6 +1202,191 @@ async function save() {
     color: var(--fg-2);
     margin: 12px 0 0;
     line-height: 1.5;
+  }
+
+  // ── Gamificación (OWF-358) ──
+  &__gam-card {
+    gap: 16px;
+  }
+
+  &__gam-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__ring {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    flex-shrink: 0;
+  }
+
+  &__ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__ring-pct {
+    font-family: var(--font-money);
+    font-weight: 700;
+    font-size: 19px;
+    color: var(--fg-1);
+    line-height: 1;
+  }
+
+  &__ring-sub {
+    font-family: var(--font-body);
+    font-size: 9px;
+    color: var(--fg-3);
+    margin-top: 2px;
+  }
+
+  &__gam-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    align-self: flex-start;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  &__level-pro {
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: var(--income-fg);
+    color: #fff;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+
+  &__gam-tip {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    color: var(--fg-2);
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  &__badges {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__badge {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  &__badge-icon {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-2);
+    color: var(--fg-3);
+    transition: all 0.2s ease;
+
+    &--done {
+      background: var(--brand-primary);
+      color: #fff;
+    }
+  }
+
+  &__badge-check {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 15px;
+    height: 15px;
+    border-radius: 8px;
+    background: var(--income-fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    border: 2px solid var(--surface-1);
+  }
+
+  &__badge-label {
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--fg-3);
+    text-align: center;
+    line-height: 1.15;
+
+    &--done { color: var(--fg-1); }
+  }
+
+  &__reset-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    align-self: flex-start;
+    border: 1px solid var(--border-hairline, rgba(0,0,0,.12));
+    background: transparent;
+    cursor: pointer;
+    color: var(--fg-2);
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill, 999px);
+
+    &:hover { border-color: var(--expense-fg, #ef4444); color: var(--expense-fg, #ef4444); }
+  }
+
+  // ── Sección avanzada Pro (OWF-359) ──
+  &__card--locked {
+    background: var(--income-soft, rgba(22,163,74,.08));
+    border-color: var(--income-fg, #16a34a);
+  }
+
+  &__pro-tag {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: var(--income-fg, #16a34a);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto;
+  }
+
+  &__locked-copy {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    color: var(--fg-2);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  &__locked-cta {
+    align-self: flex-start;
   }
 }
 </style>

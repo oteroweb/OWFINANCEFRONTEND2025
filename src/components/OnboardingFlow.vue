@@ -63,8 +63,46 @@
                 <q-icon name="skip_next" size="14px" /> Puedes saltar
               </span>
             </div>
-            <q-btn unelevated color="primary" size="lg" label="Empezar mi perfil" class="ob__cta" @click="next" />
+            <q-btn unelevated color="primary" size="lg" label="Empezar mi perfil" class="ob__cta" @click="startFull" />
+            <button class="ob__express-link" @click="startExpress">Empezar rápido (solo lo esencial)</button>
             <button class="ob__skip-link" @click="skip">Ahora no · explorar primero</button>
+          </div>
+        </template>
+
+        <!-- ── Summary (editable review) ────────────────────────── -->
+        <template v-else-if="step.id === 'summary'">
+          <div class="ob__done">
+            <div class="ob__ring-wrap">
+              <svg class="ob__ring-svg" viewBox="0 0 88 88">
+                <circle cx="44" cy="44" r="38" class="ob__ring-bg" />
+                <circle cx="44" cy="44" r="38" class="ob__ring-fill"
+                  :stroke-dasharray="`${completeness * 2.39} 999`" />
+              </svg>
+              <div class="ob__ring-inner">
+                <span class="ob__ring-pct">{{ completeness }}%</span>
+              </div>
+            </div>
+            <h2 class="t-h1 ob__done-title">Revisa tu perfil</h2>
+            <p class="ob__done-sub">
+              Confirma tus respuestas o edita lo que quieras cambiar antes de terminar.
+            </p>
+
+            <div class="ob__summary-groups">
+              <div v-for="g in summaryGroups" :key="g.phase + g.stepIndex" class="ob__summary-group">
+                <div class="ob__summary-group-head">
+                  <span class="ob__summary-group-title">{{ g.phase }}</span>
+                  <button class="ob__summary-edit" @click="currentIndex = g.stepIndex">
+                    <q-icon name="edit" size="13px" /> Editar
+                  </button>
+                </div>
+                <div v-for="item in g.items" :key="item.label" class="ob__summary-row">
+                  <span class="ob__summary-label">{{ item.label }}</span>
+                  <span class="ob__summary-value">{{ item.value }}</span>
+                </div>
+              </div>
+            </div>
+
+            <q-btn unelevated color="primary" size="lg" label="Confirmar y continuar" class="ob__cta" @click="next" />
           </div>
         </template>
 
@@ -129,13 +167,17 @@
             <template v-if="step.id === 'goals'">
               <ChipField label="Meta principal" :options="OPTIONS.main_goal" :value="form.main_goal"
                 @change="v => autoSelect('main_goal', v)" />
+              <ChipField label="¿Cómo quieres sentirte?" :options="OPTIONS.emotional_keyword" :value="form.emotional_keyword"
+                @change="v => autoSelect('emotional_keyword', v)" />
+            </template>
+
+            <!-- Dream (long-term financial dream, optional, own step) -->
+            <template v-if="step.id === 'dream'">
               <div class="ob__field">
-                <div class="ob__field-label">Sueño a largo plazo <span class="ob__optional">(opcional)</span></div>
+                <div class="ob__field-label">Tu sueño <span class="ob__optional">(opcional)</span></div>
                 <q-input v-model="form.dream" type="textarea" outlined dense autogrow :maxlength="500"
                   placeholder="Ej: Tener libertad financiera y viajar con mi familia…" />
               </div>
-              <ChipField label="¿Cómo quieres sentirte?" :options="OPTIONS.emotional_keyword" :value="form.emotional_keyword"
-                @change="v => autoSelect('emotional_keyword', v)" />
             </template>
 
             <!-- Recommend (AI plan based on main_goal) -->
@@ -321,12 +363,26 @@ const STEPS = [
   { id: 'about',     title: 'Cuéntanos sobre ti',              sub: 'El asesor IA usará esto para personalizarte.', skippable: true  },
   { id: 'situation', title: 'Tu situación actual',             sub: 'Honestidad = mejores consejos.',             skippable: true  },
   { id: 'goals',     title: 'Tus metas y sueños',             sub: 'Lo que quieres lograr guía todo el plan.',          skippable: true  },
+  { id: 'dream',     title: '¿Cuál es tu sueño financiero a largo plazo?', sub: 'Opcional, pero nos ayuda a personalizar tus recomendaciones.', skippable: true },
   { id: 'recommend', title: 'Tu plan recomendado',            sub: 'Basado en tu meta, aquí está el esquema ideal para ti.', skippable: true  },
   { id: 'jars',      title: 'Personaliza tus cántaros',       sub: 'Ajusta nombres y porcentajes a tu gusto.',            skippable: true  },
+  { id: 'summary',   title: '',                                sub: '',                                                    skippable: false },
   { id: 'done',      title: '',                                sub: '',                                                    skippable: false },
 ];
 
 const PHASES = ['Sobre ti', 'Situación', 'Metas', 'Plan'];
+
+// Explicit step→phase mapping (OWF-354/OWF-355 added steps that don't map 1:1
+// to STEPS index anymore, so we can't derive phaseIndex from currentIndex alone).
+const STEP_PHASE: Record<string, number> = {
+  about: 0,
+  situation: 1,
+  goals: 2,
+  dream: 2,
+  recommend: 3,
+  jars: 3,
+  summary: 3,
+};
 
 const INTRO_PHASES = [
   { icon: 'person', label: 'Sobre ti · tu situación' },
@@ -343,10 +399,10 @@ const LEVELS: Record<string, { label: string; icon: string }> = {
 
 const currentIndex = ref(0);
 const step = computed(() => STEPS[currentIndex.value]!);
-const isEdge = computed(() => step.value.id === 'intro' || step.value.id === 'done');
+const isEdge = computed(() => step.value.id === 'intro' || step.value.id === 'done' || step.value.id === 'summary');
 
-// phaseIndex: maps step index (1-4) to phase (0-3)
-const phaseIndex = computed(() => Math.max(0, Math.min(currentIndex.value - 1, PHASES.length - 1)));
+// phaseIndex: explicit lookup via STEP_PHASE (see OWF-354/OWF-355)
+const phaseIndex = computed(() => STEP_PHASE[step.value.id] ?? 0);
 
 watch(
   () => step.value?.id,
@@ -383,27 +439,45 @@ const sortedTemplates = computed(() => {
 });
 
 // ─── Form ────────────────────────────────────────────────────────────
-const form = ref({
-  occupation: null as string | null,
-  income_range: null as string | null,
-  living_situation: null as string | null,
-  debt_situation: null as string | null,
-  emergency_fund: null as string | null,
-  money_relationship: null as string | null,
-  main_goal: null as string | null,
-  dream: '',
-  emotional_keyword: null as string | null,
-});
+function makeEmptyForm() {
+  return {
+    occupation: null as string | null,
+    income_range: null as string | null,
+    living_situation: null as string | null,
+    debt_situation: null as string | null,
+    emergency_fund: null as string | null,
+    money_relationship: null as string | null,
+    main_goal: null as string | null,
+    dream: '',
+    emotional_keyword: null as string | null,
+  };
+}
 
-const FORM_KEYS = [
-  'occupation','income_range','living_situation',
-  'debt_situation','emergency_fund','money_relationship',
-  'main_goal','emotional_keyword',
-] as const;
+const form = ref(makeEmptyForm());
+
+// OWF-357: weighted completeness. Essential fields (occupation, income_range,
+// main_goal) weigh more than secondary chip fields; `dream` (optional
+// long-form field) weighs least. Weights sum to 100.
+const ONB_WEIGHTS: Record<keyof ReturnType<typeof makeEmptyForm>, number> = {
+  occupation: 14,
+  income_range: 14,
+  main_goal: 14,
+  living_situation: 10,
+  debt_situation: 10,
+  emergency_fund: 10,
+  money_relationship: 10,
+  emotional_keyword: 10,
+  dream: 8,
+};
 
 const completeness = computed(() => {
-  const filled = FORM_KEYS.filter(k => !!form.value[k]).length;
-  return Math.round((filled / FORM_KEYS.length) * 100);
+  let total = 0;
+  for (const key of Object.keys(ONB_WEIGHTS) as Array<keyof ReturnType<typeof makeEmptyForm>>) {
+    const val = form.value[key];
+    const filled = key === 'dream' ? !!(val && String(val).trim().length) : !!val;
+    if (filled) total += ONB_WEIGHTS[key];
+  }
+  return Math.round(total);
 });
 
 const levelKey = computed<'seed' | 'sprout' | 'tree'>(() => {
@@ -480,13 +554,93 @@ const OPTIONS = {
   ],
 };
 
+// ─── Summary (OWF-354) ──────────────────────────────────────────────
+// Field → step/phase metadata, used to build the editable review groups.
+const FIELD_META: Array<{ key: keyof ReturnType<typeof makeEmptyForm>; label: string; stepId: string }> = [
+  { key: 'occupation',         label: 'Ocupación',                  stepId: 'about' },
+  { key: 'income_range',       label: 'Rango de ingresos',          stepId: 'about' },
+  { key: 'living_situation',   label: 'Vivienda',                   stepId: 'about' },
+  { key: 'debt_situation',     label: 'Deudas actuales',            stepId: 'situation' },
+  { key: 'emergency_fund',     label: 'Fondo de emergencia',        stepId: 'situation' },
+  { key: 'money_relationship', label: 'Mi relación con el dinero',  stepId: 'situation' },
+  { key: 'main_goal',          label: 'Meta principal',             stepId: 'goals' },
+  { key: 'emotional_keyword',  label: '¿Cómo quieres sentirte?',    stepId: 'goals' },
+  { key: 'dream',              label: 'Sueño a largo plazo',        stepId: 'dream' },
+];
+
+function optionLabel(key: string, value: string | null): string {
+  if (!value) return '—';
+  const opts = (OPTIONS as Record<string, { value: string; label: string }[]>)[key];
+  const found = opts?.find(o => o.value === value);
+  return found?.label ?? value;
+}
+
+const summaryGroups = computed(() => {
+  const groups: Record<string, { phase: string; stepIndex: number; items: { label: string; value: string }[] }> = {};
+  for (const f of FIELD_META) {
+    if (!groups[f.stepId]) {
+      groups[f.stepId] = {
+        phase: PHASES[STEP_PHASE[f.stepId] ?? 0] ?? '',
+        stepIndex: STEPS.findIndex(s => s.id === f.stepId),
+        items: [],
+      };
+    }
+    const rawVal = form.value[f.key];
+    const displayVal = f.key === 'dream'
+      ? ((rawVal as string) || '—')
+      : optionLabel(f.key, rawVal);
+    groups[f.stepId]!.items.push({ label: f.label, value: displayVal });
+  }
+  return Object.values(groups);
+});
+
 // ─── Navigation ───────────────────────────────────────────────────────
+// OWF-356: Express mode skips steps whose fields are ALL optional.
+const expressMode = ref(false);
+const EXPRESS_SKIP_STEPS = new Set(['situation', 'dream']);
+
 function next() {
-  if (currentIndex.value < STEPS.length - 1) currentIndex.value++;
+  if (currentIndex.value >= STEPS.length - 1) return;
+  let idx = currentIndex.value + 1;
+  if (expressMode.value) {
+    while (idx < STEPS.length - 1 && EXPRESS_SKIP_STEPS.has(STEPS[idx]!.id)) idx++;
+  }
+  currentIndex.value = idx;
 }
 function back() {
-  if (currentIndex.value > 0) currentIndex.value--;
+  if (currentIndex.value <= 0) return;
+  let idx = currentIndex.value - 1;
+  if (expressMode.value) {
+    while (idx > 0 && EXPRESS_SKIP_STEPS.has(STEPS[idx]!.id)) idx--;
+  }
+  currentIndex.value = idx;
 }
+
+function startFull() {
+  expressMode.value = false;
+  next();
+}
+function startExpress() {
+  expressMode.value = true;
+  next();
+}
+
+// ─── OWF-353: reset stale state when dialog reopens after completion ──
+function resetFlow() {
+  currentIndex.value = 0;
+  selectedTemplate.value = null;
+  expressMode.value = false;
+  form.value = makeEmptyForm();
+}
+
+watch(show, (isOpen, wasOpen) => {
+  if (isOpen && !wasOpen) {
+    const lastStepIndex = STEPS.length - 1; // 'done'
+    if (currentIndex.value >= lastStepIndex || step.value.id === 'done') {
+      resetFlow();
+    }
+  }
+});
 
 function autoSelect(key: keyof typeof form.value, value: string | null) {
   (form.value as Record<string, string | null>)[key] = value;
@@ -923,6 +1077,75 @@ const ChipField = defineComponent({
   line-height: 1.55;
 }
 
+/* ── Summary groups (OWF-354) ────────────────────────────────────── */
+.ob__summary-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 380px;
+  text-align: left;
+}
+
+.ob__summary-group {
+  border: 1px solid var(--border-hairline, rgba(0,0,0,.1));
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  padding: 12px 14px;
+}
+
+.ob__summary-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.ob__summary-group-title {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+}
+
+.ob__summary-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--fg-3);
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 4px;
+
+  &:hover { color: var(--brand-primary); }
+}
+
+.ob__summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 0;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+}
+
+.ob__summary-label {
+  color: var(--fg-3);
+}
+
+.ob__summary-value {
+  color: var(--fg-1);
+  font-weight: 600;
+  text-align: right;
+}
+
 /* ── Data step ────────────────────────────────────────────────────── */
 .ob__step {
   display: flex;
@@ -1228,5 +1451,18 @@ const ChipField = defineComponent({
   text-underline-offset: 2px;
 
   &:hover { color: var(--fg-2); }
+}
+
+.ob__express-link {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--brand-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: -6px;
+
+  &:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 </style>
