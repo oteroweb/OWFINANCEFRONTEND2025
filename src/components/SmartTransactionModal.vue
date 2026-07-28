@@ -1910,11 +1910,13 @@ async function save() {
           .filter(p => p.account_id && p.amount)
           .map(p => ({ account_id: p.account_id, amount: splitRowFinalAmount(p), rate: p.rate ?? 1, tax_id: p.tax_id ?? null }));
         // OWF-353: Pago múltiple + Comisión combinados — la comisión se carga a la primera
-        // fila (decisión del usuario: no se prorratea entre cuentas). El signo sigue el
-        // mismo criterio que el pago simple de abajo (resta en gasto, suma en ingreso).
+        // fila (decisión del usuario: no se prorratea entre cuentas). A diferencia del pago
+        // simple de abajo, las filas de split viajan siempre en magnitud positiva (ver
+        // splitRowFinalAmount) — el backend compara por abs(payments_sum) vs abs(amount), así
+        // que la comisión siempre SUMA aquí (restar con signo, como en el pago simple, achica
+        // la magnitud y rompe la validación "Payments total must equal transaction amount").
         if (commissionActive.value && payments.length) {
-          const signedCommission = form.value.type === 'expense' ? -comisionCalculada.value : comisionCalculada.value;
-          payments[0]!.amount += signedCommission;
+          payments[0]!.amount += comisionCalculada.value;
         }
       } else {
         // OWF-323: si "Cobrar comisión" está activo, la comisión también se descuenta/suma
