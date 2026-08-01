@@ -763,7 +763,7 @@
           <q-toggle v-model="includeInBalance" color="primary" dense @click.stop />
         </button>
 
-        <!-- Adjuntar foto / soporte (recibo, comprobante) — UI-only, ver OWF-283 para wiring de subida real -->
+        <!-- Adjuntar foto / soporte (recibo, comprobante) — OWF-284: sube a POST /transactions/attachments -->
         <div v-if="form.type === 'expense' || form.type === 'income'">
           <label class="stm-label">Foto / soporte <span class="stm-label--opt">(opcional)</span></label>
           <input ref="attachmentInput" type="file" accept="image/*,.pdf" class="stm-attachment-input-hidden"
@@ -774,9 +774,12 @@
           </button>
           <div v-else class="stm-attachment-preview">
             <img v-if="attachment.url" :src="attachment.url" :alt="attachment.name" />
-            <span class="stm-attachment-preview__name">{{ attachment.name }}</span>
-            <button type="button" @click="attachmentInput?.click()" title="Cambiar"><q-icon name="edit" size="18px" /></button>
-            <button type="button" @click="attachment = null" title="Quitar"><q-icon name="close" size="18px" /></button>
+            <span class="stm-attachment-preview__name">
+              {{ attachment.name }}
+              <q-spinner v-if="attachment.uploading" size="14px" color="primary" class="q-ml-xs" />
+            </span>
+            <button type="button" :disabled="attachment.uploading" @click="attachmentInput?.click()" title="Cambiar"><q-icon name="edit" size="18px" /></button>
+            <button type="button" :disabled="attachment.uploading" @click="removeAttachment" title="Quitar"><q-icon name="close" size="18px" /></button>
           </div>
         </div>
 
@@ -1152,13 +1155,37 @@ function emitSavedWithFlash() {
 // OWF-183: si la transacción afecta o no el saldo agregado de la cuenta
 const includeInBalance = ref(true);
 
-// OWF-283: adjunto de foto/soporte — UI-only por ahora, sin endpoint de subida real
+// OWF-284: adjunto de foto/soporte — sube a POST /transactions/attachments y guarda la
+// URL devuelta en attachment.url_file (lo que viaja en el payload como transactions.url_file).
+// Mientras sube, se muestra el preview local (blob) y `uploading=true` bloquea "Guardar".
 const attachmentInput = ref<HTMLInputElement | null>(null);
-const attachment = ref<{ name: string; url: string } | null>(null);
-function onAttachmentPicked(e: Event) {
+const attachment = ref<{ name: string; url: string; url_file: string | null; uploading: boolean } | null>(null);
+const attachmentRemoved = ref(false);
+async function onAttachmentPicked(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
-  attachment.value = { name: file.name, url: URL.createObjectURL(file) };
+  attachmentRemoved.value = false;
+  attachment.value = { name: file.name, url: URL.createObjectURL(file), url_file: null, uploading: true };
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await api.post<{ data: { url_file: string } }>('/transactions/attachments', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    if (attachment.value) {
+      attachment.value.url_file = res.data.data.url_file;
+      attachment.value.uploading = false;
+    }
+  } catch {
+    $q.notify({ type: 'negative', message: 'No se pudo subir el archivo. Probá de nuevo.' });
+    attachment.value = null;
+  } finally {
+    if (attachmentInput.value) attachmentInput.value.value = '';
+  }
+}
+function removeAttachment() {
+  attachment.value = null;
+  attachmentRemoved.value = true;
 }
 
 // ── Provider search ──────────────────────────────────────────────────────────
@@ -1812,6 +1839,7 @@ const reviewValidationErrors = computed<string[]>(() => {
 });
 
 const canSave = computed(() => {
+  if (attachment.value?.uploading) return false;
   if (form.value.type === 'ajuste') {
     return !!form.value.account_id && adjusteTargetBalance.value != null && !!adjusteMotivo.value.trim();
   }
@@ -1876,6 +1904,13 @@ async function save() {
       tags: form.value.tags,
       include_in_balance: includeInBalance.value ? 1 : 0,
     };
+    // OWF-284: solo viaja si hay un adjunto subido con éxito, o si el usuario lo quitó
+    // explícitamente en modo edición (hay que mandar null para limpiar el campo guardado).
+    if (attachment.value?.url_file) {
+      payload.url_file = attachment.value.url_file;
+    } else if (isEditMode.value && attachmentRemoved.value) {
+      payload.url_file = null;
+    }
 
     if (form.value.type === 'transfer') {
       const tRate = Number(transferRate.value || 1);
@@ -2235,6 +2270,8 @@ function onShow() {
   detailPanel.value = null;
   commissionOn.value = false;
   sharedCats.value = [{ category_id: null, amount: 0, touched: false }, { category_id: null, amount: 0, touched: false }];
+  attachment.value = null;
+  attachmentRemoved.value = false;
 
   if (!form.value.account_id && accountOptions.value.length) {
     const selectedIds = txStore.selectedAccountIds;
@@ -2437,6 +2474,12 @@ async function loadTransactionForEdit(id: number) {
         }
       }
     }
+
+    // OWF-284: prellenar el adjunto ya guardado (si lo hay) para mostrarlo en modo edición.
+    attachmentRemoved.value = false;
+    attachment.value = typeof raw.url_file === 'string' && raw.url_file
+      ? { name: 'Adjunto guardado', url: raw.url_file, url_file: raw.url_file, uploading: false }
+      : null;
   } catch {
     $q.notify({ type: 'negative', message: 'No se pudo cargar la transacción para editar.' });
     ui.closeSmartModal();
