@@ -684,7 +684,12 @@ async function finish() {
 
 async function skip() {
   try {
-    await api.put('/user/financial-profile', { onboarding_profile_completed: true });
+    // OWF: antes solo mandaba onboarding_profile_completed:true — perdía todo lo
+    // que el usuario ya había respondido en los pasos previos al cerrar/posponer.
+    await api.put('/user/financial-profile', {
+      ...form.value,
+      onboarding_profile_completed: true,
+    });
   } catch { /* noop */ }
   try { localStorage.setItem('ow-onboarded', '1'); } catch { /* noop */ }
   emit('done');

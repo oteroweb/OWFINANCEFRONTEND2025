@@ -146,6 +146,10 @@ async function submit() {
         localStorage.setItem('token', tokenStr);
         localStorage.setItem('user', JSON.stringify(body['data'] ?? null));
         api.defaults.headers.common.Authorization = `Bearer ${tokenStr}`;
+        // OWF: mismo fix que LoginPage.vue — sin esto AppShell/OnboardingModal nunca
+        // disparan el picker Lite/Pro ni el wizard de perfil para un usuario recién
+        // registrado, porque dependen de auth.settings (nunca cargado en este flujo).
+        await auth.fetchSettings();
         void router.push('/user');
       } else {
         $q.notify({ type: 'negative', message: (body['message'] as string) || t('notify.registerFailed') });

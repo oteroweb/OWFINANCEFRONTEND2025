@@ -218,6 +218,12 @@ async function submit() {
         localStorage.setItem('token', tokenStr);
         localStorage.setItem('user', JSON.stringify(body['data'] ?? null));
         api.defaults.headers.common.Authorization = `Bearer ${tokenStr}`;
+        // OWF: a diferencia de auth.login(), este flujo de registro seteaba token/user
+        // directo sin cargar auth.settings — AppShell/OnboardingModal dependen de esa
+        // bandera (has_seen_onboarding) para disparar el picker Lite/Pro y el wizard de
+        // perfil, así que un usuario recién registrado nunca los veía (aterrizaba directo
+        // en Home). fetchSettings() deja el store en el mismo estado que tras un login.
+        await auth.fetchSettings();
         void router.push('/user');
       } else {
         $q.notify({ type: 'negative', message: (body['message'] as string) || t('notify.registerFailed') });

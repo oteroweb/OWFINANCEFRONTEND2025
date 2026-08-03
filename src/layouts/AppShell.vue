@@ -171,6 +171,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
+import { api } from 'boot/axios';
 import { usePublicTheme } from 'src/composables/usePublicTheme';
 import LiteHeaderDesktop from 'components/liquid/LiteHeaderDesktop.vue';
 import LiteFloatingBottomNav from 'components/liquid/LiteFloatingBottomNav.vue';
@@ -218,16 +219,30 @@ function onQuickAdd() {
   else ui.openSmartModal();
 }
 
-// Auto-trigger onboarding si el usuario nunca lo ha visto
-function checkOnboarding() {
-  if (auth.settings && auth.settings.has_seen_onboarding === false) {
-    showOnboarding.value = true;
+// OWF: el wizard de perfil (OnboardingFlow) y el picker Lite/Pro (OnboardingModal,
+// montado global en App.vue) compartían la misma bandera has_seen_onboarding — el
+// picker la marcaba true apenas el usuario elegía Lite/Pro, así que este chequeo
+// (que usaba la misma bandera) nunca llegaba a disparar el wizard. Ahora el wizard
+// se gatea con una bandera DISTINTA (onboarding_profile_completed, en
+// GET /user/financial-profile) y solo se evalúa una vez que el usuario ya pasó
+// el picker (has_seen_onboarding === true), para no mostrar ambos diálogos a la vez.
+async function checkOnboarding() {
+  if (!(auth.settings && auth.settings.has_seen_onboarding === true)) return;
+  try {
+    const res = await api.get<{ data?: { onboarding_profile_completed?: boolean } }>('/user/financial-profile');
+    if (!res.data?.data?.onboarding_profile_completed) {
+      showOnboarding.value = true;
+    }
+  } catch {
+    // No bloquear la app si el chequeo falla — el usuario puede completar su
+    // perfil manualmente desde Configuración / Mi Perfil financiero.
   }
 }
 onMounted(checkOnboarding);
-// También reacciona cuando settings carga async después del mount
+// También reacciona cuando settings carga async después del mount (p.ej. justo
+// después de elegir Lite/Pro, sin necesidad del reload que hace OnboardingModal).
 watch(() => auth.settings?.has_seen_onboarding, (val) => {
-  if (val === false) showOnboarding.value = true;
+  if (val === true) void checkOnboarding();
 });
 
 function onTransactionSaved() {
