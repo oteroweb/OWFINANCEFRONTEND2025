@@ -391,10 +391,14 @@ const INTRO_PHASES = [
   { icon: 'auto_awesome', label: 'Asesor IA personalizado' },
 ];
 
+// OWF-365: unificado con el modelo de gamificación de financial-profile/index.vue
+// (rediseno/onboarding/gamification.jsx) — antes el wizard usaba niveles propios
+// "Semilla/Brote/Árbol" con pesos distintos a los de "Mi Perfil financiero", mostrando
+// dos porcentajes distintos para los mismos datos.
 const LEVELS: Record<string, { label: string; icon: string }> = {
-  seed:   { label: 'Semilla', icon: 'eco' },
-  sprout: { label: 'Brote',   icon: 'local_florist' },
-  tree:   { label: 'Árbol',   icon: 'park' },
+  basico:   { label: 'Básico',   icon: 'eco' },
+  completo: { label: 'Completo', icon: 'verified' },
+  avanzado: { label: 'Avanzado', icon: 'workspace_premium' },
 };
 
 const currentIndex = ref(0);
@@ -455,36 +459,42 @@ function makeEmptyForm() {
 
 const form = ref(makeEmptyForm());
 
-// OWF-357: weighted completeness. Essential fields (occupation, income_range,
-// main_goal) weigh more than secondary chip fields; `dream` (optional
-// long-form field) weighs least. Weights sum to 100.
-const ONB_WEIGHTS: Record<keyof ReturnType<typeof makeEmptyForm>, number> = {
-  occupation: 14,
-  income_range: 14,
-  main_goal: 14,
-  living_situation: 10,
+// OWF-365: mismos pesos que financial-profile/index.vue (ONB_WEIGHTS ahí) — suman 100
+// entre los 9 campos del wizard + `templateSlug` (plan de cántaros elegido en el paso
+// "jars", equivalente al `templateSlug` que esa página deriva de la selección de plan).
+const ONB_WEIGHTS: Record<keyof ReturnType<typeof makeEmptyForm> | 'templateSlug', number> = {
+  occupation: 12.5,
+  income_range: 12.5,
+  main_goal: 12.5,
+  templateSlug: 12.5,
   debt_situation: 10,
-  emergency_fund: 10,
-  money_relationship: 10,
-  emotional_keyword: 10,
-  dream: 8,
+  emergency_fund: 9,
+  money_relationship: 9,
+  living_situation: 9,
+  dream: 9,
+  emotional_keyword: 4,
 };
+
+function isFieldFilled(key: keyof typeof ONB_WEIGHTS): boolean {
+  if (key === 'templateSlug') return !!selectedTemplate.value;
+  const val = form.value[key];
+  return key === 'dream' ? !!(val && String(val).trim().length) : !!val;
+}
 
 const completeness = computed(() => {
   let total = 0;
-  for (const key of Object.keys(ONB_WEIGHTS) as Array<keyof ReturnType<typeof makeEmptyForm>>) {
-    const val = form.value[key];
-    const filled = key === 'dream' ? !!(val && String(val).trim().length) : !!val;
-    if (filled) total += ONB_WEIGHTS[key];
+  for (const key of Object.keys(ONB_WEIGHTS) as Array<keyof typeof ONB_WEIGHTS>) {
+    if (isFieldFilled(key)) total += ONB_WEIGHTS[key];
   }
   return Math.round(total);
 });
 
-const levelKey = computed<'seed' | 'sprout' | 'tree'>(() => {
-  const pct = completeness.value;
-  if (pct >= 75) return 'tree';
-  if (pct >= 40) return 'sprout';
-  return 'seed';
+// El wizard no pide los campos avanzados Pro (income_detail/risk_tolerance/time_horizon/
+// goal_priority, ver OWF-366) — el nivel "avanzado" solo es alcanzable completando eso
+// después en Mi Perfil financiero, acá el tope natural es "completo".
+const levelKey = computed<'basico' | 'completo' | 'avanzado'>(() => {
+  const standardDone = (Object.keys(ONB_WEIGHTS) as Array<keyof typeof ONB_WEIGHTS>).every(isFieldFilled);
+  return standardDone ? 'completo' : 'basico';
 });
 
 // Plan slug: derive from main_goal (simple heuristic)
@@ -1066,9 +1076,9 @@ const ChipField = defineComponent({
   font-weight: 700;
   letter-spacing: 0.03em;
 
-  &--seed   { background: #F0FDF4; color: #16A34A; }
-  &--sprout { background: #EFF6FF; color: #2563EB; }
-  &--tree   { background: #FFF7ED; color: #EA580C; }
+  &--basico   { background: #EFF6FF; color: #2563EB; }
+  &--completo { background: #EEF2FF; color: #6366F1; }
+  &--avanzado { background: #F0FDF4; color: #16A34A; }
 }
 
 .ob__done-title { margin: 0; }

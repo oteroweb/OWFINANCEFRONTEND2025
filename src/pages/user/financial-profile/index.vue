@@ -451,15 +451,26 @@ const ONB_WEIGHTS: Record<string, number> = {
 };
 const ADVANCED_FIELDS = ['income_detail', 'risk_tolerance', 'time_horizon', 'goal_priority'] as const;
 const filled = (v: unknown) => v !== null && v !== undefined && v !== '';
+// OWF-365: `templateSlug` es estado local de ESTA página — solo se llena si el usuario
+// elige un plan acá mismo. Un usuario que ya aplicó un plan desde el wizard de onboarding
+// (POST /jar-templates/apply) tiene cántaros reales pero `templateSlug` seguía en null acá,
+// mostrando 88%/Básico en vez de 100%/Completo para los mismos datos — justo la
+// inconsistencia que esta tarea busca eliminar. Cuenta como lleno si además ya hay
+// cántaros reales cargados (`form.value.jars`), sin importar si se eligieron en esta
+// página o en el wizard.
+const isFieldDone = (field: string): boolean => {
+  if (field === 'templateSlug') return filled(form.value.templateSlug) || form.value.jars.length > 0;
+  return filled((form.value as Record<string, unknown>)[field]);
+};
 
 const completeness = computed(() => {
   let pct = 0;
   for (const [field, weight] of Object.entries(ONB_WEIGHTS)) {
-    if (filled((form.value as Record<string, unknown>)[field])) pct += weight;
+    if (isFieldDone(field)) pct += weight;
   }
   pct = Math.round(pct);
 
-  const standardDone = Object.keys(ONB_WEIGHTS).every(f => filled((form.value as Record<string, unknown>)[f]));
+  const standardDone = Object.keys(ONB_WEIGHTS).every(isFieldDone);
   const advDone = isPro.value && ADVANCED_FIELDS.every(f => filled(advanced.value[f]));
 
   let levelId: 'basico' | 'completo' | 'avanzado' = 'basico';
@@ -475,7 +486,7 @@ const completeness = computed(() => {
     { id: 'goals', label: 'Tus metas', icon: 'flag', fields: ['main_goal', 'dream', 'emotional_keyword'] },
     { id: 'jars', label: 'Tus cántaros', icon: 'savings', fields: ['templateSlug'] },
   ].map(s => {
-    const done = s.fields.filter(f => filled((form.value as Record<string, unknown>)[f])).length;
+    const done = s.fields.filter(isFieldDone).length;
     return { ...s, done, total: s.fields.length, complete: done === s.fields.length };
   });
 
