@@ -389,7 +389,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { api } from 'src/boot/axios';
@@ -595,37 +595,15 @@ const form = ref({
   jars: [] as EditableJar[],
 });
 
-// OWF-359 — campos avanzados Pro. El backend aún no expone columnas para
-// income_detail/risk_tolerance/time_horizon/goal_priority (ver
-// UserFinancialProfileController::PROFILE_FIELDS), así que por ahora se
-// persisten localmente por usuario. Cuando el backend agregue soporte,
-// reemplazar advancedStorageKey/load/save por la llamada API real.
+// OWF-366: campos Pro avanzados — antes vivían solo en localStorage (ver nota
+// OWF-359 original); el backend ya persiste estas columnas en ai_user_settings,
+// se cargan/guardan como el resto del perfil vía GET/PUT /user/financial-profile.
 const advanced = ref({
   income_detail: null as string | null,
   risk_tolerance: null as string | null,
   time_horizon: null as string | null,
   goal_priority: null as string | null,
 });
-
-function advancedStorageKey(): string | null {
-  const uid = auth.user?.id;
-  return uid ? `owf_advanced_profile_${uid}` : null;
-}
-
-function loadAdvanced() {
-  const key = advancedStorageKey();
-  if (!key) return;
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) Object.assign(advanced.value, JSON.parse(raw));
-  } catch { /* noop */ }
-}
-
-function saveAdvanced() {
-  const key = advancedStorageKey();
-  if (!key) return;
-  try { localStorage.setItem(key, JSON.stringify(advanced.value)); } catch { /* noop */ }
-}
 
 function makeKey() {
   return Math.random().toString(36).slice(2);
@@ -649,6 +627,10 @@ onMounted(async () => {
     form.value.main_goal = d.main_goal ?? null;
     form.value.dream = d.dream ?? '';
     form.value.emotional_keyword = d.emotional_keyword ?? null;
+    advanced.value.income_detail = d.income_detail ?? null;
+    advanced.value.risk_tolerance = d.risk_tolerance ?? null;
+    advanced.value.time_horizon = d.time_horizon ?? null;
+    advanced.value.goal_priority = d.goal_priority ?? null;
     if (d.updated_at) {
       const diff = Math.floor((Date.now() - new Date(d.updated_at as string).getTime()) / 86400000);
       updatedDaysAgo.value = diff;
@@ -684,10 +666,7 @@ onMounted(async () => {
   }
 
   loading.value = false;
-  loadAdvanced();
 });
-
-watch(advanced, saveAdvanced, { deep: true });
 
 async function resetProfile() {
   confirmReset.value = false;
@@ -758,10 +737,7 @@ async function save() {
         dream: form.value.dream,
         emotional_keyword: form.value.emotional_keyword,
         onboarding_profile_completed: true,
-        // OWF-359 — el backend aún no persiste estos 4 campos (no están en
-        // UserFinancialProfileController::PROFILE_FIELDS); se envían igual
-        // por si se agrega soporte, pero hoy Laravel los descarta en el
-        // validate(). La fuente de verdad real es localStorage (ver saveAdvanced()).
+        // OWF-366: perfil narrativo avanzado (solo Pro), persistido en backend
         income_detail: advanced.value.income_detail,
         risk_tolerance: advanced.value.risk_tolerance,
         time_horizon: advanced.value.time_horizon,
@@ -778,7 +754,6 @@ async function save() {
         : Promise.resolve(),
     ]);
     if (profileSave.status === 'rejected') throw profileSave.reason;
-    saveAdvanced();
     $q.notify({ type: 'positive', message: 'Perfil financiero actualizado' });
     void router.push('/user/config');
   } catch (e: unknown) {
