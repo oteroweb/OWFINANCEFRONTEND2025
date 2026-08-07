@@ -150,6 +150,10 @@ async function submit() {
         // disparan el picker Lite/Pro ni el wizard de perfil para un usuario recién
         // registrado, porque dependen de auth.settings (nunca cargado en este flujo).
         await auth.fetchSettings();
+        // OWF-367: idem — la "Billetera" auto-creada al registrarse (OWF-065) no viaja
+        // en la respuesta de /auth/register (sin eager-load de accounts), así que
+        // auth.user.accounts quedaba vacío hasta el primer refreshProfile().
+        await auth.refreshProfile();
         void router.push('/user');
       } else {
         $q.notify({ type: 'negative', message: (body['message'] as string) || t('notify.registerFailed') });

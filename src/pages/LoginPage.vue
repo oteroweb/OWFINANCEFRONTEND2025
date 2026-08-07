@@ -224,6 +224,14 @@ async function submit() {
         // perfil, así que un usuario recién registrado nunca los veía (aterrizaba directo
         // en Home). fetchSettings() deja el store en el mismo estado que tras un login.
         await auth.fetchSettings();
+        // OWF-367: el registro (AuthController::register, backend) ya crea una cuenta
+        // "Billetera" por defecto (OWF-065) pero no la incluye en su propia respuesta
+        // (no hace eager-load de accounts) — auth.user.accounts quedaba vacío hasta el
+        // primer refreshProfile(), así que el selector de cuenta del modal de
+        // transacciones aparecía vacío para un usuario recién registrado pese a que la
+        // cuenta ya existía en el backend. refreshProfile() la trae (GET /user/profile
+        // sí eager-carga accounts).
+        await auth.refreshProfile();
         void router.push('/user');
       } else {
         $q.notify({ type: 'negative', message: (body['message'] as string) || t('notify.registerFailed') });
