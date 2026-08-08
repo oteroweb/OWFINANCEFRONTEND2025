@@ -9,6 +9,8 @@ export const publicRoutes: RouteRecordRaw[] = [
       { path: 'funciones', name: 'funciones', component: () => import('src/pages/public/FeaturesPage.vue') },
       { path: 'planes', name: 'planes', component: () => import('src/pages/public/PricingPage.vue') },
       { path: 'matriz', name: 'matriz', component: () => import('src/pages/public/MatrixPage.vue') },
+      { path: 'terminos', name: 'terminos', component: () => import('src/pages/public/TermsPage.vue') },
+      { path: 'privacidad', name: 'privacidad', component: () => import('src/pages/public/PrivacyPage.vue') },
     ],
   },
 ];

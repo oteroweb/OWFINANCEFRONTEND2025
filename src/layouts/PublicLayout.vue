@@ -95,7 +95,7 @@
         </div>
         <div class="footer-bottom">
           <span>© 2026 OW Finance. Todos los derechos reservados.</span>
-          <span style="display: flex; gap: 18px"><a href="#">Privacidad</a><a href="#">Términos</a><a href="#">Contacto</a></span>
+          <span style="display: flex; gap: 18px"><router-link to="/privacidad">Privacidad</router-link><router-link to="/terminos">Términos</router-link><a href="#">Contacto</a></span>
         </div>
       </div>
     </footer>

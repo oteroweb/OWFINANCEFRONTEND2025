@@ -52,7 +52,7 @@
       </button>
 
       <p v-if="mode === 'login'" class="legal">¿Aún no tienes cuenta? <a href="#" @click.prevent="mode = 'register'">Créala gratis</a>.</p>
-      <p v-else class="legal">Al crear una cuenta aceptas los <a href="#">Términos</a> y la <a href="#">Política de privacidad</a>.</p>
+      <p v-else class="legal">Al crear una cuenta aceptas los <router-link to="/terminos">Términos</router-link> y la <router-link to="/privacidad">Política de privacidad</router-link>.</p>
     </div>
   </div>
 </template>

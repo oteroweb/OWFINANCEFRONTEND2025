@@ -109,14 +109,8 @@
             </button>
           </form>
 
-          <div class="divider">o continúa con</div>
-          <div class="social">
-            <a class="btn" href="#" @click.prevent><span class="g-mark" aria-hidden="true">G</span>Google</a>
-            <a class="btn" href="#" @click.prevent><span class="a-mark" aria-hidden="true"></span>Apple</a>
-          </div>
-
           <p v-if="mode === 'login'" class="legal">¿Aún no tienes cuenta? <router-link to="/register">Créala gratis</router-link>.</p>
-          <p v-else class="legal">Al crear una cuenta aceptas los <a href="#">Términos</a> y la <a href="#">Política de privacidad</a>.</p>
+          <p v-else class="legal">Al crear una cuenta aceptas los <router-link to="/terminos">Términos</router-link> y la <router-link to="/privacidad">Política de privacidad</router-link>.</p>
 
           <!-- App Download -->
           <div class="divider">Descarga la app</div>
