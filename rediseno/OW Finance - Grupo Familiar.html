@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>OW Finance · Grupo Familiar y Cuentas Compartidas (Fase 1)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+.material-icons{font-family:'Material Icons',sans-serif;font-style:normal;display:inline-flex;align-items:center;justify-content:center;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';font-feature-settings:'liga';-webkit-font-smoothing:antialiased}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:radial-gradient(ellipse at 50% 14%,#18202F 0%,#080B12 100%);font-family:var(--font-body);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 22px 40px}
+a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
+.head{width:100%;max-width:1180px;display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.head h1{font-family:var(--font-display);font-size:17px;font-weight:700;color:#E7EBF2}
+.head .sub{font-size:12.5px;color:#7C879B}
+.map{width:100%;max-width:1180px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.map .grp{font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5A6478;padding:0 8px 0 4px}
+.map button{border:0;cursor:pointer;background:rgba(255,255,255,.06);color:#C3CAD6;font-family:var(--font-body);font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;transition:background 140ms,color 140ms}
+.map button:hover{background:rgba(255,255,255,.12);color:#fff}
+.map button.active{background:var(--brand-primary);color:#fff}
+.browser{width:100%;max-width:1180px;border-radius:14px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);background:var(--surface-1)}
+.chrome{display:flex;align-items:center;gap:12px;padding:11px 16px;background:#1d2230;border-bottom:1px solid rgba(255,255,255,.06)}
+.lights{display:flex;gap:8px}.lights span{width:12px;height:12px;border-radius:50%}
+.urlbar{flex:1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border-radius:999px;padding:7px 14px;font-size:12.5px;color:#9AA3B2;max-width:420px;margin:0 auto}
+.urlbar .material-icons{font-size:14px}
+#viewport{height:740px;overflow:auto;background:var(--bg-canvas);position:relative;display:flex;justify-content:center}
+.pad{padding:34px 30px;width:100%;display:flex;justify-content:center}
+.phone{width:390px;height:700px;margin:20px 0;border-radius:38px;background:var(--bg-canvas);box-shadow:0 0 0 10px #12161f,0 0 0 11px rgba(255,255,255,.07),0 30px 70px rgba(0,0,0,.6);position:relative;overflow:hidden}
+.phone .status{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12px;font-weight:600;color:var(--fg-1)}
+.phone .body{position:absolute;top:44px;left:0;right:0;bottom:0;overflow:auto}
+.note{width:100%;max-width:1180px;margin-top:16px;font-size:12.5px;line-height:1.6;color:#8C97AB}
+.note code{font-family:var(--font-money);color:#B9C3D4}
+</style>
+</head>
+<body>
+<div class="head"><h1>Grupo Familiar y Cuentas Compartidas</h1><span class="sub">Fase 1 de 4 · diseño, sin portar · fuente: ARQUITECTURA_GRUPO_FAMILIAR_EMPRESAS.md §01</span></div>
+<nav class="map" id="map"></nav>
+<div class="browser">
+  <div class="chrome">
+    <div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+    <div class="urlbar"><span class="material-icons">lock</span><span id="url">app.owfinance.com/user/config/family</span></div>
+    <div style="width:54px"></div>
+  </div>
+  <div id="viewport"><div id="root"></div></div>
+</div>
+<p class="note">Los 4 niveles de permiso usan un solo hue (<code>--brand-primary</code>) en distinta intensidad: son estados de un mismo concepto, no categorías. Vocabulario único en las tres pantallas — <code>Gestión</code> / <code>Ver todo</code> / <code>Solo saldo</code> / <code>Sin acceso</code>. Fixtures propuestos en <code>ui_kits/lite-desktop/data/family-data.jsx</code>, todavía no en <code>sample-data.contract.js</code>.</p>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ui_kits/mobile/components/Atoms.jsx"></script>
+<script type="text/babel" src="ui_kits/mobile/components/BottomSheet.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/atoms/Primitives.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/atoms/Buttons.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/data/family-data.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/organisms/FamilyGroupPanel.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/organisms/AccountShareDialog.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/organisms/SharedAccountsSection.jsx"></script>
+<script type="text/babel" src="ui_kits/mobile/components/FamilyGroupSheet.jsx"></script>
+<script type="text/babel" src="ui_kits/mobile/components/AccountShareSheet.jsx"></script>
+<script type="text/babel" src="ui_kits/mobile/components/SharedAccountsSheet.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const GROUP = window.SAMPLE_FAMILY_GROUP;
+const SHARES = window.SAMPLE_ACCOUNT_SHARES;
+const MY_ACCOUNTS = [
+  { id: 1, name: 'Banesco', balance: 512.4, currencySymbol: '$', currencyCode: 'USD' },
+  { id: 2, name: 'Efectivo', balance: 86, currencySymbol: '$', currencyCode: 'USD' },
+  { id: 3, name: 'Zelle', balance: 1240.9, currencySymbol: '$', currencyCode: 'USD' },
+];
+const ACCOUNT = { id: 1, name: 'Banesco · cuenta principal' };
+const log = (...a) => console.log('[fase1]', ...a);
+
+const ROUTES = [
+  { group: 'Grupo familiar', items: [
+    { id: 'fg-empty',  label: 'Sin grupo',   url: '/user/config/family' },
+    { id: 'fg',        label: 'Con grupo',   url: '/user/config/family' },
+    { id: 'fg-invite', label: 'Invitar',     url: '/user/config/family' },
+    { id: 'fg-leave',  label: 'Salir',       url: '/user/config/family' },
+  ] },
+  { group: 'Compartir cuenta', items: [
+    { id: 'share-nogroup', label: 'Sin grupo', url: '/user/accounts/1' },
+    { id: 'share',         label: 'Con grupo', url: '/user/accounts/1' },
+  ] },
+  { group: 'Cuentas', items: [
+    { id: 'accounts',     label: 'Compartidas conmigo', url: '/user/accounts' },
+    { id: 'accounts-lim', label: 'Límite solo saldo',   url: '/user/accounts' },
+  ] },
+  { group: 'Mobile', items: [
+    { id: 'm-fg',       label: 'Grupo',    url: '/user/config/family' },
+    { id: 'm-share',    label: 'Compartir', url: '/user/accounts/1' },
+    { id: 'm-accounts', label: 'Cuentas',  url: '/user/accounts' },
+  ] },
+];
+
+function Screen({ route }) {
+  window.FG_FORCE_VIEW = route === 'fg-invite' ? 'invite' : (route === 'fg-leave' ? 'leave' : null);
+  const shared = { sharedInCount: SHARES.length, sharedOutCount: 2 };
+
+  if (route === 'fg-empty' || route === 'fg' || route === 'fg-invite' || route === 'fg-leave') {
+    return <div className="pad"><FamilyGroupPanel group={route === 'fg-empty' ? null : GROUP} {...shared}
+      onSave={p => log('save', p)} onDelete={id => log('leave group', id)} onSelectAction={a => log('action', a)} /></div>;
+  }
+  if (route === 'share' || route === 'share-nogroup') {
+    return <div className="pad" style={{ alignItems: 'flex-start' }}><AccountShareDialog account={ACCOUNT}
+      group={route === 'share' ? GROUP : null}
+      shares={[{ user_id: 2, permission: 'manage' }]}
+      onChange={(f, v) => log('change', f, v)} onSave={p => log('save', p)} onClose={() => log('close')} onSelectAction={a => log('action', a)} /></div>;
+  }
+  if (route === 'accounts' || route === 'accounts-lim') {
+    return <div className="pad"><SharedAccountsSection myAccounts={MY_ACCOUNTS} shares={SHARES}
+      selectedId={route === 'accounts-lim' ? 17 : null}
+      onSelectAction={a => log('action', a)} onChange={(f, v) => log('change', f, v)} /></div>;
+  }
+  // Mobile
+  return (
+    <div className="phone">
+      <div className="status"><span>9:41</span><span style={{ display: 'flex', gap: 6 }}><span className="material-icons" style={{ fontSize: 15 }}>signal_cellular_alt</span><span className="material-icons" style={{ fontSize: 15 }}>battery_full</span></span></div>
+      <div className="body">
+        {route === 'm-accounts'
+          ? <SharedAccountsSheet myAccounts={MY_ACCOUNTS} shares={SHARES} onSelectAction={a => log('action', a)} onChange={(f, v) => log('change', f, v)} />
+          : <div style={{ position: 'absolute', inset: 0 }}>
+              {route === 'm-fg'
+                ? <FamilyGroupSheet group={GROUP} {...shared} onSave={p => log('save', p)} onDelete={id => log('leave', id)} onSelectAction={a => log('action', a)} onClose={() => log('close')} />
+                : <AccountShareSheet account={ACCOUNT} group={GROUP} shares={[{ user_id: 2, permission: 'manage' }]} onChange={(f, v) => log('change', f, v)} onSave={p => log('save', p)} onClose={() => log('close')} onSelectAction={a => log('action', a)} />}
+            </div>}
+      </div>
+    </div>
+  );
+}
+
+function Root() {
+  const [route, setRoute] = useState('fg');
+  useEffect(() => {
+    const mapEl = document.getElementById('map');
+    mapEl.innerHTML = '';
+    ROUTES.forEach(grp => {
+      const g = document.createElement('span'); g.className = 'grp'; g.textContent = grp.group; mapEl.appendChild(g);
+      grp.items.forEach(it => {
+        const b = document.createElement('button');
+        b.className = it.id === route ? 'active' : '';
+        b.textContent = it.label;
+        b.onclick = () => { setRoute(it.id); document.getElementById('url').textContent = 'app.owfinance.com' + it.url; };
+        mapEl.appendChild(b);
+      });
+    });
+  }, [route]);
+  return <Screen key={route} route={route} />;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+</script>
+</body>
+</html>
