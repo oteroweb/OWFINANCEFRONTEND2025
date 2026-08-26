@@ -57,7 +57,11 @@
               </div>
               <div class="fgp__label fgp__member-email">{{ memberEmail(m) }}</div>
             </div>
-            <div v-if="m.status === 'invited'" class="fgp__row-gap">
+            <div v-if="m.status === 'invited' && isYou(m)" class="fgp__row-gap">
+              <q-btn size="sm" unelevated rounded color="primary" label="Aceptar" :loading="respondingId === m.id" @click="onAcceptInvite(group, m)" />
+              <q-btn size="sm" flat rounded color="negative" label="Rechazar" :loading="respondingId === m.id" @click="onDeclineInvite(group, m)" />
+            </div>
+            <div v-else-if="m.status === 'invited'" class="fgp__row-gap">
               <q-btn size="sm" flat rounded label="Reenviar" @click="onResend(group, m)" />
               <q-btn size="sm" flat rounded color="negative" label="Cancelar" @click="onCancelInvite(group, m)" />
             </div>
@@ -136,6 +140,8 @@ const inviting = ref(false);
 
 const leaveGroupId = ref<number | null>(null);
 const leaving = ref(false);
+
+const respondingId = ref<number | null>(null);
 
 const groups = ref<FamilyGroup[]>([]);
 
@@ -225,6 +231,34 @@ function onResend(group: FamilyGroup, m: FamilyGroupMember) {
   void store.inviteToGroup(group.id, m.user.email)
     .then(() => $q.notify({ type: 'positive', message: 'Invitación reenviada' }))
     .catch(() => $q.notify({ type: 'negative', message: 'No se pudo reenviar la invitación' }));
+}
+
+async function onAcceptInvite(group: FamilyGroup, m: FamilyGroupMember) {
+  respondingId.value = m.id;
+  try {
+    await store.acceptInvite(group.id);
+    await reload();
+    $q.notify({ type: 'positive', message: `Te uniste a ${group.name}` });
+  } catch (e: unknown) {
+    const msg = (e as { api?: { message?: string } })?.api?.message ?? 'No se pudo aceptar la invitación';
+    $q.notify({ type: 'negative', message: msg });
+  } finally {
+    respondingId.value = null;
+  }
+}
+
+async function onDeclineInvite(group: FamilyGroup, m: FamilyGroupMember) {
+  respondingId.value = m.id;
+  try {
+    await store.declineInvite(group.id);
+    await reload();
+    $q.notify({ type: 'positive', message: 'Invitación rechazada' });
+  } catch (e: unknown) {
+    const msg = (e as { api?: { message?: string } })?.api?.message ?? 'No se pudo rechazar la invitación';
+    $q.notify({ type: 'negative', message: msg });
+  } finally {
+    respondingId.value = null;
+  }
 }
 
 function onCancelInvite(group: FamilyGroup, m: FamilyGroupMember) {
