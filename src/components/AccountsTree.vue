@@ -91,6 +91,9 @@
                   >
                     <q-tooltip>{{ node.includeInGlobalBalance !== false ? 'En balance global (click para excluir)' : 'Excluida del balance global (click para incluir)' }}</q-tooltip>
                   </q-btn>
+                  <q-btn flat dense round size="xs" icon="group_add" color="grey-7" @click.stop="emitShare(node)">
+                    <q-tooltip>Compartir con mi grupo familiar</q-tooltip>
+                  </q-btn>
                   <q-btn flat dense round size="xs" icon="edit" color="primary" @click.stop="emitEdit(node)">
                     <q-tooltip>Editar cuenta</q-tooltip>
                   </q-btn>
@@ -177,6 +180,7 @@ export default defineComponent({
     'view-account',
     'edit-account',
     'delete-account',
+    'share-account',
     'delete-folder',
     'rename-folder',
     'toggle-global-balance',
@@ -424,6 +428,10 @@ export default defineComponent({
 
     function emitDelete(node: TreeNode) {
       if (node.type === 'account') emit('delete-account', { id: node.id, label: node.label });
+    }
+
+    function emitShare(node: TreeNode) {
+      if (node.type === 'account') emit('share-account', { id: node.id, label: node.label });
     }
 
     function emitRenameFolder(node: TreeNode) {
@@ -821,6 +829,7 @@ export default defineComponent({
       emitView,
       emitEdit,
       emitDelete,
+      emitShare,
       emitRenameFolder,
       onDblClick,
       onSelect,

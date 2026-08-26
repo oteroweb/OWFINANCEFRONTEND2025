@@ -169,6 +169,17 @@
           </div>
         </q-card>
 
+        <!-- ── Grupo familiar (OWF-369, no gated por Lite/Pro) ───────── -->
+        <div>
+          <div class="row items-center q-gutter-sm q-mb-sm">
+            <span class="t-eyebrow">Grupo familiar</span>
+            <span class="text-caption text-grey-7" style="font-style: italic">
+              · compartir cuentas con quien vive tu economía
+            </span>
+          </div>
+          <FamilyGroupPanel />
+        </div>
+
         <!-- ── Tasas de Cambio (Pro) ───────────────────────────────── -->
         <div>
           <div class="row items-center q-gutter-sm q-mb-sm">
@@ -300,6 +311,15 @@
           </div>
           <q-icon name="chevron_right" size="18px" />
         </button>
+        <!-- Grupo familiar (OWF-369, no gated por Lite/Pro) -->
+        <button class="lite-config__nav-item" @click="showFamilyGroupDialog = true">
+          <q-icon name="group" size="20px" />
+          <div class="lite-config__nav-text">
+            <span class="lite-config__nav-label">Grupo familiar</span>
+            <span class="lite-config__nav-hint">Compartir cuentas con quien vive tu economía</span>
+          </div>
+          <q-icon name="chevron_right" size="18px" />
+        </button>
         <!-- Repetir onboarding -->
         <button class="lite-config__nav-item" @click="showOnboarding = true">
           <q-icon name="restart_alt" size="20px" />
@@ -390,6 +410,16 @@
 
       <OnboardingFlow v-model="showOnboarding" />
     </template>
+
+    <!-- Grupo familiar (Lite): mismo panel que Pro, en un diálogo -->
+    <q-dialog v-model="showFamilyGroupDialog">
+      <q-card style="min-width: 320px; max-width: 660px; background: transparent; box-shadow: none;">
+        <FamilyGroupPanel />
+      </q-card>
+    </q-dialog>
+
+    <!-- Compartir cuenta con grupo familiar (OWF-369) -->
+    <AccountShareDialog v-model="showShareDialog" :account="shareAccountTarget" @saved="onShareSaved" />
 
     <!-- Diálogo compartido: configurar/cambiar PIN de seguridad -->
     <q-dialog v-model="showPinDialog" persistent>
@@ -766,10 +796,19 @@
                 @view-account="onViewAccount"
                 @edit-account="onEditAccount"
                 @delete-account="onDeleteAccount"
+                @share-account="onShareAccount"
                 @rename-folder="onRenameAccountFolder"
                 @toggle-global-balance="onToggleAccountGlobalBalance"
               />
             </q-card>
+
+            <!-- ── Cuentas compartidas (OWF-369) ─────────────────────── -->
+            <div>
+              <div class="row items-center q-gutter-sm q-mb-sm">
+                <span class="t-eyebrow">Compartidas con mi grupo familiar</span>
+              </div>
+              <SharedAccountsSection :my-accounts="flatAccountsList" @share="onShareAccountById" />
+            </div>
           </div>
         </q-tab-panel>
 
@@ -881,6 +920,9 @@ import CrudPage from 'components/CrudPage.vue';
 import CategoriesTree from 'components/CategoriesTree.vue';
 import AccountsTree from 'components/AccountsTree.vue';
 import ExchangeRatesTable from 'components/ExchangeRatesTable.vue';
+import FamilyGroupPanel from 'components/FamilyGroupPanel.vue';
+import AccountShareDialog from 'components/AccountShareDialog.vue';
+import SharedAccountsSection from 'components/SharedAccountsSection.vue';
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
 import { defaultAvatarUrl } from '../config';
@@ -899,6 +941,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const ui = useUiStore();
 const showOnboarding = ref(false);
+const showFamilyGroupDialog = ref(false);
 const tab = ref<'profile' | 'finance' | 'categories' | 'accounts' | 'taxes'>('profile');
 
 const activeLayoutMode = computed<UserLayoutMode>(() => normalizeLayoutMode(auth.settings?.layout_mode ?? auth.user?.layout_mode));
@@ -1369,6 +1412,11 @@ type AccountNode = {
 const accountsTreeNodes = ref<AccountNode[]>([]);
 const accountsTreeRef = ref<InstanceType<typeof AccountsTree> | null>(null);
 
+// OWF-369: lista plana de "mis cuentas" para SharedAccountsSection — reusa la
+// misma llamada /accounts que ya hace loadAccountsTree, sin duplicar el fetch.
+type MyAccountLite = { id: number; name: string; balance?: number; currencyCode?: string; currencySymbol?: string };
+const flatAccountsList = ref<MyAccountLite[]>([]);
+
 async function loadAccountsTree() {
   try {
     // Parallel: tree structure + flat list with balances
@@ -1379,8 +1427,15 @@ async function loadAccountsTree() {
     const rawNodes = treeRes.data?.data?.nodes || treeRes.data?.nodes || treeRes.data?.data || treeRes.data || [];
 
     // Build id → { balance, currency_symbol, currency_code, include_in_global_balance } map from flat list
-    type AcctInfo = { id: number | string; balance?: number | string | null; currency?: { symbol?: string; code?: string }; include_in_global_balance?: boolean };
+    type AcctInfo = { id: number | string; name?: string; balance?: number | string | null; currency?: { symbol?: string; code?: string }; include_in_global_balance?: boolean };
     const flatList: AcctInfo[] = Array.isArray(listRes.data?.data) ? (listRes.data.data as AcctInfo[]) : [];
+    flatAccountsList.value = flatList.map((a) => ({
+      id: Number(a.id),
+      name: a.name ?? '',
+      balance: Number(a.balance ?? 0),
+      currencyCode: a.currency?.code ?? '',
+      currencySymbol: a.currency?.symbol ?? '$',
+    }));
     const balanceMap = new Map<string, { balance: number; currency_symbol: string; currency_code: string; include_in_global_balance: boolean }>();
     for (const a of flatList) {
       balanceMap.set(String(a.id), {
@@ -1410,6 +1465,25 @@ async function loadAccountsTree() {
     console.error('Error loading accounts tree:', e);
     Notify.create({ type: 'negative', message: 'Error cargando cuentas' });
   }
+}
+
+// ----- Compartir cuenta con grupo familiar (OWF-369) -----
+const showShareDialog = ref(false);
+const shareAccountTarget = ref<{ id: number; name: string } | null>(null);
+
+function onShareAccount(payload: { id: number | string; label: string }) {
+  shareAccountTarget.value = { id: Number(payload.id), name: payload.label };
+  showShareDialog.value = true;
+}
+
+function onShareAccountById(accountId: number) {
+  const found = flatAccountsList.value.find((a) => a.id === accountId);
+  shareAccountTarget.value = { id: accountId, name: found?.name ?? 'Cuenta' };
+  showShareDialog.value = true;
+}
+
+async function onShareSaved() {
+  await loadAccountsTree();
 }
 
 async function onCreateAccountFolder(payload: { name: string; parent_id: string | null }) {
