@@ -2,6 +2,9 @@
  * FamilyGroupSheet — variante bottom-sheet de FamilyGroupPanel (pantalla 1).
  * Mismos estados y mismas palabras que el desktop, otra presentación.
  * Callbacks idénticos: onSave({action,...}) · onDelete(groupId) · onSelectAction · onClose
+ * onSave admite action: 'create-group' | 'invite' | 'accept-invite' | 'decline-invite'.
+ * En una fila pendiente, m.is_you decide Aceptar/Rechazar (tu invitación) vs
+ * Reenviar/Cancelar (invitación que vos enviaste a otro miembro).
  * ──────────────────────────────────────────────────────────────────────── */
 /* global React, MobileBottomSheet, Avatar, PillButtonMobile, MobileChip, Divider */
 
@@ -51,7 +54,13 @@ function FamilyGroupSheet({ open = true, group = null, sharedInCount = 0, shared
                       </div>
                       <MobileChip variant={pending ? 'warning' : (m.is_you ? 'brand' : 'default')}>{pending ? 'Invitado' : (m.is_you ? 'Vos' : 'Miembro')}</MobileChip>
                     </div>
-                    {pending && (
+                    {pending && m.is_you && (
+                      <div style={{ display: 'flex', gap: 8, paddingBottom: 12 }}>
+                        <PillButtonMobile size="sm" onPress={() => onSave && onSave({ action: 'accept-invite', groupId: group.id })}>Aceptar</PillButtonMobile>
+                        <PillButtonMobile size="sm" variant="ghost" onPress={() => onSave && onSave({ action: 'decline-invite', groupId: group.id })}>Rechazar</PillButtonMobile>
+                      </div>
+                    )}
+                    {pending && !m.is_you && (
                       <div style={{ display: 'flex', gap: 8, paddingBottom: 12 }}>
                         <PillButtonMobile size="sm" variant="secondary" onPress={() => onSelectAction && onSelectAction('resend:' + m.user_id)}>Reenviar</PillButtonMobile>
                         <PillButtonMobile size="sm" variant="ghost" onPress={() => onSelectAction && onSelectAction('cancel:' + m.user_id)}>Cancelar</PillButtonMobile>

@@ -5,12 +5,19 @@
  * Contrato de callbacks:
  *   onSave({ action:'create-group', name })       → crear el grupo
  *   onSave({ action:'invite', email })            → invitar por correo
+ *   onSave({ action:'accept-invite', groupId })   → yo (invitado) acepto
+ *   onSave({ action:'decline-invite', groupId })  → yo (invitado) rechazo
  *   onDelete(groupId)                             → salir del grupo
- *   onSelectAction('resend:3' | 'cancel:3')       → acciones sobre invitación pendiente
+ *   onSelectAction('resend:3' | 'cancel:3')       → acciones del admin sobre una invitación pendiente ajena
  *   onChange(field, value)                        → 'draftName' | 'draftEmail'
  *
  * Regla de negocio visible en la UI: sin grupo familiar no hay forma de
  * compartir una cuenta. Por eso el estado vacío no ofrece compartir nada.
+ *
+ * Estado "invitación pendiente" tiene DOS perspectivas distintas en la misma
+ * fila: si la fila pendiente sos vos (m.is_you), ves Aceptar/Rechazar — es tu
+ * propia invitación. Si es de otro miembro, ves Reenviar/Cancelar — sos vos
+ * gestionando la invitación que ENVIASTE. Nunca las dos a la vez.
  * ──────────────────────────────────────────────────────────────────────── */
 /* global React, Avatar, PillButton, IconButton */
 
@@ -94,7 +101,13 @@ function FamilyGroupPanel({ group = null, sharedInCount = 0, sharedOutCount = 0,
                 </div>
                 <div style={{ ...label, fontSize: 12.5, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.email}</div>
               </div>
-              {pending && (
+              {pending && m.is_you && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <PillButton size="sm" onClick={() => onSave && onSave({ action: 'accept-invite', groupId: group.id })}>Aceptar</PillButton>
+                  <PillButton size="sm" variant="ghost" onClick={() => onSave && onSave({ action: 'decline-invite', groupId: group.id })}>Rechazar</PillButton>
+                </div>
+              )}
+              {pending && !m.is_you && (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <PillButton size="sm" variant="ghost" onClick={() => onSelectAction && onSelectAction('resend:' + m.user_id)}>Reenviar</PillButton>
                   <PillButton size="sm" variant="ghost" onClick={() => onSelectAction && onSelectAction('cancel:' + m.user_id)}>Cancelar</PillButton>
