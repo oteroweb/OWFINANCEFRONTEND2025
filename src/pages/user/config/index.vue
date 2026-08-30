@@ -861,9 +861,31 @@
             dense
             outlined
           />
-          <q-input v-if="acctFormMode === 'create'" v-model.number="acctForm.initial" label="Balance inicial" type="number" dense outlined />
+          <q-input
+            v-if="acctFormMode === 'create'"
+            v-model.number="acctForm.initial"
+            :label="isDebtAccountType ? 'Monto adeudado' : 'Balance inicial'"
+            type="number"
+            dense
+            outlined
+          />
           <q-input v-if="acctFormMode === 'edit'" v-model.number="acctForm.balance" label="Saldo actual" type="number" dense outlined />
           <q-toggle v-if="acctFormMode === 'edit'" v-model="acctForm.active" label="Cuenta activa" />
+
+          <template v-if="acctFormMode === 'create' && isDebtAccountType">
+            <div class="text-caption text-grey-6 q-mt-sm">
+              Esta cuenta es una deuda — se registra en el módulo de Deudas, con seguimiento de cuota y vencimiento.
+            </div>
+            <div class="row q-col-gutter-sm">
+              <div class="col-6">
+                <q-input v-model.number="acctForm.debt_apr" label="Tasa de interés anual (APR)" type="number" suffix="%" dense outlined />
+              </div>
+              <div class="col-6">
+                <q-input v-model.number="acctForm.debt_term_months" label="Plazo (meses)" type="number" dense outlined />
+              </div>
+            </div>
+            <q-input v-model.number="acctForm.debt_due_day" label="Día de pago mensual" type="number" min="1" max="28" dense outlined />
+          </template>
           <q-toggle v-model="acctForm.include_in_global_balance" color="teal" label="Incluir en balance global">
             <q-tooltip>Si está activo, el saldo de esta cuenta se sumará al balance global configurado</q-tooltip>
           </q-toggle>
@@ -1624,6 +1646,9 @@ function onCreateAccount() {
     acctForm._originalFolderId = null;
     acctForm.active = true;
     acctForm.include_in_global_balance = true;
+    acctForm.debt_apr = 0;
+    acctForm.debt_term_months = 12;
+    acctForm.debt_due_day = 5;
     acctFormMode.value = 'create';
     acctFormEditId.value = null;
     acctFormTitle.value = 'Nueva cuenta';
@@ -1726,6 +1751,14 @@ const acctForm = reactive({
   _originalFolderId: null as string | null,
   active: true,
   include_in_global_balance: true,
+  debt_apr: 0,
+  debt_term_months: 12,
+  debt_due_day: 5,
+});
+
+const isDebtAccountType = computed(() => {
+  const selected = accountTypeOptions.value.find((t) => t.id === acctForm.account_type_id);
+  return (selected?.name || '').trim().toLowerCase() === 'deuda';
 });
 const acctCurrencyFilterOptions = ref<CurrencyOption[]>([]);
 
@@ -1775,7 +1808,33 @@ function onAcctCurrencyFilter(val: string, update: (cb: () => void) => void) {
 function onSaveAccountForm() {
   if (!acctForm.name.trim()) return;
   showAccountForm.value = false;
-  if (acctFormMode.value === 'create') {
+  if (acctFormMode.value === 'create' && isDebtAccountType.value) {
+    const amount = Math.abs(acctForm.initial) || 0;
+    const termMonths = acctForm.debt_term_months || 1;
+    const dueDay = Math.min(Math.max(acctForm.debt_due_day || 1, 1), 28);
+    const nextDueDate = new Date();
+    if (nextDueDate.getDate() >= dueDay) nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+    nextDueDate.setDate(dueDay);
+    void api.post('/debts', {
+      name: acctForm.name.trim(),
+      provider: 'loan',
+      original_amount: amount,
+      balance: amount,
+      rate: acctForm.debt_apr ? `${acctForm.debt_apr}%` : null,
+      total_installments: termMonths,
+      paid_installments: 0,
+      next_due_date: nextDueDate.toISOString().slice(0, 10),
+      status: 'on-track',
+    }).then((res) => {
+      const debt = res.data?.data;
+      if (debt?.id) {
+        Notify.create({ type: 'positive', message: `Deuda "${acctForm.name}" registrada — revisala en Deudas` });
+      }
+    }).catch((e) => {
+      console.error('Error creating debt:', e);
+      Notify.create({ type: 'negative', message: 'Error registrando la deuda' });
+    });
+  } else if (acctFormMode.value === 'create') {
     void api.post('/accounts', {
       name: acctForm.name.trim(),
       currency_id: acctForm.currency_id,
