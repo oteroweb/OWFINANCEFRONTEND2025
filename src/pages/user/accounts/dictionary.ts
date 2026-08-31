@@ -17,7 +17,7 @@ export const dictionary = {
   },
   forms_filter: [
     { id: 0, col: 4, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', value: '', items: [], order_by: 'name', order_dir: 'asc' },
-    { id: 1, col: 4, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_type', type: 'select', label: 'Tipo', select_label: 'name', value: '', items: [], order_by: 'name', order_dir: 'asc' },
+    { id: 1, col: 4, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_types', type: 'select', label: 'Tipo', select_label: 'name', value: '', items: [], order_by: 'name', order_dir: 'asc' },
   ],
   columns: [
     { name: 'ID', key: 'id' },
@@ -39,7 +39,7 @@ export const dictionary = {
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', value: '' },
     { id: 1, vmodel: 'initial', vmodel_api: 'initial', type: 'input', label: 'Inicial', value: '' },
     { id: 2, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', value: '' },
-    { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_type', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', value: '' },
+    { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_types', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', value: '' },
     { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: true },
   ],
   window_update_title: 'Editar Cuenta',
@@ -49,7 +49,7 @@ export const dictionary = {
     { id: 0, vmodel: 'name', vmodel_api: 'name', type: 'input', label: 'Nombre', value: '' },
     { id: 1, vmodel: 'initial', vmodel_api: 'initial', type: 'input', label: 'Inicial', value: '' },
     { id: 2, vmodel: 'currency_id', vmodel_api: 'currency_id', vmodel_url: 'currencies', type: 'select', label: 'Moneda', select_label: 'name', value: '' },
-    { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_type', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', value: '' },
+    { id: 3, vmodel: 'account_type_id', vmodel_api: 'account_type_id', vmodel_url: 'account_types', type: 'select', label: 'Tipo de Cuenta', select_label: 'name', value: '' },
     { id: 4, vmodel: 'active', vmodel_api: 'active', type: 'checkbox', label: 'Activo', value: false },
   ],
 } as const;
