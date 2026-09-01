@@ -837,6 +837,21 @@
             dense
             outlined
           />
+          <div v-if="!showNewAccountType" class="row items-center">
+            <q-btn flat dense no-caps size="sm" color="primary" icon="add" label="Crear tipo nuevo" @click="showNewAccountType = true" />
+          </div>
+          <div v-else class="row items-center q-gutter-sm">
+            <q-input
+              v-model="newAccountTypeName"
+              label="Nombre del tipo (ej: Ahorro en oro)"
+              dense
+              outlined
+              class="col"
+              @keyup.enter="onCreateCustomAccountType"
+            />
+            <q-btn flat dense round icon="check" color="positive" :loading="creatingAccountType" :disable="!newAccountTypeName.trim()" @click="onCreateCustomAccountType" />
+            <q-btn flat dense round icon="close" color="grey" @click="showNewAccountType = false; newAccountTypeName = '';" />
+          </div>
           <q-select
             v-model="acctForm.currency_id"
             :options="acctCurrencyFilterOptions"
@@ -1649,6 +1664,8 @@ function onCreateAccount() {
     acctForm.debt_apr = 0;
     acctForm.debt_term_months = 12;
     acctForm.debt_due_day = 5;
+    showNewAccountType.value = false;
+    newAccountTypeName.value = '';
     acctFormMode.value = 'create';
     acctFormEditId.value = null;
     acctFormTitle.value = 'Nueva cuenta';
@@ -1736,6 +1753,9 @@ function onToggleAccountGlobalBalance(payload: { id: string; newValue: boolean }
 // ----- Account form dialog state -----
 type AccountTypeOption = { id: number; name: string };
 const accountTypeOptions = ref<AccountTypeOption[]>([]);
+const showNewAccountType = ref(false);
+const newAccountTypeName = ref('');
+const creatingAccountType = ref(false);
 const showAccountForm = ref(false);
 const acctFormMode = ref<'create' | 'edit'>('create');
 const acctFormEditId = ref<string | null>(null);
@@ -1789,6 +1809,28 @@ async function ensureAccountFormDataLoaded() {
     } catch {
       Notify.create({ type: 'negative', message: 'Error cargando tipos de cuenta' });
     }
+  }
+}
+
+async function onCreateCustomAccountType() {
+  const name = newAccountTypeName.value.trim();
+  if (!name) return;
+  creatingAccountType.value = true;
+  try {
+    const res = await api.post('/account_types/custom', { name });
+    const created = res.data?.data as AccountTypeOption | undefined;
+    if (created?.id) {
+      accountTypeOptions.value = [...accountTypeOptions.value, { id: created.id, name: created.name }];
+      acctForm.account_type_id = created.id;
+      Notify.create({ type: 'positive', message: `Tipo "${created.name}" creado` });
+    }
+    showNewAccountType.value = false;
+    newAccountTypeName.value = '';
+  } catch (e) {
+    console.error('Error creating custom account type:', e);
+    Notify.create({ type: 'negative', message: 'Error creando el tipo de cuenta' });
+  } finally {
+    creatingAccountType.value = false;
   }
 }
 
