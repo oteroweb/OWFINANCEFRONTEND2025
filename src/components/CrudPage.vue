@@ -265,10 +265,17 @@ const columns = dictionary.columns.map((col) => ({
     : {}),
   ...(col.key === 'date'
     ? {
+        // OWF-382: `val` puede ser null (ej. taxes.date nunca se pobló para las filas
+        // sembradas originalmente) — antes se forzaba a String(null) = "null", que
+        // new Date() parsea como Invalid Date, y toLocaleString() de eso literalmente
+        // imprime "Invalid Date" en la tabla. Ahora un valor vacío/null muestra "—".
         format: (val: unknown, row: Row) => {
-          const s = typeof val === 'string' ? val : String(val);
+          if (val === null || val === undefined || val === '') return '—';
+          const s = typeof val === 'string' ? val : typeof val === 'number' ? String(val) : '';
+          if (!s) return '—';
           const iso = s.includes('T') ? s : s.replace(' ', 'T');
           const dt = new Date(iso);
+          if (Number.isNaN(dt.getTime())) return '—';
           return dt.toLocaleString(undefined, {
             year: 'numeric',
             month: '2-digit',
