@@ -41,3 +41,4 @@ Paseo-*.dmg
 
 # rediseno sync: staging de pulls del proyecto Claude Design (nunca se commitea)
 rediseno/.sync-staging/
+redisenocongrupo.zip
