@@ -652,10 +652,29 @@ async function save(): Promise<void> {
     showDialog.value = false;
     await onRequest({ pagination: pagination.value });
   } catch (err: unknown) {
+    // OWF-377: el interceptor de axios (boot/axios.ts) ya normaliza errores de
+    // validación en err.api.errors (payload.data del backend, ej. {currency_id:
+    // ["The currency id field is required."]}) — antes se ignoraba por completo
+    // y solo se mostraba err.message ("Incorrect Params", crudo y sin decir qué
+    // campo falta). Ahora se traduce cada clave al label real del diccionario
+    // (ej. "Moneda") para un mensaje accionable en vez de genérico.
     let message = 'Error al guardar';
     if (err && typeof err === 'object') {
-      const maybe = err as { message?: unknown };
-      if (typeof maybe.message === 'string') message = maybe.message;
+      const maybe = err as { message?: unknown; api?: { errors?: unknown } };
+      const fieldErrors = maybe.api?.errors;
+      if (fieldErrors && typeof fieldErrors === 'object') {
+        const allFields = [...dictionary.forms_save, ...dictionary.forms_update];
+        const labelFor = (key: string): string =>
+          allFields.find((f) => f.vmodel_api === key || f.vmodel === key)?.label ?? key;
+        const parts = Object.entries(fieldErrors as Record<string, unknown>).map(([key, val]) => {
+          const label = labelFor(key);
+          const hasContent = Array.isArray(val) && val.length > 0;
+          return hasContent ? `${label} es obligatorio` : label;
+        });
+        if (parts.length) message = `Falta completar: ${parts.join(', ')}`;
+      } else if (typeof maybe.message === 'string') {
+        message = maybe.message;
+      }
     }
     $q.notify({ type: 'negative', message });
   }
