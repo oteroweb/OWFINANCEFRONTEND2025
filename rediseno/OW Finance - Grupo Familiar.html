@@ -17,9 +17,10 @@ a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
 .head{width:100%;max-width:1180px;display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
 .head h1{font-family:var(--font-display);font-size:17px;font-weight:700;color:#E7EBF2}
 .head .sub{font-size:12.5px;color:#7C879B}
-.map{width:100%;max-width:1180px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px}
-.map .grp{font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5A6478;padding:0 8px 0 4px}
-.map button{border:0;cursor:pointer;background:rgba(255,255,255,.06);color:#C3CAD6;font-family:var(--font-body);font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;transition:background 140ms,color 140ms}
+.map{width:100%;max-width:1180px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px 10px;margin-bottom:16px}
+.map .grp{font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5A6478;text-align:right;white-space:nowrap}
+.map .row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.map button{border:0;cursor:pointer;background:rgba(255,255,255,.06);color:#C3CAD6;font-family:var(--font-body);font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:background 140ms,color 140ms}
 .map button:hover{background:rgba(255,255,255,.12);color:#fff}
 .map button.active{background:var(--brand-primary);color:#fff}
 .browser{width:100%;max-width:1180px;border-radius:14px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);background:var(--surface-1)}
@@ -61,9 +62,13 @@ a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
 <script type="text/babel" src="ui_kits/lite-desktop/organisms/FamilyGroupPanel.jsx"></script>
 <script type="text/babel" src="ui_kits/lite-desktop/organisms/AccountShareDialog.jsx"></script>
 <script type="text/babel" src="ui_kits/lite-desktop/organisms/SharedAccountsSection.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/organisms/InternalDebtCard.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/organisms/DebtNegotiation.jsx"></script>
+<script type="text/babel" src="ui_kits/lite-desktop/organisms/BusinessAccessPanel.jsx"></script>
 <script type="text/babel" src="ui_kits/mobile/components/FamilyGroupSheet.jsx"></script>
 <script type="text/babel" src="ui_kits/mobile/components/AccountShareSheet.jsx"></script>
 <script type="text/babel" src="ui_kits/mobile/components/SharedAccountsSheet.jsx"></script>
+<script type="text/babel" src="ui_kits/mobile/components/DebtComponents.jsx"></script>
 
 <script type="text/babel">
 const { useState, useEffect } = React;
@@ -88,29 +93,72 @@ const ROUTES = [
   { group: 'Compartir cuenta', items: [
     { id: 'share-nogroup', label: 'Sin grupo', url: '/user/accounts/1' },
     { id: 'share',         label: 'Con grupo', url: '/user/accounts/1' },
+    { id: 'share-multi',   label: 'Varios grupos', url: '/user/accounts/1' },
   ] },
   { group: 'Cuentas', items: [
     { id: 'accounts',     label: 'Compartidas conmigo', url: '/user/accounts' },
     { id: 'accounts-lim', label: 'Límite solo saldo',   url: '/user/accounts' },
   ] },
+  { group: 'Deudas internas', items: [
+    { id: 'debt-pending-mine',  label: 'Sin confirmar · la registré yo', url: '/user/debts' },
+    { id: 'debt-pending-yours', label: 'Sin confirmar · me la registraron', url: '/user/debts' },
+    { id: 'debt-confirmed',     label: 'Confirmada', url: '/user/debts' },
+    { id: 'debt-disputed',      label: 'En negociación · me toca', url: '/user/debts' },
+    { id: 'debt-waiting',       label: 'En negociación · le toca', url: '/user/debts' },
+    { id: 'debt-frozen',        label: 'Congelada', url: '/user/debts' },
+  ] },
+  { group: 'Acceso a empresa', items: [
+    { id: 'biz',        label: 'Dos dueños',      url: '/user/config/business/access' },
+    { id: 'biz-invite', label: 'Dar acceso',      url: '/user/config/business/access' },
+    { id: 'biz-role',   label: 'Cambiar rol',     url: '/user/config/business/access' },
+    { id: 'biz-revoke', label: 'Quitar',          url: '/user/config/business/access' },
+    { id: 'biz-guest',  label: 'Soy el contador', url: '/user/config/business/access' },
+    { id: 'biz-solo',   label: 'Único dueño',      url: '/user/config/business/access' },
+  ] },
   { group: 'Mobile', items: [
     { id: 'm-fg',       label: 'Grupo',    url: '/user/config/family' },
     { id: 'm-share',    label: 'Compartir', url: '/user/accounts/1' },
     { id: 'm-accounts', label: 'Cuentas',  url: '/user/accounts' },
+    { id: 'm-debts',    label: 'Deudas internas', url: '/user/debts' },
   ] },
 ];
 
+/* `business_users` — acceso a la contabilidad de una empresa. Roles, no
+ * cuentas: ver la cabecera de BusinessAccessPanel.jsx. */
+const BIZ = {
+  id: 'b1', name: 'Distribuidora Otero', color: '#0EA5E9',
+  users: [
+    { user_id: 1, name: 'José Otero',   email: 'jose@otero.com',      role: 'owner',      status: 'active' },
+    { user_id: 5, name: 'Marta Rivas',  email: 'marta@contadores.ve', role: 'owner',      status: 'active' },
+    { user_id: 6, name: 'Luis Peña',    email: 'luis@otero.com',      role: 'viewer',     status: 'invited' },
+  ],
+};
+
 function Screen({ route }) {
   window.FG_FORCE_VIEW = route === 'fg-invite' ? 'invite' : (route === 'fg-leave' ? 'leave' : null);
+  window.BIZ_FORCE_VIEW = null;
+  window.BIZ_FORCE_TARGET = null;
   const shared = { sharedInCount: SHARES.length, sharedOutCount: 2 };
 
   if (route === 'fg-empty' || route === 'fg' || route === 'fg-invite' || route === 'fg-leave') {
     return <div className="pad"><FamilyGroupPanel group={route === 'fg-empty' ? null : GROUP} {...shared}
       onSave={p => log('save', p)} onDelete={id => log('leave group', id)} onSelectAction={a => log('action', a)} /></div>;
   }
-  if (route === 'share' || route === 'share-nogroup') {
+  if (route === 'share' || route === 'share-nogroup' || route === 'share-multi') {
+    /* Varios grupos (D-014). Mariangela está en los DOS — el diálogo la lista
+     * una sola vez y dice por dónde llega. */
+    const GROUP_B = { id: 'g2', name: 'Casa de mis padres', members: [
+      { user_id: 1, name: 'José Otero', email: 'jose@otero.com', is_you: true, status: 'active' },
+      /* Mariangela est\u00e1 en los DOS grupos; Rosa **solo** en este. As\u00ed la l\u00ednea
+       * "en &lt;grupo&gt;" muestra lo que existe para mostrar: una fila por persona,
+       * y de qu\u00e9 grupo llega cada una. Con todos en ambos grupos la l\u00ednea era
+       * id\u00e9ntica en todas las filas y parec\u00eda decoraci\u00f3n. */
+      { user_id: 2, name: 'Mariangela', email: 'maria@otero.com', status: 'active' },
+      { user_id: 7, name: 'Rosa Otero', email: 'rosa@otero.com', status: 'active' },
+    ] };
     return <div className="pad" style={{ alignItems: 'flex-start' }}><AccountShareDialog account={ACCOUNT}
       group={route === 'share' ? GROUP : null}
+      groups={route === 'share-multi' ? [GROUP, GROUP_B] : null}
       shares={[{ user_id: 2, permission: 'manage' }]}
       onChange={(f, v) => log('change', f, v)} onSave={p => log('save', p)} onClose={() => log('close')} onSelectAction={a => log('action', a)} /></div>;
   }
@@ -119,6 +167,38 @@ function Screen({ route }) {
       selectedId={route === 'accounts-lim' ? 17 : null}
       onSelectAction={a => log('action', a)} onChange={(f, v) => log('change', f, v)} /></div>;
   }
+  if (route.indexOf('biz') === 0) {
+    window.BIZ_FORCE_VIEW = { 'biz-invite': 'invite', 'biz-role': 'role', 'biz-revoke': 'revoke' }[route] || null;
+    /* `role` y `revoke` hablan de alguien: se siembra también a quién. */
+    window.BIZ_FORCE_TARGET = (route === 'biz-role' || route === 'biz-revoke') ? 5 : null;
+    /* `biz` trae DOS dueños, así que José puede irse. `biz-solo` baja a Marta
+     * a contadora: ahí José es el último dueño y la fila dice por qué no hay
+     * botón. Y `biz-guest` mira todo desde Marta, que en ese fixture NO es
+     * dueña. */
+    const solo = route === 'biz-solo';
+    const guest = route === 'biz-guest';
+    const biz = solo || guest
+      ? { ...BIZ, users: BIZ.users.map(u => (u.user_id === 5 ? { ...u, role: 'accountant' } : u)) }
+      : BIZ;
+    return <div className="pad" style={{ alignItems: 'flex-start' }}>
+      <BusinessAccessPanel business={biz} viewerUserId={guest ? 5 : 1}
+        onSave={p => log('save', p)} onDelete={id => log('revoke', id)}
+        onSelectAction={a => log('action', a)} onChange={(f, v) => log('change', f, v)} />
+    </div>;
+  }
+  if (route.indexOf('debt-') === 0) {
+    const D = window.SAMPLE_INTERNAL_DEBTS;
+    const pick = {
+      'debt-pending-mine':  { debt: D[0], viewer: 1 },
+      'debt-pending-yours': { debt: { ...D[0], registered_by_user_id: 2, direction: 'i_owe_them' }, viewer: 1 },
+      'debt-confirmed':     { debt: D[1], viewer: 1 },
+      'debt-disputed':      { debt: D[2], viewer: 1 },
+      /* Mismo registro, visto por Carmen: propuso último, así que espera. */
+      'debt-waiting':       { debt: D[2], viewer: 3 },
+      'debt-frozen':        { debt: D[3], viewer: 1 },
+    }[route];
+    return <div className="pad" style={{ alignItems: 'flex-start' }}><InternalDebtCard debt={pick.debt} viewerUserId={pick.viewer} onSelectAction={a => log('action', a)} /></div>;
+  }
   // Mobile
   return (
     <div className="phone">
@@ -126,6 +206,8 @@ function Screen({ route }) {
       <div className="body">
         {route === 'm-accounts'
           ? <SharedAccountsSheet myAccounts={MY_ACCOUNTS} shares={SHARES} onSelectAction={a => log('action', a)} onChange={(f, v) => log('change', f, v)} />
+          : route === 'm-debts'
+          ? <div style={{ padding: '16px 0 28px' }}><DebtsList debts={[]} internalDebts={window.SAMPLE_INTERNAL_DEBTS} viewerUserId={1} onSelectAction={a => log('action', a)} /></div>
           : <div style={{ position: 'absolute', inset: 0 }}>
               {route === 'm-fg'
                 ? <FamilyGroupSheet group={GROUP} {...shared} onSave={p => log('save', p)} onDelete={id => log('leave', id)} onSelectAction={a => log('action', a)} onClose={() => log('close')} />
@@ -143,13 +225,15 @@ function Root() {
     mapEl.innerHTML = '';
     ROUTES.forEach(grp => {
       const g = document.createElement('span'); g.className = 'grp'; g.textContent = grp.group; mapEl.appendChild(g);
+      const row = document.createElement('div'); row.className = 'row';
       grp.items.forEach(it => {
         const b = document.createElement('button');
         b.className = it.id === route ? 'active' : '';
         b.textContent = it.label;
         b.onclick = () => { setRoute(it.id); document.getElementById('url').textContent = 'app.owfinance.com' + it.url; };
-        mapEl.appendChild(b);
+        row.appendChild(b);
       });
+      mapEl.appendChild(row);
     });
   }, [route]);
   return <Screen key={route} route={route} />;

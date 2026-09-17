@@ -120,6 +120,29 @@ Mientras una divergencia no tenga asiento acá, su vista queda con estado
 
 ---
 
+## D-014 — AccountShareDialog: soporte multi-grupo (una fila por persona, no por membresía)
+
+- **Fecha**: 2026-09-17 · **Estado**: PENDIENTE (diseño pulleado, sin portar a Vue todavía) · **Disposición**: `design-gana` (pendiente de implementar)
+- **Contexto**: pull de `redisenocongrupo.zip` (export completo del proyecto Claude Design, recibido del usuario). `AccountShareDialog.jsx` cambió su firma de `group` (uno) a `groups` (array, retrocompatible) — un usuario puede pertenecer a más de un grupo familiar (pareja + padres, por ejemplo), y la misma persona puede aparecer en dos grupos distintos. Decisión de fondo del diseño: **una fila por PERSONA, no por membresía** — listar dos veces a alguien (una por grupo) daría dos selectores de permiso para la misma pregunta ("¿qué ve esta persona de esta cuenta?"). El permiso es de la persona sobre la cuenta; el grupo es solo el canal por el que se conectaron, y eso se indica con una etiqueta "en {grupo}" junto al nombre cuando hay más de un grupo.
+- **Estado del backend**: `OWF-369` ya implementó `family_groups`/`family_group_members` con soporte multi-grupo por diseño (confirmado en `.owf/TASKS.md`) — el modelo de datos probablemente ya soporta esto sin cambios. Falta confirmar que el frontend actual (`FamilyGroupPanel.vue`/`AccountShareDialog` port) consolida por persona en vez de por membresía cuando un usuario está en 2+ grupos — no verificado en esta sesión.
+- **Acciones pendientes**:
+  - [ ] Confirmar en backend real si un usuario de prueba puede pertenecer a 2 grupos simultáneos hoy (`family_group_members`) sin error.
+  - [ ] Portar la lógica de consolidación por persona (`people` array, `via` de grupos) al componente Vue real que implementa el diálogo de compartir cuenta.
+  - [ ] Smoke test con un usuario en 2 grupos compartiendo la misma cuenta con una persona presente en ambos.
+
+## Nota de sesión 2026-09-17 — pull masivo desde `redisenocongrupo.zip`
+
+El usuario adjuntó un export completo del proyecto Claude Design (9.6MB, todo `ui_kits/`+docs+HTML) fuera del flujo normal de DesignSync (esta sesión no tiene auth de diseño activa). Se extrajo con `ditto` (macOS `unzip` fallaba con nombres de archivo acentuados — mensaje engañoso "write error (disk full?)", no era falta de espacio) y se compararon archivo por archivo contra el espejo local. Pulleado a `rediseno/`:
+
+- **Fase 2 (Empresas)** — 4 componentes nuevos, sin implementar todavía: `BusinessOnboardingFlow.jsx`, `BusinessEmptyState.jsx`, `BusinessAccessPanel.jsx`, `CreateBusinessModal.jsx`. Ver `OWF-370` en `.owf/TASKS.md`.
+- **`ContextBar.jsx`** (nuevo) — selector único de contexto Personal/Empresa para Fase 2, elegido entre 3 candidatos (`candidatos/contexto-{a,b,c}-*.html`, el usuario eligió la variante B). Nota del propio registro de vistas: implica que `layout_mode` deja de ser preferencia pura del usuario y pasa a depender del contexto activo — **contradice `PROMPT_REDISENO_CENTRAL.md` tal como está hoy, hay que confirmar con el usuario antes de portar.**
+- **`SecurityDialogs.jsx`** (nuevo) — diálogos de crear/cambiar/eliminar PIN, ligado a `config-security` en el registro de vistas. No verificado si ya existe una contraparte funcional en Vue (Configuración → Seguridad ya tiene PIN real, ver `.owf/TASKS.md` — puede ser divergencia de UI, no de funcionalidad).
+- **`InternalDebtCard.jsx`** (nuevo) — deuda entre miembros del grupo familiar (confirmar/disputar/saldar), extiende `debts` con `counterparty_user_id`. Campos `confirmation`/`registered_by_user_id` son de diseño, no están en `ARQUITECTURA_GRUPO_FAMILIAR_EMPRESAS.md` — sin backend, sin empezar.
+- **`AccountShareDialog.jsx`** actualizado — ver D-014 arriba.
+- `views-registry.json` sincronizado con el remoto (agrega las entradas de arriba, antes solo existían en Claude Design).
+
+**No implementado en esta sesión** (fuera de alcance dado el volumen — el pedido era "dejar el diseño listo", no portar todo de una sentada). Los 4 puntos de arriba (`ContextBar`, `SecurityDialogs`, `InternalDebtCard`, `AccountShareDialog` multi-grupo) son trabajo nuevo descubierto, no estaban en el board — hay que decidir con el usuario si entran en el alcance de OWF-370 (Fase 2 Empresas) o si son tareas separadas.
+
 <!-- Plantilla para asientos nuevos:
 
 ## D-00X — <concepto>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>Contexto empresa · C · Marco</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+.material-icons{font-family:'Material Icons',sans-serif;font-style:normal;display:inline-flex;align-items:center;justify-content:center;line-height:1;letter-spacing:normal;text-transform:none;-webkit-font-feature-settings:'liga';font-feature-settings:'liga'}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-canvas);font-family:var(--font-body);--ctx:#0EA5E9;--ctx-soft:rgba(14,165,233,.16)}
+a{color:var(--brand-primary)}a:hover{color:var(--brand-primary-hover)}
+.frame{width:880px;min-height:560px;padding:7px;background:var(--ctx);display:flex;flex-direction:column}
+.tag{display:flex;align-items:center;gap:7px;padding:2px 8px 7px}
+.tag span{font-family:var(--font-display);font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#fff;opacity:.92}
+.app{flex:1;background:var(--surface-1);border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
+.hdr{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--border-hairline);position:relative}
+.sel{display:inline-flex;align-items:center;gap:9px;background:var(--surface-2);border-radius:var(--radius-pill);padding:7px 14px;cursor:pointer}
+.sw6{width:20px;height:20px;border-radius:6px;background:var(--ctx);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:700;font-size:10px}
+.sel b{font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--fg-1)}
+.sel .mode{font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-2)}
+.grow{flex:1}
+.ico{width:36px;height:36px;border-radius:99px;display:flex;align-items:center;justify-content:center;color:var(--fg-2)}
+.menu{position:absolute;top:58px;left:22px;width:290px;background:var(--surface-1);border:1px solid var(--border-hairline);border-radius:var(--radius-md);box-shadow:var(--shadow-popover);padding:6px;z-index:5}
+.mi{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:var(--radius-sm);cursor:pointer}
+.mi:hover,.mi.on{background:var(--surface-2)}
+.mi .sw{width:26px;height:26px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:700;font-size:12px}
+.mi .tx{flex:1;min-width:0}
+.mi .tx span{display:block;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mi .tx small{display:block;font-family:var(--font-body);font-size:11.5px;color:var(--fg-2);margin-top:1px}
+.mhead{font-family:var(--font-display);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3);padding:9px 11px 5px}
+.body{flex:1;padding:26px 22px;display:flex;flex-direction:column;gap:22px}
+.eyebrow{font-family:var(--font-display);font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3)}
+.amt{font-family:var(--font-money);font-weight:700;font-size:42px;color:var(--fg-1);letter-spacing:-1px;line-height:1.05;margin-top:5px}
+.jars{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.jar{background:var(--surface-2);border-radius:var(--radius-md);padding:14px}
+.jar .n{font-family:var(--font-body);font-size:12.5px;color:var(--fg-2)}
+.jar .v{font-family:var(--font-money);font-size:19px;font-weight:700;color:var(--fg-1);margin:4px 0 9px}
+.bar{height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ctx);border-radius:3px}
+.row{display:flex;align-items:center;gap:10px}
+.btn{border:0;cursor:pointer;background:var(--ctx);color:#fff;font-family:var(--font-body);font-size:13.5px;font-weight:600;padding:11px 20px;border-radius:var(--radius-pill);white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--fg-1)}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="tag"><span class="material-icons" style="font-size:14px;color:#fff">business_center</span><span>Distribuidora Otero · contabilidad de empresa</span></div>
+  <div class="app">
+    <div class="hdr">
+      <div class="sel"><span class="sw6">D</span><b>Distribuidora Otero</b><span class="mode">Pro</span><span class="material-icons" style="font-size:18px;color:var(--fg-3)">expand_more</span></div>
+      <div class="grow"></div>
+      <div class="ico"><span class="material-icons">notifications</span></div>
+      <div class="ico"><span class="material-icons">visibility</span></div>
+      <div class="menu">
+        <div class="mhead">Contabilidad</div>
+        <div class="mi"><span class="sw" style="background:var(--brand-primary)">J</span><span class="tx"><span>Personal</span><small>Lite</small></span></div>
+        <div class="mi on"><span class="sw" style="background:#0EA5E9">D</span><span class="tx"><span>Distribuidora Otero</span><small>Pro</small></span><span class="material-icons" style="font-size:18px;color:#0EA5E9">check</span></div>
+        <div class="mi"><span class="sw" style="background:#8B5CF6">C</span><span class="tx"><span>Consultora MG</span><small>Lite</small></span></div>
+        <div class="mi" style="border-top:1px solid var(--border-hairline);margin-top:5px;padding-top:12px"><span class="sw" style="background:var(--surface-3);color:var(--fg-2)"><span class="material-icons" style="font-size:16px">add</span></span><span class="tx"><span>Crear una empresa</span></span></div>
+      </div>
+    </div>
+    <div class="body">
+      <div>
+        <div class="eyebrow">Balance de la empresa · USD</div>
+        <div class="amt">$ 18,420.65</div>
+      </div>
+      <div class="jars">
+        <div class="jar"><div class="n">Nómina</div><div class="v">$ 6,200</div><div class="bar"><i style="width:72%"></i></div></div>
+        <div class="jar"><div class="n">Operación</div><div class="v">$ 4,860</div><div class="bar"><i style="width:44%"></i></div></div>
+        <div class="jar"><div class="n">Impuestos</div><div class="v">$ 2,310</div><div class="bar"><i style="width:28%"></i></div></div>
+      </div>
+      <div class="row"><button class="btn">Registrar movimiento</button><button class="btn ghost">Ver reportes</button></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

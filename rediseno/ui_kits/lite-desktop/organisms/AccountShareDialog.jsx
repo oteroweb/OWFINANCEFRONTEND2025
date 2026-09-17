@@ -9,6 +9,18 @@
  *   onClose()
  *   onSelectAction('open-family-group')  → sin grupo todavía
  *
+ * ── Varios grupos (D-014) ───────────────────────────────────────────────
+ * Un usuario puede estar en más de un grupo (pareja, padres), y una misma
+ * persona puede aparecer en dos de ellos.
+ *
+ * Decisión de fondo: **una fila por PERSONA, no por membresía.** Listar a
+ * alguien dos veces —una por grupo— daría dos selectores de permiso para una
+ * sola pregunta, y dos respuestas posibles para "¿qué ve Mariangela en esta
+ * cuenta?". El permiso es de la persona sobre la cuenta; el grupo es solo
+ * cómo llegaron a estar conectados, y eso se dice en la fila.
+ *
+ * Props: `groups` (array) — `group` (uno) sigue funcionando.
+ *
  * Reglas visibles:
  *   · No hay buscador libre de usuarios. Siempre se parte del grupo familiar.
  *   · `owner` no es una opción: es implícito del dueño, se muestra como estado.
@@ -17,9 +29,22 @@
  * ──────────────────────────────────────────────────────────────────────── */
 /* global React, Avatar, PillButton, OWF_PERMISSIONS, owfPermTint */
 
-function AccountShareDialog({ account, group = null, shares = [], onChange, onSave, onClose, onSelectAction }) {
+function AccountShareDialog({ account, group = null, groups = null, shares = [], onChange, onSave, onClose, onSelectAction }) {
+  const allGroups = groups && groups.length ? groups : (group ? [group] : []);
+
+  /* Una fila por persona. `via` acumula los grupos por los que llega. */
+  const people = [];
+  allGroups.forEach(g => {
+    (g.members || []).forEach(m => {
+      if (m.is_you) return;
+      const found = people.find(p => p.user_id === m.user_id);
+      if (found) { found.via.push(g.name); if (m.status !== 'invited') found.status = m.status; return; }
+      people.push({ ...m, via: [g.name] });
+    });
+  });
+
   const initial = {};
-  (group ? group.members : []).filter(m => !m.is_you).forEach(m => {
+  people.forEach(m => {
     const found = shares.find(s => s.user_id === m.user_id);
     initial[m.user_id] = found ? found.permission : 'none';
   });
@@ -31,7 +56,7 @@ function AccountShareDialog({ account, group = null, shares = [], onChange, onSa
   const header = (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--fg-1)' }}>Compartir con mi grupo familiar</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--fg-1)' }}>{allGroups.length > 1 ? 'Compartir con mis grupos' : 'Compartir con mi grupo familiar'}</div>
         <div style={{ ...label, marginTop: 3 }}>{account.name}</div>
       </div>
       <button onClick={onClose} aria-label="Cerrar" style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--fg-2)', display: 'flex', padding: 2 }}>
@@ -41,7 +66,7 @@ function AccountShareDialog({ account, group = null, shares = [], onChange, onSa
   );
 
   /* ── Sin grupo familiar: no se ofrece compartir ──────────────────────── */
-  if (!group) {
+  if (!allGroups.length) {
     return (
       <div style={shell}>
         {header}
@@ -59,8 +84,8 @@ function AccountShareDialog({ account, group = null, shares = [], onChange, onSa
     );
   }
 
-  const others = group.members.filter(m => !m.is_you);
-  const you = group.members.find(m => m.is_you);
+  const others = people;
+  const you = (allGroups[0].members || []).find(m => m.is_you);
   const pick = (userId, permId) => {
     setForm(f => ({ ...f, perms: { ...f.perms, [userId]: permId }, explain: permId === 'none' ? null : permId }));
     onChange && onChange('permission:' + userId, permId);
@@ -90,6 +115,13 @@ function AccountShareDialog({ account, group = null, shares = [], onChange, onSa
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
                 <Avatar initial={m.name.charAt(0)} size={28} />
                 <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, color: 'var(--fg-1)' }}>{m.name}</span>
+                {/* Por qué aparece esta persona: con varios grupos, sin esto no
+                  * se sabe si es del grupo de la pareja o del de los padres. */}
+                {allGroups.length > 1 && (
+                  <span style={{ ...label, fontSize: 11.5, color: 'var(--fg-3)' }}>
+                    {m.via.length > 1 ? `en ${m.via.join(' y ')}` : `en ${m.via[0]}`}
+                  </span>
+                )}
                 {pending && <span style={{ ...label, fontSize: 12 }}>— esperando que acepte la invitación</span>}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>

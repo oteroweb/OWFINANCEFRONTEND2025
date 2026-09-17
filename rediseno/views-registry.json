@@ -27,8 +27,7 @@
       "concept": "SmartModal / QuickAdd global",
       "designPaths": ["ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx", "ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx"],
       "vuePaths": ["src/components/SmartTransactionModal.vue"],
-      "status": "superseded-by-vue",
-      "notes": "OWF-314 (2026-07-14): el pre-modal de escritorio ('¿Qué quieres registrar?', DesktopQuickModal.jsx/vue) se eliminó del lado Vue por decisión de producto — era redundante con el selector de Tipo (línea ~50) y los tabs de Método (línea ~23) que SmartTransactionModal.vue ya tenía dentro del mismo formulario. src/components/liquid/DesktopQuickModal.vue fue borrado; sus 2 atajos únicos (movimientos especiales: pago de deuda/aporte sueño/aporte jar, y CTA Asesor IA) se reubicaron dentro de SmartTransactionModal.vue como fila de chips 'stm-quicklinks', visible solo en desktop y solo en el tab Escribir. El JSX de referencia (DesktopQuickModal.jsx) se conserva en rediseno/ solo como memoria histórica del diseño; SmartTransactionModal.jsx sigue vigente y portado (ver entrada transaction-form-desktop)."
+      "status": "accepted-ported"
     },
     {
       "id": "shared-expense",
@@ -59,9 +58,9 @@
       "id": "transaction-detail-desktop",
       "concept": "Modal de detalle/edición de transacción desktop",
       "designPaths": ["ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx"],
-      "vuePaths": ["src/pages/user/transactions/LiteTransactionsView.vue", "src/components/SmartTransactionModal.vue", "src/stores/ui.ts"],
-      "status": "accepted-ported",
-      "notes": "OWF-313 (2026-07-14): destino real confirmado — el bloque .tx-detail-sheet de LiteTransactionsView.vue (no TransactionEditDialog.vue, borrado en OWF-196). Drift detectado: el diseño unificó Editar para reutilizar el mismo TransactionForm de Crear (con transferencia+comisión); el Vue actual tiene un mini-formulario inline separado sin esos campos — exactamente el reporte del usuario de que 'el formulario de editar es distinto al de crear'. Portando."
+      "vuePaths": [],
+      "status": "unreviewed",
+      "notes": "INSTRUCTIVO.md lo mapea a src/components/TransactionEditDialog.vue, que YA NO EXISTE en el repo. Confirmar destino real (¿TransactionFormDialog.vue?) y actualizar."
     },
     {
       "id": "transaction-detail-mobile",
@@ -119,6 +118,54 @@
       "vuePaths": [],
       "status": "design-only",
       "notes": "Referencia visual/tokens; en Vue se implementan con Quasar, no se portan 1:1."
+    },
+    {
+      "id": "family-group-panel",
+      "concept": "Grupo familiar: crear, invitar, miembro pendiente, salir (Fase 1)",
+      "designPaths": ["ui_kits/lite-desktop/organisms/FamilyGroupPanel.jsx", "ui_kits/mobile/components/FamilyGroupSheet.jsx", "OW Finance - Grupo Familiar.html"],
+      "vuePaths": [],
+      "status": "unreviewed",
+      "notes": "Feature nuevo, sin contraparte Vue. Fixtures propuestos en ui_kits/lite-desktop/data/family-data.jsx (no están en sample-data.contract.js todavía). Ver TASKS.md §10.1."
+    },
+    {
+      "id": "account-share",
+      "concept": "Compartir una cuenta con el grupo familiar — 4 niveles de permiso (Fase 1)",
+      "designPaths": ["ui_kits/lite-desktop/organisms/AccountShareDialog.jsx", "ui_kits/mobile/components/AccountShareSheet.jsx"],
+      "vuePaths": [],
+      "status": "unreviewed",
+      "notes": "Pro-only. Extiende account_user con permission + shared_by_user_id. Ver DECISIONS.md D-005."
+    },
+    {
+      "id": "shared-accounts",
+      "concept": "Mis cuentas vs Compartidas conmigo + límite de view_balance (Fase 1)",
+      "designPaths": ["ui_kits/lite-desktop/organisms/SharedAccountsSection.jsx", "ui_kits/mobile/components/SharedAccountsSheet.jsx"],
+      "vuePaths": [],
+      "status": "unreviewed",
+      "notes": "Convive con AccountsPanel.jsx — decidir si es sección de esa vista o de la futura /user/accounts (TASKS.md §4.1)."
+    },
+    {
+      "id": "context-bar",
+      "concept": "Fase 2 · barra de contexto de contabilidad + selector único (Personal / empresas)",
+      "designPaths": ["ui_kits/lite-desktop/organisms/ContextBar.jsx", "OW Finance - Fase 2 Contexto.html", "candidatos/contexto-a-franja.html", "candidatos/contexto-b-header.html", "candidatos/contexto-c-marco.html"],
+      "vuePaths": [],
+      "status": "unreviewed",
+      "notes": "Elegida sobre 3 candidatos construidos (el usuario eligió B). Implica que layout_mode deja de ser preferencia del usuario y pasa a ser del contexto — contradice PROMPT_REDISENO_CENTRAL.md, confirmar con backend. Ver DECISIONS.md D-009."
+    },
+    {
+      "id": "config-security",
+      "concept": "Config · bloque Seguridad + diálogo de PIN (crear/cambiar/eliminar)",
+      "designPaths": ["ui_kits/lite-desktop/organisms/SecurityDialogs.jsx", "OW Finance - Configuración.html"],
+      "vuePaths": [],
+      "status": "unreviewed",
+      "notes": "Cierra §2.4 del canónico. Diverge de §2.5 a propósito: el PIN no se guarda silencioso en error (DECISIONS.md D-007). Falta variante mobile."
+    },
+    {
+      "id": "internal-debt",
+      "concept": "Deuda entre miembros del grupo familiar — confirmar / disputar / saldar (D-004)",
+      "designPaths": ["ui_kits/lite-desktop/organisms/InternalDebtCard.jsx", "OW Finance - Grupo Familiar.html"],
+      "vuePaths": [],
+      "status": "unreviewed",
+      "notes": "Extiende debts con counterparty_user_id. `confirmation` y `registered_by_user_id` son campos de diseño nuevos, no están en el documento de arquitectura — ver DECISIONS.md D-004. Falta espejo mobile en DebtComponents.jsx."
     },
     {
       "id": "archivo",
