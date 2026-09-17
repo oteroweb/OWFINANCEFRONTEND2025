@@ -4250,8 +4250,21 @@ const proFilteredRows = computed<Row[]>(() => {
   });
 });
 
+// OWF-378: `amount` viaja siempre en magnitud positiva desde el backend (el
+// signo real lo da transaction_type, no el campo) — sumar los valores crudos
+// hacía que "neto" del mes contara CADA gasto como si fuera un ingreso más
+// (ej. un solo gasto de $25.50 mostraba "neto +$25.50" en verde). Reutiliza
+// txType(), la misma lógica que ya pinta cada fila correctamente, para
+// aplicar el signo antes de sumar. Transferencias no aportan al neto (mueven
+// plata entre cuentas propias, no cambian el patrimonio).
 const proNetTotal = computed(() =>
-  proFilteredRows.value.reduce((s, r) => s + parseNumber((r as AnyRecord)['amount']), 0)
+  proFilteredRows.value.reduce((s, r) => {
+    const amt = Math.abs(parseNumber((r as AnyRecord)['amount']));
+    const t = txType(r);
+    if (t === 'expense') return s - amt;
+    if (t === 'income') return s + amt;
+    return s;
+  }, 0)
 );
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -4420,12 +4433,16 @@ const txSelected     = ref(new Set<string>());
 const txHovered      = ref<string | null>(null);
 let   txClickTimer: ReturnType<typeof setTimeout> | null = null;
 
+// OWF-378: mismo bug de signo que proNetTotal/txGroupTotal.
 const txMultiSum = computed(() => {
   let s = 0;
   for (const row of proFilteredRows.value) {
     const id = String((row as AnyRecord)['id']);
     if (txSelected.value.has(id)) {
-      s += parseNumber((row as AnyRecord)['amount']);
+      const amt = Math.abs(parseNumber((row as AnyRecord)['amount']));
+      const t = txType(row);
+      if (t === 'expense') s -= amt;
+      else if (t === 'income') s += amt;
     }
   }
   return s;
@@ -4468,8 +4485,17 @@ function txSelectAll(): void {
   txSelected.value = new Set(proFilteredRows.value.map(r => String((r as AnyRecord)['id'])));
 }
 
+// OWF-378: mismo bug de signo que proNetTotal (ver comentario ahí) — el total
+// del día sumaba amount crudo, siempre positivo, así que un día con solo
+// gastos se mostraba en verde con "+".
 function txGroupTotal(rows: Row[]): number {
-  return rows.reduce((s, r) => s + parseNumber((r as AnyRecord)['amount']), 0);
+  return rows.reduce((s, r) => {
+    const amt = Math.abs(parseNumber((r as AnyRecord)['amount']));
+    const t = txType(r);
+    if (t === 'expense') return s - amt;
+    if (t === 'income') return s + amt;
+    return s;
+  }, 0);
 }
 
 function txCatIdForRow(row: Row): number | null {
