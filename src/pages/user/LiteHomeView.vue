@@ -673,8 +673,12 @@ async function loadRecentTransactions() {
       name: typeof tx.name === 'string' ? tx.name : (typeof tx.description === 'string' ? tx.description : 'Transacción'),
       amount: Math.abs(Number(tx.amount ?? 0)),
       date: typeof tx.date === 'string' ? tx.date : new Date().toISOString(),
-      category: ((tx.transaction_type as Record<string, unknown> | undefined)?.name as string | undefined)
-        ?? ((tx.category as Record<string, unknown> | undefined)?.name as string | undefined)
+      // OWF-380: el orden estaba invertido — transaction_type.name (siempre "Expense"/
+      // "Income", nunca null) se resolvía primero, así que el ?? nunca llegaba a leer la
+      // categoría real. Cada transacción mostraba "Expense"/"Income" en vez de su
+      // categoría, para cualquier usuario.
+      category: ((tx.category as Record<string, unknown> | undefined)?.name as string | undefined)
+        ?? ((tx.transaction_type as Record<string, unknown> | undefined)?.name as string | undefined)
         ?? 'General',
       type: Number(tx.amount ?? 0) >= 0 ? ('income' as const) : ('expense' as const),
     }));

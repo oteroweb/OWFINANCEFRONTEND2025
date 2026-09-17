@@ -574,7 +574,11 @@ async function loadMonthSummary() {
       if (txClass === 'income') income += absAmount;
       if (txClass === 'expense') {
         expense += absAmount;
-        const cat = ((tx.transaction_type as Record<string, unknown> | undefined)?.name as string) || 'General';
+        // OWF-380: agrupaba por tx.transaction_type.name, que para cualquier gasto es
+        // siempre el string fijo "Expense" — el widget nunca agrupó por categoría real,
+        // para ningún usuario (no era un caso de borde de "sin categoría"). tx.category es
+        // el objeto real de la categoría (null si no tiene).
+        const cat = ((tx.category as Record<string, unknown> | undefined)?.name as string) || 'Sin categoría';
         categoryTotals[cat] = (categoryTotals[cat] || 0) + absAmount;
       }
     }
