@@ -194,6 +194,7 @@
 import { defineComponent, ref, computed, watch } from 'vue';
 import type { PropType } from 'vue';
 import { Notify } from 'quasar';
+import { useBusinessStore } from 'stores/business';
 import type { QTreeNode } from 'quasar';
 
 type TreeNode = {
@@ -693,7 +694,9 @@ export default defineComponent({
       return el;
     }
 
-    const isReadonly = computed(() => props.readonly);
+    // OWF-370: el viewer de una empresa solo lee (el backend responde 403 a escrituras).
+    const businessStore = useBusinessStore();
+    const isReadonly = computed(() => props.readonly || !businessStore.canWrite);
 
     expose({
       addCategoryToParent,

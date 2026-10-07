@@ -1,6 +1,7 @@
 import { defineBoot } from '#q-app/wrappers'
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios'
 import { useAuthStore } from 'stores/auth'
+import { applyBusinessContext } from 'src/utils/businessContext'
 
 declare module 'vue' {
   interface ComponentCustomProperties {
@@ -26,6 +27,9 @@ api.interceptors.request.use((config) => {
   if (auth.token) {
     config.headers.Authorization = `Bearer ${auth.token}`
   }
+
+  // OWF-370 Fase 2: contexto contable (empresa) — un único punto, lista explícita de rutas.
+  applyBusinessContext(config)
 
   return config
 })

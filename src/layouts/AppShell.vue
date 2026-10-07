@@ -55,6 +55,9 @@
     <!-- ═══ ÁREA PRINCIPAL ════════════════════════════════════════════════ -->
     <div class="shell__main">
 
+      <!-- OWF-370 Fase 2: selector único de contabilidad (Personal / empresas), teñido con el color del contexto -->
+      <ContextBar />
+
       <!-- Header superior — Lite siempre, Pro solo en mobile o como topbar -->
       <div class="shell__header-wrap">
         <!-- Lite header (Lite siempre · Pro mobile) -->
@@ -77,7 +80,7 @@
             <span class="shell__pro-topbar-title">{{ pageTitle }}</span>
           </div>
           <div class="shell__pro-topbar-actions">
-            <button class="shell__btn-primary" @click="onQuickAdd">
+            <button v-if="business.canWrite" class="shell__btn-primary" @click="onQuickAdd">
               <span class="material-icons" style="font-size:18px">add</span>
               Agregar
             </button>
@@ -117,7 +120,8 @@
     <q-page-container class="shell__page-container">
       <router-view v-slot="{ Component }">
         <transition name="shell-page" mode="out-in">
-          <component :is="Component" />
+          <!-- :key = versión del contexto contable → al cambiar de empresa las páginas se remontan y recargan su data -->
+          <component :is="Component" :key="business.contextVersion" />
         </transition>
       </router-view>
     </q-page-container>
@@ -171,6 +175,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from 'stores/auth';
 import { useUiStore } from 'stores/ui';
+import { useBusinessStore } from 'stores/business';
 import { api } from 'boot/axios';
 import { usePublicTheme } from 'src/composables/usePublicTheme';
 import LiteHeaderDesktop from 'components/liquid/LiteHeaderDesktop.vue';
@@ -182,12 +187,14 @@ import SmartTransactionModal from 'components/SmartTransactionModal.vue';
 import OnboardingFlow from 'components/OnboardingFlow.vue';
 import NotificationsPanel from 'components/NotificationsPanel.vue';
 import ImpersonationBanner from 'components/ImpersonationBanner.vue';
+import ContextBar from 'components/business/ContextBar.vue';
 
 const router = useRouter();
 const route  = useRoute();
 const $q     = useQuasar();
 const auth   = useAuthStore();
 const ui     = useUiStore();
+const business = useBusinessStore();
 const { isDark, toggleTheme } = usePublicTheme();
 
 // ── Overlays ──────────────────────────────────────────────────────────────
@@ -239,6 +246,26 @@ async function checkOnboarding() {
   }
 }
 onMounted(checkOnboarding);
+
+// ── OWF-370 Fase 2: empresas / contexto contable ─────────────────────────
+// El contexto activo se lee de localStorage al crear la store (antes de que las páginas
+// pidan data); acá se carga la lista y, si la empresa activa ya no es válida, se vuelve a personal.
+async function loadBusinesses() {
+  if (!auth.token) return;
+  try {
+    await business.fetchBusinesses();
+  } catch {
+    // No bloquear la app: el selector queda solo con "Personal".
+  }
+}
+onMounted(() => void loadBusinesses());
+watch(() => auth.token, (t) => {
+  if (t) void loadBusinesses();
+  else {
+    business.reset();
+    business.setContext('personal');
+  }
+});
 // También reacciona cuando settings carga async después del mount (p.ej. justo
 // después de elegir Lite/Pro, sin necesidad del reload que hace OnboardingModal).
 watch(() => auth.settings?.has_seen_onboarding, (val) => {
@@ -276,6 +303,7 @@ const NAV_ITEMS = [
   { id: 'dreams',       label: 'Sueños',         icon: 'auto_awesome', route: '/user/dreams' },
   { id: 'debts',        label: 'Deudas',         icon: 'credit_card',  route: '/user/debts' },
   { id: 'asesor',       label: 'Asesor IA',      icon: 'smart_toy',    route: '/user/asesor' },
+  { id: 'businesses',   label: 'Empresas',       icon: 'store',        route: '/user/businesses' },
   { id: 'config',       label: 'Configuración',  icon: 'settings',     route: '/user/config' },
 ];
 
@@ -288,6 +316,7 @@ const currentTab = computed(() => {
   if (p.includes('/dreams'))                             return 'dreams';
   if (p.includes('/debts'))                              return 'debts';
   if (p.includes('/asesor'))                             return 'asesor';
+  if (p.includes('/businesses'))                         return 'businesses';
   if (p.includes('/config') || p.includes('/settings')) return 'config';
   return 'home';
 });

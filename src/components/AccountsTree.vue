@@ -1,6 +1,6 @@
 <template>
   <div class="accounts-tree">
-    <div class="row items-center q-pa-sm q-gutter-sm">
+    <div v-if="canManageStructure" class="row items-center q-pa-sm q-gutter-sm">
       <div class="col">
         <q-btn
           color="primary"
@@ -145,11 +145,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch } from 'vue';
+import { defineComponent, ref, watch, computed } from 'vue';
 import type { PropType } from 'vue';
 import { Notify } from 'quasar';
 import { useTransactionsStore } from 'stores/transactions';
 import { useAuthStore } from 'stores/auth';
+import { useBusinessStore } from 'stores/business';
 
 type NodeType = 'folder' | 'account';
 
@@ -188,6 +189,9 @@ export default defineComponent({
   setup(props, { emit, expose }) {
     const txStore = useTransactionsStore();
     const authStore = useAuthStore();
+    // OWF-370: en empresa solo el dueño administra la estructura (cuentas/carpetas).
+    const businessStore = useBusinessStore();
+    const canManageStructure = computed(() => businessStore.isOwner);
     // Top-level nodes; we keep a special folder id 'root' labeled 'Sin asignar'
     const UNASSIGNED_ID = 'root';
     const treeData = ref<TreeNode[]>([
@@ -807,6 +811,7 @@ export default defineComponent({
     expose({ addAccountToFolder, addFolderToParent, updateNodeLabel, updateNodeGlobalBalance, removeNode, setTree });
 
     return {
+      canManageStructure,
       UNASSIGNED_ID,
       treeData,
       showNewFolder,

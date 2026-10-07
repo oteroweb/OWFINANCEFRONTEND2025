@@ -75,6 +75,7 @@ const MENU_GROUPS: MenuGroup[] = [
       { icon: 'person',       label: 'Perfil',            route: '/user/profile' },
       { icon: 'insights',     label: 'Perfil financiero', route: '/user/financial-profile' },
       { icon: 'savings',      label: 'Cuentas',           route: '/user/accounts' },
+      { icon: 'store',        label: 'Empresas',          route: '/user/businesses' },
       { icon: 'receipt_long', label: 'Exportar datos',    route: null },
     ],
   },

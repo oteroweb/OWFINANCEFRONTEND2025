@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { Dialog } from 'quasar';
 import { Capacitor } from '@capacitor/core';
 import { NativeBiometric } from 'capacitor-native-biometric';
+import { Notify } from 'quasar';
+import { useBusinessStore } from 'stores/business';
 
 const HIDE_KEY = 'ow_hide_values';
 const LOCK_KEY = 'ow_privacy_lock';
@@ -178,7 +180,14 @@ export const useUiStore = defineStore('ui', {
         jarCount: Number(payload.jarCount || 0),
       };
     },
+    // OWF-370: un viewer de empresa no registra movimientos (el backend respondería 403).
+    canWriteInContext(): boolean {
+      if (useBusinessStore().canWrite) return true;
+      Notify.create({ type: 'warning', message: 'Tu rol en esta empresa es de solo lectura.' });
+      return false;
+    },
     openSmartModal(tab: 'write' | 'voice' | 'photo' | 'autoai' = 'write', type: 'expense' | 'income' | 'transfer' | 'ajuste' = 'expense') {
+      if (!this.canWriteInContext()) return;
       this.editingTransactionId = null;
       this.smartModalTab = tab;
       this.smartModalType = type;
@@ -188,6 +197,7 @@ export const useUiStore = defineStore('ui', {
     // transacción `id` — reemplaza los mini-forms de edición separados (sin soporte de
     // transferencia/comisión) por el formulario real de crear.
     openSmartModalForEdit(id: number) {
+      if (!this.canWriteInContext()) return;
       this.editingTransactionId = id;
       this.smartModalTab = 'write';
       this.showSmartModal = true;
