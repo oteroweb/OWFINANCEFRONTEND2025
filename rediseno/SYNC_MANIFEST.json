@@ -40,6 +40,10 @@
       "sha256": "ead48b17354fe4679f343c8d891a430ca8ce41743eb2905a5ede5d2f430fcf9d",
       "bytes": 52787
     },
+    "ARQUITECTURA_GRUPO_FAMILIAR_EMPRESAS.md": {
+      "sha256": "f53a8180e90f2883579617ebe9133130fb30a58c27a039db8360c2375b5360cb",
+      "bytes": 12058
+    },
     "assets/fonts/Satoshi-Regular.woff2": {
       "sha256": "5aa97d938f523dd893c52473c3a021a0bf4ba0f95290edcc0749c088717f951f",
       "bytes": 27184
@@ -63,6 +67,18 @@
     "brand-scheme.css": {
       "sha256": "d08886900bedd3542b44071aa6b0ce4693f6111a27aabc3cdd113df51946b940",
       "bytes": 4472
+    },
+    "candidatos/contexto-a-franja.html": {
+      "sha256": "a16c7963c113d83a6789019507718d3cfcb21b529447927170ecec064a30c1ef",
+      "bytes": 5970
+    },
+    "candidatos/contexto-b-header.html": {
+      "sha256": "defda371490c02235cc17744adf8e00c59075c57e3c3a5b3c4235eccdd0b773a",
+      "bytes": 5814
+    },
+    "candidatos/contexto-c-marco.html": {
+      "sha256": "694f0b401616d46d4ab944998ff4046c38efb2cd5098c8ddf08afdf951613a7b",
+      "bytes": 6557
     },
     "cantaros-mobile/atoms.jsx": {
       "sha256": "33c3970671071ed4af2452e7826b01b4c1f5a74b7671c8b8cf16b1d98f335d8a",
@@ -181,16 +197,16 @@
       "bytes": 2259
     },
     "data/sample-data.contract.js": {
-      "sha256": "d3bd011073a5ab2be6e61820bfcf93b81132eec778a31e87b44d5fdc58ef5cf5",
-      "bytes": 11963
+      "sha256": "90df6aebbb0ce42d877583b68663aeb52f4be862e911b398164e40044fa7dd07",
+      "bytes": 12276
     },
     "DECISIONS.md": {
-      "sha256": "371135083d1193adfe1306b98df098bb78e239c8139b787d0eb52b5696684c18",
-      "bytes": 3720
+      "sha256": "cf74e72f4e1f40406d3df8f66ebf8517fc2bd91355fa26fccdef1dad12455876",
+      "bytes": 12735
     },
     "DESIGN_CONTRACT.md": {
-      "sha256": "cba0f4444321fd4c68846e885d97577f1ca42c1848ca3cedab64ecdfa8c08107",
-      "bytes": 6849
+      "sha256": "6d72595d0a321239436a9deeddbcd696757b4e5e7dff50b02b2db6e63c056a33",
+      "bytes": 6914
     },
     "doc-page.js": {
       "sha256": "7feb7a4009b0e340fd7bb8067fa45ec54a64ee5b5ecfc9a3f3669fe53d775eb7",
@@ -288,6 +304,10 @@
       "sha256": "bbd05c24fc401e4bc5121f551ef497399b58ac3e8ea44d9cc85e152c6ba5ddac",
       "bytes": 36634
     },
+    "OW Finance - Configuración.html": {
+      "sha256": "87c37ee99461997425efc2dc0e497e0a20ee3f0f22d4a61d030f50cc177a87c2",
+      "bytes": 9779
+    },
     "OW Finance - Esquema de Color.html": {
       "sha256": "eb0307658d35330ddd121c8855b8c5e9d1bb951e9fb9f656cfbfeef2e6be0e05",
       "bytes": 26141
@@ -296,9 +316,17 @@
       "sha256": "2d4d4b0ca70b9ee8936d0758740f7ba03c96fc558388895719d4e5b573e8b110",
       "bytes": 30955
     },
+    "OW Finance - Fase 2 Contexto.html": {
+      "sha256": "55ece5f3a2c393a11f4ffee34f823a360b179662db314c4eee0ca18ddcb99e24",
+      "bytes": 16612
+    },
     "OW Finance - Funciones.html": {
       "sha256": "0a964b8e9f1e2b40e23fd262d7f69b6445150ad438dc90461f6c72d677f72c32",
       "bytes": 22987
+    },
+    "OW Finance - Grupo Familiar.html": {
+      "sha256": "cc0bf64e8d6b031f4dcf81b73c1237d5463464577fe769fe35d1b85749e86f0a",
+      "bytes": 16478
     },
     "OW Finance - Guía de Integración.html": {
       "sha256": "a8e0133bfcd4303e8ec23311847cb336692112480017f5d513e7f943679d6520",
@@ -419,6 +447,54 @@
     "preview/type-display.html": {
       "sha256": "e9091605f242ab64fdbd965bf5decc76a171f15b2f66d2b0b0a41b0955413025",
       "bytes": 1301
+    },
+    "PROMPT_REDISENO_ADMIN.md": {
+      "sha256": "c87e125fd5a39397759c99ece9904dce4df384914ca04e437e98ae376e407583",
+      "bytes": 9536
+    },
+    "PROMPT_REDISENO_ANALISIS.md": {
+      "sha256": "2fc4a902f2e010875fa5f7060dcadee527679851816a54f05c099a0bbb6d5a26",
+      "bytes": 14813
+    },
+    "PROMPT_REDISENO_ASESOR_CONFIG_NOTIFICACIONES_ONBOARDING.md": {
+      "sha256": "4a242f44967b508971e5e97b22f712e112004b5c0925e7a29236b7ff682d5af2",
+      "bytes": 20860
+    },
+    "PROMPT_REDISENO_AUTH_PUBLICO.md": {
+      "sha256": "69d48dd54e9e95e98d894fd681ba501d94e8969a2302a3907410e1ad7c97e21f",
+      "bytes": 13962
+    },
+    "PROMPT_REDISENO_CANTAROS.md": {
+      "sha256": "2f70e4d8a744166da08a289b7a3c24d9c8b7f4ee343f45ba2a1a552a1b40d234",
+      "bytes": 16434
+    },
+    "PROMPT_REDISENO_CENTRAL.md": {
+      "sha256": "4f4b6c870b1f46e71bff60c42445418dc71ea110d0079b0768e7b15da7ffe207",
+      "bytes": 15568
+    },
+    "PROMPT_REDISENO_CUENTAS_CATEGORIAS_IMPUESTOS.md": {
+      "sha256": "8b3f8c134f83bd03d6b0539ed6dc078f849bca9c8ec05610095c155db9e8cdb9",
+      "bytes": 18708
+    },
+    "PROMPT_REDISENO_DEUDAS_SUENOS_PERFIL.md": {
+      "sha256": "21c4fcb13e43086836a70ce39f4e737d3728da70c592b2fba720d54a5deafa93",
+      "bytes": 16785
+    },
+    "PROMPT_REDISENO_EMPRESAS_CONTABILIDAD.md": {
+      "sha256": "8c14f32b3b062ea0c9f812e9820e522a7f27e1681a6cd5541947d82f32dbd486",
+      "bytes": 10212
+    },
+    "PROMPT_REDISENO_GRUPO_FAMILIAR_CUENTAS_COMPARTIDAS.md": {
+      "sha256": "eea30ebe677a3b2fc5189999066453d23ed3879dc8f5d005b79f548b0e1e60eb",
+      "bytes": 7548
+    },
+    "PROMPT_REDISENO_HOME.md": {
+      "sha256": "0a640e8b6932bd86838ad0d878845c95769d6293bb9e76e4574b4c6a0e67a0e7",
+      "bytes": 19764
+    },
+    "PROMPT_REDISENO_TRANSACCIONES.md": {
+      "sha256": "dd01ca98e3cd114d22692ec6943e9ce23d388b44297070718b0e3cd647eac1fa",
+      "bytes": 27391
     },
     "README.md": {
       "sha256": "9b5113b423e801d716baf51985c18a5a604d3718b83de85ba19e086eb9eb129c",
@@ -673,8 +749,8 @@
       "bytes": 7351
     },
     "tools/fixture-seeds.json": {
-      "sha256": "19e433317625633e0abd364f029238e6710ca2f108cd9f277a64a4b795b0a628",
-      "bytes": 14319
+      "sha256": "29811a53f10e07f30628583e27e4bf2c16d9540f60ae866b71347aeaa81f5a7d",
+      "bytes": 14671
     },
     "tools/generate-fixtures.mjs": {
       "sha256": "db86ada3bd975df6cee031502e8ee4807a1ddc8633fec8f4b9687a3f17a5eff2",
@@ -685,8 +761,8 @@
       "bytes": 612
     },
     "tools/sync-manifest.mjs": {
-      "sha256": "5aae8dc0f2ce4ebd6849114890654c9b0075433e5896cfc246ac538acf10abc7",
-      "bytes": 3544
+      "sha256": "aa3ee8df56402efeec8087e97cc9070213698765770afa52c5aa68630842e121",
+      "bytes": 4096
     },
     "tx-catalog.js": {
       "sha256": "58957ac653eba7434414919f0edc029b60ea22ad90007dc22736cf83f9ea0e08",
@@ -705,12 +781,16 @@
       "bytes": 1931
     },
     "ui_kits/lite-desktop/atoms/Primitives.jsx": {
-      "sha256": "e7aac8cbb6a315d35c79ec0d2c2db9d9b6b4e9b41477511efadc748f6cf36e86",
-      "bytes": 3566
+      "sha256": "84299ad2cfd6f5f5b82f5b5bc31ebcaee40aeb057f2cefb054d3838d93f9717a",
+      "bytes": 3593
     },
     "ui_kits/lite-desktop/data/analisis-data.jsx": {
       "sha256": "e23f915aba6d421eceeb4686ff25b60fc6a15d3fbd3983f72d28e95e9a39fa8f",
       "bytes": 4891
+    },
+    "ui_kits/lite-desktop/data/family-data.jsx": {
+      "sha256": "4e6fd9945a0445df0ca3c148e615745e9980ec0a8e27573ce12a09d6ca84ec0e",
+      "bytes": 3081
     },
     "ui_kits/lite-desktop/data/finance-data.jsx": {
       "sha256": "3d9bb207c8b9ac4d1f086b03063896de7445f8bbe029dfe19e8fb1ff59e53af1",
@@ -729,8 +809,8 @@
       "bytes": 10660
     },
     "ui_kits/lite-desktop/index.html": {
-      "sha256": "046a771fb4f84d810d7cab25d8883c1d72c00436ae8c8ac0ecd1bbf08ae65f56",
-      "bytes": 24160
+      "sha256": "f868cd074ad6d28b5d3690ce479850e7e36b5c65a38f2a95862fba1114961dae",
+      "bytes": 25259
     },
     "ui_kits/lite-desktop/molecules/ChipGroup.jsx": {
       "sha256": "6ff71ea675aa772e35bdd9736b19016cfaacb9229b62a572eaece3e2c1cfaefb",
@@ -748,13 +828,25 @@
       "sha256": "d818f684b95bdfbb58b915ff760fbe318a4f1ec5cc35c6d1b73f13ad330d9713",
       "bytes": 20554
     },
+    "ui_kits/lite-desktop/organisms/AccountsCategoriesTaxes.jsx": {
+      "sha256": "03587a54fc67512a86cc4701b881d4794219d09e934ef1ae42d7b2e9c4368245",
+      "bytes": 34894
+    },
+    "ui_kits/lite-desktop/organisms/AccountShareDialog.jsx": {
+      "sha256": "6201706801cdfaac24223d4916de4b83575b4358b5e127aef728f2bc6d5d9b37",
+      "bytes": 9629
+    },
     "ui_kits/lite-desktop/organisms/AccountsPanel.jsx": {
       "sha256": "65e31353d59a6820615e073131a3297b2a5468666044bd40bc0e01a01b2fabc2",
       "bytes": 27436
     },
+    "ui_kits/lite-desktop/organisms/AdminScreens.jsx": {
+      "sha256": "31d327b5bb7d1196f1165e67ab95a8b997e07ae522e75ffef8b17a9f7aeb72d5",
+      "bytes": 26320
+    },
     "ui_kits/lite-desktop/organisms/AIAdvisorPanel.jsx": {
-      "sha256": "4fbe1bc97d0bce47c8be89d06388342bca54b23345b23fbc03d6af7684eeba2d",
-      "bytes": 12553
+      "sha256": "2a1f380b5f0a79e502d5d62e7465b2abadcf7ef3b9730ef61aa623b210cdaaa7",
+      "bytes": 19603
     },
     "ui_kits/lite-desktop/organisms/AnalisisParts.jsx": {
       "sha256": "37d94b45102921df15278f045bfb5d0b17265316a6ff8eb13502b34c94123d60",
@@ -764,25 +856,45 @@
       "sha256": "65d4fd8387e266d681f2ee823723e61230989e628608ffee3f80030e0a1561fb",
       "bytes": 8387
     },
+    "ui_kits/lite-desktop/organisms/BusinessAccessPanel.jsx": {
+      "sha256": "bb02b306e920d3b776ede1df95763ed036acd01a8e6530c126b4ac09d571a010",
+      "bytes": 16792
+    },
+    "ui_kits/lite-desktop/organisms/BusinessEmptyState.jsx": {
+      "sha256": "25a41c85d40b5089a851e43268ced1165188d0da5218585feb8d715665e56be2",
+      "bytes": 6588
+    },
+    "ui_kits/lite-desktop/organisms/BusinessOnboardingFlow.jsx": {
+      "sha256": "a297b9210a8da9f39b78b3b378d67dbe2d64b02e77af3a6f0e828c71831156e8",
+      "bytes": 14141
+    },
     "ui_kits/lite-desktop/organisms/CategorySelector.jsx": {
       "sha256": "9ac84f7d0a8411bb8d0c5ed97f9415e1e326a8ccf8d79d2f3f41a5ea1f7ac6df",
       "bytes": 9589
     },
+    "ui_kits/lite-desktop/organisms/ContextBar.jsx": {
+      "sha256": "69f73bd3a22bfb5f92c3153ced0e772767457ccc80092bc6ebd286525d26b8f2",
+      "bytes": 14212
+    },
+    "ui_kits/lite-desktop/organisms/CreateBusinessModal.jsx": {
+      "sha256": "9d837bfacd23ce6127ed6a27934e631c07b48cf1a577c2421c6beb403fb812e9",
+      "bytes": 11085
+    },
     "ui_kits/lite-desktop/organisms/DebtsPreview.jsx": {
-      "sha256": "b4733871862e856592f19aa62fe017d617200e7a25230856cd0a86817549f26f",
-      "bytes": 9591
+      "sha256": "6e2ec7ead805abb3209f45bdc2d831f88e8d831d0fda8476280c90573034daa0",
+      "bytes": 9704
     },
     "ui_kits/lite-desktop/organisms/DesktopQuickModal.jsx": {
       "sha256": "cfecb8dac9d5d5c1bcd4ab055d0011e295906bd96373ff2c408bba102ab8d069",
       "bytes": 16222
     },
     "ui_kits/lite-desktop/organisms/DreamsPreview.jsx": {
-      "sha256": "5462b9553bdd61b5e5badaac2a6db8fdec8298bf13960333dcb3d030979caad7",
-      "bytes": 7904
+      "sha256": "eb14d48cc0cd42980143b9f93460845f7bd3e14a7c77f6295bb4bed35a69f749",
+      "bytes": 8395
     },
     "ui_kits/lite-desktop/organisms/EntryGate.jsx": {
-      "sha256": "1241adaea1c017ff6bd89e7bced0b820b405b3262de2fc5077b0a7ca12b528fe",
-      "bytes": 10031
+      "sha256": "6e30358009f43455d9a1fad8b33d3b89474455eca06827685c0cc2af6e833a10",
+      "bytes": 24365
     },
     "ui_kits/lite-desktop/organisms/ExchangeRatesWidget.jsx": {
       "sha256": "37f45d6c472351f42e34c20f7e473ca3fae03a335f57eac63aaab1e0d2ee896b",
@@ -792,17 +904,37 @@
       "sha256": "0c3e79aec576fb83346328aadddd1b223d9d5346142fd35fae0169d230f920e9",
       "bytes": 4696
     },
+    "ui_kits/lite-desktop/organisms/FamilyGroupPanel.jsx": {
+      "sha256": "b26d170fdd1ce2b404a48beebb0ba28fa602c7be481a31e24580fb079f268287",
+      "bytes": 10989
+    },
     "ui_kits/lite-desktop/organisms/HeroBalance.jsx": {
       "sha256": "5cecf9195e7212447637d7dc934e0c87d281139a4d79aaea628317f704496ca3",
       "bytes": 2503
+    },
+    "ui_kits/lite-desktop/organisms/InternalDebtCard.jsx": {
+      "sha256": "771308e618ead749174ef58e58831c592b98dbe557b69f4f7c45773393750743",
+      "bytes": 7832
     },
     "ui_kits/lite-desktop/organisms/JarsConfig.jsx": {
       "sha256": "485cb17c69ede78cc9394d4239605804b587fa96457ceddbf0967c77026e50fc",
       "bytes": 10382
     },
+    "ui_kits/lite-desktop/organisms/JarsLiteConfig.jsx": {
+      "sha256": "528dba0a78f012ba463ce754f133396e42a43363bb517e3b9e5ee9aa697d2874",
+      "bytes": 24062
+    },
     "ui_kits/lite-desktop/organisms/JarsPreview.jsx": {
       "sha256": "5c55087967307917c30e369efb9d4efc9518b0ba96a9c30375b50ef602034269",
       "bytes": 2883
+    },
+    "ui_kits/lite-desktop/organisms/JarsProConfig.jsx": {
+      "sha256": "42081fb2b3690fc4193941320aca5904c10efe8d68a61e2b621b952537db91bd",
+      "bytes": 22182
+    },
+    "ui_kits/lite-desktop/organisms/JarsProEditor.jsx": {
+      "sha256": "750b879f03d6ad21e34d635fe62635dc902f172f9358ab350a762b885d073ee1",
+      "bytes": 38756
     },
     "ui_kits/lite-desktop/organisms/LiteHeader.jsx": {
       "sha256": "6e4a5afe22100a0502a233bba7f1d54375011501b7308b12fda9341953ca7b57",
@@ -811,6 +943,10 @@
     "ui_kits/lite-desktop/organisms/LiteNavPill.jsx": {
       "sha256": "f054260b22fcdbfda286b9eb989501f3c99eeab0ec021324f826c2019b4f4972",
       "bytes": 3104
+    },
+    "ui_kits/lite-desktop/organisms/MarketingPages.jsx": {
+      "sha256": "d27916a5bc4163a97d33625b3a82c484b99d24730e6182b2a5170c2c04b0bc53",
+      "bytes": 21734
     },
     "ui_kits/lite-desktop/organisms/MobileTabBar.jsx": {
       "sha256": "1fbb5dbe5887e35c89b456f0f29535999a2267ceeed96ec658d520d268acc5b3",
@@ -821,24 +957,32 @@
       "bytes": 20541
     },
     "ui_kits/lite-desktop/organisms/NotificationsPanel.jsx": {
-      "sha256": "38325011a25698bd053a51292b3b3eb980b6b8cadd27ecde1af2feb36cbc6da5",
-      "bytes": 9656
+      "sha256": "39ee25747810c4f535dfcbfb24335b33572e668484df8010b37e3af798685785",
+      "bytes": 9828
     },
     "ui_kits/lite-desktop/organisms/OnboardingFlow.jsx": {
-      "sha256": "1dcdc6d4617c3837a9ad9c67cff605abd6ae4c9ef994e0e7331deaf93743c407",
-      "bytes": 15287
+      "sha256": "150c775fdd52667521cde54285cf3dda3971cd1a82eee0c8ccd3a16ac78f5e68",
+      "bytes": 19391
     },
     "ui_kits/lite-desktop/organisms/RecentTransactions.jsx": {
       "sha256": "e92eaeefbcf5b194a98f36574949bc44c281f2e1165903e2b5a44063958e3413",
       "bytes": 5068
+    },
+    "ui_kits/lite-desktop/organisms/SecurityDialogs.jsx": {
+      "sha256": "c273dd8a99040c4176a9464337fc1791f0fc636a1a85aac7af52ebd731829759",
+      "bytes": 13437
+    },
+    "ui_kits/lite-desktop/organisms/SharedAccountsSection.jsx": {
+      "sha256": "e23978e00c01c198e151a8dcc3e25895315536d1f98520d43b756252333b8c60",
+      "bytes": 7999
     },
     "ui_kits/lite-desktop/organisms/SmartTransactionModal.jsx": {
       "sha256": "90e5576352f16efd94054b98150a88d8c35e4613d636980089f562a5f1c48a51",
       "bytes": 14165
     },
     "ui_kits/lite-desktop/organisms/TransactionDetailModal.jsx": {
-      "sha256": "9c6273b59d9758dbe23b2a15eefff5058f81d57e06411d77cf3f47bfd4bd1c7f",
-      "bytes": 16613
+      "sha256": "5e85dbebf3405f32586f0557a7511fd31de6eb4182f0acf15504c5fdbceb8944",
+      "bytes": 18287
     },
     "ui_kits/lite-desktop/organisms/TransactionForm.jsx": {
       "sha256": "58515f73f6dc07eb9da50f74e7fcbd003ebeb523ae2454a8e8321e63ec5f3d7e",
@@ -857,12 +1001,16 @@
       "bytes": 46987
     },
     "ui_kits/lite-desktop/shells/LiteShell.jsx": {
-      "sha256": "a390819044d64d85da12ae22f807800d2365793911e795a119c926f61f108521",
-      "bytes": 5140
+      "sha256": "d8ee97ed5443863d72fa5d8772dbd5eff4815709b340c25bde8d01f2a9e47591",
+      "bytes": 5269
     },
     "ui_kits/lite-desktop/shells/ProShell.jsx": {
-      "sha256": "67d2053a07abf3d2424b465db7b25dc3e2b25fb828e1fcfc575206e16fb36f8b",
-      "bytes": 14199
+      "sha256": "673ee8eed04ee881f72591ccddb15b6a17fd8ed4450f1f2fa3964b956db52642",
+      "bytes": 14854
+    },
+    "ui_kits/lite-desktop/templates/AdminRoute.jsx": {
+      "sha256": "4b32c2bb137fa8aa335613e64901733a2056b19f07fb29232491c35c5d624af7",
+      "bytes": 5384
     },
     "ui_kits/lite-desktop/templates/AnalisisRoute.jsx": {
       "sha256": "592e90af5138fcb59b8a2a3a95703d6f55e171cead646a582fb1d823b16d2431",
@@ -873,12 +1021,12 @@
       "bytes": 12716
     },
     "ui_kits/lite-desktop/templates/DebtsRoute.jsx": {
-      "sha256": "92530729a003fa8d93e2f17f44304834c535b878284913421a5e61b2f37cd96c",
-      "bytes": 2090
+      "sha256": "c66cce434b1b7d1858a864098405c4def13c8ea575d33a276c83f7e34fa38829",
+      "bytes": 19508
     },
     "ui_kits/lite-desktop/templates/DreamsRoute.jsx": {
-      "sha256": "b614f96aa92e12c77d5be9dd04da31a42e5e48e3aeabc6ec1cbf196db48b75ab",
-      "bytes": 1636
+      "sha256": "f181e2c697899854830405c95f3e5f9616ae938d1efceb38d3b2d5dcedaacbfe",
+      "bytes": 14760
     },
     "ui_kits/lite-desktop/templates/FinancialProfileRoute.jsx": {
       "sha256": "7a9c2f2ef8f2155552383f6cedc981cb552e27fbb99ad408d04ec1e9804e8c2b",
@@ -889,20 +1037,32 @@
       "bytes": 853
     },
     "ui_kits/lite-desktop/templates/JarsRoute.jsx": {
-      "sha256": "53325c31755b87fc99742490c49b893034e7ad9cdf3f1baeea431737e32ff47f",
-      "bytes": 1088
+      "sha256": "f20d057b0c4d25c48fef4ad59be5a1bc6980542d05623443e7889648deebaeca",
+      "bytes": 1034
+    },
+    "ui_kits/lite-desktop/templates/NotificationsRoute.jsx": {
+      "sha256": "daa22fe5ddea1ee4879668aed925dc91a757ab2e54c4799360c00e2acab9e9f9",
+      "bytes": 3732
     },
     "ui_kits/lite-desktop/templates/ProAnalisisRoute.jsx": {
       "sha256": "53219c9595fbafed5661dcd216b8459b94670f34101363bc6b57c68f1e32c5df",
       "bytes": 6245
     },
+    "ui_kits/lite-desktop/templates/ProConfigRoute.jsx": {
+      "sha256": "f292249831eca0e0d855eda7be029eac562bf4799938f1c248ff245d8ca1aefb",
+      "bytes": 5918
+    },
     "ui_kits/lite-desktop/templates/ProfileRoute.jsx": {
-      "sha256": "87b7e118a2227839bdc3f1e99977e7338d158e24ac961e2c9027b76e8960a28a",
-      "bytes": 8762
+      "sha256": "ce21859912fea488d51f60f1030668f9e25be3a551780b666084ec99ca6dae82",
+      "bytes": 12044
     },
     "ui_kits/lite-desktop/templates/ProHomeRoute.jsx": {
       "sha256": "80ccaf7f02fc0f74f9fb016a9c073b6b1c02817550429f7331bce8176be63604",
       "bytes": 9642
+    },
+    "ui_kits/lite-desktop/templates/ProJarsRoute.jsx": {
+      "sha256": "212e40cf2d11581a94e676bfa42e257bca3869a8d450fad401b53ed45f7ac400",
+      "bytes": 828
     },
     "ui_kits/lite-desktop/templates/TransactionsRoute.jsx": {
       "sha256": "6826709b3aee485aaabc1dc19bdc1c91b21207e49da22754d4f8941f3e8ecf8b",
@@ -915,6 +1075,10 @@
     "ui_kits/lite-desktop/tweaks-panel.jsx": {
       "sha256": "6591467622edc7b2425def3fcf6447556fa698a1d10090583ebb9e782da064b5",
       "bytes": 24657
+    },
+    "ui_kits/mobile/components/AccountShareSheet.jsx": {
+      "sha256": "e7a8f4c0466d2a0e075160f693372d19d4b5d7088a6ed72674a33e8a767ef8c5",
+      "bytes": 7157
     },
     "ui_kits/mobile/components/Atoms.jsx": {
       "sha256": "f89904173ab3f6f1f36d3bf41cab0759e74de895988e53e56f0e3f02d84c9f7b",
@@ -944,6 +1108,10 @@
       "sha256": "a71a2ffcff53372a5cc87c01281e4e90d9dd285c444ac24f3d5d7f76bed9126a",
       "bytes": 9114
     },
+    "ui_kits/mobile/components/FamilyGroupSheet.jsx": {
+      "sha256": "b897e5fc2e1099eb4367f9f20b40346262196150b360c9e19a1f0b76f978d490",
+      "bytes": 8155
+    },
     "ui_kits/mobile/components/JarComponents.jsx": {
       "sha256": "f023ec4718e6d9f2948c3d92a2c377c7629b3d45068b322d4d12a24d01d68978",
       "bytes": 6888
@@ -967,6 +1135,10 @@
     "ui_kits/mobile/components/QuickActionSheet.jsx": {
       "sha256": "899bed51132cef0c52dec5d5c8f092998a98700af8ed77c6657469bb498fdc18",
       "bytes": 7576
+    },
+    "ui_kits/mobile/components/SharedAccountsSheet.jsx": {
+      "sha256": "1c5ed9e605f090a674436cf96eb874489c57a8a45760dac6e5698b45ecc526c4",
+      "bytes": 7200
     },
     "ui_kits/mobile/components/SmartTransactionSheet.jsx": {
       "sha256": "87d9ec1c246ed6c8c33228865c24a8b0aabaa6e88ff8a822c751fe33d227d104",
@@ -1113,8 +1285,8 @@
       "bytes": 525362
     },
     "views-registry.json": {
-      "sha256": "a5117f880948722b28c6bea5186c33760f2c49677863ea9ffeba315ce2be84cb",
-      "bytes": 5647
+      "sha256": "c56cb82e18ce3fcb55e54c5a4e2a98f7e6023c03530f960012b0c28ce61142c4",
+      "bytes": 8755
     }
   }
 }

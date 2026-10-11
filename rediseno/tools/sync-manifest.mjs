@@ -16,11 +16,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const REDISENO = path.resolve(__dirname, '..');
 const OUT = path.join(REDISENO, 'SYNC_MANIFEST.json');
 const CHECK_MODE = process.argv.includes('--check');
+
+// El espejo debe ser reproducible en CI: excluir exportaciones locales ignoradas
+// y metadatos de macOS, conservando los archivos ya versionados por Git.
+const repositoryFiles = new Set(execFileSync('git', [
+  'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', 'rediseno',
+], { cwd: path.resolve(REDISENO, '..'), encoding: 'utf8' }).split('\0').map((file) => file.normalize('NFC')));
 
 const EXCLUDE = new Set(['SYNC_MANIFEST.json', 'SYNC_REPORT.md']);
 const EXCLUDE_DIRS = new Set(['.sync-staging']);
@@ -34,6 +41,7 @@ function walk(dir, base = '') {
       out.push(...walk(path.join(dir, entry.name), rel));
     } else if (entry.isFile()) {
       if (EXCLUDE.has(rel)) continue;
+      if (!repositoryFiles.has(`rediseno/${rel}`.normalize('NFC'))) continue;
       out.push(rel);
     }
   }
@@ -44,7 +52,7 @@ function buildManifest() {
   const files = {};
   for (const rel of walk(REDISENO)) {
     const buf = fs.readFileSync(path.join(REDISENO, rel));
-    files[rel] = { sha256: crypto.createHash('sha256').update(buf).digest('hex'), bytes: buf.length };
+    files[rel.normalize('NFC')] = { sha256: crypto.createHash('sha256').update(buf).digest('hex'), bytes: buf.length };
   }
   return { files };
 }
