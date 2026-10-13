@@ -99,19 +99,20 @@ window.SAMPLE_JARS = [
  *   user_id: number | null
  *   type: string | null
  *   parent_id: number | null
+ *   transaction_type_id: number | string | null
  */
 window.SAMPLE_CATEGORIES = [
-  {"id":1,"name":"Vivienda","icon":"home","jar_slug":"necesidades","assigned_jar_id":1,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":2,"name":"Supermercado","icon":"shopping_cart","jar_slug":"necesidades","assigned_jar_id":1,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":3,"name":"Transporte","icon":"directions_car","jar_slug":"necesidades","assigned_jar_id":1,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":4,"name":"Salud","icon":"favorite","jar_slug":"necesidades","assigned_jar_id":1,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":6,"name":"Restaurantes","icon":"restaurant","jar_slug":"diversion","assigned_jar_id":2,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":7,"name":"Entretenimiento","icon":"sports_esports","jar_slug":"diversion","assigned_jar_id":2,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":10,"name":"Educación","icon":"school","jar_slug":"educacion","assigned_jar_id":4,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":11,"name":"Inversión","icon":"trending_up","jar_slug":"ahorro","assigned_jar_id":3,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":12,"name":"Otros","icon":"category","jar_slug":"reservas","assigned_jar_id":5,"active":1,"user_id":null,"type":"expense","parent_id":null},
-  {"id":20,"name":"Salario","icon":"payments","jar_slug":null,"assigned_jar_id":null,"active":1,"user_id":null,"type":"income","parent_id":null},
-  {"id":21,"name":"Freelance","icon":"work","jar_slug":null,"assigned_jar_id":null,"active":1,"user_id":null,"type":"income","parent_id":null}
+  {"id":1,"name":"Vivienda","icon":"home","jar_slug":"necesidades","assigned_jar_id":1,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":2,"name":"Supermercado","icon":"shopping_cart","jar_slug":"necesidades","assigned_jar_id":1,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":3,"name":"Transporte","icon":"directions_car","jar_slug":"necesidades","assigned_jar_id":1,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":4,"name":"Salud","icon":"favorite","jar_slug":"necesidades","assigned_jar_id":1,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":6,"name":"Restaurantes","icon":"restaurant","jar_slug":"diversion","assigned_jar_id":2,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":7,"name":"Entretenimiento","icon":"sports_esports","jar_slug":"diversion","assigned_jar_id":2,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":10,"name":"Educación","icon":"school","jar_slug":"educacion","assigned_jar_id":4,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":11,"name":"Inversión","icon":"trending_up","jar_slug":"ahorro","assigned_jar_id":3,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":12,"name":"Otros","icon":"category","jar_slug":"reservas","assigned_jar_id":5,"active":1,"user_id":null,"type":"expense","parent_id":null,"transaction_type_id":2},
+  {"id":20,"name":"Salario","icon":"payments","jar_slug":null,"assigned_jar_id":null,"active":1,"user_id":null,"type":"income","parent_id":null,"transaction_type_id":1},
+  {"id":21,"name":"Freelance","icon":"work","jar_slug":null,"assigned_jar_id":null,"active":1,"user_id":null,"type":"income","parent_id":null,"transaction_type_id":1}
 ];
 
 /* Tag (src/stores/tags.ts)

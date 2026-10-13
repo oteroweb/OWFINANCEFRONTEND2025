@@ -79,6 +79,7 @@ Vue — usar exactamente esos nombres de campo (snake_case donde aplica: `accoun
 | `user_id` | `number \| null` | **sí** |
 | `type` | `string \| null` | **sí** |
 | `parent_id` | `number \| null` | **sí** |
+| `transaction_type_id` | `number \| string \| null` | **sí** |
 
 ### `window.SAMPLE_TAGS` — interfaz `Tag` (`src/stores/tags.ts`)
 
